@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
-##############################################################################
 #
-#    Copyright (C) 2013-2014 Corato Sergio
-#    (<http://www.didotech.com>).
+#
+#    Copyright (C) 2015 SimplERP srl (<http://www.simplerp.it>).
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU Affero General Public License as published
@@ -12,21 +11,21 @@
 #    This program is distributed in the hope that it will be useful,
 #    but WITHOUT ANY WARRANTY; without even the implied warranty of
 #    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#    GNU General Public License for more details.
+#    GNU Affero General Public License for more details.
 #
 #    You should have received a copy of the GNU Affero General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-##############################################################################
+#
 {
-    'name': 'Configurazione ricevute bancarie - Account Didotech',
+    'name': 'Configurazione ricevute bancarie',
     'version': '3.0.0.7',
     'category': 'Localisation/Italy',
     'description': """
     Ri.ba. sbf configuration for Italy.
 """,
     'author': 'Corato Sergio',
-    'website': 'http://www.didotech.com',
+    'website': 'http://www.simplerp.it',
     'license': 'AGPL-3',
     "depends": [
 #         'account',
@@ -40,7 +39,5 @@
     "data": [
         'data/payment_data.xml',
     ],
-    "demo": [],
-    "active": False,
     "installable": True
 }
