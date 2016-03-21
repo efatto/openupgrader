@@ -28,13 +28,7 @@
     'website': 'http://www.simplerp.it',
     'license': 'AGPL-3',
     "depends": [
-#         'account',
-#         'base_vat',
-#         'account_chart',
-#         'base_iban',
-#         'l10n_it_base',
         'l10n_it_ricevute_bancarie',
-#         'account_cancel',
     ],
     "data": [
         'data/payment_data.xml',
