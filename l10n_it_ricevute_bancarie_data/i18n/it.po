@@ -1,6 +1,6 @@
 # Translation of OpenERP Server.
 # This file contains the translation of the following modules:
-#	* sbf_config
+#	* l10n_it_ricevute_bancarie_data
 #
 msgid ""
 msgstr ""
@@ -15,202 +15,202 @@ msgstr ""
 "Content-Transfer-Encoding: \n"
 "Plural-Forms: \n"
 
-#. module: sbf_config
-#: model:account.payment.term,name:sbf_config.payment_term_60_90_120_days_riba_3
-#: model:account.payment.term,note:sbf_config.payment_term_60_90_120_days_riba_3
+#. module: l10n_it_ricevute_bancarie_data
+#: model:account.payment.term,name:l10n_it_ricevute_bancarie_data.payment_term_60_90_120_days_riba_3
+#: model:account.payment.term,note:l10n_it_ricevute_bancarie_data.payment_term_60_90_120_days_riba_3
 msgid "Ri.ba. 3 payment - 60 days - 90 days - 120 days - End of Month"
 msgstr "Ri.ba. 60/90/120 GG.F.M."
 
-#. module: sbf_config
-#: model:account.payment.term,name:sbf_config.payment_term_120_net_riba_1
-#: model:account.payment.term,note:sbf_config.payment_term_120_net_riba_1
+#. module: l10n_it_ricevute_bancarie_data
+#: model:account.payment.term,name:l10n_it_ricevute_bancarie_data.payment_term_120_net_riba_1
+#: model:account.payment.term,note:l10n_it_ricevute_bancarie_data.payment_term_120_net_riba_1
 msgid "Ri.ba. 120 Days - Same day of Month"
 msgstr "Ri.ba. 120 GG.D.F."
 
-#. module: sbf_config
-#: model:account.payment.term,name:sbf_config.payment_term_30_60_days_10_monthly_riba_2
-#: model:account.payment.term,note:sbf_config.payment_term_30_60_days_10_monthly_riba_2
+#. module: l10n_it_ricevute_bancarie_data
+#: model:account.payment.term,name:l10n_it_ricevute_bancarie_data.payment_term_30_60_days_10_monthly_riba_2
+#: model:account.payment.term,note:l10n_it_ricevute_bancarie_data.payment_term_30_60_days_10_monthly_riba_2
 msgid "Ri.ba. 2 payment - 30 days - 60 Days End Month - Day 10 of Month"
 msgstr "Ri.ba. 30/60 GG 10 MS"
 
-#. module: sbf_config
-#: model:account.payment.term,name:sbf_config.payment_term_120_days_10_monthly_riba_1
-#: model:account.payment.term,note:sbf_config.payment_term_120_days_10_monthly_riba_1
+#. module: l10n_it_ricevute_bancarie_data
+#: model:account.payment.term,name:l10n_it_ricevute_bancarie_data.payment_term_120_days_10_monthly_riba_1
+#: model:account.payment.term,note:l10n_it_ricevute_bancarie_data.payment_term_120_days_10_monthly_riba_1
 msgid "Ri.ba. 120 Days End Month - Day 10 of Month"
 msgstr "Ri.ba. 120 GG 10 MS"
 
-#. module: sbf_config
-#: model:account.payment.term,name:sbf_config.payment_term_30_60_days_riba_2
-#: model:account.payment.term,note:sbf_config.payment_term_30_60_days_riba_2
+#. module: l10n_it_ricevute_bancarie_data
+#: model:account.payment.term,name:l10n_it_ricevute_bancarie_data.payment_term_30_60_days_riba_2
+#: model:account.payment.term,note:l10n_it_ricevute_bancarie_data.payment_term_30_60_days_riba_2
 msgid "Ri.ba. 2 payment - 30 days - 60 days - End of Month"
 msgstr "Ri.ba. 30/60 GG.F.M."
 
-#. module: sbf_config
-#: model:account.payment.term,name:sbf_config.payment_term_60_90_120_days_10_monthly_riba_3
+#. module: l10n_it_ricevute_bancarie_data
+#: model:account.payment.term,name:l10n_it_ricevute_bancarie_data.payment_term_60_90_120_days_10_monthly_riba_3
 msgid "Ri.ba. 3 payment - 60 days - 90 days - 120 Days End Month - Day "
 msgstr "Ri.ba. 60/90/120 GG.F.M."
 
-#. module: sbf_config
-#: model:account.payment.term,name:sbf_config.payment_term_60_days_10_monthly_riba_1
-#: model:account.payment.term,note:sbf_config.payment_term_60_days_10_monthly_riba_1
+#. module: l10n_it_ricevute_bancarie_data
+#: model:account.payment.term,name:l10n_it_ricevute_bancarie_data.payment_term_60_days_10_monthly_riba_1
+#: model:account.payment.term,note:l10n_it_ricevute_bancarie_data.payment_term_60_days_10_monthly_riba_1
 msgid "Ri.ba. 60 Days End Month - Day 10 of Month"
 msgstr "Ri.ba. 60 GG 10 MS"
 
-#. module: sbf_config
-#: model:account.payment.term,name:sbf_config.payment_term_90_days_5_monthly_riba_1
-#: model:account.payment.term,note:sbf_config.payment_term_90_days_5_monthly_riba_1
+#. module: l10n_it_ricevute_bancarie_data
+#: model:account.payment.term,name:l10n_it_ricevute_bancarie_data.payment_term_90_days_5_monthly_riba_1
+#: model:account.payment.term,note:l10n_it_ricevute_bancarie_data.payment_term_90_days_5_monthly_riba_1
 msgid "Ri.ba. 90 Days End Month - Day 5 of Month"
 msgstr "Ri.ba. 90 GG 5 MS"
 
-#. module: sbf_config
-#: model:account.payment.term,name:sbf_config.payment_term_60_net_riba_1
-#: model:account.payment.term,note:sbf_config.payment_term_60_net_riba_1
+#. module: l10n_it_ricevute_bancarie_data
+#: model:account.payment.term,name:l10n_it_ricevute_bancarie_data.payment_term_60_net_riba_1
+#: model:account.payment.term,note:l10n_it_ricevute_bancarie_data.payment_term_60_net_riba_1
 msgid "Ri.ba. 60 Days - Same day of Month"
 msgstr "Ri.ba. 60 GG.D.F."
 
-#. module: sbf_config
-#: model:account.payment.term,name:sbf_config.payment_term_30_days_10_monthly_riba_1
-#: model:account.payment.term,note:sbf_config.payment_term_30_days_10_monthly_riba_1
+#. module: l10n_it_ricevute_bancarie_data
+#: model:account.payment.term,name:l10n_it_ricevute_bancarie_data.payment_term_30_days_10_monthly_riba_1
+#: model:account.payment.term,note:l10n_it_ricevute_bancarie_data.payment_term_30_days_10_monthly_riba_1
 msgid "Ri.ba. 30 Days End Month - Day 10 of Month"
 msgstr "Ri.ba. 30 GG 10"
 
-#. module: sbf_config
-#: model:account.payment.term,name:sbf_config.payment_term_90_120_net_riba_2
-#: model:account.payment.term,note:sbf_config.payment_term_90_120_net_riba_2
+#. module: l10n_it_ricevute_bancarie_data
+#: model:account.payment.term,name:l10n_it_ricevute_bancarie_data.payment_term_90_120_net_riba_2
+#: model:account.payment.term,note:l10n_it_ricevute_bancarie_data.payment_term_90_120_net_riba_2
 msgid "Ri.ba. 2 payment - 90 days - 120 days - Same day of Month"
 msgstr "Ri.ba. 90/120 GG.D.F."
 
-#. module: sbf_config
-#: model:account.payment.term,name:sbf_config.payment_term_90_net_riba_1
-#: model:account.payment.term,note:sbf_config.payment_term_90_net_riba_1
+#. module: l10n_it_ricevute_bancarie_data
+#: model:account.payment.term,name:l10n_it_ricevute_bancarie_data.payment_term_90_net_riba_1
+#: model:account.payment.term,note:l10n_it_ricevute_bancarie_data.payment_term_90_net_riba_1
 msgid "Ri.ba. 90 Days - Same day of Month"
 msgstr "Ri.ba. 90 GG.D.F."
 
-#. module: sbf_config
-#: model:account.payment.term,name:sbf_config.payment_term_90_days_riba_1
-#: model:account.payment.term,note:sbf_config.payment_term_90_days_riba_1
+#. module: l10n_it_ricevute_bancarie_data
+#: model:account.payment.term,name:l10n_it_ricevute_bancarie_data.payment_term_90_days_riba_1
+#: model:account.payment.term,note:l10n_it_ricevute_bancarie_data.payment_term_90_days_riba_1
 msgid "Ri.ba. 90 Days - End of Month"
 msgstr "Ri.ba. 90 GG.F.M."
 
-#. module: sbf_config
-#: model:account.payment.term,note:sbf_config.payment_term_90_120_days_10_monthly_riba_2
+#. module: l10n_it_ricevute_bancarie_data
+#: model:account.payment.term,note:l10n_it_ricevute_bancarie_data.payment_term_90_120_days_10_monthly_riba_2
 msgid "Ri.ba. 2 payment - 90 days - 120 Days End Month - Day 10 of Month"
 msgstr "Ri.ba. 90/120 GG 10 MS"
 
-#. module: sbf_config
-#: model:account.payment.term,name:sbf_config.payment_term_30_60_90_net_riba_3
+#. module: l10n_it_ricevute_bancarie_data
+#: model:account.payment.term,name:l10n_it_ricevute_bancarie_data.payment_term_30_60_90_net_riba_3
 msgid "Ri.ba. 3 payment - 30 days - 60 days - 90 days - Same day of Mon"
 msgstr "Ri.ba. 30/60/90 GG.D.F."
 
-#. module: sbf_config
-#: model:account.payment.term,note:sbf_config.payment_term_60_90_120_net_riba_3
+#. module: l10n_it_ricevute_bancarie_data
+#: model:account.payment.term,note:l10n_it_ricevute_bancarie_data.payment_term_60_90_120_net_riba_3
 msgid "Ri.ba. 3 payment - 60 days - 90 days - 120 days - Same day of Month"
 msgstr "Ri.ba. 60/90/120 GG.D.F."
 
-#. module: sbf_config
-#: model:account.payment.term,name:sbf_config.payment_term_90_days_10_monthly_riba_1
-#: model:account.payment.term,note:sbf_config.payment_term_90_days_10_monthly_riba_1
+#. module: l10n_it_ricevute_bancarie_data
+#: model:account.payment.term,name:l10n_it_ricevute_bancarie_data.payment_term_90_days_10_monthly_riba_1
+#: model:account.payment.term,note:l10n_it_ricevute_bancarie_data.payment_term_90_days_10_monthly_riba_1
 msgid "Ri.ba. 90 Days End Month - Day 10 of Month"
 msgstr "Ri.ba. 90 GG 10 MS"
 
-#. module: sbf_config
-#: model:account.payment.term,note:sbf_config.payment_term_30_60_90_net_riba_3
+#. module: l10n_it_ricevute_bancarie_data
+#: model:account.payment.term,note:l10n_it_ricevute_bancarie_data.payment_term_30_60_90_net_riba_3
 msgid "Ri.ba. 3 payment - 30 days - 60 days - 90 days - Same day of Month"
 msgstr "Ri.ba. 30/60/90 GG.D.F."
 
-#. module: sbf_config
-#: model:account.payment.term,name:sbf_config.payment_term_60_days_5_monthly_riba_1
-#: model:account.payment.term,note:sbf_config.payment_term_60_days_5_monthly_riba_1
+#. module: l10n_it_ricevute_bancarie_data
+#: model:account.payment.term,name:l10n_it_ricevute_bancarie_data.payment_term_60_days_5_monthly_riba_1
+#: model:account.payment.term,note:l10n_it_ricevute_bancarie_data.payment_term_60_days_5_monthly_riba_1
 msgid "Ri.ba. 60 Days End Month - Day 5 of Month"
 msgstr "Ri.ba. 60 GG 5 MS"
 
-#. module: sbf_config
-#: model:account.payment.term,name:sbf_config.payment_term_30_days_riba_1
-#: model:account.payment.term,note:sbf_config.payment_term_30_days_riba_1
+#. module: l10n_it_ricevute_bancarie_data
+#: model:account.payment.term,name:l10n_it_ricevute_bancarie_data.payment_term_30_days_riba_1
+#: model:account.payment.term,note:l10n_it_ricevute_bancarie_data.payment_term_30_days_riba_1
 msgid "Ri.ba. 30 Days - End of Month"
 msgstr "Ri.ba. 30 GG.F.M."
 
-#. module: sbf_config
-#: model:account.payment.term,name:sbf_config.payment_term_30_60_90_days_riba_3
-#: model:account.payment.term,note:sbf_config.payment_term_30_60_90_days_riba_3
+#. module: l10n_it_ricevute_bancarie_data
+#: model:account.payment.term,name:l10n_it_ricevute_bancarie_data.payment_term_30_60_90_days_riba_3
+#: model:account.payment.term,note:l10n_it_ricevute_bancarie_data.payment_term_30_60_90_days_riba_3
 msgid "Ri.ba. 3 payment - 30 days - 60 days - 90 days - End of Month"
 msgstr "Ri.ba. 30/60/90 GG.F.M."
 
-#. module: sbf_config
-#: model:account.payment.term,name:sbf_config.payment_term_90_120_days_riba_2
-#: model:account.payment.term,note:sbf_config.payment_term_90_120_days_riba_2
+#. module: l10n_it_ricevute_bancarie_data
+#: model:account.payment.term,name:l10n_it_ricevute_bancarie_data.payment_term_90_120_days_riba_2
+#: model:account.payment.term,note:l10n_it_ricevute_bancarie_data.payment_term_90_120_days_riba_2
 msgid "Ri.ba. 2 payment - 90 days - 120 days - End of Month"
 msgstr "Ri.ba. 90/120 GG.F.M."
 
-#. module: sbf_config
-#: model:account.payment.term,name:sbf_config.payment_term_120_days_riba_1
-#: model:account.payment.term,note:sbf_config.payment_term_120_days_riba_1
+#. module: l10n_it_ricevute_bancarie_data
+#: model:account.payment.term,name:l10n_it_ricevute_bancarie_data.payment_term_120_days_riba_1
+#: model:account.payment.term,note:l10n_it_ricevute_bancarie_data.payment_term_120_days_riba_1
 msgid "Ri.ba. 120 Days - End of Month"
 msgstr "Ri.ba. 120 GG.F.M."
 
-#. module: sbf_config
-#: model:account.payment.term,name:sbf_config.payment_term_90_120_days_10_monthly_riba_2
+#. module: l10n_it_ricevute_bancarie_data
+#: model:account.payment.term,name:l10n_it_ricevute_bancarie_data.payment_term_90_120_days_10_monthly_riba_2
 msgid "Ri.ba. 2 payment - 90 days - 120 Days End Month - Day 10 of Mont"
 msgstr "Ri.ba. 90/120 GG 10 MS"
 
-#. module: sbf_config
-#: model:account.payment.term,name:sbf_config.payment_term_60_days_15_monthly_riba_1
-#: model:account.payment.term,note:sbf_config.payment_term_60_days_15_monthly_riba_1
+#. module: l10n_it_ricevute_bancarie_data
+#: model:account.payment.term,name:l10n_it_ricevute_bancarie_data.payment_term_60_days_15_monthly_riba_1
+#: model:account.payment.term,note:l10n_it_ricevute_bancarie_data.payment_term_60_days_15_monthly_riba_1
 msgid "Ri.ba. 60 Days End Month - Day 15 of Month"
 msgstr "Ri.ba. 60 GG 15 MS"
 
-#. module: sbf_config
-#: model:account.payment.term,note:sbf_config.payment_term_30_60_90_days_10_monthly_riba_3
+#. module: l10n_it_ricevute_bancarie_data
+#: model:account.payment.term,note:l10n_it_ricevute_bancarie_data.payment_term_30_60_90_days_10_monthly_riba_3
 msgid "Ri.ba. 3 payment - 30 days - 60 days - 90 Days End Month - Day 10 of Month"
 msgstr "Ri.ba. 30/60/90 GG 10 MS"
 
-#. module: sbf_config
-#: model:account.payment.term,name:sbf_config.payment_term_60_days_riba_1
-#: model:account.payment.term,note:sbf_config.payment_term_60_days_riba_1
+#. module: l10n_it_ricevute_bancarie_data
+#: model:account.payment.term,name:l10n_it_ricevute_bancarie_data.payment_term_60_days_riba_1
+#: model:account.payment.term,note:l10n_it_ricevute_bancarie_data.payment_term_60_days_riba_1
 msgid "Ri.ba. 60 Days - End of Month"
 msgstr "Ri.ba. 60 GG.F.M."
 
-#. module: sbf_config
-#: model:account.payment.term,note:sbf_config.payment_term_60_90_120_days_10_monthly_riba_3
+#. module: l10n_it_ricevute_bancarie_data
+#: model:account.payment.term,note:l10n_it_ricevute_bancarie_data.payment_term_60_90_120_days_10_monthly_riba_3
 msgid "Ri.ba. 3 payment - 60 days - 90 days - 120 Days End Month - Day 10 of Month"
 msgstr "Ri.ba. 60/90/120 GG 10 MS"
 
-#. module: sbf_config
-#: model:account.payment.term,name:sbf_config.payment_term_60_90_days_10_monthly_riba_2
-#: model:account.payment.term,note:sbf_config.payment_term_60_90_days_10_monthly_riba_2
+#. module: l10n_it_ricevute_bancarie_data
+#: model:account.payment.term,name:l10n_it_ricevute_bancarie_data.payment_term_60_90_days_10_monthly_riba_2
+#: model:account.payment.term,note:l10n_it_ricevute_bancarie_data.payment_term_60_90_days_10_monthly_riba_2
 msgid "Ri.ba. 2 payment - 60 days - 90 Days End Month - Day 10 of Month"
 msgstr "Ri.ba. 60/90 GG 10 MS"
 
-#. module: sbf_config
-#: model:account.payment.term,name:sbf_config.payment_term_60_90_120_net_riba_3
+#. module: l10n_it_ricevute_bancarie_data
+#: model:account.payment.term,name:l10n_it_ricevute_bancarie_data.payment_term_60_90_120_net_riba_3
 msgid "Ri.ba. 3 payment - 60 days - 90 days - 120 days - Same day of Mo"
 msgstr "Ri.ba. 60/90/120 GG.D.F."
 
-#. module: sbf_config
-#: model:account.payment.term,name:sbf_config.payment_term_60_90_days_riba_2
-#: model:account.payment.term,note:sbf_config.payment_term_60_90_days_riba_2
+#. module: l10n_it_ricevute_bancarie_data
+#: model:account.payment.term,name:l10n_it_ricevute_bancarie_data.payment_term_60_90_days_riba_2
+#: model:account.payment.term,note:l10n_it_ricevute_bancarie_data.payment_term_60_90_days_riba_2
 msgid "Ri.ba. 2 payment - 60 days - 90 days - End of Month"
 msgstr "Ri.ba. 60/90 GG.F.M."
 
-#. module: sbf_config
-#: model:account.payment.term,name:sbf_config.payment_term_30_net_riba_1
-#: model:account.payment.term,note:sbf_config.payment_term_30_net_riba_1
+#. module: l10n_it_ricevute_bancarie_data
+#: model:account.payment.term,name:l10n_it_ricevute_bancarie_data.payment_term_30_net_riba_1
+#: model:account.payment.term,note:l10n_it_ricevute_bancarie_data.payment_term_30_net_riba_1
 msgid "Ri.ba. 30 Days - Same day of Month"
 msgstr "Ri.ba. 30 GG.D.F."
 
-#. module: sbf_config
-#: model:account.payment.term,name:sbf_config.payment_term_30_60_90_days_10_monthly_riba_3
+#. module: l10n_it_ricevute_bancarie_data
+#: model:account.payment.term,name:l10n_it_ricevute_bancarie_data.payment_term_30_60_90_days_10_monthly_riba_3
 msgid "Ri.ba. 3 payment - 30 days - 60 days - 90 Days End Month - Day 1"
 msgstr "Ri.ba. 30/60/90 GG 10 MS"
 
-#. module: sbf_config
-#: model:account.payment.term,name:sbf_config.payment_term_30_60_net_riba_2
-#: model:account.payment.term,note:sbf_config.payment_term_30_60_net_riba_2
+#. module: l10n_it_ricevute_bancarie_data
+#: model:account.payment.term,name:l10n_it_ricevute_bancarie_data.payment_term_30_60_net_riba_2
+#: model:account.payment.term,note:l10n_it_ricevute_bancarie_data.payment_term_30_60_net_riba_2
 msgid "Ri.ba. 2 payment - 30 days - 60 days - Same day of Month"
 msgstr "Ri.ba. 30/60 GG.D.F."
 
-#. module: sbf_config
-#: model:account.payment.term,name:sbf_config.payment_term_60_90_net_riba_2
-#: model:account.payment.term,note:sbf_config.payment_term_60_90_net_riba_2
+#. module: l10n_it_ricevute_bancarie_data
+#: model:account.payment.term,name:l10n_it_ricevute_bancarie_data.payment_term_60_90_net_riba_2
+#: model:account.payment.term,note:l10n_it_ricevute_bancarie_data.payment_term_60_90_net_riba_2
 msgid "Ri.ba. 2 payment - 60 days - 90 days - Same day of Month"
 msgstr "Ri.ba. 60/90 GG.D.F."
