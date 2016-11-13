@@ -269,6 +269,152 @@
             <field eval="payment_term_120_days_riba_1" name="payment_id"/>
         </record>
 
+        <record id="payment_term_180_days_riba_1" model="account.payment.term">
+            <field name="name">Ri.ba. 180 Days - End of Month</field>
+            <field name="note">Ri.ba. 180 Days - End of Month</field>
+            <field name="riba">True</field>
+            <field name="type">RB</field>
+        </record>
+        <record id="1_payment_term_180_days_riba_line" model="account.payment.term.line">
+            <field name="value">balance</field>
+            <field eval="1" name="sequence"/>
+            <field eval="6" name="months"/>
+            <field eval="0" name="days"/>
+            <field eval="-1" name="days2"/>
+            <field name="type">RB</field>
+            <field eval="payment_term_180_days_riba_1" name="payment_id"/>
+        </record>
+
+        <record id="payment_term_30order_30_days_riba" model="account.payment.term">
+            <field name="name">30% order, balance Ri.ba. 30 days - End of Month</field>
+            <field name="note">30% order, balance Ri.ba. 30 days - End of Month</field>
+            <field name="riba">True</field>
+            <field name="type">RB</field>
+        </record>
+        <record id="payment_term_30order_30_days_riba_line1" model="account.payment.term.line">
+            <field name="value">procent</field>
+            <field eval="1" name="sequence"/>
+            <field eval="0.30" name="value_amount"/>
+            <field eval="0" name="months"/>
+            <field eval="0" name="days"/>
+            <field eval="0" name="days2"/>
+            <field name="type">RD</field>
+            <field eval="payment_term_30order_30_days_riba" name="payment_id"/>
+        </record>
+        <record id="payment_term_30order_30_days_riba_line2" model="account.payment.term.line">
+            <field name="value">balance</field>
+            <field eval="2" name="sequence"/>
+            <field eval="1" name="months"/>
+            <field eval="0" name="days"/>
+            <field eval="-1" name="days2"/>
+            <field name="type">RB</field>
+            <field eval="payment_term_30order_30_days_riba" name="payment_id"/>
+        </record>
+
+        <record id="payment_term_50order_30_days_riba" model="account.payment.term">
+            <field name="name">50% order, balance Ri.ba. 30 days - End of Month</field>
+            <field name="note">50% order, balance Ri.ba. 30 days - End of Month</field>
+            <field name="riba">True</field>
+            <field name="type">RB</field>
+        </record>
+        <record id="payment_term_50order_30_days_riba_line1" model="account.payment.term.line">
+            <field name="value">procent</field>
+            <field eval="1" name="sequence"/>
+            <field eval="0.50" name="value_amount"/>
+            <field eval="0" name="months"/>
+            <field eval="0" name="days"/>
+            <field eval="0" name="days2"/>
+            <field name="type">RD</field>
+            <field eval="payment_term_50order_30_days_riba" name="payment_id"/>
+        </record>
+        <record id="payment_term_50order_30_days_riba_line2" model="account.payment.term.line">
+            <field name="value">balance</field>
+            <field eval="2" name="sequence"/>
+            <field eval="1" name="months"/>
+            <field eval="0" name="days"/>
+            <field eval="-1" name="days2"/>
+            <field name="type">RB</field>
+            <field eval="payment_term_50order_30_days_riba" name="payment_id"/>
+        </record>
+
+        <record id="payment_term_50order_60_days_riba" model="account.payment.term">
+            <field name="name">50% order, balance Ri.ba. 60 days - End of Month</field>
+            <field name="note">50% order, balance Ri.ba. 60 days - End of Month</field>
+            <field name="riba">True</field>
+            <field name="type">RB</field>
+        </record>
+        <record id="payment_term_50order_60_days_riba_line1" model="account.payment.term.line">
+            <field name="value">procent</field>
+            <field eval="1" name="sequence"/>
+            <field eval="0.50" name="value_amount"/>
+            <field eval="0" name="months"/>
+            <field eval="0" name="days"/>
+            <field eval="0" name="days2"/>
+            <field name="type">RD</field>
+            <field eval="payment_term_50order_60_days_riba" name="payment_id"/>
+        </record>
+        <record id="payment_term_50order_60_days_riba_line2" model="account.payment.term.line">
+            <field name="value">balance</field>
+            <field eval="2" name="sequence"/>
+            <field eval="2" name="months"/>
+            <field eval="0" name="days"/>
+            <field eval="-1" name="days2"/>
+            <field name="type">RB</field>
+            <field eval="payment_term_50order_60_days_riba" name="payment_id"/>
+        </record>
+
+        <record id="payment_term_50order_90_days_riba" model="account.payment.term">
+            <field name="name">50% order, balance Ri.ba. 90 days - End of Month</field>
+            <field name="note">50% order, balance Ri.ba. 90 days - End of Month</field>
+            <field name="riba">True</field>
+            <field name="type">RB</field>
+        </record>
+        <record id="payment_term_50order_90_days_riba_line1" model="account.payment.term.line">
+            <field name="value">procent</field>
+            <field eval="1" name="sequence"/>
+            <field eval="0.50" name="value_amount"/>
+            <field eval="0" name="months"/>
+            <field eval="0" name="days"/>
+            <field eval="0" name="days2"/>
+            <field name="type">RD</field>
+            <field eval="payment_term_50order_90_days_riba" name="payment_id"/>
+        </record>
+        <record id="payment_term_50order_90_days_riba_line2" model="account.payment.term.line">
+            <field name="value">balance</field>
+            <field eval="2" name="sequence"/>
+            <field eval="3" name="months"/>
+            <field eval="0" name="days"/>
+            <field eval="-1" name="days2"/>
+            <field name="type">RB</field>
+            <field eval="payment_term_50order_90_days_riba" name="payment_id"/>
+        </record>
+
+        <record id="payment_term_50confirm_60_days_riba" model="account.payment.term">
+            <field name="name">50% confirm, balance Ri.ba. 60 days - End of Month</field>
+            <field name="note">50% confirm, balance Ri.ba. 60 days - End of Month</field>
+            <field name="riba">True</field>
+            <field name="type">RB</field>
+        </record>
+        <record id="payment_term_50confirm_60_days_riba_line1" model="account.payment.term.line">
+            <field name="value">procent</field>
+            <field eval="1" name="sequence"/>
+            <field eval="0.50" name="value_amount"/>
+            <field eval="0" name="months"/>
+            <field eval="0" name="days"/>
+            <field eval="0" name="days2"/>
+            <field name="type">RD</field>
+            <field eval="payment_term_50confirm_60_days_riba" name="payment_id"/>
+        </record>
+        <record id="payment_term_50confirm_60_days_riba_line2" model="account.payment.term.line">
+            <field name="value">balance</field>
+            <field eval="2" name="sequence"/>
+            <field eval="2" name="months"/>
+            <field eval="0" name="days"/>
+            <field eval="-1" name="days2"/>
+            <field name="type">RB</field>
+            <field eval="payment_term_50confirm_60_days_riba" name="payment_id"/>
+        </record>
+
         <record id="payment_term_30_60_days_riba_2" model="account.payment.term">
             <field name="name">Ri.ba. 2 payment - 30 days - 60 days - End of Month</field>
             <field name="note">Ri.ba. 2 payment - 30 days - 60 days - End of Month</field>
@@ -345,6 +491,32 @@
             <field eval="-1" name="days2"/>
             <field name="type">RB</field>
             <field eval="payment_term_90_120_days_riba_2" name="payment_id"/>
+        </record>
+
+        <record id="payment_term_180_210_days_riba_2" model="account.payment.term">
+            <field name="name">Ri.ba. 2 payment - 180 days - 210 days - End of Month</field>
+            <field name="note">Ri.ba. 2 payment - 180 days - 210 days - End of Month</field>
+            <field name="riba">True</field>
+            <field name="type">RB</field>
+        </record>
+        <record id="payment_term_180_210_days_riba_2_line1" model="account.payment.term.line">
+            <field name="value">procent</field>
+            <field eval="1" name="sequence"/>
+            <field eval="0.50" name="value_amount"/>
+            <field eval="6" name="months"/>
+            <field eval="0" name="days"/>
+            <field eval="-1" name="days2"/>
+            <field name="type">RB</field>
+            <field eval="payment_term_180_210_days_riba_2" name="payment_id"/>
+        </record>
+        <record id="payment_term_180_210_days_riba_2_line2" model="account.payment.term.line">
+            <field name="value">balance</field>
+            <field eval="2" name="sequence"/>
+            <field eval="7" name="months"/>
+            <field eval="0" name="days"/>
+            <field eval="-1" name="days2"/>
+            <field name="type">RB</field>
+            <field eval="payment_term_180_210_days_riba_2" name="payment_id"/>
         </record>
 
         <record id="payment_term_30_60_90_days_riba_3" model="account.payment.term">
