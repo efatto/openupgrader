@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 #
-#    Copyright (C) 2015 SimplERP srl (<http://www.simplerp.it>).
+#    Copyright (C) 2016 Sergio Corato (<http://www.librerp.it>)
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU Affero General Public License as published
@@ -18,14 +18,12 @@
 #
 #
 {
-    'name': 'Configurazione ricevute bancarie',
-    'version': '3.0.0.7',
+    'name': 'Termini di pagamento per ricevute bancarie',
+    'version': '8.0.1.0',
     'category': 'Localisation/Italy',
-    'description': """
-    Ri.ba. sbf configuration for Italy.
-""",
+    'description': """Ri.ba. sbf data.""",
     'author': 'Corato Sergio',
-    'website': 'http://www.simplerp.it',
+    'website': 'http://www.efatto.it',
     'license': 'AGPL-3',
     "depends": [
         'l10n_it_ricevute_bancarie',
