@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<openerp>
+<data>
+
+<record model="ir.ui.view" id="ddt_stock_picking_package_preparation_form_number_done">
+    <field name="name">ddt.stock.picking.package.preparation.form.number.done</field>
+    <field name="model">stock.picking.package.preparation</field>
+    <field name="inherit_id" ref="l10n_it_ddt_force_number.ddt_stock_picking_package_preparation_form_force_number"/>
+    <field name="arch" type="xml">
+        <field name="ddt_number" position="attributes">
+            <attribute name="attrs">{'invisible': [('ddt_number', '=', ''), ('ddt_type_id', '=', False),('state', 'not in', ['draft', 'done'])], 'readonly': [('state', 'not in', ['draft', 'done'])]}</attribute>
+        </field>
+    </field>
+</record>
+
+</data>
+</openerp>
