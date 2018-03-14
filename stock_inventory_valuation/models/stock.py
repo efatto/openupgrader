@@ -71,6 +71,7 @@ class StockInventory(models.Model):
         qty_to_go = line.product_qty
         older_qty = line.product_qty
         # get only move with lot of inventory line
+        flag = False
         for move in move_ids:
             for quant in move.quant_ids.filtered(
                 lambda x: x.lot_id == line.prod_lot_id
@@ -100,6 +101,7 @@ class StockInventory(models.Model):
                         tuples.append((
                             move.product_id.id, qty_to_go, price_unit,
                             qty_from * qty_to_go / product_qty))
+                        flag = True
                         break
                 elif self.valuation_type == 'lifo':
                     # sale
@@ -119,5 +121,8 @@ class StockInventory(models.Model):
                             tuples.append((move.product_id.id, qty_to_go,
                                            price_unit,
                                            qty_from * qty_to_go / product_qty))
+                            flag = True
                             break
+            if flag:
+                break
         return tuples
