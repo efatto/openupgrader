@@ -28,6 +28,7 @@
     'website': 'http://www.efatto.it',
     'license': 'AGPL-3',
     "depends": [
+        'purchase_order_price_unit_net',
         'stock_inventory_date',
         'stock_inventory_preparation_filter',
     ],

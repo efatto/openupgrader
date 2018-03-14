@@ -44,74 +44,80 @@ class StockInventory(models.Model):
         move_obj = self.env['stock.move']
         if self.valuation_type == 'fifo':
             # search for incoming moves
-            move_in_ids = move_obj.search([
+            move_ids = move_obj.search([
                 ('company_id', '=', self.env.user.company_id.id),
-                ('date', '<=', self.date_inventory),
+                ('date', '<=', self.date_inventory or self.date),
                 ('state', '=', 'done'),
+                ('product_id', '=', line.product_id.id),
                 ('location_id.usage', '!=', 'internal'),
                 ('location_dest_id.usage', '=', 'internal'),
-                ('product_id', '=', line.product_id.id),
-                ('restrict_lot_id', '=', line.prod_lot_id.id if
-                line.prod_lot_id else False)
             ], order=order)
         else:
             # search for incoming and outgoing moves
-            move_in_ids = move_obj.search([
+            move_ids = move_obj.search([
                 ('company_id', '=', self.env.user.company_id.id),
-                ('date', '<=', self.date_inventory),
+                ('date', '<=', self.date_inventory or self.date),
                 ('state', '=', 'done'),
+                ('product_id', '=', line.product_id.id),
                 '|',
                 ('location_id.usage', '=', 'internal'),
                 ('location_dest_id.usage', '=', 'internal'),
-                ('product_id', '=', self.product_id.id),
-                ('restrict_lot_id', '=', line.prod_lot_id.id if
-                line.prod_lot_id else False)
             ], order=order)
+        res = self._get_tuples(line, move_ids)
+        return res
+
+    def _get_tuples(self, line, move_ids):
         tuples = []
         qty_to_go = line.product_qty
         older_qty = line.product_qty
-        for move in move_in_ids:
-            # Convert to UoM of product each time
-            uom_from = move.product_uom.id
-            qty_from = move.product_qty
-            product_qty = self.env['product.uom']._compute_qty(
-                uom_from, qty_from, move.product_id.uom_id.id)
-            # Get price from purchase line
-            price_unit = 0
-            if move.purchase_line_id:
-                # get price from purchase line
-                price_unit = move.purchase_line_id.price_unit
-            else:
-                # Get price from product, move is an inventory or not linked
-                # to a purchase (income move created and even invoiced, but
-                # price is not usable here)
-                price_unit = move.product_id.standard_price
-
-            if self.valuation_type == 'fifo':
-                if qty_to_go - product_qty >= 0:
-                    tuples.append((move.product_id.id, product_qty,
-                                   price_unit, qty_from,), )
-                    qty_to_go -= product_qty
+        # get only move with lot of inventory line
+        for move in move_ids:
+            for quant in move.quant_ids.filtered(
+                lambda x: x.lot_id == line.prod_lot_id
+            ):
+                # Convert to UoM of product each time
+                uom_from = move.product_uom.id
+                qty_from = quant.qty
+                product_qty = self.env['product.uom']._compute_qty(
+                    uom_from, qty_from, move.product_id.uom_id.id)
+                # Get price from purchase line
+                price_unit = 0
+                if move.purchase_line_id:
+                    # get price from purchase line
+                    price_unit = move.purchase_line_id.price_unit_net
                 else:
-                    tuples.append((
-                                  move.product_id.id, qty_to_go, price_unit,
-                                  qty_from * qty_to_go / product_qty,), )
-                    break
-            elif self.valuation_type == 'lifo':
-                if move.location_id.usage == 'internal' and \
-                        move.location_dest_id.usage != 'internal':  # sale
-                    older_qty += product_qty
-                if move.location_id.usage != 'internal' and \
-                        move.location_dest_id.usage == 'internal':  # purchase
-                    older_qty -= product_qty
-                    if qty_to_go > older_qty > 0:
-                        tuples.append((move.product_id.id,
-                                       (qty_to_go - older_qty), price_unit,
-                                       qty_from), )
-                        qty_to_go = older_qty
-                    elif qty_to_go > older_qty <= 0:
-                        tuples.append((move.product_id.id, qty_to_go,
-                                       price_unit,
-                                       qty_from * qty_to_go / product_qty), )
+                    # Get price from product, move is an inventory or not link
+                    # to a purchase (income move created and even invoiced, but
+                    # price is not usable here)
+                    price_unit = move.product_id.standard_price
+
+                if self.valuation_type == 'fifo':
+                    if qty_to_go - product_qty >= 0:
+                        tuples.append((move.product_id.id, product_qty,
+                                       price_unit, qty_from))
+                        qty_to_go -= product_qty
+                    else:
+                        tuples.append((
+                            move.product_id.id, qty_to_go, price_unit,
+                            qty_from * qty_to_go / product_qty))
                         break
+                elif self.valuation_type == 'lifo':
+                    # sale
+                    if move.location_id.usage == 'internal' and \
+                            move.location_dest_id.usage != 'internal':
+                        older_qty += product_qty
+                    # purchase
+                    if move.location_id.usage != 'internal' and \
+                            move.location_dest_id.usage == 'internal':
+                        older_qty -= product_qty
+                        if qty_to_go > older_qty > 0:
+                            tuples.append((move.product_id.id,
+                                           (qty_to_go - older_qty), price_unit,
+                                           qty_from))
+                            qty_to_go = older_qty
+                        elif qty_to_go > older_qty <= 0:
+                            tuples.append((move.product_id.id, qty_to_go,
+                                           price_unit,
+                                           qty_from * qty_to_go / product_qty))
+                            break
         return tuples
