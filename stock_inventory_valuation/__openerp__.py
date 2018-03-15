@@ -22,7 +22,7 @@
     'version': '8.0.1.0.0',
     'category': 'other',
     'description': """
-    Stock inventory valuation by FIFO, LIFO, of AVERAGE by date.
+    Stock inventory valuation by FIFO, LIFO, AVERAGE or STANDARD by date.
     """,
     'author': 'Sergio Corato',
     'website': 'http://www.efatto.it',
