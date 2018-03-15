@@ -21,28 +21,50 @@ class StockInventory(models.Model):
         [('fifo', 'FIFO'),
          ('lifo', 'LIFO'),
          ('average', 'AVERAGE'),
+         ('standard', 'STANDARD')
         ], 'Price valuation')
 
     @api.multi
     def product_recalculate_value(self):
         for inv in self:
-            for line in inv.line_ids:
-                res = self.price_calculation(line)
-                price_amount = amount = 0
-                for match in res:
-                    price_amount += match[1] * match[2]
-                    amount += match[1]
-                if amount != 0.0:
+            if inv.valuation_type == 'standard':
+                for line in inv.line_ids:
                     line.write({
-                        'valuation_price_unit': price_amount / amount,
-                        'valuation_price_subtotal': price_amount,
+                        'valuation_price_unit': line.product_id.standard_price,
+                        'valuation_price_subtotal':
+                            line.product_id.standard_price * line.product_qty,
                     })
+            elif inv.valuation_type == 'average':
+                for line in inv.line_ids:
+                    res = self.price_calculation(line)
+                    price_amount = amount = 0
+                    for match in res:
+                        price_amount += match[1] * match[2]
+                        amount += match[1]
+                    if amount != 0.0:
+                        line.write({
+                            'valuation_price_unit': price_amount / amount,
+                            'valuation_price_subtotal': price_amount / amount
+                            * line.product_qty,
+                        })
+            else:
+                for line in inv.line_ids:
+                    res = self.price_calculation(line)
+                    price_amount = amount = 0
+                    for match in res:
+                        price_amount += match[1] * match[2]
+                        amount += match[1]
+                    if amount != 0.0:
+                        line.write({
+                            'valuation_price_unit': price_amount / amount,
+                            'valuation_price_subtotal': price_amount,
+                        })
 
     @api.multi
     def price_calculation(self, line):
         order = 'date desc, id desc'
         move_obj = self.env['stock.move']
-        if self.valuation_type == 'fifo':
+        if self.valuation_type in ['fifo', 'average']:
             # search for incoming moves
             move_ids = move_obj.search([
                 ('company_id', '=', self.env.user.company_id.id),
@@ -123,6 +145,9 @@ class StockInventory(models.Model):
                                            qty_from * qty_to_go / product_qty))
                             flag = True
                             break
+                elif self.valuation_type == 'average':
+                    tuples.append((move.product_id.id, product_qty,
+                                   price_unit, qty_from))
             if flag:
                 break
         return tuples
