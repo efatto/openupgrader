@@ -23,7 +23,7 @@ msgstr "COSTO MEDIO"
 #. module: stock_inventory_valuation
 #: view:stock.inventory:stock_inventory_valuation.view_inventory_form_date_valuation
 msgid "Calculate price valuation"
-msgstr "Metodo di valutazine prezzi"
+msgstr "Calcola costi con metodo:"
 
 #. module: stock_inventory_valuation
 #: selection:stock.inventory,valuation_type:0
