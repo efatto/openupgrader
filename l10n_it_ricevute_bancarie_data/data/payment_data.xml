@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<odoo>
+<odoo noupdate="1">
 
     <record id="payment_term_30_net_riba_1" model="account.payment.term">
         <field name="name">Ri.ba. 30 Days - Same day of Month</field>
