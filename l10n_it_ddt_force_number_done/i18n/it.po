@@ -14,14 +14,3 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: \n"
 "Plural-Forms: \n"
-
-#. module: l10n_it_ddt_force_number_done
-#: model:ir.model,name:l10n_it_ddt_force_number_done.model_stock_picking_package_preparation
-msgid "Package Preparation"
-msgstr "DDT"
-
-#. module: l10n_it_ddt_force_number_done
-#: view:stock.picking.package.preparation:l10n_it_ddt_force_number_done.ddt_stock_picking_package_preparation_form_number_done
-msgid "{'invisible': [('ddt_number', '=', ''), ('ddt_type_id', '=', False),('state', 'not in', ['draft', 'done'])], 'readonly': [('state', 'not in', ['draft', 'done'])]}"
-msgstr "{'invisible': [('ddt_number', '=', ''), ('ddt_type_id', '=', False),('state', 'not in', ['draft', 'done'])], 'readonly': [('state', 'not in', ['draft', 'done'])]}"
-
