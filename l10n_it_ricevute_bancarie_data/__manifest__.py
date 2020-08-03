@@ -3,7 +3,7 @@
 
 {
     'name': 'Termini di pagamento per ricevute bancarie',
-    'version': '12.0.1.0.1',
+    'version': '12.0.1.0.2',
     'category': 'Localisation/Italy',
     'description': 'Ri.ba. sbf data',
     'author': 'Corato Sergio',
@@ -11,6 +11,7 @@
     'license': 'LGPL-3',
     'depends': [
         'l10n_it_ricevute_bancarie',
+        'l10n_it_fiscal_payment_term',
     ],
     'data': [
         'data/payment_data.xml',
