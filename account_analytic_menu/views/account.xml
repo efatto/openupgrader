@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem action="analytic.action_analytic_account_form"
+        string="Analytic Accounts"
+        id="account_analytic_account_list"
+        parent="account.menu_finance_receivables"
+        groups="analytic.group_analytic_accounting"
+        sequence="100"/>
+</odoo>
