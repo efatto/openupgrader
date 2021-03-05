@@ -126,7 +126,7 @@ class StockInventory(models.Model):
                                     invoice.company_id.currency_id,
                                     invoice.company_id,
                                     invoice.date or fields.Date.today())
-                                / inv_line.quantity)
+                                / (inv_line.quantity if inv_line.quantity != 0 else 1))
                     else:
                         # get price from purchase line
                         purchase = move.purchase_line_id.order_id
@@ -135,8 +135,12 @@ class StockInventory(models.Model):
                                 move.purchase_line_id.price_subtotal,
                                 purchase.company_id.currency_id,
                                 purchase.company_id,
-                                purchase.date_order or fields.Date.today()) /
-                            move.purchase_line_id.product_qty)
+                                purchase.date_order or fields.Date.today()
+                            ) / (
+                                    move.purchase_line_id.product_qty if
+                                    move.purchase_line_id.product_qty != 0 else 1
+                                )
+                        )
                 else:
                     # Get price from product, move is an inventory or not link
                     # to a purchase (income move created and even invoiced, but
