@@ -1,0 +1,32 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+#	* stock_inventory_valuation_report_py3o
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 12.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2021-03-05 14:33+0000\n"
+"PO-Revision-Date: 2021-03-05 14:33+0000\n"
+"Last-Translator: <>\n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Plural-Forms: \n"
+
+#. module: stock_inventory_valuation_report_py3o
+#: model:ir.model,name:stock_inventory_valuation_report_py3o.model_stock_inventory
+msgid "Inventory"
+msgstr "Inventario"
+
+#. module: stock_inventory_valuation_report_py3o
+#: model:ir.actions.report,name:stock_inventory_valuation_report_py3o.stock_inventory_valuation_report_grouped_ods
+msgid "Inventory Valuation Grouped (ODS)"
+msgstr "Inventario Valorizzato Raggruppato (ODS)"
+
+#. module: stock_inventory_valuation_report_py3o
+#: model:ir.actions.report,name:stock_inventory_valuation_report_py3o.stock_inventory_valuation_report_py3o
+msgid "Inventory Valuation per Location (ODS)"
+msgstr "Inventario Valorizzato per Punto di Stoccaggio (ODS)"
+
