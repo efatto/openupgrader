@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 8.0\n"
+"Project-Id-Version: Odoo Server 12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2018-03-15 15:38+0000\n"
-"PO-Revision-Date: 2018-03-15 15:38+0000\n"
+"POT-Creation-Date: 2021-03-05 10:46+0000\n"
+"PO-Revision-Date: 2021-03-05 10:46+0000\n"
 "Last-Translator: <>\n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -21,14 +21,14 @@ msgid "AVERAGE"
 msgstr "COSTO MEDIO"
 
 #. module: stock_inventory_valuation
-#: view:stock.inventory:stock_inventory_valuation.view_inventory_form_date_valuation
+#: model_terms:ir.ui.view,arch_db:stock_inventory_valuation.view_inventory_form
 msgid "Compute prices with method:"
-msgstr "Calcola costi con metodo:"
+msgstr "Calcola costi con il metodo:"
 
 #. module: stock_inventory_valuation
 #: selection:stock.inventory,valuation_type:0
 msgid "FIFO"
-msgstr "FIFO"
+msgstr ""
 
 #. module: stock_inventory_valuation
 #: model:ir.model,name:stock_inventory_valuation.model_stock_inventory
@@ -38,27 +38,32 @@ msgstr "Inventario"
 #. module: stock_inventory_valuation
 #: model:ir.model,name:stock_inventory_valuation.model_stock_inventory_line
 msgid "Inventory Line"
-msgstr "Riga inventario"
+msgstr "Riga d'Inventario"
 
 #. module: stock_inventory_valuation
 #: selection:stock.inventory,valuation_type:0
 msgid "LIFO"
-msgstr "LIFO"
+msgstr ""
 
 #. module: stock_inventory_valuation
-#: field:stock.inventory,valuation_type:0
+#: selection:stock.inventory,valuation_type:0
+msgid "LIST_PRICE"
+msgstr "Prezzo di vendita"
+
+#. module: stock_inventory_valuation
+#: model:ir.model.fields,field_description:stock_inventory_valuation.field_stock_inventory__valuation_type
 msgid "Price valuation"
-msgstr "Metodo di valutazione prezzo"
+msgstr "Valutazione costo"
 
 #. module: stock_inventory_valuation
-#: field:stock.inventory.line,valuation_price_subtotal:0
+#: model:ir.model.fields,field_description:stock_inventory_valuation.field_stock_inventory_line__valuation_price_subtotal
 msgid "Recalculated subtotal price"
-msgstr "Costo totale ricalcolato"
+msgstr "Costo totale rivalutato"
 
 #. module: stock_inventory_valuation
-#: field:stock.inventory.line,valuation_price_unit:0
+#: model:ir.model.fields,field_description:stock_inventory_valuation.field_stock_inventory_line__valuation_price_unit
 msgid "Recalculated unit price"
-msgstr "Costo unitario ricalcolato"
+msgstr "Costo rivalutato"
 
 #. module: stock_inventory_valuation
 #: selection:stock.inventory,valuation_type:0
