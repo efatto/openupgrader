@@ -52,17 +52,17 @@ msgstr "Prezzo di vendita"
 
 #. module: stock_inventory_valuation
 #: model:ir.model.fields,field_description:stock_inventory_valuation.field_stock_inventory__valuation_type
-msgid "Price valuation"
+msgid "Cost valuation"
 msgstr "Valutazione costo"
 
 #. module: stock_inventory_valuation
 #: model:ir.model.fields,field_description:stock_inventory_valuation.field_stock_inventory_line__valuation_price_subtotal
-msgid "Recalculated subtotal price"
+msgid "Recalculated subtotal cost"
 msgstr "Costo totale rivalutato"
 
 #. module: stock_inventory_valuation
 #: model:ir.model.fields,field_description:stock_inventory_valuation.field_stock_inventory_line__valuation_price_unit
-msgid "Recalculated unit price"
+msgid "Recalculated unit cost"
 msgstr "Costo rivalutato"
 
 #. module: stock_inventory_valuation

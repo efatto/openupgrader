@@ -10,7 +10,7 @@
                 <field name="valuation_price_subtotal"/>
             </xpath>
             <field name="accounting_date" position="after">
-                <button name="product_recalculate_value" string="Compute prices with method:" type="object" attrs="{'invisible': [('state', 'in', ['draft', 'cancel'])]}"/>
+                <button name="product_recalculate_value" string="Compute costs with method:" type="object" attrs="{'invisible': [('state', 'in', ['draft', 'cancel'])]}"/>
                 <field name="valuation_type" nolabel="1" attrs="{'invisible': [('state', 'in', ['draft', 'cancel'])]}"/>
             </field>
         </field>

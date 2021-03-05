@@ -7,9 +7,9 @@ class StockInventoryLine(models.Model):
     _inherit = "stock.inventory.line"
 
     valuation_price_unit = fields.Float(
-        'Recalculated unit price')
+        'Recalculated unit cost')
     valuation_price_subtotal = fields.Float(
-        'Recalculated subtotal price')
+        'Recalculated subtotal cost')
 
 
 class StockInventory(models.Model):
@@ -21,7 +21,7 @@ class StockInventory(models.Model):
          ('average', 'AVERAGE'),
          ('standard', 'STANDARD'),
          ('list_price', 'LIST_PRICE')
-        ], 'Price valuation')
+        ], 'Cost valuation')
 
     @api.multi
     def product_recalculate_value(self):
