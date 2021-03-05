@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<openerp>
+  <data>
+        <record id="view_inventory_form_valuation" model="ir.ui.view">
+            <field name="name">view.inventory.form.valuation</field>
+            <field name="model">stock.inventory</field>
+            <field name="inherit_id" ref="stock.view_inventory_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//notebook/page[@string='Inventory Details']//field[@name='partner_id']" position="after">
+                    <field name="valuation_price_unit"/>
+                    <field name="valuation_price_subtotal"/>
+                </xpath>
+            </field>
+        </record>
+        <record id="view_inventory_form_date_valuation" model="ir.ui.view">
+            <field name="name">view.inventory.form.date.valuation</field>
+            <field name="model">stock.inventory</field>
+            <field name="inherit_id" ref="stock_inventory_date.view_inventory_form_date"/>
+            <field name="arch" type="xml">
+                <field name="date_inventory" position="after">
+                    <button name="product_recalculate_value" string="Compute prices with method:" type="object" attrs="{'invisible': [('state', 'in', ['draft', 'cancel'])]}"/>
+                    <field name="valuation_type" nolabel="1" attrs="{'invisible': [('state', 'in', ['draft', 'cancel'])]}"/>
+                </field>
+            </field>
+        </record>
+  </data>
+</openerp>
