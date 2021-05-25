@@ -4,6 +4,9 @@
         <field name="model">stock.move.line</field>
         <field name="inherit_id" ref="stock.view_move_line_tree"/>
         <field name="arch" type="xml">
+            <field name="date" position="before">
+                <field name="date_expected"/>
+            </field>
             <field name="qty_done" position="after">
                 <field name="product_uom_qty" string="Reserved Qty" sum="Total Reserved Qty"/>
             </field>
