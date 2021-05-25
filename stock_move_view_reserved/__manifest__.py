@@ -2,11 +2,11 @@
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html).
 
 {
-    'name': 'Stock move real qty in tree',
+    'name': 'Stock move reserved qty in tree',
     'version': '12.0.1.0.0',
     'category': 'other',
     'description': """
-    Show stock move real quantity in tree view
+    Show stock move reserved quantity and date in tree view.
     """,
     'author': 'Sergio Corato',
     'website': 'https://www.efatto.it',
