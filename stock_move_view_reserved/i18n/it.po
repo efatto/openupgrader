@@ -1,0 +1,37 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+#	* stock_move_view_reserved
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 12.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2021-05-25 13:09+0000\n"
+"PO-Revision-Date: 2021-05-25 13:09+0000\n"
+"Last-Translator: <>\n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Plural-Forms: \n"
+
+#. module: stock_move_view_reserved
+#: model_terms:ir.ui.view,arch_db:stock_move_view_reserved.stock_move_tree_qty_signed
+msgid "Real Qty"
+msgstr "Qtà Reale"
+
+#. module: stock_move_view_reserved
+#: model_terms:ir.ui.view,arch_db:stock_move_view_reserved.view_move_line_tree
+msgid "Reserved Qty"
+msgstr "Qtà Riservata"
+
+#. module: stock_move_view_reserved
+#: model_terms:ir.ui.view,arch_db:stock_move_view_reserved.stock_move_tree_qty_signed
+msgid "Total Qty"
+msgstr "Totale Qtà"
+
+#. module: stock_move_view_reserved
+#: model_terms:ir.ui.view,arch_db:stock_move_view_reserved.view_move_line_tree
+msgid "Total Reserved Qty"
+msgstr "Totale Qtà Riservata"
+
