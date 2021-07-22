@@ -42,7 +42,7 @@ class StockInventory(models.Model):
                     })
             elif inv.valuation_type == 'average':
                 for line in inv.line_ids:
-                    res = self.price_calculation(line)
+                    res = inv.price_calculation(line)
                     price_amount = 0
                     amount = 0
                     for match in res:
@@ -56,7 +56,7 @@ class StockInventory(models.Model):
                     })
             else:
                 for line in inv.line_ids:
-                    res = self.price_calculation(line)
+                    res = inv.price_calculation(line)
                     price_amount = 0
                     amount = 0
                     for match in res:
@@ -76,7 +76,7 @@ class StockInventory(models.Model):
         if self.valuation_type in ['fifo', 'average']:
             # search for incoming moves
             move_ids = move_obj.search([
-                ('company_id', '=', self.env.user.company_id.id),
+                ('company_id', '=', self.company_id.id),
                 ('date', '<=', self.accounting_date or self.date),
                 ('state', '=', 'done'),
                 ('product_id', '=', line.product_id.id),
@@ -86,7 +86,7 @@ class StockInventory(models.Model):
         else:
             # search for incoming and outgoing moves
             move_ids = move_obj.search([
-                ('company_id', '=', self.env.user.company_id.id),
+                ('company_id', '=', self.company_id.id),
                 ('date', '<=', self.accounting_date or self.date),
                 ('state', '=', 'done'),
                 ('product_id', '=', line.product_id.id),
@@ -101,12 +101,10 @@ class StockInventory(models.Model):
         tuples = []
         qty_to_go = line.product_qty
         older_qty = line.product_qty
-        # get only move with lot of inventory line
+        # get all move without lot of inventory line because it is not relevant
         flag = False
         for move in move_ids:
-            for ml in move.move_line_ids.filtered(
-                lambda x: x.lot_id == line.prod_lot_id
-            ):
+            for ml in move.move_line_ids:
                 # Convert to UoM of product each time
                 uom_from = move.product_uom
                 qty_from = ml.qty_done
