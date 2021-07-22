@@ -15,13 +15,13 @@ class StockInventoryLine(models.Model):
 class StockInventory(models.Model):
     _inherit = "stock.inventory"
 
-    valuation_type = fields.Selection(
-        [('fifo', 'FIFO'),
-         ('lifo', 'LIFO'),
-         ('average', 'AVERAGE'),
-         ('standard', 'STANDARD'),
-         ('list_price', 'LIST_PRICE')
-        ], 'Cost valuation')
+    valuation_type = fields.Selection([
+        ('fifo', 'FIFO'),
+        ('lifo', 'LIFO'),
+        ('average', 'AVERAGE'),
+        ('standard', 'STANDARD'),
+        ('list_price', 'LIST_PRICE')
+    ], 'Cost valuation')
 
     @api.multi
     def product_recalculate_value(self):
@@ -48,12 +48,12 @@ class StockInventory(models.Model):
                     for match in res:
                         price_amount += match[1] * match[2]
                         amount += match[1]
-                    if amount != 0.0:
-                        line.write({
-                            'valuation_price_unit': price_amount / amount,
-                            'valuation_price_subtotal': price_amount / amount
-                            * line.product_qty,
-                        })
+                    line.write({
+                        'valuation_price_unit': price_amount / amount if amount != 0.0
+                        else 0.0,
+                        'valuation_price_subtotal': price_amount / amount
+                        * line.product_qty if amount != 0.0 else 0.0,
+                    })
             else:
                 for line in inv.line_ids:
                     res = self.price_calculation(line)
@@ -62,11 +62,12 @@ class StockInventory(models.Model):
                     for match in res:
                         price_amount += match[1] * match[2]
                         amount += match[1]
-                    if amount != 0.0:
-                        line.write({
-                            'valuation_price_unit': price_amount / amount,
-                            'valuation_price_subtotal': price_amount,
-                        })
+                    line.write({
+                        'valuation_price_unit': price_amount / amount if amount != 0.0
+                        else 0.0,
+                        'valuation_price_subtotal': price_amount if amount != 0.0
+                        else 0.0,
+                    })
 
     @api.multi
     def price_calculation(self, line):
