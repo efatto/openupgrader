@@ -1,0 +1,1 @@
+This module add an action on stock move to update stock move price unit for evaluation purposes.

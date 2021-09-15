@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_update_stock_move_price" model="ir.ui.view">
+        <field name="name">update_stock_move_price</field>
+        <field name="model">update.stock.move.price</field>
+        <field name="arch" type="xml">
+            <form string="Update stock move price">
+                <div>
+                    <group>
+                        <field name="new_price"/>
+                    </group>
+                </div>
+                <footer>
+                    <button class="btn-primary" name="update_stock_move_price"
+                            string="Confirm" type="object"/>
+                    <button class="btn-secondary" special="cancel"
+                            string="Discard"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+    <record id="action_update_stock_move_price" model="ir.actions.act_window">
+        <field name="name">Update stock move price</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="res_model">update.stock.move.price</field>
+        <field name="view_type">form</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+</odoo>
