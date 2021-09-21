@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2021-05-25 13:34+0000\n"
-"PO-Revision-Date: 2021-05-25 13:34+0000\n"
+"POT-Creation-Date: 2021-09-21 16:21+0000\n"
+"PO-Revision-Date: 2021-09-21 16:21+0000\n"
 "Last-Translator: <>\n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -26,9 +26,29 @@ msgid "Product Moves (Stock Move Line)"
 msgstr "Movimenti prodotto (riga movimento magazzino)"
 
 #. module: stock_move_view_reserved
+#: model:ir.model.fields,field_description:stock_move_view_reserved.field_stock_move_line__production_id
+msgid "Production"
+msgstr "Produzione"
+
+#. module: stock_move_view_reserved
+#: model:ir.model.fields,field_description:stock_move_view_reserved.field_stock_move_line__purchase_id
+msgid "Purchase Order"
+msgstr "Ordine di Acquisto"
+
+#. module: stock_move_view_reserved
 #: model_terms:ir.ui.view,arch_db:stock_move_view_reserved.view_move_line_tree
 msgid "Reserved Qty"
 msgstr "Qtà Riservata"
+
+#. module: stock_move_view_reserved
+#: model:ir.model.fields,field_description:stock_move_view_reserved.field_stock_move_line__sale_id
+msgid "Sale Order"
+msgstr "Ordine di vendita"
+
+#. module: stock_move_view_reserved
+#: model:ir.model.fields,field_description:stock_move_view_reserved.field_stock_move_line__sale_partner_id
+msgid "Sale Partner"
+msgstr "Cliente"
 
 #. module: stock_move_view_reserved
 #: model:ir.model.fields,help:stock_move_view_reserved.field_stock_move_line__date_expected
@@ -39,4 +59,9 @@ msgstr "Data pianificata per l'elaborazione del movimento"
 #: model_terms:ir.ui.view,arch_db:stock_move_view_reserved.view_move_line_tree
 msgid "Total Reserved Qty"
 msgstr "Totale Qtà Riservata"
+
+#. module: stock_move_view_reserved
+#: model:ir.model.fields,help:stock_move_view_reserved.field_stock_move_line__sale_partner_id
+msgid "You can find a customer by its Name, TIN, Email or Internal Reference."
+msgstr "È possibile trovare un cliente per nome, codice fiscale, e-mail o riferimento interno."
 

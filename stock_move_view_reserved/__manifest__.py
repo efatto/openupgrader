@@ -3,7 +3,7 @@
 
 {
     'name': 'Stock move reserved qty in tree',
-    'version': '12.0.1.0.0',
+    'version': '12.0.1.0.1',
     'category': 'other',
     'description': """
     Show stock move reserved quantity and date in tree view.
@@ -12,7 +12,9 @@
     'website': 'https://www.efatto.it',
     'license': 'AGPL-3',
     'depends': [
-        'stock',
+        'mrp',
+        'purchase_stock',
+        'sale_stock',
     ],
     'data': [
         'views/stock.xml',
