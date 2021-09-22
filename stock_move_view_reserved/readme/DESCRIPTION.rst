@@ -1,0 +1,1 @@
+This module add some field to product moves views linked to origin objets to open them simply.
