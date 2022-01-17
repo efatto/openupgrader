@@ -184,11 +184,11 @@ class StockInventory(models.Model):
         elif self.valuation_type == 'lifo':
             # sale
             if move.location_id.usage == 'internal' and \
-                move.location_dest_id.usage != 'internal':
+                    move.location_dest_id.usage != 'internal':
                 older_qty += product_qty
             # purchase
             if move.location_id.usage != 'internal' and \
-                move.location_dest_id.usage == 'internal':
+                    move.location_dest_id.usage == 'internal':
                 older_qty -= product_qty
                 if qty_to_go > older_qty > 0:
                     tuples.append((
