@@ -77,7 +77,7 @@ class StockInventory(models.Model):
             # search for incoming moves
             move_ids = move_obj.search([
                 ('company_id', '=', self.company_id.id),
-                ('date', '<=', self.accounting_date or self.date),
+                ('date', '<=', self.date),
                 ('state', '=', 'done'),
                 ('product_id', '=', line.product_id.id),
                 ('location_id.usage', '!=', 'internal'),
@@ -87,7 +87,7 @@ class StockInventory(models.Model):
             # search for incoming and outgoing moves
             move_ids = move_obj.search([
                 ('company_id', '=', self.company_id.id),
-                ('date', '<=', self.accounting_date or self.date),
+                ('date', '<=', self.date),
                 ('state', '=', 'done'),
                 ('product_id', '=', line.product_id.id),
                 '|',
