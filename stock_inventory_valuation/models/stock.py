@@ -111,21 +111,21 @@ class StockInventory(models.Model):
                 product_qty = uom_from._compute_quantity(
                     qty_from, move.product_id.uom_id)
                 # Get price from purchase line
-                price_unit = 0
                 if move.purchase_line_id:
-                    if move.purchase_line_id.invoice_lines:
+                    if move.purchase_line_id.invoice_lines and \
+                            move.purchase_line_id.invoice_lines[0].invoice_id.state in (
+                                'open', 'paid'):
                         # In real life, all move lines related to an 1 invoice line
                         # should be in the same state and have the same date
                         inv_line = move.purchase_line_id.invoice_lines[0]
                         invoice = inv_line.invoice_id
-                        if inv_line.invoice_id.state in ('open', 'paid'):
-                            price_unit = (
-                                invoice.currency_id._convert(
-                                    inv_line.price_subtotal,
-                                    invoice.company_id.currency_id,
-                                    invoice.company_id,
-                                    invoice.date or fields.Date.today())
-                                / (inv_line.quantity if inv_line.quantity != 0 else 1))
+                        price_unit = (
+                            invoice.currency_id._convert(
+                                inv_line.price_subtotal,
+                                invoice.company_id.currency_id,
+                                invoice.company_id,
+                                invoice.date or fields.Date.today())
+                            / (inv_line.quantity if inv_line.quantity != 0 else 1))
                     else:
                         # get price from purchase line
                         purchase = move.purchase_line_id.order_id
