@@ -111,6 +111,7 @@ class StockInventory(models.Model):
                 product_qty = uom_from._compute_quantity(
                     qty_from, move.product_id.uom_id)
                 # Get price from purchase line
+                price_unit = 0
                 if move.purchase_line_id:
                     if move.purchase_line_id.invoice_lines and \
                             move.purchase_line_id.invoice_lines[0].invoice_id.state in (
