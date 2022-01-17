@@ -140,7 +140,7 @@ class StockInventory(models.Model):
                                     move.purchase_line_id.product_qty != 0 else 1
                                 )
                         )
-                else:
+                if not price_unit:
                     # Get price from product, move is an inventory or not link
                     # to a purchase (income move created and even invoiced, but
                     # price is not usable here)
