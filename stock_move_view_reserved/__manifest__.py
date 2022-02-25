@@ -1,4 +1,4 @@
-# Copyright 2017-2020 Sergio Corato <https://github.com/sergiocorato>
+# Copyright 2017-2 Sergio Corato <https://github.com/sergiocorato>
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html).
 
 {
@@ -13,8 +13,7 @@
     'license': 'AGPL-3',
     'depends': [
         'mrp',
-        'purchase_stock',
-        'sale_stock',
+        'stock_move_view_sale_purchase',
     ],
     'data': [
         'views/stock.xml',

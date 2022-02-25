@@ -11,10 +11,7 @@
                 <field name="product_uom_qty" string="Reserved Qty" sum="Total Reserved Qty"/>
             </field>
             <field name="reference" position="after">
-                <field name="sale_id"/>
-                <field name="sale_partner_id"/>
                 <field name="production_id"/>
-                <field name="purchase_id"/>
             </field>
         </field>
     </record>
@@ -26,10 +23,7 @@
                 <field name="date_expected"/>
             </field>
             <field name="reference" position="after">
-                <field name="sale_id"/>
-                <field name="sale_partner_id"/>
                 <field name="production_id"/>
-                <field name="purchase_id"/>
             </field>
         </field>
     </record>
