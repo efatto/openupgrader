@@ -3,7 +3,7 @@
 
 {
     'name': 'Termini di pagamento per ricevute bancarie',
-    'version': '12.0.1.0.3',
+    'version': '12.0.1.0.4',
     'category': 'Localisation/Italy',
     'description': 'Ri.ba. sbf data',
     'author': 'Corato Sergio',
