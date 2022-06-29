@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="stock_picking_type_kanban" model="ir.ui.view">
+        <field name="model">stock.picking.type</field>
+        <field name="inherit_id" ref="stock.stock_picking_type_kanban"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[hasclass('o_kanban_card_content')]/div/div[hasclass('o_kanban_primary_left')]" position="inside">
+                <div style="padding-top: 5px;">
+                    <button name="%(stock.action_picking_form)d" type="action" class="btn btn-info">
+                        Planned transfer
+                    </button>
+                </div>
+            </xpath>
+        </field>
+    </record>
+</odoo>
