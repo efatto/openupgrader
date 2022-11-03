@@ -1,4 +1,4 @@
-from odoo import api, models
+from odoo import api, fields, models
 
 
 class StockMove(models.Model):
@@ -21,12 +21,12 @@ class StockMove(models.Model):
         date_price_unit = False
         origin_price_unit = False
         # search before datetime of move
-        # todo 1. c'è una fattura d'acquisto collegata ad un ordine d'acquisto
-        # todo 2. c'è solo una fattura d'acquisto
         # 0. is there a move originated from a purchase order, with or without invoice
+        # this cover also the case of a purchase invoice linked to a purchase order, as
+        # it creates a move
         lines = self.search([
             ('product_id', '=', self.product_id.id),
-            ('state', '=', 'done'),
+            ('state', 'in', ['done', 'assigned']),
             ('date', '<=', self.date),
             ('purchase_line_id', '!=', False),
         ]).sorted(
@@ -36,13 +36,16 @@ class StockMove(models.Model):
             invoice_lines = self.env['account.invoice.line'].search([
                 ('purchase_line_id', '=', last_line.purchase_line_id.id),
                 ('invoice_id.type', '=', 'in_invoice'),
+                ('invoice_id.state', 'not in', ['draft', 'cancel']),
+                ('product_id', '=', self.product_id.id),
             ])
             if invoice_lines:
                 # get price from invoice if exists
                 invoice_line = invoice_lines[0]
                 price_unit = self._get_price_with_discount(
                     invoice_line, invoice_line.price_unit)
-                date_price_unit = invoice_line.invoice_id.date_invoice
+                date_price_unit = fields.Datetime.to_datetime(
+                    invoice_line.invoice_id.date_invoice)
                 origin_price_unit = invoice_line.invoice_id.number
             else:
                 purchase_line = last_line.purchase_line_id
@@ -52,7 +55,23 @@ class StockMove(models.Model):
                 origin_price_unit = last_line.purchase_line_id.order_id.name
             return price_unit, date_price_unit, origin_price_unit
 
-        # 3. else, is there a purchase order confirmed or done
+        # 1. there is an invoice purchase line, linked or not to a purchase order
+        invoice_lines = self.env['account.invoice.line'].search([
+            ('invoice_id.type', '=', 'in_invoice'),
+            ('invoice_id.state', 'not in', ['draft', 'cancel']),
+            ('product_id', '=', self.product_id.id),
+        ])
+        if invoice_lines:
+            # get price from invoice if exists
+            invoice_line = invoice_lines[0]
+            price_unit = self._get_price_with_discount(
+                invoice_line, invoice_line.price_unit)
+            date_price_unit = fields.Datetime.to_datetime(
+                invoice_line.invoice_id.date_invoice)
+            origin_price_unit = invoice_line.invoice_id.number
+            return price_unit, date_price_unit, origin_price_unit
+
+        # 2. else, is there a purchase order confirmed or done
         lines = PurchaseOrderLine.search([
             ('product_id', '=', self.product_id.id),
             ('state', 'in', ['purchase', 'done']),
@@ -77,10 +96,6 @@ class StockMove(models.Model):
 
     @api.multi
     def _prepare_wizard_line(self):
-        # TODO per ogni riga di move_raw_ids, in base al tipo di valutazione del costo,
-        #  impostare il price_unit all'ultimo costo di acquisto reale
-        #  (note: se c'era della disponibilità precedente all'ultimo acquisto ignorarla,
-        #  a meno che il prezzo fosse superiore?)
         self.ensure_one()
         move_price_variation = False
         price_unit, date_price_unit, origin_price_unit = self._get_current_price_unit()
@@ -88,8 +103,6 @@ class StockMove(models.Model):
         if current_price:
             move_price_variation = 100 *\
                     (price_unit - current_price) / current_price
-        # todo è utile sapere la quantità disponibile alla data dello scarico?
-        #  e la quantità precedente? successiva?
         return {
             'product_id': self.product_id.id,
             'move_id': self.id,

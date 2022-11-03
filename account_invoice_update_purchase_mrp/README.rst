@@ -51,6 +51,8 @@ Nel tab 'Varie' è possibile rendere nuovamente disponibile il bottone togliendo
 .. image:: https://raw.githubusercontent.com/sergiocorato/efatto/12.0/account_invoice_update_purchase_mrp/static/description/prezzi_verificati.png
     :alt: Prezzi Verificati
 
+NOTE: questa procedura non tiene in conto delle quantità disponibili a magazzino del prodotto, per cui ad es. anche l'acquisto di 1 singolo pezzo ad un prezzo diverso viene segnalato come prezzo diverso dal precedente.
+
 Bug Tracker
 ===========
 
