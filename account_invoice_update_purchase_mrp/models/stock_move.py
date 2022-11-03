@@ -38,7 +38,8 @@ class StockMove(models.Model):
                 ('invoice_id.type', '=', 'in_invoice'),
                 ('invoice_id.state', 'not in', ['draft', 'cancel']),
                 ('product_id', '=', self.product_id.id),
-            ])
+            ]).sorted(
+                key=lambda l: l.invoice_id.date_invoice, reverse=True)
             if invoice_lines:
                 # get price from invoice if exists
                 invoice_line = invoice_lines[0]
@@ -60,7 +61,8 @@ class StockMove(models.Model):
             ('invoice_id.type', '=', 'in_invoice'),
             ('invoice_id.state', 'not in', ['draft', 'cancel']),
             ('product_id', '=', self.product_id.id),
-        ])
+        ]).sorted(
+            key=lambda l: l.invoice_id.date_invoice, reverse=True)
         if invoice_lines:
             # get price from invoice if exists
             invoice_line = invoice_lines[0]
