@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="mrp_production_form_view" model="ir.ui.view">
+        <field name="name">mrp.production.form</field>
+        <field name="model">mrp.production</field>
+        <field name="inherit_id" ref="mrp.mrp_production_form_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//button[@name='button_mark_done']" position="after">
+                <button name="check_raw_moves_price_unit" string="Check Prices"
+                        help="Check if the price unit of raw moves are similar to purchase invoice"
+                        class="oe_highlight" type="object"
+                        attrs="{'invisible': ['|', ('price_sync_ok', '=', True), ('state', '!=', 'done')]}"/>
+            </xpath>
+            <field name="availability" position="after">
+                <field name="price_sync_ok"/>
+            </field>
+        </field>
+    </record>
+
+</odoo>

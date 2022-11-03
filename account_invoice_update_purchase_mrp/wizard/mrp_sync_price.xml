@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="mrp_production_sync_cost_form" model="ir.ui.view">
+        <field name="model">mrp.sync.price</field>
+        <field name="arch" type="xml">
+            <form string="Change component">
+                <group col="4" colspan="4">
+                    <field name="mrp_id" invisible="1"/>
+                    <field name="state" invisible="1"/>
+                </group>
+                <separator string="List of moves to update"/>
+                <field name="line_ids">
+                    <tree create="false" editable="0" colors="blue: current_price == 0; brown: current_price != 0">
+                        <field name="wizard_id" invisible="1"/>
+                        <field name="move_id" invisible="1"/>
+                        <field name="product_id"/>
+                        <field name="current_product_price"/>
+                        <field name="current_price"/>
+                        <field name="new_price"/>
+                        <field name="date_new_price"/>
+                        <field name="origin_new_price"/>
+                        <field name="move_price_variation" attrs="{'invisible': [('move_price_variation', '=', 0.0)]}"/>
+                    </tree>
+                </field>
+                <footer>
+                    <button name="update_price_unit"
+                            string="Update"
+                            type="object"
+                            class="oe_highlight"/>
+                    <button name="set_price_unit_ok" string="Ignore" type="object"
+                        confirm="Do you want to set manufacture as checked?"
+                        help="This will mark the production order as checked. It will be possible to uncheck manually in the 'Miscellaneous' tab."/>
+                    or
+                    <button string="Cancel" class="oe_link" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+</odoo>
