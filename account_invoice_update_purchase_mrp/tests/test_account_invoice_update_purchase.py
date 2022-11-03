@@ -35,6 +35,7 @@ class TestAccountInvoiceUpdatePurchaseMrp(TestProductionData):
         cls.product_to_purchase = cls.env['product.product'].create([{
             'name': 'Component product to purchase manually',
             'default_code': 'COMPPURCHMANU',
+            'standard_price': 60.0,
             'type': 'product',
             'purchase_ok': True,
             'route_ids': [
@@ -73,7 +74,8 @@ class TestAccountInvoiceUpdatePurchaseMrp(TestProductionData):
         ])
         self.assertTrue(po_ids)
         self.assertEqual(len(po_ids), 1)
-        po_lines = po_ids.order_line.filtered(
+        po = po_ids[0]
+        po_lines = po.order_line.filtered(
             lambda x: x.product_id == self.product_to_purchase)
         self.assertEqual(sum(po_line.product_qty for po_line in po_lines),
                          7 * product_qty)
@@ -84,7 +86,14 @@ class TestAccountInvoiceUpdatePurchaseMrp(TestProductionData):
         po_line.price_unit = 67.88
         po_line.discount = 15.0
         # confirm purchase order
-        po_ids.button_confirm()
+        po.button_confirm()
+        # complete purchase
+        picking = po.picking_ids[0]
+        picking.action_confirm()
+        for move_line in picking.move_lines:
+            move_line.write({'quantity_done': move_line.product_uom_qty})
+        picking.button_validate()
+        self.assertEqual(picking.state, 'done')
         # create workorder to add relative costs
         man_order.action_assign()
         man_order.button_plan()
@@ -105,7 +114,8 @@ class TestAccountInvoiceUpdatePurchaseMrp(TestProductionData):
             lambda x: x.product_id == self.product_to_purchase)
         self.assertEqual(len(mo_raw_moves), 1)
         mo_move = mo_raw_moves[0]
-        self.assertAlmostEqual(mo_move.price_unit, 0.0)
+        # note: price is set negative when stock move is done
+        self.assertAlmostEqual(mo_move.price_unit, 60.0)
 
         # aggiungere delle righe extra-bom, in stato confermato come da ui
         man_order.action_toggle_is_locked()
@@ -138,19 +148,15 @@ class TestAccountInvoiceUpdatePurchaseMrp(TestProductionData):
         man_order.button_mark_done()
         self.assertEqual(man_order.state, 'done')
 
-        # re-check stock move price is always 0
+        # check price_unit of mo raw move is equal to product standard price
         mo_raw_moves = man_order.move_raw_ids.filtered(
             lambda x: x.product_id == self.product_to_purchase)
         self.assertEqual(len(mo_raw_moves), 1)
         mo_move = mo_raw_moves[0]
-        self.assertAlmostEqual(mo_move.price_unit, 0.0)
+        # note: price is set negative when stock move is done
+        self.assertAlmostEqual(mo_move.price_unit, - 60.0)
 
-        # complete purchase # todo se si acquista parzialmente a diversi prezzi???
-        picking = po_ids[0].picking_ids[0]
-        picking.action_confirm()
-        picking.move_lines.write({'quantity_done': 35.0})
-        picking.button_validate()
-        # launch wizard to update stock move price
+        # start wizard to update stock move price
         wizard_data = man_order.check_raw_moves_price_unit()
         update_price_form = Form(
             self.env['mrp.sync.price'].with_context(
@@ -159,15 +165,52 @@ class TestAccountInvoiceUpdatePurchaseMrp(TestProductionData):
         )
         update_price_wizard = update_price_form.save()
         update_price_wizard.update_price_unit()
+
         # check price_unit of mo raw move is equal to po line
         mo_raw_moves = man_order.move_raw_ids.filtered(
             lambda x: x.product_id == self.product_to_purchase)
         self.assertEqual(len(mo_raw_moves), 1)
         mo_move = mo_raw_moves[0]
-        self.assertAlmostEqual(
-            mo_move.price_unit,
-            float_round(
+        po_price = float_round(
                 po_line.price_unit * (1 - po_line.discount / 100.0),
                 self.env['decimal.precision'].precision_get('Product Price')
             )
+        self.assertAlmostEqual(mo_move.price_unit, po_price)
+        # invoice the purchase order with a different price
+        purchase_invoice = self.env['account.invoice'].create({
+            'partner_id': po.partner_id.id,
+            'purchase_id': po.id,
+            'account_id': po.partner_id.property_account_payable_id.id,
+            'type': 'in_invoice',
+        })
+        purchase_invoice.purchase_order_change()
+        invoice_line = purchase_invoice.invoice_line_ids.filtered(
+            lambda x: x.product_id == self.product_to_purchase
         )
+        self.assertAlmostEqual(invoice_line.price_unit, po_line.price_unit)
+        self.assertAlmostEqual(invoice_line.discount, po_line.discount)
+        invoice_line.write({
+            'price_unit': 90.0,
+            'discount': 20.0,
+        })
+        self.assertAlmostEqual(invoice_line.price_unit, 90)
+        self.assertAlmostEqual(invoice_line.discount, 20)
+        # re-start wizard to update to new price
+        wizard_data = man_order.check_raw_moves_price_unit()
+        update_price_form = Form(
+            self.env['mrp.sync.price'].with_context(
+                wizard_data['context']
+            )
+        )
+        update_price_wizard = update_price_form.save()
+        update_price_wizard.update_price_unit()
+        # check move is updated with new price
+        mo_raw_moves = man_order.move_raw_ids.filtered(
+            lambda x: x.product_id == self.product_to_purchase)
+        self.assertEqual(len(mo_raw_moves), 1)
+        mo_move = mo_raw_moves[0]
+        invoice_price = float_round(
+                invoice_line.price_unit * (1 - invoice_line.discount / 100.0),
+                self.env['decimal.precision'].precision_get('Product Price')
+            )
+        self.assertAlmostEqual(mo_move.price_unit, invoice_price)

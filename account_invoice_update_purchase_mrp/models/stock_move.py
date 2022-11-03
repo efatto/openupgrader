@@ -20,11 +20,10 @@ class StockMove(models.Model):
         price_unit = - self.price_unit
         date_price_unit = False
         origin_price_unit = False
-        # todo cercare se prima del trasferimento effettivo
-        # todo 0. c'è un trasferimento originato da un po
+        # search before datetime of move
         # todo 1. c'è una fattura d'acquisto collegata ad un ordine d'acquisto
         # todo 2. c'è solo una fattura d'acquisto
-        # todo 3. c'è solo un ordine d'acquisto
+        # 0. is there a move originated from a purchase order, with or without invoice
         lines = self.search([
             ('product_id', '=', self.product_id.id),
             ('state', '=', 'done'),
@@ -35,7 +34,8 @@ class StockMove(models.Model):
         if lines:
             last_line = lines[:1]
             invoice_lines = self.env['account.invoice.line'].search([
-                ('purchase_line_id', '=', last_line.purchase_line_id.id)
+                ('purchase_line_id', '=', last_line.purchase_line_id.id),
+                ('invoice_id.type', '=', 'in_invoice'),
             ])
             if invoice_lines:
                 # get price from invoice if exists
@@ -52,6 +52,7 @@ class StockMove(models.Model):
                 origin_price_unit = last_line.purchase_line_id.order_id.name
             return price_unit, date_price_unit, origin_price_unit
 
+        # 3. else, is there a purchase order confirmed or done
         lines = PurchaseOrderLine.search([
             ('product_id', '=', self.product_id.id),
             ('state', 'in', ['purchase', 'done']),
