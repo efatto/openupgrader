@@ -5,6 +5,7 @@ from odoo import api, fields, models
 
 class UpdateStockMovePriceWizard(models.TransientModel):
     _name = 'update.stock.move.price'
+    _description = 'Update stock move price'
 
     new_price = fields.Float(required=True, default=0)
 
