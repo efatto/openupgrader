@@ -46,5 +46,5 @@ class MrpProductionSyncPriceLine(models.TransientModel):
     def _prepare_price_unit(self):
         self.ensure_one()
         return {
-            'price_unit': self.new_price,
+            'price_unit': - self.new_price,
         }
