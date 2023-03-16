@@ -1,11 +1,10 @@
 Questo modulo aggiunge una procedura guidata per verificare la congruità dei prezzi dei movimenti di scarico con i prezzi di acquisto, al fine di calcolare correttamente i costi di produzione.
 
-Viene mostrato come prezzo nuovo quello trovato secondo il eguente ordine di priorità decrescente:
+Viene mostrato come prezzo nuovo quello trovato secondo il seguente ordine di priorità decrescente:
 
-#. c'è un trasferimento (in data inferiore o uguale allo scarico) (in stato completato o pronto) generato da un acquisto fatturato (in stato non bozza né annullato): prezzo in fattura
-#. c'è un trasferimento (in data inferiore o uguale allo scarico) (in stato completato o pronto) generato da un acquisto non fatturato: prezzo in ordine
-#. c'è una fattura di acquisto (in data inferiore o uguale allo scarico) (in stato non bozza né annullato): prezzo in fattura
-#. c'è un ordine di acquisto (in data inferiore o uguale allo scarico) (in stato ordine o completato): prezzo in ordine
+#. c'è un trasferimento (in data inferiore o uguale allo scarico) (in stato completato o pronto) generato da un acquisto: se fatturato (in stato non bozza né annullato): prezzo in fattura, se non fatturato: prezzo in ordine
+#. altrimenti se c'è una fattura di acquisto (in data inferiore o uguale allo scarico) (in stato non bozza né annullato): prezzo in fattura
+#. infine se c'è un ordine di acquisto (in data inferiore o uguale allo scarico) (in stato ordine o completato): prezzo in ordine (nel caso il trasferimento non sia completato o pronto quindi)
 
 La procedura si apre cliccando sul bottone, visibile solo se la produzione è completata:
 
