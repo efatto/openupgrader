@@ -9,7 +9,7 @@
                     <field name="mrp_id" invisible="1"/>
                     <field name="state" invisible="1"/>
                 </group>
-                <separator string="List of moves to update"/>
+                <separator string="List of component moves"/>
                 <field name="line_ids">
                     <tree create="false" editable="0" colors="blue: current_price == 0; brown: current_price != 0">
                         <field name="wizard_id" invisible="1"/>

@@ -104,8 +104,8 @@ msgstr "Righe"
 
 #. module: account_invoice_update_purchase_mrp
 #: model_terms:ir.ui.view,arch_db:account_invoice_update_purchase_mrp.mrp_production_sync_cost_form
-msgid "List of moves to update"
-msgstr "Lista dei movimenti da aggiornare"
+msgid "List of component moves"
+msgstr "Lista dei movimenti dei materiali"
 
 #. module: account_invoice_update_purchase_mrp
 #: model:ir.model.fields,field_description:account_invoice_update_purchase_mrp.field_mrp_sync_price_line__move_id
