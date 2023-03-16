@@ -20,7 +20,7 @@
                         <field name="new_price"/>
                         <field name="date_new_price"/>
                         <field name="origin_new_price"/>
-                        <field name="move_price_variation" attrs="{'invisible': [('move_price_variation', '=', 0.0)]}"/>
+                        <field name="move_price_variation"/>
                     </tree>
                 </field>
                 <footer>
