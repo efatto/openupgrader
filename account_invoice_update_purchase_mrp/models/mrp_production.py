@@ -13,7 +13,8 @@ class MrpProduction(models.Model):
         for line in self.move_raw_ids.filtered(
                 lambda x: x.raw_material_production_id and x.quantity_done):
             if line._is_correct_price():
-                continue
+                # show anyway as customer request
+                pass
             lines.append((0, 0, line._prepare_wizard_line()))
         return lines
 
