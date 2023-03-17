@@ -8,7 +8,7 @@
     Stock inventory ods report for valuation.
     """,
     "author": "Sergio Corato",
-    "website": "https://efatto.it",
+    "website": "https://github.com/sergiocorato/efatto",
     "license": "AGPL-3",
     "depends": [
         "stock_inventory_valuation",
