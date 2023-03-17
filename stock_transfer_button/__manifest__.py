@@ -7,7 +7,7 @@
     'author': 'Sergio Corato',
     'category': 'Warehouse',
     'license': 'AGPL-3',
-    'website': 'https://efatto.it',
+    'website': 'https://github.com/sergiocorato/efatto',
     'depends': [
         'stock',
     ],
