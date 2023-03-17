@@ -6,7 +6,7 @@
     'summary': 'This module create new supplierinfo on bottom by default and '
                'add check on supplierinfo date validity, based on invoice date.',
     'author': 'Sergio Corato',
-    'website': 'https://efatto.it',
+    'website': 'https://github.com/sergiocorato/efatto',
     'license': 'AGPL-3',
     'category': 'Accounting',
     'depends': [
