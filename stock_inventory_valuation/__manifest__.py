@@ -8,7 +8,7 @@
     Stock inventory valuation by FIFO, LIFO, AVERAGE or STANDARD by date.
     """,
     "author": "Sergio Corato",
-    "website": "https://efatto.it",
+    "website": "https://github.com/sergiocorato/efatto",
     "license": "AGPL-3",
     "depends": [
         "purchase",
