@@ -1,6 +1,6 @@
 # Copyright 2018-2021 Sergio Corato <https://github.com/sergiocorato>
 # License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl).
-from odoo import fields, models, api, _
+from odoo import fields, models, api
 
 
 class StockInventoryLine(models.Model):
@@ -137,9 +137,9 @@ class StockInventory(models.Model):
                                 purchase.company_id,
                                 purchase.date_order or fields.Date.today()
                             ) / (
-                                    move.purchase_line_id.product_qty if
-                                    move.purchase_line_id.product_qty != 0 else 1
-                                )
+                                move.purchase_line_id.product_qty if
+                                move.purchase_line_id.product_qty != 0 else 1
+                            )
                         )
                 if not price_unit:
                     # Get price from product, move is an inventory or not link
