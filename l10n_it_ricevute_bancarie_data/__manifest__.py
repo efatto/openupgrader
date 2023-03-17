@@ -7,7 +7,7 @@
     'category': 'Localisation/Italy',
     'description': 'Ri.ba. sbf data',
     'author': 'Corato Sergio',
-    'website': 'https://efatto.it',
+    'website': 'https://github.com/sergiocorato/efatto',
     'license': 'LGPL-3',
     'depends': [
         'account_payment_term_extension',
