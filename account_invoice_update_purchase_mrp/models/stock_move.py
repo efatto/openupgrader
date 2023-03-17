@@ -104,7 +104,7 @@ class StockMove(models.Model):
         current_price = - self.price_unit
         if current_price:
             move_price_variation = 100 *\
-                    (price_unit - current_price) / current_price
+                (price_unit - current_price) / current_price
         return {
             'product_id': self.product_id.id,
             'move_id': self.id,

@@ -175,9 +175,9 @@ class TestAccountInvoiceUpdatePurchaseMrp(TestProductionData):
         self.assertEqual(len(mo_raw_moves), 1)
         mo_move = mo_raw_moves[0]
         po_price = float_round(
-                po_line.price_unit * (1 - po_line.discount / 100.0),
-                self.env['decimal.precision'].precision_get('Product Price')
-            )
+            po_line.price_unit * (1 - po_line.discount / 100.0),
+            self.env['decimal.precision'].precision_get('Product Price')
+        )
         self.assertAlmostEqual(mo_move.price_unit, po_price)
         # invoice the purchase order with a different price
         purchase_invoice = self.env['account.invoice'].create({
@@ -208,9 +208,9 @@ class TestAccountInvoiceUpdatePurchaseMrp(TestProductionData):
         self.assertEqual(len(mo_raw_moves), 1)
         mo_move = mo_raw_moves[0]
         invoice_price = float_round(
-                invoice_line.price_unit * (1 - invoice_line.discount / 100.0),
-                self.env['decimal.precision'].precision_get('Product Price')
-            )
+            invoice_line.price_unit * (1 - invoice_line.discount / 100.0),
+            self.env['decimal.precision'].precision_get('Product Price')
+        )
         self.assertAlmostEqual(- mo_move.price_unit, invoice_price)
 
     def test_02_mo_purchase_invoice_simple(self):
@@ -260,7 +260,7 @@ class TestAccountInvoiceUpdatePurchaseMrp(TestProductionData):
         self.assertEqual(len(mo_raw_moves), 1)
         mo_move = mo_raw_moves[0]
         invoice_price = float_round(
-                100 * (1 - 8 / 100.0),
-                self.env['decimal.precision'].precision_get('Product Price')
-            )
+            100 * (1 - 8 / 100.0),
+            self.env['decimal.precision'].precision_get('Product Price')
+        )
         self.assertAlmostEqual(- mo_move.price_unit, invoice_price)
