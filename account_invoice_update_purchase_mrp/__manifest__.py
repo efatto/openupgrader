@@ -7,7 +7,7 @@
     'license': 'AGPL-3',
     'category': 'Manufacturing',
     'author': 'Sergio Corato',
-    'website': 'https://efatto.it',
+    'website': 'https://github.com/sergiocorato/efatto',
     'description': 'Currently cost of moves from production are set when production is '
                    'marked done. This moment is not always appropriate as, for '
                    'example, a product could be purchased without price and price '
