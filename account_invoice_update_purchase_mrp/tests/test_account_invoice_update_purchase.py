@@ -211,7 +211,7 @@ class TestAccountInvoiceUpdatePurchaseMrp(TestProductionData):
                 invoice_line.price_unit * (1 - invoice_line.discount / 100.0),
                 self.env['decimal.precision'].precision_get('Product Price')
             )
-        self.assertAlmostEqual(mo_move.price_unit, invoice_price)
+        self.assertAlmostEqual(- mo_move.price_unit, invoice_price)
 
     def test_02_mo_purchase_invoice_simple(self):
         # complete production
@@ -263,4 +263,4 @@ class TestAccountInvoiceUpdatePurchaseMrp(TestProductionData):
                 100 * (1 - 8 / 100.0),
                 self.env['decimal.precision'].precision_get('Product Price')
             )
-        self.assertAlmostEqual(mo_move.price_unit, invoice_price)
+        self.assertAlmostEqual(- mo_move.price_unit, invoice_price)
