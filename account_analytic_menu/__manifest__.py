@@ -7,7 +7,7 @@
     'description':
         'Account analytic menu',
     'author': 'Sergio Corato',
-    'website': 'https://efatto.it',
+    'website': 'https://github.com/sergiocorato/efatto',
     'depends': [
         'analytic',
     ],
