@@ -8,7 +8,7 @@
     Stock lot qty in tree and removed groupby
     """,
     'author': 'Sergio Corato',
-    'website': 'https://www.efatto.it',
+    'website': 'https://github.com/sergiocorato/efatto',
     'license': 'AGPL-3',
     'depends': [
         'stock',
