@@ -4,10 +4,9 @@
     'name': "Change DDT Number on done state",
     'version': '12.0.1.0.0',
     'category': 'other',
-    'description': """Allows ddt change number on done state. 
-    """,
+    'description': "Allows ddt change number on done state.",
     'author': "Sergio Corato",
-    'website': 'http://www.efatto.it',
+    'website': 'https://github.com/sergiocorato/efatto',
     'license': 'AGPL-3',
     'depends': [
         'l10n_it_ddt_force_number',
