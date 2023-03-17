@@ -5,6 +5,7 @@
     'version': '12.0.1.0.1',
     'license': 'AGPL-3',
     'author': 'Sergio Corato',
+    'website': 'https://github.com/sergiocorato/efatto',
     'category': 'other',
     'depends': [
         'mrp',
