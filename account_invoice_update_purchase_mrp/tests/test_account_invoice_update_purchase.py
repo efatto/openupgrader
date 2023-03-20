@@ -178,7 +178,7 @@ class TestAccountInvoiceUpdatePurchaseMrp(TestProductionData):
             po_line.price_unit * (1 - po_line.discount / 100.0),
             self.env['decimal.precision'].precision_get('Product Price')
         )
-        self.assertAlmostEqual(mo_move.price_unit, po_price)
+        self.assertAlmostEqual(- mo_move.price_unit, po_price)
         # invoice the purchase order with a different price
         purchase_invoice = self.env['account.invoice'].create({
             'partner_id': po.partner_id.id,
