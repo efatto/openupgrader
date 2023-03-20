@@ -6,7 +6,7 @@
     'version': '12.0.1.0.4',
     'category': 'Localisation/Italy',
     'description': 'Ri.ba. sbf data',
-    'author': 'Corato Sergio',
+    'author': 'Sergio Corato',
     'website': 'https://github.com/sergiocorato/efatto',
     'license': 'LGPL-3',
     'depends': [
