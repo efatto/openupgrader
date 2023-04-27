@@ -10,6 +10,7 @@
     'website': 'https://github.com/sergiocorato/efatto',
     'license': 'AGPL-3',
     'depends': [
+        'account',
         'analytic',
     ],
     'data': [
