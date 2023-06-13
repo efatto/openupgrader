@@ -11,7 +11,7 @@
                         string="Update stock move price"
                         type="action"
                         icon="fa-dollar"
-                        groups="base.group_erp_manager"
+                        groups="stock.group_stock_manager"
                         attrs="{'invisible': [('show_details_visible', '=', False)]}"
                         options='{"warn": true}'/>
             </xpath>
