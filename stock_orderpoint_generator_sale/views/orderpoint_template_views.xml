@@ -37,6 +37,7 @@
         <field name="arch" type="xml">
             <field name="auto_generate" position="after">
                 <field name="compute_on_sale" />
+                <field name="compute_on_out" />
                 <field name="move_days" />
                 <field name="variation_percent" />
                 <field name="service_level" />
@@ -46,62 +47,62 @@
             <xpath expr="//field[@name='auto_min_qty']/.." position="attributes">
                 <attribute
           name="attrs"
-        >{'invisible': [('compute_on_sale', '=', True)]}</attribute>
+        >{'invisible': ['|', ('compute_on_sale', '=', True), ('compute_on_out', '=', True)]}</attribute>
             </xpath>
             <field name="auto_min_qty" position="attributes">
                 <attribute
           name="attrs"
-        >{'invisible': [('compute_on_sale', '=', True)]}</attribute>
+        >{'invisible': ['|', ('compute_on_sale', '=', True), ('compute_on_out', '=', True)]}</attribute>
             </field>
             <field name="auto_max_qty" position="attributes">
                 <attribute
           name="attrs"
-        >{'invisible': [('compute_on_sale', '=', True)]}</attribute>
+        >{'invisible': ['|', ('compute_on_sale', '=', True), ('compute_on_out', '=', True)]}</attribute>
             </field>
             <field name="product_min_qty" position="attributes">
                 <attribute
           name="attrs"
-        >{'required': [('auto_min_qty','=', False)], 'invisible': [('compute_on_sale', '=', True)]}</attribute>
+        >{'required': [('auto_min_qty','=', False)], 'invisible': ['|', ('compute_on_sale', '=', True), ('compute_on_out', '=', True)]}</attribute>
             </field>
             <field name="qty_multiple" position="attributes">
                 <attribute
           name="attrs"
-        >{'invisible': [('compute_on_sale', '=', True)]}</attribute>
+        >{'invisible': ['|', ('compute_on_sale', '=', True), ('compute_on_out', '=', True)]}</attribute>
             </field>
             <field name="auto_max_qty_criteria" position="attributes">
                 <attribute
           name="attrs"
-        >{'required': [('auto_max_qty','!=', False), ('compute_on_sale', '=', False)]}</attribute>
+        >{'required': [('auto_max_qty','!=', False), ('compute_on_sale', '=', False), ('compute_on_out', '=', False)]}</attribute>
             </field>
             <field name="auto_max_date_start" position="attributes">
                 <attribute
           name="attrs"
-        >{'required': [('auto_max_qty','!=', False), ('compute_on_sale', '=', False)]}</attribute>
+        >{'required': [('auto_max_qty','!=', False), ('compute_on_sale', '=', False), ('compute_on_out', '=', False)]}</attribute>
             </field>
             <field name="auto_max_date_end" position="attributes">
                 <attribute
           name="attrs"
-        >{'required': [('auto_max_qty','!=', False), ('compute_on_sale', '=', False)]}</attribute>
+        >{'required': [('auto_max_qty','!=', False), ('compute_on_sale', '=', False), ('compute_on_out', '=', False)]}</attribute>
             </field>
             <field name="auto_min_qty_criteria" position="attributes">
                 <attribute
           name="attrs"
-        >{'required': [('auto_min_qty','!=', False), ('compute_on_sale', '=', False)]}</attribute>
+        >{'required': [('auto_min_qty','!=', False), ('compute_on_sale', '=', False), ('compute_on_out', '=', False)]}</attribute>
             </field>
             <field name="auto_min_date_start" position="attributes">
                 <attribute
           name="attrs"
-        >{'required': [('auto_min_qty','!=', False), ('compute_on_sale', '=', False)]}</attribute>
+        >{'required': [('auto_min_qty','!=', False), ('compute_on_sale', '=', False), ('compute_on_out', '=', False)]}</attribute>
             </field>
             <field name="auto_min_date_end" position="attributes">
                 <attribute
           name="attrs"
-        >{'required': [('auto_min_qty','!=', False), ('compute_on_sale', '=', False)]}</attribute>
+        >{'required': [('auto_min_qty','!=', False), ('compute_on_sale', '=', False), ('compute_on_out', '=', False)]}</attribute>
             </field>
             <group name="auto_minimum" position="attributes">
                 <attribute
           name="attrs"
-        >{'invisible': ['|', ('auto_min_qty','=', False), ('compute_on_sale', '=', True)]}</attribute>
+        >{'invisible': ['|', '|', ('auto_min_qty','=', False), ('compute_on_sale', '=', True), ('compute_on_out', '=', True)]}</attribute>
             </group>
             <xpath expr="//form/sheet/group" position="before">
                 <div class="oe_button_box" name="button_box">

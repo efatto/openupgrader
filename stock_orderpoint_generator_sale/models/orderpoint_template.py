@@ -20,7 +20,12 @@ class Orderpoint(models.Model):
 class OrderpointTemplate(models.Model):
     _inherit = "stock.warehouse.orderpoint.template"
 
-    compute_on_sale = fields.Boolean()
+    compute_on_sale = fields.Boolean(
+        string="Compute On Sale"
+    )
+    compute_on_out = fields.Boolean(
+        string="Compute On All Out or Consumed (excluded inventory)"
+    )
     move_days = fields.Integer(
         help="Used when not filled date from and to in maximum criteria"
     )
@@ -42,10 +47,10 @@ class OrderpointTemplate(models.Model):
                 "stock.warehouse.orderpoint"
             ].search_count([("orderpoint_tmpl_id", "=", record.id)])
 
-    @api.constrains("compute_on_sale", "auto_max_qty_criteria")
+    @api.constrains("compute_on_sale", "compute_on_out", "auto_max_qty_criteria")
     def _constrains_compute_on_sale(self):
         for rule in self:
-            if rule.compute_on_sale and rule.auto_max_qty_criteria != "sum":
+            if (rule.compute_on_sale or rule.compute_on_out) and rule.auto_max_qty_criteria != "sum":
                 raise UserError(
                     _(
                         'You have to select "sum" as auto max qty criteria when '
@@ -53,9 +58,9 @@ class OrderpointTemplate(models.Model):
                     )
                 )
 
-    @api.onchange("compute_on_sale")
+    @api.onchange("compute_on_sale", "compute_on_out")
     def onchange_compute_on_sale(self):
-        if self.compute_on_sale:
+        if self.compute_on_sale or self.compute_on_out:
             self.auto_min_qty = self.auto_max_qty = True
             self.auto_max_qty_criteria = "sum"
         else:
@@ -66,7 +71,7 @@ class OrderpointTemplate(models.Model):
         "move_days", "auto_max_date_start", "auto_max_date_end", "auto_max_qty"
     )
     def check_move_days(self):
-        for template in self.filtered("compute_on_sale"):
+        for template in self.filtered(lambda x: x.compute_on_sale or x.compute_on_out):
             if (
                 not template.move_days
                 and not (template.auto_max_date_start or template.auto_max_date_end)
@@ -81,7 +86,7 @@ class OrderpointTemplate(models.Model):
 
     @api.constrains("service_level")
     def check_service_level(self):
-        for template in self.filtered("compute_on_sale"):
+        for template in self.filtered(lambda x: x.compute_on_sale or x.compute_on_out):
             if template.service_level == 50 or template.service_level <= 0.0:
                 raise UserError(_("Service level cannot be equal to 50 or <= 0!"))
 
@@ -104,6 +109,7 @@ class OrderpointTemplate(models.Model):
             "service_level",
             "order_mngt_cost",
             "compute_on_sale",
+            "compute_on_out",
             "log_info",
             "variation_percent",
             "product_ctg_ids",
@@ -137,7 +143,7 @@ class OrderpointTemplate(models.Model):
         for record in self:
             record.log_info = ""
             # Flag equality so we compute the values just once
-            if record.compute_on_sale:
+            if record.compute_on_sale or record.compute_on_out:
                 if record.auto_max_date_start and record.auto_max_date_end:
                     auto_max_date_end = record.auto_max_date_end
                     auto_max_date_start = record.auto_max_date_start
@@ -170,7 +176,7 @@ class OrderpointTemplate(models.Model):
                 if auto_same_values:
                     stock_max_qty = stock_min_qty
             if record.auto_max_qty and not stock_max_qty:
-                if record.compute_on_sale:
+                if record.compute_on_sale or record.compute_on_out:
                     stock_max_qty = self._get_product_qty_by_criteria_sale(
                         product_ids,
                         location_id=record.location_id,

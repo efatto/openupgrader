@@ -19,49 +19,35 @@ class ProductProduct(models.Model):
         """Returns a dict of products with a dict of historic moves as for
         a list of historic stock values resulting from those moves. If
         a location_id is passed, we can restrict it to such location"""
-        # TODO cercare gli stock.move non 'draft' 'cancel'
-        #  ok per la location_id in quanto ci potrebbero essere diversi magazzini
-        #  da verificare che le location di out siano solo quelle per i clienti
-        #  rimuovere i movimenti di in
+        # Search only stock.move not 'draft' nor 'cancel'
+        # todo? ok per la location_id in quanto ci potrebbero essere diversi magazzini
+        # todo add ability to get only sales! field compute_on_sale do no work!
         location = location_id and location_id.id
         domain_quant_loc, domain_move_in_loc, domain_move_out_loc = self.with_context(
             location=location
         )._get_domain_locations()
         if not to_date:
             to_date = fields.Datetime.now()
-        # domain_move_in = domain_move_out = ([
-        #                                         ('product_id', 'in', self.ids),
-        #                                         ('state', '=', 'done'),
-        #                                     ] + domain_move_in_loc)
         domain_move_out = [
             ("product_id", "in", self.ids),
-            ("state", "!=", "cancel"),
+            ("state", "not in", ["draft", "cancel"]),
             ("location_id", "child_of", location),
+            ("location_id.usage", "!=", "inventory"),
+            ("location_dest_id.usage", "!=", "inventory"),
         ] + domain_move_out_loc
         if from_date:
-            # domain_move_in += [('date', '>=', from_date)]
             domain_move_out += [("date", ">=", from_date)]
-        # domain_move_in += [('date', '<=', to_date)]
         domain_move_out += [("date", "<=", to_date)]
         move_obj = self.env["stock.move"]
-        # Positive moves
-        # moves_in = move_obj.search_read(
-        #     domain_move_in, ['product_id', 'product_qty', 'date'],
-        #     order='date asc')
         # We'll convert to negative these quantities to operate with them
         # to obtain the stock snapshot in every moment
-        moves_out = move_obj.search_read(
+        moves = move_obj.search_read(
             domain_move_out, ["product_id", "product_qty", "date"], order="date asc"
         )
-        # for move in moves_out:
-        #     move['product_qty'] *= -1
-        # Merge both results and group them by product id as key
-        moves = moves_out  # + moves_in
         # Obtain a dict with the stock snapshot for the relative date_from
         # otherwise, the first move will counted as first stock value. We
         # default the compute the stock value anyway to default the value
         # for products with no moves for the given period
-        initial_stock = {}
         # Compute the second before the given date so we don't duplicate
         # history values in case the given hour is the same than the one
         # of the first move
