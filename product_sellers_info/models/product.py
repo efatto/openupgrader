@@ -12,8 +12,13 @@ class SupplierInfo(models.Model):
 class ProductTemplate(models.Model):
     _inherit = "product.template"
 
+    custom_purchase_delay = fields.Integer(
+        string="Purchase Lead Time",
+        help="Lead time in days to purchase this product. If set, it is used instead of"
+             " the computed field."
+    )
     purchase_delay = fields.Float(
-        "Purchase Lead Time",
+        string="Purchase Lead Time (computed)",
         compute="_compute_purchase_delay",
         store=True,
         default=0.0,
@@ -29,10 +34,12 @@ class ProductTemplate(models.Model):
         "Computed from multiple quantity of first seller.",
     )
 
-    @api.depends("seller_ids", "seller_ids.delay")
+    @api.depends("seller_ids", "seller_ids.delay", "custom_purchase_delay")
     def _compute_purchase_delay(self):
         for product_tmpl in self:
-            if product_tmpl.seller_ids and product_tmpl.purchase_ok:
+            if product_tmpl.custom_purchase_delay and product_tmpl.purchase_ok:
+                product_tmpl.purchase_delay = product_tmpl.custom_purchase_delay
+            elif product_tmpl.seller_ids and product_tmpl.purchase_ok:
                 product_tmpl.purchase_delay = product_tmpl.seller_ids[0].delay
                 product_tmpl.purchase_multiple_qty = product_tmpl.seller_ids[
                     0

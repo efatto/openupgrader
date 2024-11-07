@@ -7,10 +7,17 @@
         <field name="arch" type="xml">
             <xpath expr="//group[@name='operations']" position="inside">
                 <label
-          for="purchase_delay"
+          for="custom_purchase_delay"
           attrs="{'invisible':[('type','=','service')]}"
         />
                 <div attrs="{'invisible':[('type','=','service')]}">
+                    <field name="custom_purchase_delay" class="oe_inline" /> days
+                </div>
+                <label
+          for="purchase_delay"
+          attrs="{'invisible':['|', ('type','=','service'), ('custom_purchase_delay', '!=', 0)]}"
+        />
+                <div attrs="{'invisible':['|', ('type','=','service'), ('custom_purchase_delay', '!=', 0)]}">
                     <field name="purchase_delay" class="oe_inline" /> days
                 </div>
                 <label
