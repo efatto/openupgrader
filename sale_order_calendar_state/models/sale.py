@@ -438,13 +438,11 @@ class SaleOrder(models.Model):
             ).mapped("additional_state")
             if mrp_additional_states:
                 mrp_additional_states = set(mrp_additional_states)
-            if (
-                mrp_states & {"to_close", "done"}
-                and (
-                    calendar_states
-                    and not any(
-                        x[0] in (DONE_DELIVERY, WAITING_FOR_PACKING)
-                        for x in calendar_states)
+            if mrp_states & {"to_close", "done"} and (
+                calendar_states
+                and not any(
+                    x[0] in (DONE_DELIVERY, WAITING_FOR_PACKING)
+                    for x in calendar_states
                 )
             ):
                 # set DONE state only when there are not open or done pickings
