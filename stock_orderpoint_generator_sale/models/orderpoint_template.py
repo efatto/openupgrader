@@ -20,9 +20,7 @@ class Orderpoint(models.Model):
 class OrderpointTemplate(models.Model):
     _inherit = "stock.warehouse.orderpoint.template"
 
-    compute_on_sale = fields.Boolean(
-        string="Compute On Sale"
-    )
+    compute_on_sale = fields.Boolean(string="Compute On Sale")
     compute_on_out = fields.Boolean(
         string="Compute On All Out or Consumed (excluded inventory)"
     )
@@ -50,7 +48,9 @@ class OrderpointTemplate(models.Model):
     @api.constrains("compute_on_sale", "compute_on_out", "auto_max_qty_criteria")
     def _constrains_compute_on_sale(self):
         for rule in self:
-            if (rule.compute_on_sale or rule.compute_on_out) and rule.auto_max_qty_criteria != "sum":
+            if (
+                rule.compute_on_sale or rule.compute_on_out
+            ) and rule.auto_max_qty_criteria != "sum":
                 raise UserError(
                     _(
                         'You have to select "sum" as auto max qty criteria when '
