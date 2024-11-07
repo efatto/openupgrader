@@ -37,7 +37,10 @@
         <field name="arch" type="xml">
             <field name="auto_generate" position="after">
                 <field name="compute_on_sale" />
-                <field name="compute_on_out" attrs="{'invisible': [('compute_on_sale', '=', True)]}"/>
+                <field
+          name="compute_on_out"
+          attrs="{'invisible': [('compute_on_sale', '=', True)]}"
+        />
                 <field name="move_days" />
                 <field name="variation_percent" />
                 <field name="service_level" />

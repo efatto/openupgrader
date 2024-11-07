@@ -183,7 +183,7 @@ class OrderpointTemplate(models.Model):
                         from_date=auto_max_date_start,
                         to_date=auto_max_date_end,
                         criteria=record.auto_max_qty_criteria,
-                        compute_on_sale=record.compute_on_sale
+                        compute_on_sale=record.compute_on_sale,
                     )
                 else:
                     stock_max_qty = self._get_product_qty_by_criteria(
@@ -298,8 +298,10 @@ class OrderpointTemplate(models.Model):
         """Returns a dict with product ids as keys and the resulting
         calculation of historic moves according to criteria"""
         stock_qty_history = products._compute_historic_sale_quantities_dict(
-            location_id=location_id, from_date=from_date, to_date=to_date,
-            compute_on_sale=compute_on_sale
+            location_id=location_id,
+            from_date=from_date,
+            to_date=to_date,
+            compute_on_sale=compute_on_sale,
         )
         criteria_methods = self._get_criteria_methods()
         if criteria == "sum":
