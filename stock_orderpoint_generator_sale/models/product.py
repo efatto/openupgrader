@@ -14,18 +14,20 @@ class ProductProduct(models.Model):
     _inherit = "product.product"
 
     def _compute_historic_sale_quantities_dict(
-        self, location_id=False, from_date=False, to_date=False
+        self, location_id=False, from_date=False, to_date=False, compute_on_sale=False
     ):
         """Returns a dict of products with a dict of historic moves as for
         a list of historic stock values resulting from those moves. If
         a location_id is passed, we can restrict it to such location"""
         # Search only stock.move not 'draft' nor 'cancel'
-        # todo? ok per la location_id in quanto ci potrebbero essere diversi magazzini
-        # todo add ability to get only sales! field compute_on_sale do no work!
         location = location_id and location_id.id
         domain_quant_loc, domain_move_in_loc, domain_move_out_loc = self.with_context(
             location=location
         )._get_domain_locations()
+        if compute_on_sale:
+            domain_move_out_loc += [
+                ("location_dest_id.usage", "=", "customer"),
+            ]
         if not to_date:
             to_date = fields.Datetime.now()
         domain_move_out = [
@@ -39,8 +41,6 @@ class ProductProduct(models.Model):
             domain_move_out += [("date", ">=", from_date)]
         domain_move_out += [("date", "<=", to_date)]
         move_obj = self.env["stock.move"]
-        # We'll convert to negative these quantities to operate with them
-        # to obtain the stock snapshot in every moment
         moves = move_obj.search_read(
             domain_move_out, ["product_id", "product_qty", "date"], order="date asc"
         )
