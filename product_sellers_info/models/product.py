@@ -15,7 +15,7 @@ class ProductTemplate(models.Model):
     custom_purchase_delay = fields.Integer(
         string="Purchase Lead Time",
         help="Lead time in days to purchase this product. If set, it is used instead of"
-             " the computed field."
+        " the computed field.",
     )
     purchase_delay = fields.Float(
         string="Purchase Lead Time (computed)",

@@ -4,16 +4,28 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 14.0+e\n"
+"Project-Id-Version: Odoo Server 14.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-04-26 15:30+0000\n"
-"PO-Revision-Date: 2024-04-26 15:30+0000\n"
+"POT-Creation-Date: 2024-11-07 16:45+0000\n"
+"PO-Revision-Date: 2024-11-07 16:45+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: \n"
 "Plural-Forms: \n"
+
+#. module: product_sellers_info
+#: model:ir.model.fields,field_description:product_sellers_info.field_product_supplierinfo__assigned_attachment_ids
+#: model:ir.model.fields,field_description:product_sellers_info.field_product_template__assigned_attachment_ids
+msgid "Assigned Attachments"
+msgstr "Allegati assegnati"
+
+#. module: product_sellers_info
+#: model:ir.model.fields,field_description:product_sellers_info.field_product_product__custom_purchase_delay
+#: model:ir.model.fields,field_description:product_sellers_info.field_product_template__custom_purchase_delay
+msgid "Purchase Lead Time"
+msgstr "Tempo di attesa acquisto"
 
 #. module: product_sellers_info
 #: model:ir.model.fields,field_description:product_sellers_info.field_product_supplierinfo__display_name
@@ -44,20 +56,30 @@ msgstr ""
 "attesa del primo fornitore."
 
 #. module: product_sellers_info
+#: model:ir.model.fields,help:product_sellers_info.field_product_product__custom_purchase_delay
+#: model:ir.model.fields,help:product_sellers_info.field_product_template__custom_purchase_delay
+msgid ""
+"Lead time in days to purchase this product. If set, is used instead of "
+"computed field."
+msgstr ""
+"Giorni di attesa per acquistare questo prodotto. Se impostato, è utilizzato al posto del campo calcolato."
+
+#. module: product_sellers_info
+#: model:ir.model.fields,field_description:product_sellers_info.field_product_customerinfo__multiple_qty
 #: model:ir.model.fields,field_description:product_sellers_info.field_product_supplierinfo__multiple_qty
 msgid "Multiple Qty"
 msgstr "Multiplo q.tà"
 
 #. module: product_sellers_info
 #: model:ir.model,name:product_sellers_info.model_product_template
-msgid "Product Template"
-msgstr "Modello prodotto"
+msgid "Product Template (Multi-Company)"
+msgstr ""
 
 #. module: product_sellers_info
 #: model:ir.model.fields,field_description:product_sellers_info.field_product_product__purchase_delay
 #: model:ir.model.fields,field_description:product_sellers_info.field_product_template__purchase_delay
-msgid "Purchase Lead Time"
-msgstr "Tempo di attesa acquisto"
+msgid "Purchase Lead Time (computed)"
+msgstr "Tempo di attesa acquisto (calcolato)"
 
 #. module: product_sellers_info
 #: model:ir.model.fields,field_description:product_sellers_info.field_product_product__purchase_multiple_qty
