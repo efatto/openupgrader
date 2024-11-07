@@ -22,7 +22,8 @@ class OrderpointTemplate(models.Model):
 
     compute_on_sale = fields.Boolean(string="Compute On Sale")
     compute_on_out = fields.Boolean(
-        string="Compute On All Out or Consumed (excluded inventory)"
+        string="Compute On Out",
+        help="Compute On All Out or Consumed (excluded inventory)"
     )
     move_days = fields.Integer(
         help="Used when not filled date from and to in maximum criteria"

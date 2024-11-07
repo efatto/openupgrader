@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 14.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-11-07 18:39+0000\n"
-"PO-Revision-Date: 2024-11-07 18:39+0000\n"
+"POT-Creation-Date: 2024-11-07 20:52+0000\n"
+"PO-Revision-Date: 2024-11-07 20:52+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -34,14 +34,19 @@ msgid "Auto Max Qty Criteria"
 msgstr "Criterio Auto Max per quantità"
 
 #. module: stock_orderpoint_generator_sale
-#: model:ir.model.fields,field_description:stock_orderpoint_generator_sale.field_stock_warehouse_orderpoint_template__compute_on_out
+#: model:ir.model.fields,help:stock_orderpoint_generator_sale.field_stock_warehouse_orderpoint_template__compute_on_out
 msgid "Compute On All Out or Consumed (excluded inventory)"
+msgstr "Calcola su tutte le uscite ed i consumi (escluso inventari)"
+
+#. module: stock_orderpoint_generator_sale
+#: model:ir.model.fields,field_description:stock_orderpoint_generator_sale.field_stock_warehouse_orderpoint_template__compute_on_out
+msgid "Compute On Out"
 msgstr "Calcola sull'uscito"
 
 #. module: stock_orderpoint_generator_sale
 #: model:ir.model.fields,field_description:stock_orderpoint_generator_sale.field_stock_warehouse_orderpoint_template__compute_on_sale
 msgid "Compute On Sale"
-msgstr "Calcola Sul Venduto"
+msgstr "Calcola sul venduto"
 
 #. module: stock_orderpoint_generator_sale
 #: model:ir.model.fields,field_description:stock_orderpoint_generator_sale.field_product_product__display_name
@@ -194,8 +199,8 @@ msgid ""
 "You have to select \"sum\" as auto max qty criteria when \"compute on sale\""
 " or \"compute on out\" are selected"
 msgstr ""
-"È necessario selezionare \"somma\" come criterio di auto massimo quando \"calcola sul venduto\""
-" or \"calcola sull'uscito\" è selezionato"
+"È necessario selezionare \"somma\" come criterio di auto massimo quando "
+"\"calcola sul venduto\" o \"calcola sull'uscito\" è selezionato"
 
 #. module: stock_orderpoint_generator_sale
 #: code:addons/stock_orderpoint_generator_sale/models/orderpoint_template.py:0
