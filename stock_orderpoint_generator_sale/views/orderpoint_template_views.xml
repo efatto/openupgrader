@@ -107,6 +107,11 @@
           name="attrs"
         >{'invisible': ['|', '|', ('auto_min_qty','=', False), ('compute_on_sale', '=', True), ('compute_on_out', '=', True)]}</attribute>
             </group>
+            <group name="auto_maximum" position="attributes">
+                <attribute
+          name="attrs"
+        >{'invisible': ['|', '|', ('auto_max_qty','=', False), ('compute_on_sale', '=', True), ('compute_on_out', '=', True)]}</attribute>
+            </group>
             <xpath expr="//form/sheet/group" position="before">
                 <div class="oe_button_box" name="button_box">
                     <button
@@ -124,11 +129,11 @@
                     </button>
                 </div>
             </xpath>
-            <xpath expr="//notebook/page[@name='auto_rules']" position="attributes">
+            <page name="auto_rules" position="attributes">
                 <attribute
           name="attrs"
-        >{'invisible': ['|', ('auto_generate', '=', False), ('product_ctg_ids', '!=', False)]}</attribute>
-            </xpath>
+        >{'invisible': ['|', ('auto_generate', '=', False), ('product_ctg_ids', '!=', [])]}</attribute>
+            </page>
             <xpath expr="//notebook" position="inside">
                 <page string="Info" name="info">
                     <field name="log_info" />
