@@ -80,12 +80,12 @@
             <field name="auto_max_date_start" position="attributes">
                 <attribute
           name="attrs"
-        >{'required': [('auto_max_qty','!=', False), ('compute_on_sale', '=', False), ('compute_on_out', '=', False)]}</attribute>
+        >{'invisible': [('move_days', '!=', 0)], 'required': [('auto_max_qty','!=', False), ('compute_on_sale', '=', False), ('compute_on_out', '=', False)]}</attribute>
             </field>
             <field name="auto_max_date_end" position="attributes">
                 <attribute
           name="attrs"
-        >{'required': [('auto_max_qty','!=', False), ('compute_on_sale', '=', False), ('compute_on_out', '=', False)]}</attribute>
+        >{'invisible': [('move_days', '!=', 0)], 'required': [('auto_max_qty','!=', False), ('compute_on_sale', '=', False), ('compute_on_out', '=', False)]}</attribute>
             </field>
             <field name="auto_min_qty_criteria" position="attributes">
                 <attribute
