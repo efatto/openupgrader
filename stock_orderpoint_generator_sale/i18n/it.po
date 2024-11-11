@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 14.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-11-07 20:52+0000\n"
-"PO-Revision-Date: 2024-11-07 20:52+0000\n"
+"POT-Creation-Date: 2024-11-11 16:53+0000\n"
+"PO-Revision-Date: 2024-11-11 16:53+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -174,8 +174,8 @@ msgstr "Livello di Servizio"
 #. module: stock_orderpoint_generator_sale
 #: code:addons/stock_orderpoint_generator_sale/models/orderpoint_template.py:0
 #, python-format
-msgid "Service level cannot be equal to 50 or <= 0!"
-msgstr "Il livello di Servizio non può essere uguale a 50 o <= 0!"
+msgid "Service level cannot be greater than 1 nor <= 0!"
+msgstr "Il livello di servizio non può essere superiore a 1 né inferiore o uguale a 0!"
 
 #. module: stock_orderpoint_generator_sale
 #: model:ir.model.fields.selection,name:stock_orderpoint_generator_sale.selection__stock_warehouse_orderpoint_template__auto_max_qty_criteria__sum
@@ -191,23 +191,3 @@ msgstr "Usato quando le date non sono impostate nel criterio del massimo"
 #: model:ir.model.fields,field_description:stock_orderpoint_generator_sale.field_stock_warehouse_orderpoint_template__variation_percent
 msgid "Variation Percent"
 msgstr "Variazione Percentuale"
-
-#. module: stock_orderpoint_generator_sale
-#: code:addons/stock_orderpoint_generator_sale/models/orderpoint_template.py:0
-#, python-format
-msgid ""
-"You have to select \"sum\" as auto max qty criteria when \"compute on sale\""
-" or \"compute on out\" are selected"
-msgstr ""
-"È necessario selezionare \"somma\" come criterio di auto massimo quando "
-"\"calcola sul venduto\" o \"calcola sull'uscito\" è selezionato"
-
-#. module: stock_orderpoint_generator_sale
-#: code:addons/stock_orderpoint_generator_sale/models/orderpoint_template.py:0
-#, python-format
-msgid ""
-"[%s] Product orderpoint created (from max qty in selected date range / move "
-"days period: %s)"
-msgstr ""
-"[%s] Regole di riordino del prodotto create (dalla massima quantità nel "
-"periodo selezionato / periodo in giorni dei movimenti di magazzino: %s)"

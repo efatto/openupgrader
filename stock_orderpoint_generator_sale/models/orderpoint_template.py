@@ -9,6 +9,7 @@ from scipy.stats import norm
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
 from odoo.tools.date_utils import relativedelta
+from odoo.tools.float_utils import float_round
 
 
 class Orderpoint(models.Model):
@@ -246,8 +247,14 @@ class OrderpointTemplate(models.Model):
                     security_stock = int(
                         math.ceil(qty_by_day * service_factor * lead_time_factor)
                     )
-                    min_qty = int(math.ceil(consumed_qty_by_lead_time + security_stock))
-                    lot_to_reorder = int(
+                    min_qty = float_round(
+                        math.ceil(
+                            consumed_qty_by_lead_time + security_stock
+                        ),
+                        precision_digits=-1,
+                        rounding_method="UP",
+                    )
+                    lot_to_reorder = float_round(
                         math.ceil(
                             (
                                 2
@@ -257,7 +264,9 @@ class OrderpointTemplate(models.Model):
                                 / (0.15 * product_id.standard_price)
                             )
                             ** (1 / 2)
-                        )
+                        ),
+                        precision_digits=-1,
+                        rounding_method="UP",
                     )
                     max_qty = min_qty + lot_to_reorder
                     # end function
@@ -275,20 +284,28 @@ class OrderpointTemplate(models.Model):
                                 _(
                                     "[%s] Product orderpoint created (from max qty in "
                                     "selected date range / move days period: %s) "
-                                    f"(Move days: {move_days}, "
-                                    f"Qty by day: {qty_by_day}, "
-                                    f"Consumed qty by lead time: "
-                                    f"{consumed_qty_by_lead_time}, "
-                                    f"Service factor: {service_factor}, "
-                                    f"Lead time factor: {lead_time_factor}, "
-                                    f"Security stock: {security_stock}, "
-                                    f"Minimum qty: {min_qty}, "
-                                    f"Lot to reorder: {lot_to_reorder}, "
-                                    f"Maximum qty: {max_qty})"
+                                    "(Move days: %s, "
+                                    "Qty by day: %s, "
+                                    "Consumed qty by lead time: %s, "
+                                    "Service factor: %s, "
+                                    "Lead time factor: %s, "
+                                    "Security stock: %s, "
+                                    "Minimum qty: %s, "
+                                    "Lot to reorder: %s, "
+                                    "Maximum qty: %s)"
                                 )
                                 % (
                                     product_id.default_code,
                                     stock_max_qty[product_id.id],
+                                    move_days,
+                                    qty_by_day,
+                                    consumed_qty_by_lead_time,
+                                    service_factor,
+                                    lead_time_factor,
+                                    security_stock,
+                                    min_qty,
+                                    lot_to_reorder,
+                                    max_qty,
                                 )
                             ),
                         ]
