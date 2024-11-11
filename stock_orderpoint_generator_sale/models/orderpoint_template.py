@@ -23,7 +23,7 @@ class OrderpointTemplate(models.Model):
     compute_on_sale = fields.Boolean(string="Compute On Sale")
     compute_on_out = fields.Boolean(
         string="Compute On Out",
-        help="Compute On All Out or Consumed (excluded inventory)"
+        help="Compute On All Out or Consumed (excluded inventory)",
     )
     move_days = fields.Integer(
         help="Used when not filled date from and to in maximum criteria"
@@ -84,8 +84,8 @@ class OrderpointTemplate(models.Model):
     @api.constrains("service_level")
     def check_service_level(self):
         for template in self.filtered(lambda x: x.compute_on_sale or x.compute_on_out):
-            if template.service_level == 50 or template.service_level <= 0.0:
-                raise UserError(_("Service level cannot be equal to 50 or <= 0!"))
+            if template.service_level > 1 or template.service_level <= 0.0:
+                raise UserError(_("Service level cannot be greater than 1 nor <= 0!"))
 
     @api.model
     def _get_criteria_methods(self):
@@ -229,15 +229,19 @@ class OrderpointTemplate(models.Model):
                     vals["product_id"] = product_id.id
                     # function replicated from calc file
                     move_days = record.move_days
-                    if record.auto_max_date_start and record.auto_max_date_end:
+                    if (
+                        not move_days
+                        and record.auto_max_date_start
+                        and record.auto_max_date_end
+                    ):
                         move_days = (
                             record.auto_max_date_end - record.auto_max_date_start
                         ).days
                     qty_by_day = stock_max_qty[product_id.id] / (move_days or 1)
                     consumed_qty_by_lead_time = (
-                        qty_by_day * (1 + record.variation_percent / 100.0)
+                        qty_by_day * (1 + (record.variation_percent / 100.0))
                     ) * (product_id.purchase_delay or 1)
-                    service_factor = norm.ppf(record.service_level / 100.0)
+                    service_factor = norm.ppf(record.service_level)
                     lead_time_factor = (product_id.purchase_delay or 1) ** (1 / 2)
                     security_stock = int(
                         math.ceil(qty_by_day * service_factor * lead_time_factor)
