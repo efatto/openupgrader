@@ -248,9 +248,7 @@ class OrderpointTemplate(models.Model):
                         math.ceil(qty_by_day * service_factor * lead_time_factor)
                     )
                     min_qty = float_round(
-                        math.ceil(
-                            consumed_qty_by_lead_time + security_stock
-                        ),
+                        math.ceil(consumed_qty_by_lead_time + security_stock),
                         precision_digits=-1,
                         rounding_method="UP",
                     )
