@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 14.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-11-11 16:53+0000\n"
-"PO-Revision-Date: 2024-11-11 16:53+0000\n"
+"POT-Creation-Date: 2024-11-11 17:00+0000\n"
+"PO-Revision-Date: 2024-11-11 17:00+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -175,7 +175,9 @@ msgstr "Livello di Servizio"
 #: code:addons/stock_orderpoint_generator_sale/models/orderpoint_template.py:0
 #, python-format
 msgid "Service level cannot be greater than 1 nor <= 0!"
-msgstr "Il livello di servizio non può essere superiore a 1 né inferiore o uguale a 0!"
+msgstr ""
+"Il livello di servizio non può essere superiore a 1 né inferiore o uguale a "
+"0!"
 
 #. module: stock_orderpoint_generator_sale
 #: model:ir.model.fields.selection,name:stock_orderpoint_generator_sale.selection__stock_warehouse_orderpoint_template__auto_max_qty_criteria__sum
@@ -191,3 +193,17 @@ msgstr "Usato quando le date non sono impostate nel criterio del massimo"
 #: model:ir.model.fields,field_description:stock_orderpoint_generator_sale.field_stock_warehouse_orderpoint_template__variation_percent
 msgid "Variation Percent"
 msgstr "Variazione Percentuale"
+
+#. module: stock_orderpoint_generator_sale
+#: code:addons/stock_orderpoint_generator_sale/models/orderpoint_template.py:0
+#, python-format
+msgid ""
+"[%s] Product orderpoint created (from max qty in selected date range / move "
+"days period: %s) (Move days: %s, Qty by day: %s, Consumed qty by lead time: "
+"%s, Service factor: %s, Lead time factor: %s, Security stock: %s, Minimum "
+"qty: %s, Lot to reorder: %s, Maximum qty: %s)"
+msgstr ""
+"[%s] Regola di riordino creata (dalla quantità massima nel periodo selezionato / lasso "
+"di giorni: %s) (Giorni: %s, consumo giornaliero: %s, consumo pezzi nei giorni di LEAD TIME: "
+"%s, fattore di servizio (k): %s, fattore di lead time: %s, stock di sicurezza (SS): %s, quantità minima"
+": %s, lotto economico di riodino (EOQ): %s, quantità massima: %s)"
