@@ -274,7 +274,17 @@ class OrderpointTemplate(models.Model):
                             (
                                 _(
                                     "[%s] Product orderpoint created (from max qty in "
-                                    "selected date range / move days period: %s)"
+                                    "selected date range / move days period: %s) "
+                                    f"(Move days: {move_days}, "
+                                    f"Qty by day: {qty_by_day}, "
+                                    f"Consumed qty by lead time: "
+                                    f"{consumed_qty_by_lead_time}, "
+                                    f"Service factor: {service_factor}, "
+                                    f"Lead time factor: {lead_time_factor}, "
+                                    f"Security stock: {security_stock}, "
+                                    f"Minimum qty: {min_qty}, "
+                                    f"Lot to reorder: {lot_to_reorder}, "
+                                    f"Maximum qty: {max_qty})"
                                 )
                                 % (
                                     product_id.default_code,
