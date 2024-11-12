@@ -347,13 +347,17 @@ class TestSaleStockMrpProduceDelay(TestProductionData):
         with self.assertRaises(UserError):
             sale_order.action_confirm()
         sale_order.order_line.write({"commitment_date": available_date3})
+        old_productions = self.env["mrp.production"].search(
+            []
+        )
         sale_order.action_confirm()
         # now we have outgoing stock.move and mo to be produced             +3
         self.assertEqual(sale_order.state, "sale")
-        production = self.env["mrp.production"].search(
-            [("origin", "=", sale_order.name)]
-        )
-        self.assertTrue(production)
+        productions = self.env["mrp.production"].search(
+            []
+        ) - old_productions
+        self.assertEqual(len(productions), 1)
+        production = productions[0]
         production.action_assign()
         production.qty_producing = 2.0
         for raw_move in production.move_raw_ids:
