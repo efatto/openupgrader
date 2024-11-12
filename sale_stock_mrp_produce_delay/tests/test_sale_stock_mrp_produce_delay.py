@@ -140,14 +140,17 @@ class TestSaleStockMrpProduceDelay(TestProductionData):
         # check product to purchase
         commitment_date_not_possible = fields.Date.today() + relativedelta(days=20)
         commitment_date_possible = fields.Date.today() + relativedelta(days=27)
-        order1 = self.env["sale.order"].create(
-            {
-                "partner_id": self.partner.id,
-            }
-        )
-        line1 = self._create_sale_order_line(
-            order1, self.product, 5, commitment_date_not_possible
-        )
+        order_form = Form(self.env["sale.order"])
+        order_form.partner_id = self.partner
+        with order_form.order_line.new() as line:
+            line.product_id = self.product
+            line.product_uom_qty = 5
+            line.product_uom = self.product.uom_id
+            line.price_unit = 100
+            line.name = self.product.name
+            line.commitment_date = commitment_date_not_possible
+        order1 = order_form.save()
+        line1 = order1.order_line
         order1.compute_dates()
         available_date = fields.Date.today() + relativedelta(days=26)
         self.assertEqual(line1.available_date, available_date)
