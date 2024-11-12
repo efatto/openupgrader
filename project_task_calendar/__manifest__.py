@@ -4,7 +4,8 @@
     "name": "Better view of task on calendar",
     "version": "14.0.1.0.0",
     "category": "Extra Tools",
-    "summary": "View task on calendar based on date_end and date_start",
+    "summary": "View task on calendar based on planned_date_end and planned "
+    "date_start",
     "author": "Sergio Corato",
     "website": "https://github.com/sergiocorato/efatto",
     "license": "AGPL-3",

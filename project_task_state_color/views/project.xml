@@ -30,8 +30,8 @@
         <field name="arch" type="xml">
             <calendar position="attributes">
                 <attribute name="color">project_id</attribute>
-                <attribute name="date_start">date_start</attribute>
-                <attribute name="date_stop">date_end</attribute>
+                <attribute name="date_start">planned_date_start</attribute>
+                <attribute name="date_stop">planned_date_end</attribute>
             </calendar>
             <field name="user_id" position="before">
                 <field name="name" />
