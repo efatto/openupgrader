@@ -350,24 +350,25 @@ class TestSaleStockMrpProduceDelay(TestProductionData):
         sale_order.action_confirm()
         # now we have outgoing stock.move and mo to be produced             +3
         self.assertEqual(sale_order.state, "sale")
-        self.production = self.env["mrp.production"].search(
+        production = self.env["mrp.production"].search(
             [("origin", "=", sale_order.name)]
         )
 
-        self.production.action_assign()
-        self.production.qty_producing = 2.0
-        for raw_move in self.production.move_raw_ids:
+        production.action_assign()
+        production.qty_producing = 2.0
+        for raw_move in production.move_raw_ids:
             raw_move.quantity_done = (
                 raw_move.product_qty
-                * self.production.qty_producing
-                / self.production.product_qty
+                * production.qty_producing
+                / production.product_qty
             )
-        self.production.button_mark_done()
-        self.assertEqual(self.production.state, "progress")
+        production.button_mark_done()
+        self.assertTrue(production)
+        self.assertEqual(production.state, "progress")
         self.assertEqual(
-            self.production.source_procurement_group_id.name, sale_order.name
+            production.source_procurement_group_id.name, sale_order.name
         )
-        self.assertEqual(len(self.production), 1)
+        self.assertEqual(len(production), 1)
 
         sale_order.compute_dates()
         # la quantità da produrre non tiene conto di una produzione in corso per quanti-
