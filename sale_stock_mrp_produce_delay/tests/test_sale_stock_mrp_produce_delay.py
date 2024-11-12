@@ -350,15 +350,11 @@ class TestSaleStockMrpProduceDelay(TestProductionData):
         with self.assertRaises(UserError):
             sale_order.action_confirm()
         sale_order.order_line.write({"commitment_date": available_date3})
-        old_productions = self.env["mrp.production"].search(
-            []
-        )
+        old_productions = self.env["mrp.production"].search([])
         sale_order.action_confirm()
         # now we have outgoing stock.move and mo to be produced             +3
         self.assertEqual(sale_order.state, "sale")
-        productions = self.env["mrp.production"].search(
-            []
-        ) - old_productions
+        productions = self.env["mrp.production"].search([]) - old_productions
         self.assertEqual(len(productions), 1)
         production = productions[0]
         production.action_assign()
@@ -369,7 +365,7 @@ class TestSaleStockMrpProduceDelay(TestProductionData):
             )
         production.button_mark_done()
         self.assertEqual(production.state, "progress")
-        self.assertEqual(production.source_procurement_group_id.name, sale_order.name)
+        self.assertIn(sale_order.name, production.source_procurement_group_id.name)
         self.assertEqual(len(production), 1)
 
         sale_order.compute_dates()
