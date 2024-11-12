@@ -353,7 +353,7 @@ class TestSaleStockMrpProduceDelay(TestProductionData):
         production = self.env["mrp.production"].search(
             [("origin", "=", sale_order.name)]
         )
-
+        self.assertTrue(production)
         production.action_assign()
         production.qty_producing = 2.0
         for raw_move in production.move_raw_ids:
@@ -361,7 +361,6 @@ class TestSaleStockMrpProduceDelay(TestProductionData):
                 raw_move.product_qty * production.qty_producing / production.product_qty
             )
         production.button_mark_done()
-        self.assertTrue(production)
         self.assertEqual(production.state, "progress")
         self.assertEqual(production.source_procurement_group_id.name, sale_order.name)
         self.assertEqual(len(production), 1)
