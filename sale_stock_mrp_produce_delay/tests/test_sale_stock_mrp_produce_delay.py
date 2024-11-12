@@ -108,20 +108,6 @@ class TestSaleStockMrpProduceDelay(TestProductionData):
         else:
             self._update_product_qty(product, qty)
 
-    def _create_sale_order_line(self, order, product, qty, commitment_date=False):
-        vals = {
-            "order_id": order.id,
-            "product_id": product.id,
-            "product_uom_qty": qty,
-            "price_unit": 100,
-        }
-        if commitment_date:
-            vals.update({"commitment_date": commitment_date})
-        line = self.env["sale.order.line"].create(vals)
-        line.product_id_change()
-        line._convert_to_write(line._cache)
-        return line
-
     def _create_purchase_order_line(self, order, product, qty, date_planned=False):
         vals = {
             "name": product.name,
@@ -174,41 +160,6 @@ class TestSaleStockMrpProduceDelay(TestProductionData):
         )
         po_line = po.order_line.filtered(lambda x: x.product_id == self.product)
         self.assertEqual(po_line.date_planned.date(), available_date)
-
-    def _create_order_(self):
-        order = self.env["sale.order"].create(
-            {
-                "partner_id": self.partner.id,
-            }
-        )
-        self._set_product_unavailable(self.top_product, 0)
-        line = self._create_sale_order_line(order, self.top_product, 3)
-        order.compute_dates()
-        available_date = fields.Date.today() + relativedelta(days=35)
-        available_date1 = fields.Date.today() + relativedelta(days=26)
-        available_date2 = fields.Date.today() + relativedelta(
-            days=35 + self.top_product.produce_delay
-        )
-        self.assertEqual(line.available_date, available_date2)
-        # all product are un-available, so info display all at the produce-purchase date
-        self.assertEqual(
-            line.available_dates_info,
-            "[BOM] [MANUF] [QTY: 3.0] [TO PRODUCE] plannable date %s.\n"
-            "─[BOM] [MANUF 1-2] [QTY: 6.0] [TO PRODUCE] plannable date %s.\n"
-            "─└[COMP] [MANUF 1-1-1] [QTY: 18.0] [TO PURCHASE] plannable date %s.\n"
-            "─└[COMP] [MANUF 1-2-1] [QTY: 24.0] [TO PURCHASE] plannable date %s.\n"
-            "─[BOM] [MANUF 1-1] [QTY: 15.0] [TO PRODUCE] plannable date %s.\n"
-            "─└[COMP] [MANUF 1-1-1] [QTY: 30.0] [TO PURCHASE] plannable date %s."
-            % (
-                available_date2.strftime("%d/%m/%Y"),
-                available_date.strftime("%d/%m/%Y"),
-                available_date1.strftime("%d/%m/%Y"),
-                available_date.strftime("%d/%m/%Y"),
-                available_date1.strftime("%d/%m/%Y"),
-                available_date1.strftime("%d/%m/%Y"),
-            ),
-        )
-        return order, line, available_date, available_date1, available_date2
 
     def test_01_available_info_product_mrp(self):
         # simulate a product with multiple child boms to show a "tree" of
@@ -432,13 +383,46 @@ class TestSaleStockMrpProduceDelay(TestProductionData):
         #      -> 4pc subproduct_2_1 [MANUF 1-2-1] * 3 = 24pc (stock) -> 35 days purch
         #   -> 5pc subproduct1 [MANUF 1-1] * 3 = 15pc (bom): ¹
         #      -> 2pc subproduct_1_1 [MANUF 1-1-1] * 3 = 30pc (stock) -> 26 days purch
-        (
-            sale_order,
-            sale_line,
-            available_date,
-            available_date1,
-            available_date2,
-        ) = self._create_order_()
+        order_form = Form(self.env["sale.order"])
+        order_form.partner_id = self.partner
+        sale_order = order_form.save()
+        self._set_product_unavailable(self.top_product, 0)
+        order_form = Form(sale_order)
+        with order_form.order_line.new() as line:
+            line.product_id = self.top_product
+            line.product_uom_qty = 3
+            line.product_uom = self.top_product.uom_id
+            line.price_unit = 100
+            line.name = self.top_product.name
+        sale_order = order_form.save()
+        sale_line = sale_order.order_line.filtered(
+            lambda x: x.product_id == self.top_product
+        )
+        sale_order.compute_dates()
+        available_date = fields.Date.today() + relativedelta(days=35)
+        available_date1 = fields.Date.today() + relativedelta(days=26)
+        available_date2 = fields.Date.today() + relativedelta(
+            days=35 + self.top_product.produce_delay
+        )
+        self.assertEqual(sale_line.available_date, available_date2)
+        # all product are un-available, so info display all at the produce-purchase date
+        self.assertEqual(
+            sale_line.available_dates_info,
+            "[BOM] [MANUF] [QTY: 3.0] [TO PRODUCE] plannable date %s.\n"
+            "─[BOM] [MANUF 1-2] [QTY: 6.0] [TO PRODUCE] plannable date %s.\n"
+            "─└[COMP] [MANUF 1-1-1] [QTY: 18.0] [TO PURCHASE] plannable date %s.\n"
+            "─└[COMP] [MANUF 1-2-1] [QTY: 24.0] [TO PURCHASE] plannable date %s.\n"
+            "─[BOM] [MANUF 1-1] [QTY: 15.0] [TO PRODUCE] plannable date %s.\n"
+            "─└[COMP] [MANUF 1-1-1] [QTY: 30.0] [TO PURCHASE] plannable date %s."
+            % (
+                available_date2.strftime("%d/%m/%Y"),
+                available_date.strftime("%d/%m/%Y"),
+                available_date1.strftime("%d/%m/%Y"),
+                available_date.strftime("%d/%m/%Y"),
+                available_date1.strftime("%d/%m/%Y"),
+                available_date1.strftime("%d/%m/%Y"),
+            ),
+        )
         # subbom1: 3*5*2 subproduct_1_1 = 30 -> 2 in stock, 25 incoming on 26-5 days (so
         # before the purchase delay), 30+18 needed
         # subbom2: 3*2*3 subproduct_1_1 = 18 -> see above
