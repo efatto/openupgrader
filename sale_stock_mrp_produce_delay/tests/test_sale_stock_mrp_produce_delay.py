@@ -281,14 +281,16 @@ class TestSaleStockMrpProduceDelay(TestProductionData):
         )
 
         # create an incoming of [MANUF 1-2-1] for 30pc but at a date far then
-        # purchaseable date, this incoming will be ignored
+        # purchaseable date, this incoming will [not] be ignored [new customer
+        # specification applied on stock_reserve_date_check on 2014-10-14]
+        extra_days = 5
         purchase_order2 = self.env["purchase.order"].create(
             {
                 "partner_id": self.partner.id,
             }
         )
         purchase_planned_date2 = fields.Datetime.now() + relativedelta(
-            days=self.subproduct_2_1.purchase_delay + 5
+            days=self.subproduct_2_1.purchase_delay + extra_days
         )
         self._create_purchase_order_line(
             purchase_order2, self.subproduct_2_1, 25, purchase_planned_date2
@@ -310,20 +312,21 @@ class TestSaleStockMrpProduceDelay(TestProductionData):
             ).virtual_available_at_date_move,
             25,
         )
+        available_date3 = available_date2 + relativedelta(days=extra_days)
         sale_order.compute_dates()
         self.assertEqual(
             sale_order.order_line.available_dates_info,
             "[BOM] [MANUF] [QTY: 3.0] [TO PRODUCE] plannable date %s.\n"
             "─[BOM] [MANUF 1-2] [QTY: 6.0] [TO PRODUCE] plannable date %s.\n"
             "─└[COMP] [MANUF 1-1-1] [QTY: 18.0] [FROM STOCK] plannable date %s.\n"
-            "─└[COMP] [MANUF 1-2-1] [QTY: 24.0] [TO PURCHASE] plannable date %s.\n"
+            "─└[COMP] [MANUF 1-2-1] [QTY: 24.0] [FROM STOCK] plannable date %s.\n"
             "─[BOM] [MANUF 1-1] [QTY: 15.0] [TO PRODUCE] plannable date %s.\n"
             "─└[COMP] [MANUF 1-1-1] [QTY: 30.0] [TO PURCHASE] plannable date %s."
             % (
-                available_date2.strftime("%d/%m/%Y"),
-                available_date.strftime("%d/%m/%Y"),
+                available_date3.strftime("%d/%m/%Y"),
+                purchase_planned_date2.strftime("%d/%m/%Y"),
                 purchase_planned_date1.strftime("%d/%m/%Y"),
-                available_date.strftime("%d/%m/%Y"),
+                purchase_planned_date2.strftime("%d/%m/%Y"),
                 available_date1.strftime("%d/%m/%Y"),
                 available_date1.strftime("%d/%m/%Y"),
             ),
@@ -343,7 +346,7 @@ class TestSaleStockMrpProduceDelay(TestProductionData):
         # total top_products                                                -5
         with self.assertRaises(UserError):
             sale_order.action_confirm()
-        sale_order.order_line.write({"commitment_date": available_date2})
+        sale_order.order_line.write({"commitment_date": available_date3})
         sale_order.action_confirm()
         # now we have outgoing stock.move and mo to be produced             +3
         self.assertEqual(sale_order.state, "sale")
