@@ -358,16 +358,12 @@ class TestSaleStockMrpProduceDelay(TestProductionData):
         production.qty_producing = 2.0
         for raw_move in production.move_raw_ids:
             raw_move.quantity_done = (
-                raw_move.product_qty
-                * production.qty_producing
-                / production.product_qty
+                raw_move.product_qty * production.qty_producing / production.product_qty
             )
         production.button_mark_done()
         self.assertTrue(production)
         self.assertEqual(production.state, "progress")
-        self.assertEqual(
-            production.source_procurement_group_id.name, sale_order.name
-        )
+        self.assertEqual(production.source_procurement_group_id.name, sale_order.name)
         self.assertEqual(len(production), 1)
 
         sale_order.compute_dates()
