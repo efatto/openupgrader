@@ -102,7 +102,7 @@ class TestSaleOrderCalendarState(TestProductionData):
         with order_form.order_line.new() as line:
             line.product_id = self.top_product
             line.product_uom_qty = 20
-            line.product_uom = self.top_product.uom_po_id
+            line.product_uom = self.top_product.uom_id
             line.price_unit = self.top_product.list_price
             line.name = self.top_product.name
         order = order_form.save()
