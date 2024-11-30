@@ -3,7 +3,7 @@
 <!--  Icon is red when:
       1. qty requested is greater than qty available and date scheduled is greater than date requested
       Icon is invisible when:
-      2. product is mto
+      2. product is mto or is kit
 -->
     <div t-extend="sale_stock.qtyAtDate">
         <t t-jquery="div" t-operation="replace">

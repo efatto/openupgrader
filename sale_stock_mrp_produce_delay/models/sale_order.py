@@ -345,40 +345,8 @@ class SaleOrderLine(models.Model):
             res["context"] = {"search_default_id": self.late_product_ids.ids}
         return res
 
-
-class SaleOrder(models.Model):
-    _inherit = "sale.order"
-
-    available_date = fields.Date(
-        help="First available date computed in date/hour of available_date_compute",
-        compute="_compute_available_date",
-        store=True,
-    )
-    last_available_date_compute = fields.Datetime(
-        compute="_compute_available_date", store=True
-    )
-
-    @api.depends("order_line.available_date")
-    def _compute_available_date(self):
-        for order in self:
-            available_dates = [
-                x for x in order.order_line.mapped("available_date") if x
-            ]
-            last_available_date_computes = [
-                x for x in order.order_line.mapped("last_available_date_compute") if x
-            ]
-            if available_dates:
-                order.available_date = max(available_dates)
-            else:
-                order.available_date = False
-            if last_available_date_computes:
-                order.last_available_date_compute = max(last_available_date_computes)
-            else:
-                order.last_available_date_compute = False
-
     def compute_dates(self):
-        self.ensure_one()
-        for line in self.order_line.sorted(key=lambda r: r.sequence):
+        for line in self.sorted(key=lambda r: r.sequence):
             if not line.product_id:
                 line.available_date = False
                 line.available_dates_info = False
@@ -418,3 +386,44 @@ class SaleOrder(models.Model):
             if line.available_date > commitment_date:
                 predicted_arrival_late = True
             line.predicted_arrival_late = predicted_arrival_late
+
+
+class SaleOrder(models.Model):
+    _inherit = "sale.order"
+
+    available_date = fields.Date(
+        help="First available date computed in date/hour of available_date_compute",
+        compute="_compute_available_date",
+        store=True,
+    )
+    last_available_date_compute = fields.Datetime(
+        compute="_compute_available_date", store=True
+    )
+
+    @api.depends("order_line.available_date")
+    def _compute_available_date(self):
+        for order in self:
+            available_dates = [
+                x for x in order.order_line.mapped("available_date") if x
+            ]
+            last_available_date_computes = [
+                x for x in order.order_line.mapped("last_available_date_compute") if x
+            ]
+            if available_dates:
+                order.available_date = max(available_dates)
+            else:
+                order.available_date = False
+            if last_available_date_computes:
+                order.last_available_date_compute = max(last_available_date_computes)
+            else:
+                order.last_available_date_compute = False
+
+    def compute_dates(self):
+        for order in self:
+            order.order_line.compute_dates()
+
+    def action_confirm(self):
+        super().action_confirm()
+        for order in self:
+            order.order_line.compute_dates()
+        return True
