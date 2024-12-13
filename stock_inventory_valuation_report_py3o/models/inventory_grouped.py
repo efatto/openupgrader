@@ -6,11 +6,12 @@ from odoo import models
 
 
 class StockInventory(models.Model):
-    _inherit = 'stock.inventory'
+    _inherit = "stock.inventory"
 
     def report_group_lines(self):
         self.ensure_one()
-        self._cr.execute("""
+        self._cr.execute(
+            """
             SELECT
             min(id) AS min_line_id,
             product_id,
@@ -24,10 +25,12 @@ class StockInventory(models.Model):
             WHERE inventory_id=%s
             GROUP BY product_id, package_id, prod_lot_id,
                      product_uom_id
-            """, (self.id, ))
+            """,
+            (self.id,),
+        )
         res = []
-        silo = self.env['stock.inventory.line']
+        silo = self.env["stock.inventory.line"]
         for row in self._cr.dictfetchall():
-            row['min_line'] = silo.browse(row['min_line_id'])
+            row["min_line"] = silo.browse(row["min_line_id"])
             res.append(row)
         return res
