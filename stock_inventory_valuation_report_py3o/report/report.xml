@@ -5,6 +5,7 @@
         <field name="name">Inventory Valuation per Location (ODS)</field>
         <field name="model">stock.inventory</field>
         <field name="report_name">stock_inventory_ods</field>
+        <field name="report_file">stock_inventory_ods</field>
         <field name="report_type">py3o</field>
         <field name="py3o_filetype">xls</field>
         <field name="module">stock_inventory_valuation_report_py3o</field>
@@ -17,6 +18,7 @@
         <field name="name">Inventory Valuation Grouped (ODS)</field>
         <field name="model">stock.inventory</field>
         <field name="report_name">stock.inventory.grouped.ods</field>
+        <field name="report_file">stock.inventory.grouped.ods</field>
         <field name="report_type">py3o</field>
         <field name="py3o_filetype">xls</field>
         <field name="module">stock_inventory_valuation_report_py3o</field>
