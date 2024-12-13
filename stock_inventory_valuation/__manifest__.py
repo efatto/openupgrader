@@ -13,7 +13,7 @@
     "depends": [
         "purchase",
         "stock_account",
-        "stock_account_inventory_force_date",
+        # "stock_account_inventory_force_date",
         "stock_inventory_preparation_filter",
     ],
     "data": [

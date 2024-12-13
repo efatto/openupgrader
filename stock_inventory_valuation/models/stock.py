@@ -1,6 +1,4 @@
-# Copyright 2018-2021 Sergio Corato <https://github.com/sergiocorato>
-# License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl).
-from odoo import api, fields, models
+from odoo import fields, models
 
 
 class StockInventoryLine(models.Model):
@@ -24,7 +22,6 @@ class StockInventory(models.Model):
         "Cost valuation",
     )
 
-    @api.multi
     def product_recalculate_value(self):
         for inv in self:
             if inv.valuation_type == "standard":
@@ -84,8 +81,8 @@ class StockInventory(models.Model):
                         }
                     )
 
-    @api.multi
     def price_calculation(self, line):
+        self.ensure_one()
         order = "date desc, id desc"
         move_obj = self.env["stock.move"]
         if self.valuation_type in ["fifo", "average"]:
@@ -137,13 +134,13 @@ class StockInventory(models.Model):
                 if move.purchase_line_id:
                     if (
                         move.purchase_line_id.invoice_lines
-                        and move.purchase_line_id.invoice_lines[0].invoice_id.state
-                        in ("open", "paid")
+                        and move.purchase_line_id.invoice_lines[0].move_id.state
+                        == "posted"
                     ):
                         # In real life, all move lines related to an 1 invoice line
                         # should be in the same state and have the same date
                         inv_line = move.purchase_line_id.invoice_lines[0]
-                        invoice = inv_line.invoice_id
+                        invoice = inv_line.move_id
                         price_unit = invoice.currency_id._convert(
                             inv_line.price_subtotal,
                             invoice.company_id.currency_id,
