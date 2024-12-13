@@ -1,17 +1,29 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8" ?>
 <odoo>
     <record id="view_inventory_form" model="ir.ui.view">
         <field name="name">view.inventory.form.valuation</field>
         <field name="model">stock.inventory</field>
-        <field name="inherit_id" ref="stock.view_inventory_form"/>
+        <field name="inherit_id" ref="stock.view_inventory_form" />
         <field name="arch" type="xml">
-            <xpath expr="//notebook/page/field[@name='line_ids']/tree/field[@name='partner_id']" position="after">
-                <field name="valuation_price_unit"/>
-                <field name="valuation_price_subtotal"/>
+            <xpath
+        expr="//notebook/page/field[@name='line_ids']/tree/field[@name='partner_id']"
+        position="after"
+      >
+                <field name="valuation_price_unit" />
+                <field name="valuation_price_subtotal" />
             </xpath>
             <field name="accounting_date" position="after">
-                <button name="product_recalculate_value" string="Compute costs with method:" type="object" attrs="{'invisible': [('state', 'in', ['draft', 'cancel'])]}"/>
-                <field name="valuation_type" nolabel="1" attrs="{'invisible': [('state', 'in', ['draft', 'cancel'])]}"/>
+                <button
+          name="product_recalculate_value"
+          string="Compute costs with method:"
+          type="object"
+          attrs="{'invisible': [('state', 'in', ['draft', 'cancel'])]}"
+        />
+                <field
+          name="valuation_type"
+          nolabel="1"
+          attrs="{'invisible': [('state', 'in', ['draft', 'cancel'])]}"
+        />
             </field>
         </field>
     </record>

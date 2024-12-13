@@ -5,8 +5,8 @@
     "version": "14.0.1.0.0",
     "category": "other",
     "summary": """
-    When MTO route is removed from a product which has draft RfQ and OUT from Sale 
-    Orders are done, the propagation cancel option must be removed manually from 
+    When MTO route is removed from a product which has draft RfQ and OUT from Sale
+    Orders are done, the propagation cancel option must be removed manually from
     purchase order line to proceed.
     """,
     "author": "Sergio Corato",
