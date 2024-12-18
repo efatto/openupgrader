@@ -16,9 +16,9 @@ Stock reserve date check
 .. |badge2| image:: https://img.shields.io/badge/licence-AGPL--3-blue.png
     :target: http://www.gnu.org/licenses/agpl-3.0-standalone.html
     :alt: License: AGPL-3
-.. |badge3| image:: https://img.shields.io/badge/github-sergiocorato%2Fefatto-lightgray.png?logo=github
-    :target: https://github.com/sergiocorato/efatto/tree/14.0/stock_reserve_date_check
-    :alt: sergiocorato/efatto
+.. |badge3| image:: https://img.shields.io/badge/github-efatto%2Fefatto-lightgray.png?logo=github
+    :target: https://github.com/efatto/efatto/tree/14.0/stock_reserve_date_check
+    :alt: efatto/efatto
 
 |badge1| |badge2| |badge3|
 
@@ -36,7 +36,7 @@ Configuration
 
 Nell'ordine di vendita è stata aggiunta un'opzione, attivata di default ma che l'utente può disabilitare, che blocca la vendita con date di impegno non possibili:
 
-.. image:: https://raw.githubusercontent.com/sergiocorato/efatto/14.0/stock_reserve_date_check/static/description/enable.png
+.. image:: https://raw.githubusercontent.com/efatto/efatto/14.0/stock_reserve_date_check/static/description/enable.png
     :alt: Abilita
 
 Le date di impegno non possibili sono definite come:
@@ -46,26 +46,26 @@ Le date di impegno non possibili sono definite come:
 
 In caso il campo sia abilitato e l'impegno nella data richiesta non sia possibile, verrà mostrato un messaggio di errore, in cui sono indicati il prodotto o i suoi componenti, la data di possibile acquisto, le date di disponibilità non conformi:
 
-.. image:: https://raw.githubusercontent.com/sergiocorato/efatto/14.0/stock_reserve_date_check/static/description/errore.png
+.. image:: https://raw.githubusercontent.com/efatto/efatto/14.0/stock_reserve_date_check/static/description/errore.png
     :alt: Errore
 
 Che può essere risolto spostando la data di impegno, oppure disabilitando il controllo.
 
-.. image:: https://raw.githubusercontent.com/sergiocorato/efatto/14.0/stock_reserve_date_check/static/description/disable.png
+.. image:: https://raw.githubusercontent.com/efatto/efatto/14.0/stock_reserve_date_check/static/description/disable.png
     :alt: Disabilita
 
 N.B.: L'errore viene esposto per un singolo prodotto/componente, cambiando la data con una in cui tale prodotto è acquistabile o in magazzino, potrebbe essere esposto un errore per un altro prodotto/componente e così via a scalare. Per calcolare la prima data utile complessiva, è disponibile il bottone seguente (se installato il modulo https://github.com/sergiocorato/efatto/tree/12.0/sale_stock_mrp_produce_delay ):
 
-.. image:: https://raw.githubusercontent.com/sergiocorato/efatto/14.0/stock_reserve_date_check/static/description/calcola.png
+.. image:: https://raw.githubusercontent.com/efatto/efatto/14.0/stock_reserve_date_check/static/description/calcola.png
     :alt: Calcola
 
 Bug Tracker
 ===========
 
-Bugs are tracked on `GitHub Issues <https://github.com/sergiocorato/efatto/issues>`_.
+Bugs are tracked on `GitHub Issues <https://github.com/efatto/efatto/issues>`_.
 In case of trouble, please check there if your issue has already been reported.
 If you spotted it first, help us to smash it by providing a detailed and welcomed
-`feedback <https://github.com/sergiocorato/efatto/issues/new?body=module:%20stock_reserve_date_check%0Aversion:%2014.0%0A%0A**Steps%20to%20reproduce**%0A-%20...%0A%0A**Current%20behavior**%0A%0A**Expected%20behavior**>`_.
+`feedback <https://github.com/efatto/efatto/issues/new?body=module:%20stock_reserve_date_check%0Aversion:%2014.0%0A%0A**Steps%20to%20reproduce**%0A-%20...%0A%0A**Current%20behavior**%0A%0A**Expected%20behavior**>`_.
 
 Do not contact contributors directly about support or help with technical issues.
 
@@ -85,6 +85,6 @@ Contributors
 Maintainers
 ~~~~~~~~~~~
 
-This module is part of the `sergiocorato/efatto <https://github.com/sergiocorato/efatto/tree/14.0/stock_reserve_date_check>`_ project on GitHub.
+This module is part of the `efatto/efatto <https://github.com/efatto/efatto/tree/14.0/stock_reserve_date_check>`_ project on GitHub.
 
 You are welcome to contribute.

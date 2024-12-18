@@ -13,7 +13,7 @@ So, the new field has to be used when user doesn't want to use the default
 ddt numbering for a specific ddt.
     """,
     "author": "Sergio Corato",
-    "website": "https://github.com/sergiocorato/efatto",
+    "website": "https://github.com/efatto/efatto",
     "license": "AGPL-3",
     "depends": [
         "l10n_it_delivery_note",

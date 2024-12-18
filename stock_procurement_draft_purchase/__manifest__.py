@@ -6,7 +6,7 @@
     "category": "Stock Management",
     "author": "Sergio Corato",
     "summary": "Show quantities in draft and sent purchase order in stock orderpoint.",
-    "website": "https://github.com/sergiocorato/efatto",
+    "website": "https://github.com/efatto/efatto",
     "license": "AGPL-3",
     "depends": [
         "purchase_stock",

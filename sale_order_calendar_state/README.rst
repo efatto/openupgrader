@@ -16,9 +16,9 @@ Sale calendar state
 .. |badge2| image:: https://img.shields.io/badge/licence-AGPL--3-blue.png
     :target: http://www.gnu.org/licenses/agpl-3.0-standalone.html
     :alt: License: AGPL-3
-.. |badge3| image:: https://img.shields.io/badge/github-sergiocorato%2Fefatto-lightgray.png?logo=github
-    :target: https://github.com/sergiocorato/efatto/tree/14.0/sale_order_calendar_state
-    :alt: sergiocorato/efatto
+.. |badge3| image:: https://img.shields.io/badge/github-efatto%2Fefatto-lightgray.png?logo=github
+    :target: https://github.com/efatto/efatto/tree/14.0/sale_order_calendar_state
+    :alt: efatto/efatto
 
 |badge1| |badge2| |badge3|
 
@@ -34,29 +34,29 @@ Configuration
 
 Nell'ordine di vendita è stato aggiunto un campo calcolato che mostra lo stato della lavorazione dell'ordine in merito alla sua consegnabilità, denominato `Stato di calendario`:
 
-.. image:: https://raw.githubusercontent.com/sergiocorato/efatto/14.0/sale_order_calendar_state/static/description/stato_di_calendario.png
+.. image:: https://raw.githubusercontent.com/efatto/efatto/14.0/sale_order_calendar_state/static/description/stato_di_calendario.png
     :alt: Stato di calendario
 
 Nell'ordine di produzione è possibile impostare uno stato aggiuntivo (in successivo sviluppo verrà calcolato in automatico):
 
-.. image:: https://raw.githubusercontent.com/sergiocorato/efatto/14.0/sale_order_calendar_state/static/description/stato_aggiuntivo.png
+.. image:: https://raw.githubusercontent.com/efatto/efatto/14.0/sale_order_calendar_state/static/description/stato_aggiuntivo.png
     :alt: Stato aggiuntivo
 
 tramite i vari bottoni:
 
-.. image:: https://raw.githubusercontent.com/sergiocorato/efatto/14.0/sale_order_calendar_state/static/description/in_attesa_materiali.png
+.. image:: https://raw.githubusercontent.com/efatto/efatto/14.0/sale_order_calendar_state/static/description/in_attesa_materiali.png
     :alt: In attesa materiali
 
-.. image:: https://raw.githubusercontent.com/sergiocorato/efatto/14.0/sale_order_calendar_state/static/description/in_assemblaggio.png
+.. image:: https://raw.githubusercontent.com/efatto/efatto/14.0/sale_order_calendar_state/static/description/in_assemblaggio.png
     :alt: In assemblaggio
 
-.. image:: https://raw.githubusercontent.com/sergiocorato/efatto/14.0/sale_order_calendar_state/static/description/in_assemblaggio_esterno.png
+.. image:: https://raw.githubusercontent.com/efatto/efatto/14.0/sale_order_calendar_state/static/description/in_assemblaggio_esterno.png
     :alt: In assemblaggio esterno
 
-.. image:: https://raw.githubusercontent.com/sergiocorato/efatto/14.0/sale_order_calendar_state/static/description/da_collaudare.png
+.. image:: https://raw.githubusercontent.com/efatto/efatto/14.0/sale_order_calendar_state/static/description/da_collaudare.png
     :alt: Da collaudare
 
-.. image:: https://raw.githubusercontent.com/sergiocorato/efatto/14.0/sale_order_calendar_state/static/description/cancella_stato_aggiuntivo.png
+.. image:: https://raw.githubusercontent.com/efatto/efatto/14.0/sale_order_calendar_state/static/description/cancella_stato_aggiuntivo.png
     :alt: Cancella stato aggiuntivo
 
 Lo stato di calendario, visto che possono esserci diverse situazioni che si avverano allo stesso tempo (es. la produzione è avviata ma mancano dei componenti, prevale la mancanza di componenti) viene assegnato in base alla seguente priorità in ordine decrescente:
@@ -88,19 +88,19 @@ La logica di assegnazione dello stato dà inoltre la priorità alla mancanza di 
 
 L'opzione Stampato logistica è comandato da questi due bottoni:
 
-.. image:: https://raw.githubusercontent.com/sergiocorato/efatto/14.0/sale_order_calendar_state/static/description/marca_stampato_logistica.png
+.. image:: https://raw.githubusercontent.com/efatto/efatto/14.0/sale_order_calendar_state/static/description/marca_stampato_logistica.png
     :alt: Marca stampato logistica
 
-.. image:: https://raw.githubusercontent.com/sergiocorato/efatto/14.0/sale_order_calendar_state/static/description/rimuovi_stampato_logistica.png
+.. image:: https://raw.githubusercontent.com/efatto/efatto/14.0/sale_order_calendar_state/static/description/rimuovi_stampato_logistica.png
     :alt: Rimuovi stampato logistica
 
 Bug Tracker
 ===========
 
-Bugs are tracked on `GitHub Issues <https://github.com/sergiocorato/efatto/issues>`_.
+Bugs are tracked on `GitHub Issues <https://github.com/efatto/efatto/issues>`_.
 In case of trouble, please check there if your issue has already been reported.
 If you spotted it first, help us to smash it by providing a detailed and welcomed
-`feedback <https://github.com/sergiocorato/efatto/issues/new?body=module:%20sale_order_calendar_state%0Aversion:%2014.0%0A%0A**Steps%20to%20reproduce**%0A-%20...%0A%0A**Current%20behavior**%0A%0A**Expected%20behavior**>`_.
+`feedback <https://github.com/efatto/efatto/issues/new?body=module:%20sale_order_calendar_state%0Aversion:%2014.0%0A%0A**Steps%20to%20reproduce**%0A-%20...%0A%0A**Current%20behavior**%0A%0A**Expected%20behavior**>`_.
 
 Do not contact contributors directly about support or help with technical issues.
 
@@ -121,6 +121,6 @@ Contributors
 Maintainers
 ~~~~~~~~~~~
 
-This module is part of the `sergiocorato/efatto <https://github.com/sergiocorato/efatto/tree/14.0/sale_order_calendar_state>`_ project on GitHub.
+This module is part of the `efatto/efatto <https://github.com/efatto/efatto/tree/14.0/sale_order_calendar_state>`_ project on GitHub.
 
 You are welcome to contribute.

@@ -6,7 +6,7 @@
     "category": "other",
     "summary": "Add a field to check if product is a kit.",
     "author": "Sergio Corato",
-    "website": "https://github.com/sergiocorato/efatto",
+    "website": "https://github.com/efatto/efatto",
     "license": "AGPL-3",
     "depends": [
         "mrp",

@@ -6,7 +6,7 @@
     "category": "Extra Tools",
     "summary": "With this module the task type name does not accept duplicates.",
     "author": "Sergio Corato",
-    "website": "https://github.com/sergiocorato/efatto",
+    "website": "https://github.com/efatto/efatto",
     "license": "AGPL-3",
     "depends": [
         "project",

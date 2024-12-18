@@ -9,7 +9,7 @@
     Add field vendor code and name to supplierinfo search.
     """,
     "author": "Sergio Corato",
-    "website": "https://github.com/sergiocorato/efatto",
+    "website": "https://github.com/efatto/efatto",
     "license": "AGPL-3",
     "depends": [
         "stock",

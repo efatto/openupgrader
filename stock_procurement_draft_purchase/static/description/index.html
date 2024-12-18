@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
@@ -369,7 +368,7 @@ ul.auto-toc {
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !! source digest: sha256:3f3916e89dd065da01b9fd743e6f119c32ac1f6f45549a809b2116a4097de02e
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! -->
-<p><a class="reference external image-reference" href="https://odoo-community.org/page/development-status"><img alt="Beta" src="https://img.shields.io/badge/maturity-Beta-yellow.png" /></a> <a class="reference external image-reference" href="http://www.gnu.org/licenses/agpl-3.0-standalone.html"><img alt="License: AGPL-3" src="https://img.shields.io/badge/licence-AGPL--3-blue.png" /></a> <a class="reference external image-reference" href="https://github.com/sergiocorato/efatto/tree/14.0/stock_procurement_draft_purchase"><img alt="sergiocorato/efatto" src="https://img.shields.io/badge/github-sergiocorato%2Fefatto-lightgray.png?logo=github" /></a></p>
+<p><a class="reference external image-reference" href="https://odoo-community.org/page/development-status"><img alt="Beta" src="https://img.shields.io/badge/maturity-Beta-yellow.png" /></a> <a class="reference external image-reference" href="http://www.gnu.org/licenses/agpl-3.0-standalone.html"><img alt="License: AGPL-3" src="https://img.shields.io/badge/licence-AGPL--3-blue.png" /></a> <a class="reference external image-reference" href="https://github.com/efatto/efatto/tree/14.0/stock_procurement_draft_purchase"><img alt="efatto/efatto" src="https://img.shields.io/badge/github-efatto%2Fefatto-lightgray.png?logo=github" /></a></p>
 <p>This module add an option to add RdP to incoming stock when evaluating orderpoint.</p>
 <p><strong>Table of contents</strong></p>
 <div class="contents local topic" id="contents">
@@ -388,20 +387,20 @@ ul.auto-toc {
 <h1><a class="toc-backref" href="#toc-entry-1">Configuration</a></h1>
 <p>Nelle regole di riordino sono stati aggiunti dei campi:</p>
 <p>un campo che visualizza le quantità attualmente in ordini di acquisto in stato bozza od inviato:</p>
-<img alt="Acquisti in bozza" src="https://raw.githubusercontent.com/sergiocorato/efatto/14.0/stock_procurement_draft_purchase/static/description/rdp_acquisto.png" />
+<img alt="Acquisti in bozza" src="https://raw.githubusercontent.com/efatto/efatto/14.0/stock_procurement_draft_purchase/static/description/rdp_acquisto.png" />
 <p>e un campo disponibilità virtuale, che somma alla quantità virtuale quella del campo precedente, mostrandola solo nel caso sia negativa:</p>
-<img alt="Disponibilità virtuale con acquisti in bozza" src="https://raw.githubusercontent.com/sergiocorato/efatto/14.0/stock_procurement_draft_purchase/static/description/totale_con_rdp_acquisto.png" />
+<img alt="Disponibilità virtuale con acquisti in bozza" src="https://raw.githubusercontent.com/efatto/efatto/14.0/stock_procurement_draft_purchase/static/description/totale_con_rdp_acquisto.png" />
 <p>È stato aggiunto inoltre un campo ricercabile che permette di filtrare le regole di riordino la cui quantità virtuale prevista è negativa (può capitare nel caso in cui gli ordini di acquisto o le produzioni non siano state ancora processate in quanto i tempi di riapprovvigionamento sono inferiori al tempo mancante all’utilizzo delle merci):</p>
-<img alt="Manca quantità virtuale nell'ubicazione" src="https://raw.githubusercontent.com/sergiocorato/efatto/14.0/stock_procurement_draft_purchase/static/description/manca_qta_virtuale.png" />
+<img alt="Manca quantità virtuale nell'ubicazione" src="https://raw.githubusercontent.com/efatto/efatto/14.0/stock_procurement_draft_purchase/static/description/manca_qta_virtuale.png" />
 <p>che è possibile vedere (a scelta) nella vista elenco:</p>
-<img alt="Quantità virtuale mancante nell'ubicazione" src="https://raw.githubusercontent.com/sergiocorato/efatto/14.0/stock_procurement_draft_purchase/static/description/qta_virtuale_mancante.png" />
+<img alt="Quantità virtuale mancante nell'ubicazione" src="https://raw.githubusercontent.com/efatto/efatto/14.0/stock_procurement_draft_purchase/static/description/qta_virtuale_mancante.png" />
 </div>
 <div class="section" id="bug-tracker">
 <h1><a class="toc-backref" href="#toc-entry-2">Bug Tracker</a></h1>
-<p>Bugs are tracked on <a class="reference external" href="https://github.com/sergiocorato/efatto/issues">GitHub Issues</a>.
+<p>Bugs are tracked on <a class="reference external" href="https://github.com/efatto/efatto/issues">GitHub Issues</a>.
 In case of trouble, please check there if your issue has already been reported.
 If you spotted it first, help us to smash it by providing a detailed and welcomed
-<a class="reference external" href="https://github.com/sergiocorato/efatto/issues/new?body=module:%20stock_procurement_draft_purchase%0Aversion:%2014.0%0A%0A**Steps%20to%20reproduce**%0A-%20...%0A%0A**Current%20behavior**%0A%0A**Expected%20behavior**">feedback</a>.</p>
+<a class="reference external" href="https://github.com/efatto/efatto/issues/new?body=module:%20stock_procurement_draft_purchase%0Aversion:%2014.0%0A%0A**Steps%20to%20reproduce**%0A-%20...%0A%0A**Current%20behavior**%0A%0A**Expected%20behavior**">feedback</a>.</p>
 <p>Do not contact contributors directly about support or help with technical issues.</p>
 </div>
 <div class="section" id="credits">
@@ -420,7 +419,7 @@ If you spotted it first, help us to smash it by providing a detailed and welcome
 </div>
 <div class="section" id="maintainers">
 <h2><a class="toc-backref" href="#toc-entry-6">Maintainers</a></h2>
-<p>This module is part of the <a class="reference external" href="https://github.com/sergiocorato/efatto/tree/14.0/stock_procurement_draft_purchase">sergiocorato/efatto</a> project on GitHub.</p>
+<p>This module is part of the <a class="reference external" href="https://github.com/efatto/efatto/tree/14.0/stock_procurement_draft_purchase">efatto/efatto</a> project on GitHub.</p>
 <p>You are welcome to contribute.</p>
 </div>
 </div>

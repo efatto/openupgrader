@@ -7,7 +7,7 @@
     "author": "Sergio Corato",
     "summary": "Delivery fix price wich is computed with vat [this part can be "
     "replaced by delivery_price_rule_untaxed] and with services.",
-    "website": "https://github.com/sergiocorato/efatto",
+    "website": "https://github.com/efatto/efatto",
     "license": "AGPL-3",
     "depends": [
         "delivery",

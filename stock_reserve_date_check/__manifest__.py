@@ -8,7 +8,7 @@
     "license": "AGPL-3",
     "summary": "Add logic to block confirmation of sale order on date not possible "
     "on product stock or predicted arrival and manufacturing time.",
-    "website": "https://github.com/sergiocorato/efatto",
+    "website": "https://github.com/efatto/efatto",
     "depends": [
         "mrp_production_demo",
         "product_sellers_info",

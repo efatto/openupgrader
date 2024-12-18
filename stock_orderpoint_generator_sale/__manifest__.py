@@ -8,7 +8,7 @@
     "author": "Sergio Corato",
     "category": "Warehouse",
     "license": "AGPL-3",
-    "website": "https://github.com/sergiocorato/efatto",
+    "website": "https://github.com/efatto/efatto",
     "depends": [
         "mrp",
         "product_sellers_info",

@@ -6,7 +6,7 @@
     "category": "Stock",
     "summary": "Add facility to view and change sale reserved on stock moves.",
     "author": "Sergio Corato",
-    "website": "https://github.com/sergiocorato/efatto",
+    "website": "https://github.com/efatto/efatto",
     "license": "AGPL-3",
     "depends": [
         "mrp_sale_info_link",

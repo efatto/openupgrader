@@ -7,7 +7,7 @@
     "author": "Sergio Corato",
     "summary": "Restore logic of v. 12.0 as standard price is never a good choice for "
     "purchases.",
-    "website": "https://github.com/sergiocorato/efatto",
+    "website": "https://github.com/efatto/efatto",
     "license": "AGPL-3",
     "depends": [
         "purchase",

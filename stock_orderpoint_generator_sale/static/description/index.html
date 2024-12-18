@@ -368,7 +368,7 @@ ul.auto-toc {
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !! source digest: sha256:5026cf315cd0774e5dce51cdda2f9ea11b4f06f6da65020b42dd5dab90d560fd
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! -->
-<p><a class="reference external image-reference" href="https://odoo-community.org/page/development-status"><img alt="Beta" src="https://img.shields.io/badge/maturity-Beta-yellow.png" /></a> <a class="reference external image-reference" href="http://www.gnu.org/licenses/agpl-3.0-standalone.html"><img alt="License: AGPL-3" src="https://img.shields.io/badge/licence-AGPL--3-blue.png" /></a> <a class="reference external image-reference" href="https://github.com/sergiocorato/efatto/tree/14.0/stock_orderpoint_generator_sale"><img alt="sergiocorato/efatto" src="https://img.shields.io/badge/github-sergiocorato%2Fefatto-lightgray.png?logo=github" /></a></p>
+<p><a class="reference external image-reference" href="https://odoo-community.org/page/development-status"><img alt="Beta" src="https://img.shields.io/badge/maturity-Beta-yellow.png" /></a> <a class="reference external image-reference" href="http://www.gnu.org/licenses/agpl-3.0-standalone.html"><img alt="License: AGPL-3" src="https://img.shields.io/badge/licence-AGPL--3-blue.png" /></a> <a class="reference external image-reference" href="https://github.com/efatto/efatto/tree/14.0/stock_orderpoint_generator_sale"><img alt="efatto/efatto" src="https://img.shields.io/badge/github-efatto%2Fefatto-lightgray.png?logo=github" /></a></p>
 <p>This module extends stock orderpoint rules generator from module <cite>stock_orderpoint_generator</cite> with some statistic functions based on sales.</p>
 <p><strong>Table of contents</strong></p>
 <div class="contents local topic" id="contents">
@@ -386,30 +386,30 @@ ul.auto-toc {
 <div class="section" id="configuration">
 <h1><a class="toc-backref" href="#toc-entry-1">Configuration</a></h1>
 <p>Nella configurazione di magazzino è presente un nuovo menu per creare e gestire i modelli di generazione delle regole di riordino:</p>
-<img alt="Menu" src="https://raw.githubusercontent.com/sergiocorato/efatto/14.0/stock_orderpoint_generator_sale/static/description/menu.png" />
+<img alt="Menu" src="https://raw.githubusercontent.com/efatto/efatto/14.0/stock_orderpoint_generator_sale/static/description/menu.png" />
 <p>Premendo su crea si apre la maschera in cui è possibile creare il modello, di cui ci sono alcuni campi extra rispetto alle regole di riordino generate:</p>
 <p>Il campo <cite>Genera automaticamente</cite> che sfrutta un cron con il quale le regole di riordino vengono create/aggiornate/eliminate ad ogni esecuzione, rendendole quindi sempre allineate con la situazione attuale dello stock. Nota: le regole di riordino vengono rigenerate disattivando quelle precedenti.</p>
-<img alt="Genera automaticamente" src="https://raw.githubusercontent.com/sergiocorato/efatto/14.0/stock_orderpoint_generator_sale/static/description/genera_automaticamente.png" />
+<img alt="Genera automaticamente" src="https://raw.githubusercontent.com/efatto/efatto/14.0/stock_orderpoint_generator_sale/static/description/genera_automaticamente.png" />
 <p>Il campo <cite>Calcola sul venduto</cite> che basa il calcolo del magazzino sulle vendite:</p>
-<img alt="Calcola sul venduto" src="https://raw.githubusercontent.com/sergiocorato/efatto/14.0/stock_orderpoint_generator_sale/static/description/calcola_sul_venduto.png" />
+<img alt="Calcola sul venduto" src="https://raw.githubusercontent.com/efatto/efatto/14.0/stock_orderpoint_generator_sale/static/description/calcola_sul_venduto.png" />
 <p>Il campo <cite>Giorni movimenti precedenti</cite> che viene usato come periodo su cui ricercare i movimenti di vendita nel caso in cui non siano indicati la data di inizio e di fine del periodo:</p>
-<img alt="Giorni movimenti precedenti" src="https://raw.githubusercontent.com/sergiocorato/efatto/14.0/stock_orderpoint_generator_sale/static/description/giorni_movimenti.png" />
+<img alt="Giorni movimenti precedenti" src="https://raw.githubusercontent.com/efatto/efatto/14.0/stock_orderpoint_generator_sale/static/description/giorni_movimenti.png" />
 <p>Il campo <cite>Variazione percentuale</cite>, che va a variare il valore delle vendite calcolato, che viene usato nella formula di calcolo della scorta:</p>
-<img alt="Variazione percentuale" src="https://raw.githubusercontent.com/sergiocorato/efatto/14.0/stock_orderpoint_generator_sale/static/description/variazione.png" />
+<img alt="Variazione percentuale" src="https://raw.githubusercontent.com/efatto/efatto/14.0/stock_orderpoint_generator_sale/static/description/variazione.png" />
 <p>Il campo <cite>Livello di servizio</cite> che viene usato nella formula di calcolo della scorta:</p>
-<img alt="Livello di servizio" src="https://raw.githubusercontent.com/sergiocorato/efatto/14.0/stock_orderpoint_generator_sale/static/description/livello_servizio.png" />
+<img alt="Livello di servizio" src="https://raw.githubusercontent.com/efatto/efatto/14.0/stock_orderpoint_generator_sale/static/description/livello_servizio.png" />
 <p>Il campo <cite>Costo gestione ordine</cite> che viene usato nella formula di calcolo della scorta:</p>
-<img alt="Costo gestione ordine" src="https://raw.githubusercontent.com/sergiocorato/efatto/14.0/stock_orderpoint_generator_sale/static/description/costo_gestione_ordini.png" />
+<img alt="Costo gestione ordine" src="https://raw.githubusercontent.com/efatto/efatto/14.0/stock_orderpoint_generator_sale/static/description/costo_gestione_ordini.png" />
 <p>Il campo <cite>Categoria prodotti</cite> che filtra i prodotti su cui generare le regole di riordino. In questo modo è possibile creare diversi modelli per diverse categorie di prodotti. Nota: i prodotti vengono letti dalle categorie prodotti indicate senza tenere conto delle categorie figlie.</p>
-<img alt="Categoria prodotti" src="https://raw.githubusercontent.com/sergiocorato/efatto/14.0/stock_orderpoint_generator_sale/static/description/categoria_prodotti.png" />
+<img alt="Categoria prodotti" src="https://raw.githubusercontent.com/efatto/efatto/14.0/stock_orderpoint_generator_sale/static/description/categoria_prodotti.png" />
 <p>Informazioni sulle formule usate nel file di calcolo <a class="reference external" href="https://github.com/sergiocorato/efatto/blob/12.0/stock_orderpoint_generator_sale/static/description/calculate-safety-stocks.ods">https://github.com/sergiocorato/efatto/blob/12.0/stock_orderpoint_generator_sale/static/description/calculate-safety-stocks.ods</a></p>
 </div>
 <div class="section" id="bug-tracker">
 <h1><a class="toc-backref" href="#toc-entry-2">Bug Tracker</a></h1>
-<p>Bugs are tracked on <a class="reference external" href="https://github.com/sergiocorato/efatto/issues">GitHub Issues</a>.
+<p>Bugs are tracked on <a class="reference external" href="https://github.com/efatto/efatto/issues">GitHub Issues</a>.
 In case of trouble, please check there if your issue has already been reported.
 If you spotted it first, help us to smash it by providing a detailed and welcomed
-<a class="reference external" href="https://github.com/sergiocorato/efatto/issues/new?body=module:%20stock_orderpoint_generator_sale%0Aversion:%2014.0%0A%0A**Steps%20to%20reproduce**%0A-%20...%0A%0A**Current%20behavior**%0A%0A**Expected%20behavior**">feedback</a>.</p>
+<a class="reference external" href="https://github.com/efatto/efatto/issues/new?body=module:%20stock_orderpoint_generator_sale%0Aversion:%2014.0%0A%0A**Steps%20to%20reproduce**%0A-%20...%0A%0A**Current%20behavior**%0A%0A**Expected%20behavior**">feedback</a>.</p>
 <p>Do not contact contributors directly about support or help with technical issues.</p>
 </div>
 <div class="section" id="credits">
@@ -428,7 +428,7 @@ If you spotted it first, help us to smash it by providing a detailed and welcome
 </div>
 <div class="section" id="maintainers">
 <h2><a class="toc-backref" href="#toc-entry-6">Maintainers</a></h2>
-<p>This module is part of the <a class="reference external" href="https://github.com/sergiocorato/efatto/tree/14.0/stock_orderpoint_generator_sale">sergiocorato/efatto</a> project on GitHub.</p>
+<p>This module is part of the <a class="reference external" href="https://github.com/efatto/efatto/tree/14.0/stock_orderpoint_generator_sale">efatto/efatto</a> project on GitHub.</p>
 <p>You are welcome to contribute.</p>
 </div>
 </div>

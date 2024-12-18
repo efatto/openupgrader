@@ -4,7 +4,7 @@
 {
     "name": "Sale calendar state",
     "author": "Sergio Corato",
-    "website": "https://github.com/sergiocorato/efatto",
+    "website": "https://github.com/efatto/efatto",
     "license": "AGPL-3",
     "version": "14.0.1.0.1",
     "summary": "Add states to sale order based on manufacturing, deliveries and "

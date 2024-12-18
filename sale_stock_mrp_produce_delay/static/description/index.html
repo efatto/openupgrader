@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
@@ -369,7 +368,7 @@ ul.auto-toc {
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !! source digest: sha256:ecf14e2647ec18e99955a2d7661cd0b01e4749b17980c07fd946a6d77e3b34bd
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! -->
-<p><a class="reference external image-reference" href="https://odoo-community.org/page/development-status"><img alt="Beta" src="https://img.shields.io/badge/maturity-Beta-yellow.png" /></a> <a class="reference external image-reference" href="http://www.gnu.org/licenses/agpl-3.0-standalone.html"><img alt="License: AGPL-3" src="https://img.shields.io/badge/licence-AGPL--3-blue.png" /></a> <a class="reference external image-reference" href="https://github.com/sergiocorato/efatto/tree/14.0/sale_stock_mrp_produce_delay"><img alt="sergiocorato/efatto" src="https://img.shields.io/badge/github-sergiocorato%2Fefatto-lightgray.png?logo=github" /></a></p>
+<p><a class="reference external image-reference" href="https://odoo-community.org/page/development-status"><img alt="Beta" src="https://img.shields.io/badge/maturity-Beta-yellow.png" /></a> <a class="reference external image-reference" href="http://www.gnu.org/licenses/agpl-3.0-standalone.html"><img alt="License: AGPL-3" src="https://img.shields.io/badge/licence-AGPL--3-blue.png" /></a> <a class="reference external image-reference" href="https://github.com/efatto/efatto/tree/14.0/sale_stock_mrp_produce_delay"><img alt="efatto/efatto" src="https://img.shields.io/badge/github-efatto%2Fefatto-lightgray.png?logo=github" /></a></p>
 <p>This module adds some logic to (i) button in sale order line about first
 availability date of product avoiding negative stock.</p>
 <p><strong>Table of contents</strong></p>
@@ -397,26 +396,26 @@ availability date of product avoiding negative stock.</p>
 <p>L’icona è in blu quando il sistema trova una disponibilità futura a stock del prodotto. È in rosso in caso contrario.</p>
 <p>Quando l’icona è in blu mostra la quantità disponibile per coprire la richiesta alla prima data possibile, senza che questo prelievo incida sullo stock in modo da farlo diventare negativo.</p>
 <p>Es. con una richiesta di 1 pz con un ordine alla data odierna del 01/07/2021 la disponibilità è immediata:</p>
-<img alt="Richiesta quantità iniziale" src="https://raw.githubusercontent.com/sergiocorato/efatto/14.0/sale_stock_mrp_produce_delay/static/description/richiesta_quantita.png" />
+<img alt="Richiesta quantità iniziale" src="https://raw.githubusercontent.com/efatto/efatto/14.0/sale_stock_mrp_produce_delay/static/description/richiesta_quantita.png" />
 <p>in quanto l’articolo è disponibile e lo stock previsto finale è superiore alla quantità richiesta. Con una richiesta di 4.662 pz la disponibilità è per il:</p>
-<img alt="Richiesta quantità maggiore" src="https://raw.githubusercontent.com/sergiocorato/efatto/14.0/sale_stock_mrp_produce_delay/static/description/richiesta_quantita_maggiore.png" />
+<img alt="Richiesta quantità maggiore" src="https://raw.githubusercontent.com/efatto/efatto/14.0/sale_stock_mrp_produce_delay/static/description/richiesta_quantita_maggiore.png" />
 <p>in quanto l’articolo ha una quantità sufficiente a partire da quella data, e la quantità prevista finale è superiore a quella richiesta.</p>
 <p>Quando l’icona è rossa segnala che non è possibile fornire da stock il prodotto:</p>
-<img alt="Non disponibile" src="https://raw.githubusercontent.com/sergiocorato/efatto/14.0/sale_stock_mrp_produce_delay/static/description/non_disponibile.png" />
+<img alt="Non disponibile" src="https://raw.githubusercontent.com/efatto/efatto/14.0/sale_stock_mrp_produce_delay/static/description/non_disponibile.png" />
 <p>Sull’ordine di vendita è stato aggiunto un bottone per calcolare la prima consegna possibile per tutte le righe dell’ordine:</p>
-<img alt="Calcola" src="https://raw.githubusercontent.com/sergiocorato/efatto/14.0/sale_stock_mrp_produce_delay/static/description/calcola.png" />
+<img alt="Calcola" src="https://raw.githubusercontent.com/efatto/efatto/14.0/sale_stock_mrp_produce_delay/static/description/calcola.png" />
 <p>N.B.: la data di consegna include la somma dei tempi di produzione indicati nei prodotti ed eventuali semilavorati, per cui è ‘cautelativa’ (l’utente può prevedere una data di impegno inferiore alla data disponibile, in caso di necessità ed essendo a conoscenza della possibilità di farlo). Non prevede comunque calcoli sulla capacità dei centri di lavoro, per cui si considera infinita. La data di consegna inoltre considera il tempo di consegna degli acquisti dai fornitori. Invece il tempo di consegna al cliente non è considerato.</p>
 <p>Nelle righe, in caso la data di impegno sia precedente la prima data disponibilità per la riga, è visibile un’icona di segnalazione:</p>
-<img alt="Ritardo" src="https://raw.githubusercontent.com/sergiocorato/efatto/14.0/sale_stock_mrp_produce_delay/static/description/ritardo.png" />
+<img alt="Ritardo" src="https://raw.githubusercontent.com/efatto/efatto/14.0/sale_stock_mrp_produce_delay/static/description/ritardo.png" />
 <p>che apre un messaggio esplicativo dei dettagli dei componenti mancanti:</p>
-<img alt="Messaggio" src="https://raw.githubusercontent.com/sergiocorato/efatto/14.0/sale_stock_mrp_produce_delay/static/description/messaggio.png" />
+<img alt="Messaggio" src="https://raw.githubusercontent.com/efatto/efatto/14.0/sale_stock_mrp_produce_delay/static/description/messaggio.png" />
 </div>
 <div class="section" id="bug-tracker">
 <h1><a class="toc-backref" href="#toc-entry-2">Bug Tracker</a></h1>
-<p>Bugs are tracked on <a class="reference external" href="https://github.com/sergiocorato/efatto/issues">GitHub Issues</a>.
+<p>Bugs are tracked on <a class="reference external" href="https://github.com/efatto/efatto/issues">GitHub Issues</a>.
 In case of trouble, please check there if your issue has already been reported.
 If you spotted it first, help us to smash it by providing a detailed and welcomed
-<a class="reference external" href="https://github.com/sergiocorato/efatto/issues/new?body=module:%20sale_stock_mrp_produce_delay%0Aversion:%2014.0%0A%0A**Steps%20to%20reproduce**%0A-%20...%0A%0A**Current%20behavior**%0A%0A**Expected%20behavior**">feedback</a>.</p>
+<a class="reference external" href="https://github.com/efatto/efatto/issues/new?body=module:%20sale_stock_mrp_produce_delay%0Aversion:%2014.0%0A%0A**Steps%20to%20reproduce**%0A-%20...%0A%0A**Current%20behavior**%0A%0A**Expected%20behavior**">feedback</a>.</p>
 <p>Do not contact contributors directly about support or help with technical issues.</p>
 </div>
 <div class="section" id="credits">
@@ -435,7 +434,7 @@ If you spotted it first, help us to smash it by providing a detailed and welcome
 </div>
 <div class="section" id="maintainers">
 <h2><a class="toc-backref" href="#toc-entry-6">Maintainers</a></h2>
-<p>This module is part of the <a class="reference external" href="https://github.com/sergiocorato/efatto/tree/14.0/sale_stock_mrp_produce_delay">sergiocorato/efatto</a> project on GitHub.</p>
+<p>This module is part of the <a class="reference external" href="https://github.com/efatto/efatto/tree/14.0/sale_stock_mrp_produce_delay">efatto/efatto</a> project on GitHub.</p>
 <p>You are welcome to contribute.</p>
 </div>
 </div>

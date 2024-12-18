@@ -4,7 +4,7 @@
     "name": "Account Invoice update purchase",
     "version": "14.0.1.0.0",
     "author": "Sergio Corato",
-    "website": "https://github.com/sergiocorato/efatto",
+    "website": "https://github.com/efatto/efatto",
     "license": "AGPL-3",
     "category": "Accounting",
     "depends": [

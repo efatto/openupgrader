@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
@@ -369,7 +368,7 @@ ul.auto-toc {
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !! source digest: sha256:506653d6a4208c317c3437bd807ccc154b1b17824dab72ab29a99a3aacdefeaa
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! -->
-<p><a class="reference external image-reference" href="https://odoo-community.org/page/development-status"><img alt="Beta" src="https://img.shields.io/badge/maturity-Beta-yellow.png" /></a> <a class="reference external image-reference" href="http://www.gnu.org/licenses/agpl-3.0-standalone.html"><img alt="License: AGPL-3" src="https://img.shields.io/badge/licence-AGPL--3-blue.png" /></a> <a class="reference external image-reference" href="https://github.com/sergiocorato/efatto/tree/14.0/sale_order_calendar_state"><img alt="sergiocorato/efatto" src="https://img.shields.io/badge/github-sergiocorato%2Fefatto-lightgray.png?logo=github" /></a></p>
+<p><a class="reference external image-reference" href="https://odoo-community.org/page/development-status"><img alt="Beta" src="https://img.shields.io/badge/maturity-Beta-yellow.png" /></a> <a class="reference external image-reference" href="http://www.gnu.org/licenses/agpl-3.0-standalone.html"><img alt="License: AGPL-3" src="https://img.shields.io/badge/licence-AGPL--3-blue.png" /></a> <a class="reference external image-reference" href="https://github.com/efatto/efatto/tree/14.0/sale_order_calendar_state"><img alt="efatto/efatto" src="https://img.shields.io/badge/github-efatto%2Fefatto-lightgray.png?logo=github" /></a></p>
 <p>This module add a field in sale order to show state of production-delivery-invoice of products.</p>
 <p><strong>Table of contents</strong></p>
 <div class="contents local topic" id="contents">
@@ -387,15 +386,15 @@ ul.auto-toc {
 <div class="section" id="configuration">
 <h1><a class="toc-backref" href="#toc-entry-1">Configuration</a></h1>
 <p>Nell’ordine di vendita è stato aggiunto un campo calcolato che mostra lo stato della lavorazione dell’ordine in merito alla sua consegnabilità, denominato <cite>Stato di calendario</cite>:</p>
-<img alt="Stato di calendario" src="https://raw.githubusercontent.com/sergiocorato/efatto/14.0/sale_order_calendar_state/static/description/stato_di_calendario.png" />
+<img alt="Stato di calendario" src="https://raw.githubusercontent.com/efatto/efatto/14.0/sale_order_calendar_state/static/description/stato_di_calendario.png" />
 <p>Nell’ordine di produzione è possibile impostare uno stato aggiuntivo (in successivo sviluppo verrà calcolato in automatico):</p>
-<img alt="Stato aggiuntivo" src="https://raw.githubusercontent.com/sergiocorato/efatto/14.0/sale_order_calendar_state/static/description/stato_aggiuntivo.png" />
+<img alt="Stato aggiuntivo" src="https://raw.githubusercontent.com/efatto/efatto/14.0/sale_order_calendar_state/static/description/stato_aggiuntivo.png" />
 <p>tramite i vari bottoni:</p>
-<img alt="In attesa materiali" src="https://raw.githubusercontent.com/sergiocorato/efatto/14.0/sale_order_calendar_state/static/description/in_attesa_materiali.png" />
-<img alt="In assemblaggio" src="https://raw.githubusercontent.com/sergiocorato/efatto/14.0/sale_order_calendar_state/static/description/in_assemblaggio.png" />
-<img alt="In assemblaggio esterno" src="https://raw.githubusercontent.com/sergiocorato/efatto/14.0/sale_order_calendar_state/static/description/in_assemblaggio_esterno.png" />
-<img alt="Da collaudare" src="https://raw.githubusercontent.com/sergiocorato/efatto/14.0/sale_order_calendar_state/static/description/da_collaudare.png" />
-<img alt="Cancella stato aggiuntivo" src="https://raw.githubusercontent.com/sergiocorato/efatto/14.0/sale_order_calendar_state/static/description/cancella_stato_aggiuntivo.png" />
+<img alt="In attesa materiali" src="https://raw.githubusercontent.com/efatto/efatto/14.0/sale_order_calendar_state/static/description/in_attesa_materiali.png" />
+<img alt="In assemblaggio" src="https://raw.githubusercontent.com/efatto/efatto/14.0/sale_order_calendar_state/static/description/in_assemblaggio.png" />
+<img alt="In assemblaggio esterno" src="https://raw.githubusercontent.com/efatto/efatto/14.0/sale_order_calendar_state/static/description/in_assemblaggio_esterno.png" />
+<img alt="Da collaudare" src="https://raw.githubusercontent.com/efatto/efatto/14.0/sale_order_calendar_state/static/description/da_collaudare.png" />
+<img alt="Cancella stato aggiuntivo" src="https://raw.githubusercontent.com/efatto/efatto/14.0/sale_order_calendar_state/static/description/cancella_stato_aggiuntivo.png" />
 <p>Lo stato di calendario, visto che possono esserci diverse situazioni che si avverano allo stesso tempo (es. la produzione è avviata ma mancano dei componenti, prevale la mancanza di componenti) viene assegnato in base alla seguente priorità in ordine decrescente:</p>
 <ol class="arabic simple">
 <li>BLOCKED</li>
@@ -422,15 +421,15 @@ ul.auto-toc {
 <p>Gli stati di calendario relativi alla produzione hanno una priorità più alta rispetto a quelli relativi ai trasferimenti, in quanto la produzione precede il trasferimento dei beni prodotti.</p>
 <p>La logica di assegnazione dello stato dà inoltre la priorità alla mancanza di materiali, in seguito se l’OUT è Stampato per logistica, mentre il fatto che tutti i prodotti siano riservati non influisce.</p>
 <p>L’opzione Stampato logistica è comandato da questi due bottoni:</p>
-<img alt="Marca stampato logistica" src="https://raw.githubusercontent.com/sergiocorato/efatto/14.0/sale_order_calendar_state/static/description/marca_stampato_logistica.png" />
-<img alt="Rimuovi stampato logistica" src="https://raw.githubusercontent.com/sergiocorato/efatto/14.0/sale_order_calendar_state/static/description/rimuovi_stampato_logistica.png" />
+<img alt="Marca stampato logistica" src="https://raw.githubusercontent.com/efatto/efatto/14.0/sale_order_calendar_state/static/description/marca_stampato_logistica.png" />
+<img alt="Rimuovi stampato logistica" src="https://raw.githubusercontent.com/efatto/efatto/14.0/sale_order_calendar_state/static/description/rimuovi_stampato_logistica.png" />
 </div>
 <div class="section" id="bug-tracker">
 <h1><a class="toc-backref" href="#toc-entry-2">Bug Tracker</a></h1>
-<p>Bugs are tracked on <a class="reference external" href="https://github.com/sergiocorato/efatto/issues">GitHub Issues</a>.
+<p>Bugs are tracked on <a class="reference external" href="https://github.com/efatto/efatto/issues">GitHub Issues</a>.
 In case of trouble, please check there if your issue has already been reported.
 If you spotted it first, help us to smash it by providing a detailed and welcomed
-<a class="reference external" href="https://github.com/sergiocorato/efatto/issues/new?body=module:%20sale_order_calendar_state%0Aversion:%2014.0%0A%0A**Steps%20to%20reproduce**%0A-%20...%0A%0A**Current%20behavior**%0A%0A**Expected%20behavior**">feedback</a>.</p>
+<a class="reference external" href="https://github.com/efatto/efatto/issues/new?body=module:%20sale_order_calendar_state%0Aversion:%2014.0%0A%0A**Steps%20to%20reproduce**%0A-%20...%0A%0A**Current%20behavior**%0A%0A**Expected%20behavior**">feedback</a>.</p>
 <p>Do not contact contributors directly about support or help with technical issues.</p>
 </div>
 <div class="section" id="credits">
@@ -450,7 +449,7 @@ If you spotted it first, help us to smash it by providing a detailed and welcome
 </div>
 <div class="section" id="maintainers">
 <h2><a class="toc-backref" href="#toc-entry-6">Maintainers</a></h2>
-<p>This module is part of the <a class="reference external" href="https://github.com/sergiocorato/efatto/tree/14.0/sale_order_calendar_state">sergiocorato/efatto</a> project on GitHub.</p>
+<p>This module is part of the <a class="reference external" href="https://github.com/efatto/efatto/tree/14.0/sale_order_calendar_state">efatto/efatto</a> project on GitHub.</p>
 <p>You are welcome to contribute.</p>
 </div>
 </div>

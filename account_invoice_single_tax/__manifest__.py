@@ -4,7 +4,7 @@
     "name": "Single tax restrict in invoice",
     "version": "14.0.1.0.1",
     "author": "Sergio Corato",
-    "website": "https://github.com/sergiocorato/efatto",
+    "website": "https://github.com/efatto/efatto",
     "category": "Localisation / Accounting",
     "license": "AGPL-3",
     "depends": ["account"],

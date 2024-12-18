@@ -16,9 +16,9 @@ Order point generator for range periods
 .. |badge2| image:: https://img.shields.io/badge/licence-AGPL--3-blue.png
     :target: http://www.gnu.org/licenses/agpl-3.0-standalone.html
     :alt: License: AGPL-3
-.. |badge3| image:: https://img.shields.io/badge/github-sergiocorato%2Fefatto-lightgray.png?logo=github
-    :target: https://github.com/sergiocorato/efatto/tree/14.0/stock_orderpoint_generator_sale
-    :alt: sergiocorato/efatto
+.. |badge3| image:: https://img.shields.io/badge/github-efatto%2Fefatto-lightgray.png?logo=github
+    :target: https://github.com/efatto/efatto/tree/14.0/stock_orderpoint_generator_sale
+    :alt: efatto/efatto
 
 |badge1| |badge2| |badge3|
 
@@ -34,44 +34,44 @@ Configuration
 
 Nella configurazione di magazzino è presente un nuovo menu per creare e gestire i modelli di generazione delle regole di riordino:
 
-.. image:: https://raw.githubusercontent.com/sergiocorato/efatto/14.0/stock_orderpoint_generator_sale/static/description/menu.png
+.. image:: https://raw.githubusercontent.com/efatto/efatto/14.0/stock_orderpoint_generator_sale/static/description/menu.png
     :alt: Menu
 
 Premendo su crea si apre la maschera in cui è possibile creare il modello, di cui ci sono alcuni campi extra rispetto alle regole di riordino generate:
 
 Il campo `Genera automaticamente` che sfrutta un cron con il quale le regole di riordino vengono create/aggiornate/eliminate ad ogni esecuzione, rendendole quindi sempre allineate con la situazione attuale dello stock. Nota: le regole di riordino vengono rigenerate disattivando quelle precedenti.
 
-.. image:: https://raw.githubusercontent.com/sergiocorato/efatto/14.0/stock_orderpoint_generator_sale/static/description/genera_automaticamente.png
+.. image:: https://raw.githubusercontent.com/efatto/efatto/14.0/stock_orderpoint_generator_sale/static/description/genera_automaticamente.png
     :alt: Genera automaticamente
 
 Il campo `Calcola sul venduto` che basa il calcolo del magazzino sulle vendite:
 
-.. image:: https://raw.githubusercontent.com/sergiocorato/efatto/14.0/stock_orderpoint_generator_sale/static/description/calcola_sul_venduto.png
+.. image:: https://raw.githubusercontent.com/efatto/efatto/14.0/stock_orderpoint_generator_sale/static/description/calcola_sul_venduto.png
     :alt: Calcola sul venduto
 
 Il campo `Giorni movimenti precedenti` che viene usato come periodo su cui ricercare i movimenti di vendita nel caso in cui non siano indicati la data di inizio e di fine del periodo:
 
-.. image:: https://raw.githubusercontent.com/sergiocorato/efatto/14.0/stock_orderpoint_generator_sale/static/description/giorni_movimenti.png
+.. image:: https://raw.githubusercontent.com/efatto/efatto/14.0/stock_orderpoint_generator_sale/static/description/giorni_movimenti.png
     :alt: Giorni movimenti precedenti
 
 Il campo `Variazione percentuale`, che va a variare il valore delle vendite calcolato, che viene usato nella formula di calcolo della scorta:
 
-.. image:: https://raw.githubusercontent.com/sergiocorato/efatto/14.0/stock_orderpoint_generator_sale/static/description/variazione.png
+.. image:: https://raw.githubusercontent.com/efatto/efatto/14.0/stock_orderpoint_generator_sale/static/description/variazione.png
     :alt: Variazione percentuale
 
 Il campo `Livello di servizio` che viene usato nella formula di calcolo della scorta:
 
-.. image:: https://raw.githubusercontent.com/sergiocorato/efatto/14.0/stock_orderpoint_generator_sale/static/description/livello_servizio.png
+.. image:: https://raw.githubusercontent.com/efatto/efatto/14.0/stock_orderpoint_generator_sale/static/description/livello_servizio.png
     :alt: Livello di servizio
 
 Il campo `Costo gestione ordine` che viene usato nella formula di calcolo della scorta:
 
-.. image:: https://raw.githubusercontent.com/sergiocorato/efatto/14.0/stock_orderpoint_generator_sale/static/description/costo_gestione_ordini.png
+.. image:: https://raw.githubusercontent.com/efatto/efatto/14.0/stock_orderpoint_generator_sale/static/description/costo_gestione_ordini.png
     :alt: Costo gestione ordine
 
 Il campo `Categoria prodotti` che filtra i prodotti su cui generare le regole di riordino. In questo modo è possibile creare diversi modelli per diverse categorie di prodotti. Nota: i prodotti vengono letti dalle categorie prodotti indicate senza tenere conto delle categorie figlie.
 
-.. image:: https://raw.githubusercontent.com/sergiocorato/efatto/14.0/stock_orderpoint_generator_sale/static/description/categoria_prodotti.png
+.. image:: https://raw.githubusercontent.com/efatto/efatto/14.0/stock_orderpoint_generator_sale/static/description/categoria_prodotti.png
     :alt: Categoria prodotti
 
 Informazioni sulle formule usate nel file di calcolo https://github.com/sergiocorato/efatto/blob/12.0/stock_orderpoint_generator_sale/static/description/calculate-safety-stocks.ods
@@ -79,10 +79,10 @@ Informazioni sulle formule usate nel file di calcolo https://github.com/sergioco
 Bug Tracker
 ===========
 
-Bugs are tracked on `GitHub Issues <https://github.com/sergiocorato/efatto/issues>`_.
+Bugs are tracked on `GitHub Issues <https://github.com/efatto/efatto/issues>`_.
 In case of trouble, please check there if your issue has already been reported.
 If you spotted it first, help us to smash it by providing a detailed and welcomed
-`feedback <https://github.com/sergiocorato/efatto/issues/new?body=module:%20stock_orderpoint_generator_sale%0Aversion:%2014.0%0A%0A**Steps%20to%20reproduce**%0A-%20...%0A%0A**Current%20behavior**%0A%0A**Expected%20behavior**>`_.
+`feedback <https://github.com/efatto/efatto/issues/new?body=module:%20stock_orderpoint_generator_sale%0Aversion:%2014.0%0A%0A**Steps%20to%20reproduce**%0A-%20...%0A%0A**Current%20behavior**%0A%0A**Expected%20behavior**>`_.
 
 Do not contact contributors directly about support or help with technical issues.
 
@@ -102,6 +102,6 @@ Contributors
 Maintainers
 ~~~~~~~~~~~
 
-This module is part of the `sergiocorato/efatto <https://github.com/sergiocorato/efatto/tree/14.0/stock_orderpoint_generator_sale>`_ project on GitHub.
+This module is part of the `efatto/efatto <https://github.com/efatto/efatto/tree/14.0/stock_orderpoint_generator_sale>`_ project on GitHub.
 
 You are welcome to contribute.

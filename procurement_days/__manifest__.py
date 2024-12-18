@@ -4,7 +4,7 @@
     "name": "Procurement days",
     "version": "14.0.1.0.0",
     "author": "Sergio Corato",
-    "website": "https://github.com/sergiocorato/efatto",
+    "website": "https://github.com/efatto/efatto",
     "summary": "Add a procurement delay days without changing lead date.",
     "license": "AGPL-3",
     "category": "Stock",

@@ -6,7 +6,7 @@
     "category": "Stock",
     "summary": "Allows to use dropshipping with DN",
     "author": "Sergio Corato",
-    "website": "https://github.com/sergiocorato/efatto",
+    "website": "https://github.com/efatto/efatto",
     "license": "AGPL-3",
     "depends": [
         "l10n_it_delivery_note",
