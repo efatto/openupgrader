@@ -153,16 +153,31 @@ class OpenupgraderConfig(models.Model):
                 "name": version,
                 "python_version": python_version,
             }])
-        op_repo_obj.create([{
-            "odoo_version_id": odoo_version_id.id,
-            "remote_repo_ids": [
-                (0, 0, {
-                    "name": remote,
-                    "remote_url": remotes[remote].split(" ")[0],
-                    "remote_branch": remotes[remote].split(" ")[1] or version,
-                }) for remote in remotes
-            ]
-        }])
+        op_repo = op_repo_obj.search([
+            ("odoo_version_id", "=", odoo_version_id.id),
+        ])
+        if op_repo:
+            remote_repo_names = op_repo.remote_repo_ids.mapped("name")
+            op_repo.write({
+                "remote_repo_ids": [
+                    (0, 0, {
+                        "name": remote,
+                        "remote_url": remotes[remote].split(" ")[0],
+                        "remote_branch": remotes[remote].split(" ")[1] or version,
+                    }) for remote in remotes if remote not in remote_repo_names
+                ]
+            })
+        else:
+            op_repo_obj.create([{
+                "odoo_version_id": odoo_version_id.id,
+                "remote_repo_ids": [
+                    (0, 0, {
+                        "name": remote,
+                        "remote_url": remotes[remote].split(" ")[0],
+                        "remote_branch": remotes[remote].split(" ")[1] or version,
+                    }) for remote in remotes
+                ]
+            }])
 
     def load_repos_file(self, version):
         if not self.repos_file:
@@ -194,6 +209,7 @@ class OpenupgraderConfig(models.Model):
                         "sequence": i,
                     })
                     for i, sql_update_command in enumerate(sql_update_commands)
+                    if sql_update_command not in self.sql_update_command_ids.mapped("name")
                 ]
             if receipt.get("auto_install"):
                 auto_install = receipt.get("auto_install")
@@ -204,6 +220,7 @@ class OpenupgraderConfig(models.Model):
                         "module_to_install_name": module.split(" ")[1],
                     })
                     for i, module in enumerate(auto_install)
+                    if module not in self.module_auto_install_ids.mapped("name")
                 ]
             if receipt.get("delete"):
                 delete = receipt.get("delete")
@@ -212,15 +229,17 @@ class OpenupgraderConfig(models.Model):
                         "name": module,
                     })
                     for module in delete
+                    if module not in self.module_to_delete_after_migration_ids.mapped("name")
                 ]
             if receipt.get("uninstall_after_migration_to_this_version"):
                 uninstall_after = receipt.get(
                     "uninstall_after_migration_to_this_version")
-                self.module_to_delete_after_migration_ids = [
+                self.module_to_uninstall_after_migration_ids = [
                     (0, 0, {
                         "name": module,
                     })
                     for module in uninstall_after
+                    if module not in self.module_to_uninstall_after_migration_ids.mapped("name")
                 ]
             if receipt.get("uninstall_before_migration_to_next_version"):
                 uninstall_before = receipt.get(
@@ -230,6 +249,7 @@ class OpenupgraderConfig(models.Model):
                         "name": module,
                     })
                     for module in uninstall_before
+                    if module not in self.module_to_uninstall_before_migration_ids.mapped("name")
                 ]
 
     def load_config_file(self):
