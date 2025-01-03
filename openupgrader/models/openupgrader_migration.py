@@ -300,6 +300,16 @@ class OpenupgraderMigration(models.Model):
             ], shell=True)
         process.wait()
 
+    def copy_database(self):
+        psql_command = (
+            f'CREATE DATABASE "{self.env.cr.dbname}_migrate" '
+            f'WITH TEMPLATE "{self.env.cr.dbname}";'
+        )
+        process = subprocess.Popen([
+            f"psql -p {self.db_port} -d {self.env.cr.dbname} -c '{psql_command}'"],
+            shell=True)
+        process.wait()
+
     def restore_db(self):
         subprocess.Popen(
             [f'dropdb -p {self.db_port} {self.env.cr.dbname}_migrate'],
@@ -326,6 +336,8 @@ class OpenupgraderMigration(models.Model):
         from_version = self.from_version
         restore_db_only = self.restore_db_only
         if self.restore_db_update:
+            # copy db is not possible when it is running!
+            # self.copy_database()
             self.dump_database(from_version.name)
             if self.filestore:
                 self.restore_filestore(from_version, from_version)
