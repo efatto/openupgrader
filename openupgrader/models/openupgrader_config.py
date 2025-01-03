@@ -1,10 +1,8 @@
 import base64
-import os
 
 import yaml
 from odoo import fields, models, _, api
 from odoo.exceptions import UserError
-from odoo.modules.module import get_resource_path
 import logging
 logger = logging.getLogger(__name__)
 
@@ -209,7 +207,8 @@ class OpenupgraderConfig(models.Model):
                         "sequence": i,
                     })
                     for i, sql_update_command in enumerate(sql_update_commands)
-                    if sql_update_command not in self.sql_update_command_ids.mapped("name")
+                    if sql_update_command not in self.sql_update_command_ids
+                    .mapped("name")
                 ]
             if receipt.get("auto_install"):
                 auto_install = receipt.get("auto_install")
@@ -229,7 +228,8 @@ class OpenupgraderConfig(models.Model):
                         "name": module,
                     })
                     for module in delete
-                    if module not in self.module_to_delete_after_migration_ids.mapped("name")
+                    if module not in self.module_to_delete_after_migration_ids
+                    .mapped("name")
                 ]
             if receipt.get("uninstall_after_migration_to_this_version"):
                 uninstall_after = receipt.get(
@@ -239,7 +239,8 @@ class OpenupgraderConfig(models.Model):
                         "name": module,
                     })
                     for module in uninstall_after
-                    if module not in self.module_to_uninstall_after_migration_ids.mapped("name")
+                    if module not in self.module_to_uninstall_after_migration_ids
+                    .mapped("name")
                 ]
             if receipt.get("uninstall_before_migration_to_next_version"):
                 uninstall_before = receipt.get(
@@ -249,7 +250,8 @@ class OpenupgraderConfig(models.Model):
                         "name": module,
                     })
                     for module in uninstall_before
-                    if module not in self.module_to_uninstall_before_migration_ids.mapped("name")
+                    if module not in self.module_to_uninstall_before_migration_ids
+                    .mapped("name")
                 ]
 
     def load_config_file(self):
