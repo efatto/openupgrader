@@ -146,7 +146,7 @@ class OpenupgraderConfig(models.Model):
         op_repo_obj = self.env["openupgrader.repo"]
         odoo_version_obj = self.env["odoo.version"]
         version = self.odoo_version_id.name
-        remotes, python_version = self.load_config('openupgrader_repos.yml', version)
+        remotes, python_version = self.load_repos_file(version)
         odoo_version_id = odoo_version_obj.search([("name", "=", version)])
         if not odoo_version_id:
             odoo_version_obj.create([{
@@ -164,20 +164,15 @@ class OpenupgraderConfig(models.Model):
             ]
         }])
 
-    @staticmethod
-    def load_config(config, version):
-        if not os.path.exists(config):
-            local_path = get_resource_path('openupgrader', f'datas/{config}')
-            if not local_path or not os.path.exists(local_path):
-                raise Exception('Unable to find configuration file: %s' % config)
-            else:
-                config = local_path
-
-        with open(config, "r") as stream:
-            try:
-                repos = yaml.safe_load(stream) or {}
-            except yaml.YAMLError as exc:
-                logger.info(exc)
+    def load_repos_file(self, version):
+        if not self.repos_file:
+            raise UserError(_("Missing repos file!"))
+        file_content = base64.decodebytes(self.repos_file)  # noqa
+        repos = {}
+        try:
+            repos = yaml.safe_load(file_content) or {}
+        except yaml.YAMLError as exc:
+            logger.info(exc)
         remotes = {}
         python_version = False
         for repo in repos.get('repositories'):
