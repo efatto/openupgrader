@@ -30,6 +30,10 @@
         <field name="arch" type="xml">
             <form string="OpenUpgrader migration">
                 <header>
+                    <field name="state"
+                           widget="statusbar"
+                           statusbar_visible="restoring_db,db_restored,after_prepare_migration,migrating,migrated,after_migration"
+                    />
                 </header>
                 <sheet string="OpenUpgrader migration">
                     <group>
@@ -61,17 +65,37 @@
                     <group>
                         <group>
                             <field name="restore_db_only" />
-                            <field name="restore_db_update" />
                             <field name="create_venv" />
                             <field name="filestore" />
                         </group>
                         <group>
+                            <button name="button_refresh_state"
+                                type="object"
+                                string="Refresh state"/>
                             <button name="button_create_venv"
                                 type="object"
+                                states="draft"
                                 string="Create virtualenv"/>
-                            <button name="button_prepare_migration"
+                            <button name="button_prepare_migration_restore_db_update"
                                 type="object"
-                                string="Prepare migration"/>
+                                states="created_venv"
+                                string="Prepare migration restoring db and updating"/>
+                            <button name="button_prepare_migration_restore_db_only"
+                                type="object"
+                                states="created_venv"
+                                string="Prepare migration restoring db"/>
+                            <button name="button_after_prepare_migration"
+                                type="object"
+                                states="db_restored"
+                                string="Complete prepare of migration"/>
+                            <button name="button_do_migration"
+                                type="object"
+                                states="after_prepare_migration"
+                                string="Do migration"/>
+                            <button name="button_after_migration"
+                                type="object"
+                                states="migrated"
+                                string="Complete migration"/>
                         </group>
                     </group>
                     <group>

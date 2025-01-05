@@ -63,7 +63,6 @@ class OpenupgraderMigration(models.Model):
         comodel_name="odoo.version",
         string="To Odoo Version",
     )
-    restore_db_update = fields.Boolean(string="Restore DB and update")
     restore_db_only = fields.Boolean(string="Restore DB")
     create_venv = fields.Boolean(string="Creare Odoo Virtualenv")
     filestore = fields.Boolean()
@@ -96,6 +95,21 @@ class OpenupgraderMigration(models.Model):
         string="Migrated Odoo state",
         help="Migrated Odoo is running or stopped",
         default="stopped",
+    )
+    state = fields.Selection(
+        selection=[
+            ('draft', 'Draft'),
+            ('created_venv', 'Created Venv'),
+            ('restoring_db', 'Restoring DB'),
+            ('db_restored', 'DB restored'),
+            ('after_prepare_migration', 'After prepare migration'),
+            ('migrating', 'Migrating'),
+            ('migrated', 'Migrated'),
+            ('after_migration', 'After migration'),
+        ],
+        string="Migration state",
+        readonly=True,
+        default='draft',
     )
 
     @api.model
@@ -202,7 +216,7 @@ class OpenupgraderMigration(models.Model):
             bash_command.split(), cwd=folder, stdout=subprocess.PIPE)
         self.odoo_pid = process.pid
         if update or extra_command:
-            process.wait()
+            pass
         else:
             time.sleep(15)
             if not save:
@@ -330,34 +344,38 @@ class OpenupgraderMigration(models.Model):
             shell=True).wait()
         os.unlink(dump_file_sql)
 
-    def button_prepare_migration(self):
+    def button_prepare_migration_restore_db_update(self):
         self.ensure_one()
-        to_version = self.to_version
+        self.restore_db_only = False
         from_version = self.from_version
-        restore_db_only = self.restore_db_only
-        if self.restore_db_update:
-            # copy db is not possible when it is running!
-            # self.copy_database()
-            self.dump_database(from_version.name)
-            if self.filestore:
-                self.restore_filestore(from_version, from_version)
-            self.restore_db()
-            self.disable_mail(disable=True)
-            # n.b. when updating, at the end odoo service is stopped
-            self.start_odoo(from_version, update=True)
-            self.restore_db_update = False
-        # restore db if not restored before, not needed if migration for more version
-        elif restore_db_only:
-            self.restore_db()
-            self.restore_db_only = False
+        self.dump_database(from_version.name)
         if self.filestore:
-            self.move_filestore(from_version=from_version, to_version=to_version,
-                                restore_db_only=restore_db_only)
+            self.restore_filestore(from_version, from_version)
+        self.restore_db()
+        self.disable_mail(disable=True)
+        # n.b. when updating, at the end odoo service is stopped
+        self.start_odoo(from_version, update=True)
+
+    def button_prepare_migration_restore_db_only(self):
+        self.ensure_one()
+        self.restore_db_only = True
+        # restore db if not restored before, not needed if migration for more version
+        self.restore_db()
+        self.state = 'db_restored'
+
+    def button_after_prepare_migration(self):
+        from_version = self.from_version
+        to_version = self.to_version
+        if self.filestore:
+            self.move_filestore(
+                from_version=from_version, to_version=to_version,
+                restore_db_only=self.restore_db_only)
         self.disable_mail(disable=True)
         # self.sql_fixes(self.env["openupgrader.config"].search([
         # ("odoo_version_id", "=", from_version)]))
         self.uninstall_modules(from_version, before_migration=True)
         self.delete_old_modules(from_version)
+        self.state = 'after_prepare_migration'
 
     def disable_cron(self, disable=False):
         # disable cron on current running istance, to be re-enabled in the migrated one
@@ -377,7 +395,7 @@ class OpenupgraderMigration(models.Model):
     def button_do_migration(self):
         self.disable_cron(True)
         to_version = self.to_version
-        from_version = self.from_version
+        # from_version = self.from_version
         # if to_version == '11.0':
         #     self.fix_taxes(from_version)
         # if to_version == '12.0' and self.fix_banks:
@@ -386,6 +404,10 @@ class OpenupgraderMigration(models.Model):
         # if from_version == '12.0' and self.migrate_ddt:
         #     self.migrate_l10n_it_ddt_to_l10n_it_delivery_note(from_version)
         self.start_odoo(to_version, update=True)
+
+    def button_after_migration(self):
+        to_version = self.to_version
+        from_version = self.from_version
         self.uninstall_modules(to_version, after_migration=True)
         self.auto_install_modules(to_version)
         self.sql_fixes(self.env["openupgrader.config"].search([
@@ -405,6 +427,23 @@ class OpenupgraderMigration(models.Model):
         self.from_version = self.to_version
         self.to_version = str(float(self.from_version.name) + 1)
         logger.info(_(f"Set next version to {self.to_version}"))
+        self.state = 'after_migration'
+
+    def button_refresh_state(self):
+        for version in [self.from_version, self.to_version]:
+            venv_path = os.path.join(self.folder, f"openupgrade{version.name}")
+            migration_log_path = os.path.join(venv_path, 'migration.log')
+            if os.path.isfile(migration_log_path):
+                with open(migration_log_path) as file:
+                    contents = file.read()
+                    if version == self.from_version:
+                        self.state = 'restoring_db'
+                        if "Initiating shutdown" in contents:
+                            self.state = 'db_restored'
+                    if version == self.to_version:
+                        self.state = 'migrating'
+                        if "Initiating shutdown" in contents:
+                            self.state = 'migrated'
 
     def sql_fixes(self, receipt):
         for part in receipt:
@@ -541,6 +580,7 @@ class OpenupgraderMigration(models.Model):
         for remote_repo in version_repos.remote_repo_ids:
             self.install_repo(remote_repo.name, remote_repo.remote_url,
                               remote_repo.remote_branch, version_name, venv_path)
+        self.state = 'created_venv'
 
     def auto_install_modules(self, version_name):
         self.start_odoo(version_name)
