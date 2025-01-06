@@ -78,7 +78,7 @@
                                 string="Create virtualenv"/>
                             <button name="button_prepare_migration_restore_db_update"
                                 type="object"
-                                states="created_venv"
+                                states="created_venv,restore_failed"
                                 string="Prepare migration restoring db and updating"/>
                             <button name="button_prepare_migration_restore_db_only"
                                 type="object"
@@ -90,7 +90,7 @@
                                 string="Complete prepare of migration"/>
                             <button name="button_do_migration"
                                 type="object"
-                                states="after_prepare_migration"
+                                states="after_prepare_migration,failed"
                                 string="Do migration"/>
                             <button name="button_after_migration"
                                 type="object"

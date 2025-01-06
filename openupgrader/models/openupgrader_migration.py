@@ -160,12 +160,15 @@ class OpenupgraderMigration(models.Model):
     def button_start_odoo(self):
         self.start_odoo(version=self.from_version)
 
-    def start_odoo(self, version, update=False, extra_command='', save=False):
+    def start_odoo(
+        self, version, update=False, extra_command='', save=False, wait=False
+    ):
         """
         :param version: odoo version to start (8.0, 9.0, 10.0, ...)
         :param update: if True odoo will be updated with -u all and stopped
         :param extra_command: command that will be passed after executable
         :param save: if True save .odoorc and stop Odoo
+        :param wait: if True process will wait for execution
         :return: Odoo instance in "self.odoo_client" if not updated, else nothing
         """
         if self.odoo_migrated_state == "running":
@@ -219,13 +222,12 @@ class OpenupgraderMigration(models.Model):
         process = subprocess.Popen(
             bash_command.split(), cwd=folder, stdout=subprocess.PIPE)
         self.odoo_pid = process.pid
-        if update or extra_command:
-            pass
-        else:
+        if wait:
+            process.wait()
+        if not update and not extra_command:
             time.sleep(15)
             if not save:
                 self.odoo_migrated_state = "running"
-                # self.odoo_connect()
             else:
                 not_auto_install_list = [
                     "partner_autocomplete", "iap", "mail_bot", "account_edi",
@@ -247,6 +249,7 @@ class OpenupgraderMigration(models.Model):
             os.kill(self.odoo_pid, signal.SIGTERM)
             time.sleep(10)
             os.kill(self.odoo_pid, signal.SIGTERM)
+        self.odoo_migrated_state = "stopped"
 
     def disable_mail(self, disable=False):
         state = 'draft' if disable else 'done'
@@ -318,16 +321,6 @@ class OpenupgraderMigration(models.Model):
             ], shell=True)
         process.wait()
 
-    def copy_database(self):
-        psql_command = (
-            f'CREATE DATABASE "{self.env.cr.dbname}_migrate" '
-            f'WITH TEMPLATE "{self.env.cr.dbname}";'
-        )
-        process = subprocess.Popen([
-            f"psql -p {self.db_port} -d {self.env.cr.dbname} -c '{psql_command}'"],
-            shell=True)
-        process.wait()
-
     def restore_db(self):
         subprocess.Popen(
             [f'dropdb -p {self.db_port} {self.env.cr.dbname}_migrate'],
@@ -358,6 +351,7 @@ class OpenupgraderMigration(models.Model):
         self.restore_db()
         self.disable_mail(disable=True)
         # n.b. when updating, at the end odoo service is stopped
+        self.start_odoo(from_version, save=True, wait=True)
         self.start_odoo(from_version, update=True)
 
     def button_prepare_migration_restore_db_only(self):
@@ -385,8 +379,9 @@ class OpenupgraderMigration(models.Model):
         # disable cron on current running istance, to be re-enabled in the migrated one
         if disable:
             ir_cron_ids = self.env["ir.cron"].search([])
-            ir_cron_ids.write({"active": False})
-            self.disabled_cron_ids = ir_cron_ids
+            if ir_cron_ids:
+                ir_cron_ids.write({"active": False})
+                self.disabled_cron_ids = ir_cron_ids
         if not disable and self.disabled_cron_ids:
             sql = (f"UPDATE ir_cron SET active = true WHERE id in "
                    f"{(_id for _id in self.disabled_cron_ids.ids)};")
@@ -407,6 +402,7 @@ class OpenupgraderMigration(models.Model):
         #     self.fixes.migrate_bank_riba_id_bank_ids_invoice(from_version)
         # if from_version == '12.0' and self.migrate_ddt:
         #     self.migrate_l10n_it_ddt_to_l10n_it_delivery_note(from_version)
+        self.start_odoo(to_version, save=True, wait=True)
         self.start_odoo(to_version, update=True)
 
     def button_after_migration(self):
