@@ -101,9 +101,11 @@ class OpenupgraderMigration(models.Model):
             ('draft', 'Draft'),
             ('created_venv', 'Created Venv'),
             ('restoring_db', 'Restoring DB'),
+            ('restore_failed', 'Restore failed'),
             ('db_restored', 'DB restored'),
             ('after_prepare_migration', 'After prepare migration'),
             ('migrating', 'Migrating'),
+            ('failed', 'Failed'),
             ('migrated', 'Migrated'),
             ('after_migration', 'After migration'),
         ],
@@ -440,11 +442,15 @@ class OpenupgraderMigration(models.Model):
                     contents = file.read()
                     if version == self.from_version:
                         self.state = 'restoring_db'
-                        if "Initiating shutdown" in contents:
+                        if "CRITICAL" in contents:
+                            self.state = 'restore_failed'
+                        elif "Initiating shutdown" in contents:
                             self.state = 'db_restored'
                     if version == self.to_version:
                         self.state = 'migrating'
-                        if "Initiating shutdown" in contents:
+                        if "CRITICAL" in contents:
+                            self.state = 'failed'
+                        elif "Initiating shutdown" in contents:
                             self.state = 'migrated'
 
     def sql_fixes(self, receipt):

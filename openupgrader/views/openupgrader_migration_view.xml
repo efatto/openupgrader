@@ -32,7 +32,7 @@
                 <header>
                     <field name="state"
                            widget="statusbar"
-                           statusbar_visible="restoring_db,db_restored,after_prepare_migration,migrating,migrated,after_migration"
+                           statusbar_visible="draft,created_venv,restoring_db,restore_failed,db_restored,after_prepare_migration,migrating,failed,migrated,after_migration"
                     />
                 </header>
                 <sheet string="OpenUpgrader migration">
