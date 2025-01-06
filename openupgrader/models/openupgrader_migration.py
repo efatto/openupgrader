@@ -46,7 +46,7 @@ class OpenupgraderMigration(models.Model):
         comodel_name="ir.cron",
         string="Disabled ir crons",
     )
-    odoo_pid = fields.Char(string="Odoo migrated process PID")
+    odoo_pid = fields.Integer(string="Odoo migrated process PID")
     db_port = fields.Char(string="Database port", default='5432')
     xmlrpc_port = fields.Char(string="XmlRpc port", default='8032')
     folder = fields.Char(
@@ -120,18 +120,18 @@ class OpenupgraderMigration(models.Model):
     def odoo_connect(self):
         if self.db_name and self.db_password:
             client = odoorpc.ODOO(
-                host="http://localhost",
+                host="localhost",
                 protocol='jsonrpc',
                 port=self.xmlrpc_port,
                 opener=self._get_opener(verify_ssl=False)
             )
-            odoo_client = client.login(
-                db=self.db_name,
+            client.login(
+                db=f"{self.db_name}_migrate",
                 login=self.db_user,
                 password=self.db_password
             )
             time.sleep(5)
-            return odoo_client
+            return client
 
     @staticmethod
     def _get_opener(verify_ssl=True, sessions=True):
@@ -166,6 +166,8 @@ class OpenupgraderMigration(models.Model):
         :param save: if True save .odoorc and stop Odoo
         :return: Odoo instance in "self.odoo_client" if not updated, else nothing
         """
+        if self.odoo_migrated_state == "running":
+            self.button_stop_odoo()
         version_name = version.name
         folder = os.path.join(self.folder, f"openupgrade{version_name}")
         load = 'web'
@@ -221,7 +223,7 @@ class OpenupgraderMigration(models.Model):
             time.sleep(15)
             if not save:
                 self.odoo_migrated_state = "running"
-                self.odoo_connect()
+                # self.odoo_connect()
             else:
                 not_auto_install_list = [
                     "partner_autocomplete", "iap", "mail_bot", "account_edi",
@@ -582,13 +584,14 @@ class OpenupgraderMigration(models.Model):
                               remote_repo.remote_branch, version_name, venv_path)
         self.state = 'created_venv'
 
-    def auto_install_modules(self, version_name):
-        self.start_odoo(version_name)
-        module_obj = self.odoo_client.env['ir.module.module']
-        if version_name == '12.0':
+    def auto_install_modules(self, version):
+        self.start_odoo(version)
+        odoo_client = self.odoo_connect()
+        module_obj = odoo_client.env['ir.module.module']
+        if version.name == '12.0':
             self.remove_modules('upgrade')
         openupgrader_config = self.env["openupgrader.config"].search([
-            ("odoo_version_id", "=", version_name)
+            ("odoo_version_id.id", "=", version.id)
         ])
         for module in openupgrader_config.module_auto_install_ids:
             module_to_check = module.name
@@ -597,17 +600,17 @@ class OpenupgraderMigration(models.Model):
                 ('name', '=', module_to_check),
                 ('state', '=', 'installed')]
             ):
-                self.odoo_client.env.install(module_to_install)
+                odoo_client.env.install(module_to_install)
         self.button_stop_odoo()
 
     def uninstall_modules(
-        self, version_name, before_migration=False, after_migration=False
+        self, version, before_migration=False, after_migration=False
     ):
-        self.start_odoo(version_name)
-        if version_name == '12.0':
+        self.start_odoo(version)
+        if version.name == '12.0':
             self.remove_modules('upgrade')
         openupgrader_config = self.env["openupgrader.config"].search(
-            [("odoo_version_id", "=", version_name)])
+            [("odoo_version_id.id", "=", version.id)])
         if after_migration:
             for module in openupgrader_config.module_to_uninstall_after_migration_ids:
                 self.install_uninstall_module(module, install=False)
@@ -616,12 +619,12 @@ class OpenupgraderMigration(models.Model):
                 self.install_uninstall_module(module, install=False)
         self.button_stop_odoo()
 
-    def delete_old_modules(self, version_name):
+    def delete_old_modules(self, version):
         openupgrader_config = self.env["openupgrader.config"].search([
-            ("odoo_version_id", "=", version_name)])
+            ("odoo_version_id.id", "=", version.id)])
         if openupgrader_config.module_to_delete_after_migration_ids:
-            self.start_odoo(version_name)
-            module_obj = self.odoo_client.env['ir.module.module']
+            odoo_client = self.odoo_connect()
+            module_obj = odoo_client.env['ir.module.module']
             for module in openupgrader_config.module_to_delete_after_migration_ids:
                 module = module_obj.search([('name', '=', module)])
                 if module:
@@ -633,7 +636,8 @@ class OpenupgraderMigration(models.Model):
             state = ['to upgrade', ]
         else:
             state = ['to remove', 'to install']
-        module_obj = self.odoo_client.env['ir.module.module']
+        odoo_client = self.odoo_connect()
+        module_obj = odoo_client.env['ir.module.module']
         modules = module_obj.search([('state', 'in', state)])
         msg_modules = ''
         msg_modules_after = ''
@@ -665,14 +669,15 @@ class OpenupgraderMigration(models.Model):
         return success
 
     def install_uninstall_module(self, module, install=True):
-        module_obj = self.odoo_client.env['ir.module.module']
+        odoo_client = self.odoo_connect()
+        module_obj = odoo_client.env['ir.module.module']
         to_remove_modules = module_obj.search([('state', '=', 'to remove')])
         for module_to_remove in to_remove_modules:
             module_to_remove.button_uninstall_cancel()
-        state = self.odoo_client.env.modules(module)
+        state = odoo_client.env.modules(module)
         if state:
             if install:
-                self.odoo_client.env.install(module)
+                odoo_client.env.install(module)
             elif state.get('installed', False) or state.get('to upgrade', False)\
                     or state.get('uninstallable'):
                 module_id = module_obj.search([('name', '=', module)])
