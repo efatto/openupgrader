@@ -235,9 +235,10 @@ class OpenupgraderMigration(models.Model):
                 ]
                 mod_not_install = \
                     f"modules_auto_install_disabled = {','.join(not_auto_install_list)}"
-                subprocess.Popen(
-                    ['mv ~/.odoorc ./'], shell=True
-                ).wait()
+                shutil.move(
+                    os.path.join(os.path.expanduser("~"), ".odoorc"),
+                    os.path.join(self.folder, f"openupgrade{version_name}"),
+                )
                 subprocess.Popen(
                     [f'sed -i "s/^osv_memory_age_limit.*/{mod_not_install}/g" .odoorc'],
                     shell=True
