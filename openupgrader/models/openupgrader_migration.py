@@ -200,27 +200,29 @@ class OpenupgraderMigration(models.Model):
         if version_name in ['10.0', '11.0', '12.0', '13.0']:
             extra_addons_path = f',{folder}/openupgrade/odoo/addons'
         bash_command = \
-            f"./bin/{executable} " \
-            f"{'-c .odoorc' if odoorc_exist else ''} " \
-            f"{not odoorc_exist and f'--addons-path={addons_path}' or ''}" \
-            f"{not odoorc_exist and f'{folder}/addons-extra' or ''}" \
+            f"{folder}/openupgrade/{executable} " \
+            f"{f'-c {folder}/.odoorc' if odoorc_exist else ''} " \
+            f"{not odoorc_exist and f'--addons-path={addons_path}' or ''} " \
+            f"{not odoorc_exist and f'{folder}/addons-extra' or ''} " \
             f"{not odoorc_exist and extra_addons_path or ''} " \
             f"{extra_command} " \
-            f"--db_port={self.db_port} --xmlrpc-port={self.xmlrpc_port} " \
-            f"--logfile={folder}/migration.log " \
+            f"{not odoorc_exist and f'--db_port={self.db_port}' or ''} " \
+            f"--xmlrpc-port={self.xmlrpc_port} " \
+            f"{not odoorc_exist and f'--logfile={folder}/migration.log' or ''} " \
             f"{not odoorc_exist and '--limit-time-cpu=16000' or ''} " \
             f"{not odoorc_exist and '--limit-time-real=32000' or ''} " \
             f"{not odoorc_exist and '--limit-memory-soft=4147483648' or ''} " \
             f"{not odoorc_exist and '--limit-memory-hard=4679107584' or ''} " \
-            f"--load={load} -d {self.env.cr.dbname}_migrate "
-        if version_name != '7.0':
+            f"{not odoorc_exist and '--load={load}' or ''} " \
+            f"-d {self.env.cr.dbname}_migrate "
+        if not odoorc_exist and version_name != '7.0':
             bash_command += f"--data-dir={folder}/data_dir "
         if update:
             bash_command += "-u all --stop "
         if save:
             bash_command += "-s --stop"
         process = subprocess.Popen(
-            bash_command.split(), cwd=folder, stdout=subprocess.PIPE)
+            bash_command.split(), cwd=folder, stdout=subprocess.PIPE, shell=True)
         self.odoo_pid = process.pid
         if wait:
             process.wait()
@@ -237,7 +239,7 @@ class OpenupgraderMigration(models.Model):
                     f"modules_auto_install_disabled = {','.join(not_auto_install_list)}"
                 shutil.move(
                     os.path.join(os.path.expanduser("~"), ".odoorc"),
-                    os.path.join(self.folder, f"openupgrade{version_name}"),
+                    os.path.join(self.folder, f"openupgrade{version_name}", ".odoorc"),
                 )
                 subprocess.Popen(
                     [f'sed -i "s/^osv_memory_age_limit.*/{mod_not_install}/g" .odoorc'],
@@ -403,7 +405,13 @@ class OpenupgraderMigration(models.Model):
         #     self.fixes.migrate_bank_riba_id_bank_ids_invoice(from_version)
         # if from_version == '12.0' and self.migrate_ddt:
         #     self.migrate_l10n_it_ddt_to_l10n_it_delivery_note(from_version)
-        self.start_odoo(to_version, save=True, wait=True)
+        odoorc_exist = bool(
+            os.path.isfile(
+                os.path.join(self.folder, f"openupgrade{to_version.name}", '.odoorc')
+            )
+        )
+        if not odoorc_exist:
+            self.start_odoo(to_version, save=True, wait=True)
         self.start_odoo(to_version, update=True)
 
     def button_after_migration(self):
