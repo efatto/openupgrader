@@ -64,8 +64,6 @@
                     </group>
                     <group>
                         <group>
-                            <field name="restore_db_only" />
-                            <field name="create_venv" />
                             <field name="filestore" />
                         </group>
                         <group>

@@ -63,8 +63,6 @@ class OpenupgraderMigration(models.Model):
         comodel_name="odoo.version",
         string="To Odoo Version",
     )
-    restore_db_only = fields.Boolean(string="Restore DB")
-    create_venv = fields.Boolean(string="Creare Odoo Virtualenv")
     filestore = fields.Boolean()
     migrate_ddt = fields.Boolean()
     repo_ids = fields.Many2many(
@@ -270,8 +268,7 @@ class OpenupgraderMigration(models.Model):
         if ir_mail_server_ids:
             ir_mail_server_ids.write({"active": active})
 
-    def move_filestore(self, from_folder=False, from_version=False, to_version=False,
-                       restore_db_only=False):
+    def move_filestore(self, from_folder=False, from_version=False, to_version=False):
         if not from_folder:
             from_folder = (
                 f'{self.folder}/{from_version}/data_dir'
@@ -279,10 +276,10 @@ class OpenupgraderMigration(models.Model):
         to_version_filestore = (
             f'{self.folder}/{to_version}/data_dir'
             f'/filestore/{self.env.cr.dbname}')
-        if os.path.isdir(to_version_filestore) and not restore_db_only:
+        if os.path.isdir(to_version_filestore):  # todo check: and not restore_db_only:
             shutil.rmtree(to_version_filestore, ignore_errors=True)
-        if not restore_db_only:
-            os.rename(from_folder, to_version_filestore)
+        # todo check: if not restore_db_only:
+        os.rename(from_folder, to_version_filestore)
 
     def restore_filestore(self, from_version, to_version):
         filestore_path = os.path.join(
@@ -346,7 +343,6 @@ class OpenupgraderMigration(models.Model):
 
     def button_prepare_migration_restore_db_update(self):
         self.ensure_one()
-        self.restore_db_only = False
         from_version = self.from_version
         self.dump_database(from_version.name)
         if self.filestore:
@@ -359,7 +355,6 @@ class OpenupgraderMigration(models.Model):
 
     def button_prepare_migration_restore_db_only(self):
         self.ensure_one()
-        self.restore_db_only = True
         # restore db if not restored before, not needed if migration for more version
         self.restore_db()
         self.state = 'db_restored'
@@ -369,8 +364,7 @@ class OpenupgraderMigration(models.Model):
         to_version = self.to_version
         if self.filestore:
             self.move_filestore(
-                from_version=from_version, to_version=to_version,
-                restore_db_only=self.restore_db_only)
+                from_version=from_version, to_version=to_version)
         self.disable_mail(disable=True)
         # self.sql_fixes(self.env["openupgrader.config"].search([
         # ("odoo_version_id", "=", from_version)]))
