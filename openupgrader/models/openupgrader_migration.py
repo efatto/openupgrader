@@ -247,9 +247,15 @@ class OpenupgraderMigration(models.Model):
 
     def button_stop_odoo(self):
         if self.odoo_pid:
-            os.kill(self.odoo_pid, signal.SIGTERM)
-            time.sleep(10)
-            os.kill(self.odoo_pid, signal.SIGTERM)
+            try:
+                os.kill(self.odoo_pid, signal.SIGTERM)
+            except OSError:
+                time.sleep(10)
+                try:
+                    os.kill(self.odoo_pid, signal.SIGKILL)
+                except OSError:
+                    pass
+        self.odoo_pid = False
         self.odoo_migrated_state = "stopped"
 
     def disable_mail(self, disable=False):
