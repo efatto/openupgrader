@@ -1,5 +1,5 @@
 
-from odoo import fields, models, tools, api, _
+from odoo import fields, models, api, _
 from odoo.exceptions import UserError
 
 import odoorpc
