@@ -235,6 +235,8 @@ class OpenupgraderMigration(models.Model):
                 ]
                 mod_not_install = \
                     f"modules_auto_install_disabled = {','.join(not_auto_install_list)}"
+                if not os.path.isfile(os.path.join(os.path.expanduser("~"), ".odoorc")):
+                    raise UserError(_("Missing .odoorc file in home path!"))
                 shutil.move(
                     os.path.join(os.path.expanduser("~"), ".odoorc"),
                     os.path.join(self.folder, f"openupgrade{version_name}", ".odoorc"),
