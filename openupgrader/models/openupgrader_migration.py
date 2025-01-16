@@ -183,7 +183,7 @@ class OpenupgraderMigration(models.Model):
         ]:
             load += ',openupgrade_framework,module_change_auto_install'
         executable = 'openerp-server' if version_name in ['7.0', '8.0', '9.0']\
-            else 'odoo'
+            else 'odoo-bin'
         odoorc_exist = bool(
             os.path.isfile(
                 os.path.join(folder, '.odoorc')
