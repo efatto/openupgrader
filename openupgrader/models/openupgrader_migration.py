@@ -211,7 +211,7 @@ class OpenupgraderMigration(models.Model):
             f"{not odoorc_exist and '--limit-time-real=32000' or ''} " \
             f"{not odoorc_exist and '--limit-memory-soft=4147483648' or ''} " \
             f"{not odoorc_exist and '--limit-memory-hard=4679107584' or ''} " \
-            f"{not odoorc_exist and '--load={load}' or ''} " \
+            f"{not odoorc_exist and f'--load={load}' or ''} " \
             f"-d {self.env.cr.dbname}_migrate "
         if not odoorc_exist and version_name != '7.0':
             bash_command += f"--data-dir={folder}/data_dir "
