@@ -243,7 +243,7 @@ class OpenupgraderMigration(models.Model):
                 if not os.path.isfile(os.path.join(os.path.expanduser("~"), ".odoorc")):
                     raise UserError(_("Missing .odoorc file in home path!"))
                 subprocess.Popen(
-                    [f'sed -i "s/^osv_memory_age_limit.*/{mod_not_install}/g" .odoorc'],
+                    [f'echo {mod_not_install} >> .odoorc'],
                     shell=True
                 ).wait()
                 shutil.move(
