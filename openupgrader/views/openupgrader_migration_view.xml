@@ -65,15 +65,15 @@
                     <group>
                         <group>
                             <field name="filestore" />
+                            <button name="button_create_venv"
+                                type="object"
+                                states="draft"
+                                string="Create virtualenv"/>
                         </group>
                         <group>
                             <button name="button_refresh_state"
                                 type="object"
                                 string="Refresh state"/>
-                            <button name="button_create_venv"
-                                type="object"
-                                states="draft"
-                                string="Create virtualenv"/>
                             <button name="button_prepare_migration_restore_db_update"
                                 type="object"
                                 states="created_venv,restore_failed"
@@ -82,6 +82,10 @@
                                 type="object"
                                 states="created_venv"
                                 string="Prepare migration restoring db"/>
+                            <button name="button_prepare_migration_update_only"
+                                type="object"
+                                states="created_venv"
+                                string="Prepare migration updating only"/>
                             <button name="button_after_prepare_migration"
                                 type="object"
                                 states="db_restored"

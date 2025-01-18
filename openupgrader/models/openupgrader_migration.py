@@ -371,6 +371,14 @@ class OpenupgraderMigration(models.Model):
         self.restore_db()
         self.state = 'db_restored'
 
+    def button_prepare_migration_update_only(self):
+        self.ensure_one()
+        from_version = self.from_version
+        self.disable_mail(disable=True)
+        # n.b. when updating, at the end odoo service is stopped
+        self.start_odoo(from_version, save=True, wait=True)
+        self.start_odoo(from_version, update=True)
+
     def button_after_prepare_migration(self):
         from_version = self.from_version
         to_version = self.to_version
