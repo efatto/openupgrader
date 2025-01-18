@@ -193,6 +193,7 @@ class OpenupgraderMigration(models.Model):
                 os.path.join(folder, '.odoorc')
             )
             and not self.migrate_ddt
+            and not save
         )
         addons_path = f'{folder}/repos/odoo/addons,'
         if version_name in ['8.0', '9.0', '10.0', '11.0', '12.0', '13.0']:
@@ -241,14 +242,14 @@ class OpenupgraderMigration(models.Model):
                     f"modules_auto_install_disabled = {','.join(not_auto_install_list)}"
                 if not os.path.isfile(os.path.join(os.path.expanduser("~"), ".odoorc")):
                     raise UserError(_("Missing .odoorc file in home path!"))
-                shutil.move(
-                    os.path.join(os.path.expanduser("~"), ".odoorc"),
-                    os.path.join(self.folder, f"openupgrade{version_name}", ".odoorc"),
-                )
                 subprocess.Popen(
                     [f'sed -i "s/^osv_memory_age_limit.*/{mod_not_install}/g" .odoorc'],
                     shell=True
                 ).wait()
+                shutil.move(
+                    os.path.join(os.path.expanduser("~"), ".odoorc"),
+                    os.path.join(self.folder, f"openupgrade{version_name}", ".odoorc"),
+                )
         time.sleep(5)
 
     def button_stop_odoo(self):
