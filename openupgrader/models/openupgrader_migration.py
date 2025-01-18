@@ -204,10 +204,10 @@ class OpenupgraderMigration(models.Model):
         bash_command = \
             f"{folder}/openupgrade/{executable} " \
             f"{f'-c {folder}/.odoorc' if odoorc_exist else ''} " \
-            f"{not odoorc_exist and f'--addons-path={addons_path}' or ''} " \
-            f"{not odoorc_exist and f'{folder}/addons-extra' or ''} " \
-            f"{not odoorc_exist and extra_addons_path or ''} " \
-            f"{extra_command} " \
+            f"{not odoorc_exist and f'--addons-path={addons_path}' or ''}" \
+            f"{not odoorc_exist and f'{folder}/addons-extra' or ''}" \
+            f"{not odoorc_exist and extra_addons_path or ''}" \
+            f" {extra_command} " \
             f"{not odoorc_exist and f'--db_port={self.db_port}' or ''} " \
             f"--xmlrpc-port={self.xmlrpc_port} " \
             f"{not odoorc_exist and f'--logfile={folder}/migration.log' or ''} " \
@@ -224,7 +224,7 @@ class OpenupgraderMigration(models.Model):
         if save:
             bash_command += "-s --stop"
         process = subprocess.Popen(
-            bash_command.split(), cwd=folder, stdout=subprocess.PIPE, shell=True)
+            bash_command.split(), cwd=folder, stdout=subprocess.PIPE)
         self.odoo_pid = process.pid
         if wait:
             process.wait()
