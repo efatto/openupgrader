@@ -203,6 +203,7 @@ class OpenupgraderMigration(models.Model):
         if version_name in ['10.0', '11.0', '12.0', '13.0']:
             extra_addons_path = f',{folder}/openupgrade/odoo/addons'
         bash_command = \
+            "deactivate && " \
             f"{folder}/openupgrade/{executable} " \
             f"{f'-c {folder}/.odoorc' if odoorc_exist else ''} " \
             f"{not odoorc_exist and f'--addons-path={addons_path}' or ''}" \
