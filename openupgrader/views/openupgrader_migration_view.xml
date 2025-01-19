@@ -30,6 +30,7 @@
         <field name="arch" type="xml">
             <form string="OpenUpgrader migration">
                 <header>
+                    <button name="button_draft" type="object" string="Set to draft"/>
                     <field name="state"
                            widget="statusbar"
                            statusbar_visible="draft,created_venv,restoring_db,restore_failed,db_restored,after_prepare_migration,migrating,failed,migrated,after_migration"

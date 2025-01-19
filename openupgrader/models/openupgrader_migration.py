@@ -203,7 +203,6 @@ class OpenupgraderMigration(models.Model):
         if version_name in ['10.0', '11.0', '12.0', '13.0']:
             extra_addons_path = f',{folder}/openupgrade/odoo/addons'
         bash_command = \
-            "deactivate && " \
             f"{folder}/openupgrade/{executable} " \
             f"{f'-c {folder}/.odoorc' if odoorc_exist else ''} " \
             f"{not odoorc_exist and f'--addons-path={addons_path}' or ''}" \
@@ -225,8 +224,10 @@ class OpenupgraderMigration(models.Model):
             bash_command += "-u all --stop "
         if save:
             bash_command += "-s --stop"
+        my_env = os.environ.copy()
+        my_env["VIRTUAL_ENV"] = folder
         process = subprocess.Popen(
-            bash_command.split(), cwd=folder, stdout=subprocess.PIPE)
+            bash_command.split(), cwd=folder, stdout=subprocess.PIPE, env=my_env)
         self.odoo_pid = process.pid
         if wait:
             process.wait()
@@ -409,6 +410,9 @@ class OpenupgraderMigration(models.Model):
                  f'{self.env.cr.dbname}_migrate -c "{sql}"'],
                 shell=True
             )
+
+    def button_draft(self):
+        self.state = 'draft'
 
     def button_do_migration(self):
         self.disable_cron(True)
