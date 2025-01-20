@@ -356,25 +356,31 @@ class OpenupgraderMigration(models.Model):
             shell=True).wait()
         os.unlink(dump_file_sql)
 
-    def button_prepare_migration_restore_db_update(self):
-        self.ensure_one()
+    def button_restore_db_update(self):
         from_version = self.from_version
-        self.dump_database(from_version.name)
-        if self.filestore:
-            self.restore_filestore(from_version, from_version)
-        self.restore_db()
+        self.button_restore_db()
         self.disable_mail(disable=True)
         # n.b. when updating, at the end odoo service is stopped
         self.start_odoo(from_version, save=True, wait=True)
         self.start_odoo(from_version, update=True)
 
-    def button_prepare_migration_restore_db_only(self):
+    def button_restore_db(self):
         self.ensure_one()
-        # restore db if not restored before, not needed if migration for more version
-        self.restore_db()
+        from_version = self.from_version
+        base_module = self.env["ir.module.module"].search([("name", "=", "base")])
+        if (
+            from_version.name.split(".")[0]
+            == base_module.installed_version.split(".")[0]
+        ):
+            # restore is needed only when we migrate the first version, then the db is
+            # already present
+            self.dump_database(from_version.name)
+            if self.filestore:
+                self.restore_filestore(from_version, from_version)
+            self.restore_db()
         self.state = 'db_restored'
 
-    def button_prepare_migration_update_only(self):
+    def button_update_from_version(self):
         self.ensure_one()
         from_version = self.from_version
         self.disable_mail(disable=True)
