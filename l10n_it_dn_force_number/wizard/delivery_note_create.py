@@ -34,7 +34,12 @@ class StockDeliveryNoteCreateWizard(models.TransientModel):
     def _prepare_delivery_note_vals(self, sale_order_id):
         res = super()._prepare_delivery_note_vals(sale_order_id=sale_order_id)
         carrier_tracking_ref = ", ".join(
-            {pick.carrier_tracking_ref for pick in self.selected_picking_ids}
+            {
+                pick.carrier_tracking_ref
+                for pick in self.selected_picking_ids.filtered(
+                    lambda x: x.carrier_tracking_ref
+                )
+            }
         )
         if carrier_tracking_ref:
             res["carrier_tracking_ref"] = carrier_tracking_ref
