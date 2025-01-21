@@ -50,6 +50,7 @@ odoo.define("sale_order_calendar_state.CalendarColors", function (require) {
           production_done: -310,
           partially_delivered: -308,
           delivery_done: -307,
+          has_ddt: -311,
           available: -301,
           invoiced: -309,
           shipped: -301,

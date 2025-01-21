@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 14.0+e\n"
+"Project-Id-Version: Odoo Server 14.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-04-26 15:19+0000\n"
-"PO-Revision-Date: 2024-04-26 15:19+0000\n"
+"POT-Creation-Date: 2025-01-21 11:39+0000\n"
+"PO-Revision-Date: 2025-01-21 11:39+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -56,6 +56,16 @@ msgstr "Stato aggiuntivo"
 #: model_terms:ir.ui.view,arch_db:sale_order_calendar_state.view_order_form_calendar_state
 msgid "Alert customer of change"
 msgstr "Avvisa il cliente della modifica"
+
+#. module: sale_order_calendar_state
+#: model:ir.model.fields,field_description:sale_order_calendar_state.field_account_move__assigned_attachment_ids
+#: model:ir.model.fields,field_description:sale_order_calendar_state.field_mail_compose_message__assigned_attachment_ids
+#: model:ir.model.fields,field_description:sale_order_calendar_state.field_mrp_production__assigned_attachment_ids
+#: model:ir.model.fields,field_description:sale_order_calendar_state.field_sale_order__assigned_attachment_ids
+#: model:ir.model.fields,field_description:sale_order_calendar_state.field_stock_picking__assigned_attachment_ids
+#: model:ir.model.fields,field_description:sale_order_calendar_state.field_wizard_mark_blocked__assigned_attachment_ids
+msgid "Assigned Attachments"
+msgstr "Allegati assegnati"
 
 #. module: sale_order_calendar_state
 #: model:ir.model.fields.selection,name:sale_order_calendar_state.selection__sale_order__calendar_state__available
@@ -189,6 +199,16 @@ msgid "Email composition wizard"
 msgstr "Procedura composizione e-mail"
 
 #. module: sale_order_calendar_state
+#: model:ir.model.fields.selection,name:sale_order_calendar_state.selection__sale_order__calendar_state__has_ddt
+msgid "Has DDT"
+msgstr "Ha un DDT"
+
+#. module: sale_order_calendar_state
+#: model:ir.model.fields,field_description:sale_order_calendar_state.field_sale_order__in_kit
+msgid "Has a Kit and is Custom"
+msgstr "Ha un kit ed è Custom"
+
+#. module: sale_order_calendar_state
 #: model:ir.model.fields,field_description:sale_order_calendar_state.field_sale_order__has_kit
 msgid "Has kit"
 msgstr "Ha un kit"
@@ -223,6 +243,11 @@ msgstr "È bloccato"
 #: model:ir.model,name:sale_order_calendar_state.model_account_move
 msgid "Journal Entry"
 msgstr "Registrazione contabile"
+
+#. module: sale_order_calendar_state
+#: model_terms:ir.ui.view,arch_db:sale_order_calendar_state.view_order_form_calendar_state
+msgid "Kit info"
+msgstr "Info su Kit"
 
 #. module: sale_order_calendar_state
 #: model:ir.model.fields,field_description:sale_order_calendar_state.field_account_move____last_update

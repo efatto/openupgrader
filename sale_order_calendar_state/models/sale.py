@@ -22,6 +22,7 @@ TO_TEST = "to_test"
 DONE = "production_done"
 DELIVERY_READY = "delivery_ready"
 DONE_DELIVERY = "delivery_done"
+HAS_DDT = "has_ddt"
 AVAILABLEREADY = "available"
 PARTIALLYDELIVERED = "partially_delivered"
 INVOICED = "invoiced"
@@ -50,6 +51,7 @@ class SaleOrder(models.Model):
         ("partially_delivered", "Partially delivered"),
         ("delivery_done", "Delivery done"),
         ("available", "Available"),
+        ("has_ddt", "Has DDT"),
         ("invoiced", "Invoiced"),
         ("shipped", "Shipped"),
     ]
@@ -71,6 +73,7 @@ class SaleOrder(models.Model):
         "production_done": 310,
         "partially_delivered": 308,
         "delivery_done": 307,
+        "has_ddt": 311,
         "available": 301,
         "invoiced": 309,
         "shipped": 301,
@@ -330,6 +333,7 @@ class SaleOrder(models.Model):
             WAITING_FOR_PACKING,
             DELIVERY_READY,
             DONE_DELIVERY,
+            HAS_DDT,
             INVOICED,
             SHIPPED,
         ]
@@ -368,7 +372,12 @@ class SaleOrder(models.Model):
             # materiali mancanti > arancioni (con righe in rosso) MISSING_COMPONENTS_BUY
             # stampo > giallo (sempre anche se mancano materiali) WAITING_FOR_PACKING
             calendar_state = []
-            if all([x.state == "done" for x in picking_ids]):
+            if any([
+                x.delivery_note_id and x.delivery_note_state != "cancel"
+                for x in picking_ids
+            ]):
+                calendar_state = HAS_DDT
+            elif all([x.state == "done" for x in picking_ids]):
                 delivery_notes = picking_ids.mapped("delivery_note_id")
                 if delivery_notes and any([x.state != "done" for x in delivery_notes]):
                     calendar_state = WAITING_FOR_PACKING
@@ -441,7 +450,7 @@ class SaleOrder(models.Model):
             if mrp_states & {"to_close", "done"} and (
                 calendar_states
                 and not any(
-                    x[0] in (DONE_DELIVERY, WAITING_FOR_PACKING)
+                    x[0] in (DONE_DELIVERY, WAITING_FOR_PACKING, HAS_DDT)
                     for x in calendar_states
                 )
             ):
