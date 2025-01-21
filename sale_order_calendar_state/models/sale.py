@@ -372,10 +372,12 @@ class SaleOrder(models.Model):
             # materiali mancanti > arancioni (con righe in rosso) MISSING_COMPONENTS_BUY
             # stampo > giallo (sempre anche se mancano materiali) WAITING_FOR_PACKING
             calendar_state = []
-            if any([
-                x.delivery_note_id and x.delivery_note_state != "cancel"
-                for x in picking_ids
-            ]):
+            if any(
+                [
+                    x.delivery_note_id and x.delivery_note_state != "cancel"
+                    for x in picking_ids
+                ]
+            ):
                 calendar_state = HAS_DDT
             elif all([x.state == "done" for x in picking_ids]):
                 delivery_notes = picking_ids.mapped("delivery_note_id")
