@@ -6,8 +6,8 @@
         <field name="arch" type="xml">
             <search string="OpenUpgrader migration Search">
                 <field name="db_name" />
-                <field name="from_version" />
-                <field name="to_version" />
+                <field name="from_version_id" />
+                <field name="to_version_id" />
             </search>
         </field>
     </record>
@@ -18,8 +18,8 @@
         <field name="arch" type="xml">
             <tree>
                 <field name="db_name" />
-                <field name="from_version" />
-                <field name="to_version" />
+                <field name="from_version_id" />
+                <field name="to_version_id" />
             </tree>
         </field>
     </record>
@@ -39,8 +39,10 @@
                 <sheet string="OpenUpgrader migration">
                     <group>
                         <group>
-                            <field name="from_version" />
-                            <field name="to_version" />
+                            <field name="from_version_id" />
+                            <field name="to_version_id" />
+                            <field name="migrated_version_id" />
+                            <field name="next_version_id" />
                             <field name="db_name" />
                             <field name="db_user" />
                             <field name="db_password" password="1"/>

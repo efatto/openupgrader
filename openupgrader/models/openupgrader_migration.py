@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 class OpenupgraderMigration(models.Model):
     _name = "openupgrader.migration"
     _description = "Openupgrader Migration"
-    _rec_name = 'from_version'
+    _rec_name = 'from_version_id'
 
     """
     :param db_port: la porta del database su cui la funzione andra a
@@ -55,13 +55,21 @@ class OpenupgraderMigration(models.Model):
         required=True,
     )
     # self.fixes = openupgrade_fixes.Fixes()
-    from_version = fields.Many2one(
+    from_version_id = fields.Many2one(
         comodel_name="odoo.version",
         string="From Odoo Version",
     )
-    to_version = fields.Many2one(
+    to_version_id = fields.Many2one(
         comodel_name="odoo.version",
         string="To Odoo Version",
+    )
+    migrated_version_id = fields.Many2one(
+        comodel_name="odoo.version",
+        string="Current Odoo migrated version",
+    )
+    next_version_id = fields.Many2one(
+        comodel_name="odoo.version",
+        string="Next Odoo version to be migrated",
     )
     filestore = fields.Boolean()
     migrate_ddt = fields.Boolean()
@@ -160,7 +168,7 @@ class OpenupgraderMigration(models.Model):
         return opener
 
     def button_start_odoo(self):
-        self.start_odoo(version=self.from_version)
+        self.start_odoo(version=self.from_version_id)
 
     def start_odoo(
         self, version, update=False, extra_command='', save=False, wait=False
@@ -280,34 +288,34 @@ class OpenupgraderMigration(models.Model):
         if ir_mail_server_ids:
             ir_mail_server_ids.write({"active": active})
 
-    def move_filestore(self, from_folder=False, from_version=False, to_version=False):
+    def move_filestore(self, from_folder=False, from_version_id=False, to_version_id=False):
         if not from_folder:
             from_folder = (
-                f'{self.folder}/{from_version}/data_dir'
+                f'{self.folder}/{from_version_id.name}/data_dir'
                 f'/filestore/{self.env.cr.dbname}')
         to_version_filestore = (
-            f'{self.folder}/{to_version}/data_dir'
+            f'{self.folder}/{to_version_id.name}/data_dir'
             f'/filestore/{self.env.cr.dbname}')
         if os.path.isdir(to_version_filestore):  # todo check: and not restore_db_only:
             shutil.rmtree(to_version_filestore, ignore_errors=True)
         # todo check: if not restore_db_only:
         os.rename(from_folder, to_version_filestore)
 
-    def restore_filestore(self, from_version, to_version):
+    def restore_filestore(self, from_version_id, to_version_id):
         filestore_path = os.path.join(
-            self.folder, to_version, 'data_dir', 'filestore'
+            self.folder, to_version_id.name, 'data_dir', 'filestore'
         )
         if not os.path.isdir(filestore_path):
             os.makedirs(filestore_path, exist_ok=True)
         dump_folder = os.path.join(self.path, 'filestore')
         dump_file = os.path.join(self.path, 'filestore.tar')
         if os.path.isdir(dump_folder):
-            self.move_filestore(from_folder=dump_folder, to_version=to_version)
+            self.move_filestore(from_folder=dump_folder, to_version_id=to_version_id)
             return
         elif os.path.isfile(dump_file):
-            os.rename(dump_file, f'{self.folder}/filestore.{from_version}.tar')
+            os.rename(dump_file, f'{self.folder}/filestore.{from_version_id.name}.tar')
         dump_file = os.path.join(
-            self.folder, f'filestore.{from_version}.tar')
+            self.folder, f'filestore.{from_version_id.name}.tar')
         filestore_db_path = os.path.join(
             filestore_path, self.env.cr.dbname
         )
@@ -341,7 +349,7 @@ class OpenupgraderMigration(models.Model):
             [f'createdb -p {self.db_port} {self.env.cr.dbname}_migrate'],
             shell=True).wait()
         dump_file_sql = os.path.join(
-            self.folder, f"database.{self.from_version.name}.sql")
+            self.folder, f"database.{self.from_version_id.name}.sql")
         if not os.path.isfile(dump_file_sql):
             raise UserError(_("Dump sql file %s not found!") % dump_file_sql)
 
@@ -354,48 +362,48 @@ class OpenupgraderMigration(models.Model):
         os.unlink(dump_file_sql)
 
     def button_restore_db_update(self):
-        from_version = self.from_version
+        from_version_id = self.from_version_id
         self.button_restore_db()
         self.disable_mail(disable=True)
         # n.b. when updating, at the end odoo service is stopped
-        self.start_odoo(from_version, save=True, wait=True)
-        self.start_odoo(from_version, update=True)
+        self.start_odoo(from_version_id, save=True, wait=True)
+        self.start_odoo(from_version_id, update=True)
 
     def button_restore_db(self):
         self.ensure_one()
-        from_version = self.from_version
+        from_version_id = self.from_version_id
         base_module = self.env["ir.module.module"].search([("name", "=", "base")])
         if (
-            from_version.name.split(".")[0]
+            from_version_id.name.split(".")[0]
             == base_module.installed_version.split(".")[0]
         ):
             # restore is needed only when we migrate the first version, then the db is
             # already present
-            self.dump_database(from_version.name)
+            self.dump_database(from_version_id.name)
             if self.filestore:
-                self.restore_filestore(from_version, from_version)
+                self.restore_filestore(from_version_id, from_version_id)
             self.restore_db()
         self.state = 'db_restored'
 
     def button_update_from_version(self):
         self.ensure_one()
-        from_version = self.from_version
+        from_version_id = self.from_version_id
         self.disable_mail(disable=True)
         # n.b. when updating, at the end odoo service is stopped
-        self.start_odoo(from_version, save=True, wait=True)
-        self.start_odoo(from_version, update=True)
+        self.start_odoo(from_version_id, save=True, wait=True)
+        self.start_odoo(from_version_id, update=True)
 
     def button_after_prepare_migration(self):
-        from_version = self.from_version
-        to_version = self.to_version
+        from_version_id = self.from_version_id
+        to_version_id = self.to_version_id
         if self.filestore:
             self.move_filestore(
-                from_version=from_version, to_version=to_version)
+                from_version_id=from_version_id, to_version_id=to_version_id)
         self.disable_mail(disable=True)
         # self.sql_fixes(self.env["openupgrader.config"].search([
-        # ("odoo_version_id", "=", from_version)]))
-        self.uninstall_modules(from_version, before_migration=True)
-        self.delete_old_modules(from_version)
+        # ("odoo_version_id", "=", from_version_id)]))
+        self.uninstall_modules(from_version_id, before_migration=True)
+        self.delete_old_modules(from_version_id)
         self.state = 'after_prepare_migration'
 
     def disable_cron(self, disable=False):
@@ -419,62 +427,65 @@ class OpenupgraderMigration(models.Model):
 
     def button_do_migration(self):
         self.disable_cron(True)
-        to_version = self.to_version
-        # from_version = self.from_version
-        # if to_version == '11.0':
-        #     self.fix_taxes(from_version)
-        # if to_version == '12.0' and self.fix_banks:
-        #     self.fixes.migrate_bank_riba_id_bank_ids(from_version)
-        #     self.fixes.migrate_bank_riba_id_bank_ids_invoice(from_version)
-        # if from_version == '12.0' and self.migrate_ddt:
-        #     self.migrate_l10n_it_ddt_to_l10n_it_delivery_note(from_version)
+        to_version_id = self.to_version_id
+        # from_version_id = self.from_version_id
+        # if to_version_id == '11.0':
+        #     self.fix_taxes(from_version_id)
+        # if to_version_id == '12.0' and self.fix_banks:
+        #     self.fixes.migrate_bank_riba_id_bank_ids(from_version_id)
+        #     self.fixes.migrate_bank_riba_id_bank_ids_invoice(from_version_id)
+        # if from_version_id == '12.0' and self.migrate_ddt:
+        #     self.migrate_l10n_it_ddt_to_l10n_it_delivery_note(from_version_id)
         odoorc_exist = bool(
             os.path.isfile(
-                os.path.join(self.folder, f"openupgrade{to_version.name}", '.odoorc')
+                os.path.join(self.folder, f"openupgrade{to_version_id.name}", '.odoorc')
             )
         )
         if not odoorc_exist:
-            self.start_odoo(to_version, save=True, wait=True)
-        self.start_odoo(to_version, update=True)
+            self.start_odoo(to_version_id, save=True, wait=True)
+        self.start_odoo(to_version_id, update=True)
 
     def button_after_migration(self):
-        to_version = self.to_version
-        from_version = self.from_version
-        self.uninstall_modules(to_version, after_migration=True)
-        self.auto_install_modules(to_version)
+        to_version_id = self.to_version_id
+        from_version_id = self.from_version_id
+        self.uninstall_modules(to_version_id, after_migration=True)
+        self.auto_install_modules(to_version_id)
         self.sql_fixes(self.env["openupgrader.config"].search([
-            ("odoo_version_id", "=", to_version.name)]))
-        if to_version.name == '10.0':
-            self.start_odoo(to_version)
+            ("odoo_version_id", "=", to_version_id.name)]))
+        if to_version_id.name == '10.0':
+            self.start_odoo(to_version_id)
             self.remove_modules('upgrade')
             self.remove_modules()
             self.install_uninstall_module('l10n_it_intrastat')
             self.button_stop_odoo()
-        self.dump_database(to_version.name)
+        self.dump_database(to_version_id.name)
         # if self.filestore:
-        #     self.dump_filestore(to_version.name)
-        logger.info(_(f"Migration done from version {from_version.name} "
-                      f"to version {to_version.name}"))
+        #     self.dump_filestore(to_version_id.name)
+        migrated_from_version_id = self.migrated_version_id or from_version_id
+        migrated_to_version_id = self.next_version_id or to_version_id
+        logger.info(_(
+            f"Migration done from version {migrated_from_version_id.name} "
+            f"to version {migrated_to_version_id.name}"))
         # self.disable_cron() # to be re-enabled manually after all is gone ok
-        self.from_version = self.to_version
-        self.to_version = str(float(self.from_version.name) + 1)
-        logger.info(_(f"Set next version to {self.to_version}"))
+        self.migrated_version_id = self.to_version_id
+        self.next_version_id = str(float(self.from_version_id.name) + 1)
+        logger.info(_(f"Set next version to {self.next_version_id}"))
         self.state = 'after_migration'
 
     def button_refresh_state(self):
-        for version in [self.from_version, self.to_version]:
+        for version in [self.from_version_id, self.to_version_id]:
             venv_path = os.path.join(self.folder, f"openupgrade{version.name}")
             migration_log_path = os.path.join(venv_path, 'migration.log')
             if os.path.isfile(migration_log_path):
                 with open(migration_log_path) as file:
                     contents = file.read()
-                    if version == self.from_version:
+                    if version == self.from_version_id:
                         self.state = 'restoring_db'
                         if "CRITICAL" in contents:
                             self.state = 'restore_failed'
                         elif "Initiating shutdown" in contents:
                             self.state = 'db_restored'
-                    if version == self.to_version:
+                    if version == self.to_version_id:
                         self.state = 'migrating'
                         if "CRITICAL" in contents:
                             self.state = 'failed'
@@ -512,7 +523,7 @@ class OpenupgraderMigration(models.Model):
 
     @api.multi
     def button_create_venv(self):
-        for version in (self.from_version, self.to_version):
+        for version in (self.from_version_id, self.to_version_id):
             self.create_venv_git_version(version.name)
 
     def install_repo(self, repo_name, repo_url, repo_version, version_name, venv_path):
