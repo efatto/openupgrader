@@ -521,11 +521,6 @@ class OpenupgraderMigration(models.Model):
         self.disable_mail(disable=False)
         # self.database_cleanup(version)
 
-    @api.multi
-    def button_create_venv(self):
-        for version in (self.from_version_id, self.to_version_id):
-            self.create_venv_git_version(version.name)
-
     def install_repo(self, repo_name, repo_url, repo_version, version_name, venv_path):
         repo_path = os.path.join(
             self.folder, f"openupgrade{version_name}", 'repos', repo_name)

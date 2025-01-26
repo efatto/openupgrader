@@ -90,6 +90,16 @@ class OdooVersion(models.Model):
             else:
                 record.odoo_is_openupgrade = False
 
+    @api.multi
+    def button_create_venv(self):
+        self.ensure_one()
+        openupgrader_migration = self.env["openupgrader.migration"].search([])
+        if len(openupgrader_migration) != 1:
+            raise UserError(_("Missing Openupgrader Migration record!"))
+        if len(openupgrader_migration) > 1:
+            raise UserError(_("Only one Openupgrader Migration record can be created!"))
+        openupgrader_migration.create_venv_git_version(self.name)
+
 
 class OpenupgraderConfig(models.Model):
     _name = "openupgrader.config"

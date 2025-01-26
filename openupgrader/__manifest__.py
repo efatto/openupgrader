@@ -16,6 +16,7 @@
         "views/openupgrader_migration_view.xml",
         "views/openupgrader_config_view.xml",
         "views/openupgrader_repo_view.xml",
+        "views/openupgrader_version_view.xml",
     ],
     "installable": True,
     "external_dependencies": {

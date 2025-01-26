@@ -68,9 +68,6 @@
                     <group>
                         <group>
                             <field name="filestore" />
-                            <button name="button_create_venv"
-                                type="object"
-                                string="Create virtualenv"/>
                         </group>
                         <group>
                             <button name="button_refresh_state"
