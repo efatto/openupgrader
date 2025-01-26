@@ -586,20 +586,21 @@ class OpenupgraderMigration(models.Model):
             # ../openupgrade10.0/lib/python2.7/site-packages/pip/_internal/vcs/git.py
             subprocess.Popen([
                 'virtualenv -p python%s %s' % (py_version, venv_path)],
+                cwd=venv_path,
                 shell=True).wait()
         # install odoo Openupgrade repo, from v. 14.0 it contains only migration script
         if not os.path.isdir(openupgrade_path):
             subprocess.Popen([
                 'cd %s && git clone --single-branch %s -b %s --depth 1 openupgrade' % (
                     venv_path, self.openupgrade_repo, version_name)
-            ], shell=True).wait()
+            ], cwd=venv_path, shell=True).wait()
         else:
             subprocess.Popen([
                 'cd %s && git reset --hard origin/%s && git pull '
                 '&& git reset --hard origin/%s' % (
                     openupgrade_path, version_name, version_name
                 )
-            ], shell=True).wait()
+            ], cwd=venv_path, shell=True).wait()
 
         if not odoo_is_openupgrade:
             # install odoo repo

@@ -70,7 +70,6 @@
                             <field name="filestore" />
                             <button name="button_create_venv"
                                 type="object"
-                                states="draft"
                                 string="Create virtualenv"/>
                         </group>
                         <group>
