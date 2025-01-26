@@ -180,14 +180,11 @@ class OpenupgraderMigration(models.Model):
         load = 'web'
         if version_name == '10.0':
             load = 'web,web_kanban'
-        if version_name not in ['7.0', '8.0', '9.0', '10.0', '11.0']:
+        if float(version_name) > 11:
             load = 'base,web'
-        if version_name not in [
-            '7.0', '8.0', '9.0', '10.0', '11.0', '12.0', '13.0'
-        ]:
+        if float(version_name) > 13:
             load += ',openupgrade_framework,module_change_auto_install'
-        executable = 'openerp-server' if version_name in ['7.0', '8.0', '9.0']\
-            else 'odoo-bin'
+        executable = 'openerp-server' if float(version_name) < 10 else 'odoo-bin'
         odoorc_exist = bool(
             os.path.isfile(
                 os.path.join(folder, '.odoorc')
@@ -196,11 +193,11 @@ class OpenupgraderMigration(models.Model):
             and not save
         )
         addons_path = f'{folder}/repos/odoo/addons,'
-        if version_name in ['8.0', '9.0', '10.0', '11.0', '12.0', '13.0']:
+        if float(version_name) < 14:
             addons_path = f"{folder}/openupgrade/addons,"
         extra_addons_path = \
             f',{folder}/repos/odoo/odoo/addons,{folder}/odoo'
-        if version_name in ['10.0', '11.0', '12.0', '13.0']:
+        if 9 < float(version_name) < 14:
             extra_addons_path = f',{folder}/openupgrade/odoo/addons'
         bash_command = \
             f"{folder}/openupgrade/{executable} " \
