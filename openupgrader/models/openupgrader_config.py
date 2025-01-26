@@ -151,6 +151,8 @@ class OpenupgraderConfig(models.Model):
                 "name": version,
                 "python_version": python_version,
             }])
+        else:
+            odoo_version_id.python_version = python_version
         op_repo = op_repo_obj.search([
             ("odoo_version_id", "=", odoo_version_id.id),
         ])
