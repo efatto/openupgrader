@@ -380,11 +380,12 @@ class SaleOrder(models.Model):
             ):
                 calendar_state = HAS_DDT
             elif all([x.state == "done" for x in picking_ids]):
-                delivery_notes = picking_ids.mapped("delivery_note_id")
-                if delivery_notes and any([x.state != "done" for x in delivery_notes]):
-                    calendar_state = WAITING_FOR_PACKING
-                else:
-                    calendar_state = DONE_DELIVERY
+                # REMOVED ON CUSTOMER REQUEST
+                # delivery_notes = picking_ids.mapped("delivery_note_id")
+                # if delivery_notes and any([x.state != "done" for x in delivery_notes]):
+                #     calendar_state = WAITING_FOR_PACKING
+                # else:
+                calendar_state = DONE_DELIVERY
             elif all(x.is_assigned for x in picking_ids):
                 calendar_state = WAITING_FOR_PACKING
             elif all(
