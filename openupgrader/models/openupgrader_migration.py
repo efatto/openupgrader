@@ -184,10 +184,14 @@ class OpenupgraderMigration(models.Model):
         :param wait: if True process will wait for execution
         :return: Odoo instance in "self.odoo_client" if not updated, else nothing
         """
+        version_name = version.name
         if self.odoo_migrated_state == "running":
             self.button_stop_odoo()
-        version_name = version.name
         folder = os.path.join(self.folder, f"openupgrade{version_name}")
+        if not os.path.isdir(os.path.join(folder, "bin")):
+            raise UserError(_(
+                "Missing env for version %s! Create in Odoo Version menu."
+            ) % version_name)
         load = 'web'
         if version_name == '10.0':
             load = 'web,web_kanban'
