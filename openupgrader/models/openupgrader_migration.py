@@ -122,12 +122,15 @@ class OpenupgraderMigration(models.Model):
 
     @api.model
     def _default_folder(self):
-        """Default to ``backups`` folder inside current server datadir."""
-        return os.path.join(
+        """Default to ``odoo_migration`` folder inside current home folder."""
+        folder = os.path.join(
             os.path.expanduser("~"),
             "odoo_migration",
             self.env.cr.dbname,
         )
+        if not os.path.isdir(folder):
+            os.makedirs(folder)
+        return folder
 
     def odoo_connect(self):
         if self.db_name and self.db_password:
