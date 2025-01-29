@@ -573,7 +573,7 @@ class OpenupgraderMigration(models.Model):
             "config_ids": [(6, 0, config_ids.ids)],
         })
         odoo_is_openupgrade = config_ids.odoo_version_id.odoo_is_openupgrade
-        # Install OpenUpgrade repository always in ./openupgrade/<version>/openupgrade/
+        # Install OpenUpgrade repository always in ./<folder>/<version>/openupgrade/
         # Odoo is OpenUpgrade until v. 13.0, from v. 14.0 Odoo is in ./<version/odoo
 
         venv_path = os.path.join(self.folder, f"openupgrade{version_name}")
