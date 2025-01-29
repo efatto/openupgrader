@@ -89,9 +89,11 @@ class OpenupgraderMigration(models.Model):
     )
     openupgrade_repo = fields.Char(
         string="OpenUpgrade Repository",
+        default="https://github.com/efatto/OpenUpgrade.git",
     )
     odoo_repo = fields.Char(
         string="Odoo Repository",
+        default="https://github.com/OCB/OCB.git",
     )
     odoo_migrated_state = fields.Selection(
         selection=[
