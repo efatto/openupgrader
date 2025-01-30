@@ -172,6 +172,36 @@ class OpenupgraderMigration(models.Model):
         opener = build_opener(*handlers)
         return opener
 
+    def _set_odoorc(self, folder, version_name):
+        odoorc_exist = bool(
+            os.path.isfile(
+                os.path.join(folder, '.odoorc')
+            )
+            # and not self.migrate_ddt
+            # and not save
+        )
+        return odoorc_exist
+        # if not odoorc_exist:
+        #     copy from current initial version, valid only for compatible version conf
+
+    def _set_not_installable_module_odoorc(self, version_name):
+        not_auto_install_list = [
+            "partner_autocomplete", "iap", "mail_bot", "account_edi",
+            "account_edi_facturx", "account_edi_ubl", "l10n_it_stock_ddt"
+        ]
+        mod_not_install = \
+            f"modules_auto_install_disabled = {','.join(not_auto_install_list)}"
+        if not os.path.isfile(os.path.join(os.path.expanduser("~"), ".odoorc")):
+            raise UserError(_("Missing .odoorc file in home path!"))
+        subprocess.Popen(
+            [f'echo {mod_not_install} >> .odoorc'],
+            shell=True
+        ).wait()
+        shutil.move(
+            os.path.join(os.path.expanduser("~"), ".odoorc"),
+            os.path.join(self.folder, f"openupgrade{version_name}", ".odoorc"),
+        )
+
     def button_start_odoo(self):
         self.start_odoo(version=self.from_version_id)
 
@@ -202,22 +232,16 @@ class OpenupgraderMigration(models.Model):
         if float(version_name) > 13:
             load += ',openupgrade_framework,module_change_auto_install'
         executable = 'openerp-server' if float(version_name) < 10 else 'odoo-bin'
-        odoorc_exist = bool(
-            os.path.isfile(
-                os.path.join(folder, '.odoorc')
-            )
-            and not self.migrate_ddt
-            and not save
-        )
+        odoorc_exist = self._set_odoorc(folder, version_name)
         addons_path = f'{folder}/repos/odoo/addons,'
         if float(version_name) < 14:
-            addons_path = f"{folder}/openupgrade/addons,"
+            addons_path = f"{folder}/odoo/addons,"
         extra_addons_path = \
             f',{folder}/repos/odoo/odoo/addons,{folder}/odoo'
         if 9 < float(version_name) < 14:
-            extra_addons_path = f',{folder}/openupgrade/odoo/addons'
+            extra_addons_path = f',{folder}/odoo/odoo/addons'
         bash_command = \
-            f"{folder}/openupgrade/{executable} " \
+            f"{folder}/odoo/{executable} " \
             f"{f'-c {folder}/.odoorc' if odoorc_exist else ''} " \
             f"{not odoorc_exist and f'--addons-path={addons_path}' or ''}" \
             f"{not odoorc_exist and f'{folder}/addons-extra' or ''}" \
@@ -238,10 +262,13 @@ class OpenupgraderMigration(models.Model):
             bash_command += "-u all --stop "
         if save:
             bash_command += "-s --stop"
-        my_env = os.environ.copy()
-        my_env["VIRTUAL_ENV"] = folder
+        subprocess_env = self._get_env_for_subprocess(folder, version)
         process = subprocess.Popen(
-            bash_command.split(), cwd=folder, stdout=subprocess.PIPE, env=my_env)
+            bash_command.split(),
+            cwd=folder,
+            stdout=subprocess.PIPE,
+            env=subprocess_env,
+            shell=True)
         self.odoo_pid = process.pid
         if wait:
             process.wait()
@@ -250,22 +277,7 @@ class OpenupgraderMigration(models.Model):
             if not save:
                 self.odoo_migrated_state = "running"
             else:
-                not_auto_install_list = [
-                    "partner_autocomplete", "iap", "mail_bot", "account_edi",
-                    "account_edi_facturx", "account_edi_ubl", "l10n_it_stock_ddt"
-                ]
-                mod_not_install = \
-                    f"modules_auto_install_disabled = {','.join(not_auto_install_list)}"
-                if not os.path.isfile(os.path.join(os.path.expanduser("~"), ".odoorc")):
-                    raise UserError(_("Missing .odoorc file in home path!"))
-                subprocess.Popen(
-                    [f'echo {mod_not_install} >> .odoorc'],
-                    shell=True
-                ).wait()
-                shutil.move(
-                    os.path.join(os.path.expanduser("~"), ".odoorc"),
-                    os.path.join(self.folder, f"openupgrade{version_name}", ".odoorc"),
-                )
+                self._set_not_installable_module_odoorc(version_name)
         time.sleep(5)
 
     def button_stop_odoo(self):
@@ -297,7 +309,9 @@ class OpenupgraderMigration(models.Model):
         if ir_mail_server_ids:
             ir_mail_server_ids.write({"active": active})
 
-    def move_filestore(self, from_folder=False, from_version_id=False, to_version_id=False):
+    def move_filestore(
+        self, from_folder=False, from_version_id=False, to_version_id=False
+    ):
         if not from_folder:
             from_folder = (
                 f'{self.folder}/{from_version_id.name}/data_dir'
@@ -555,6 +569,32 @@ class OpenupgraderMigration(models.Model):
                     process.wait()
             break
 
+    def _get_env_for_subprocess(self, folder, version_id):
+        env_for_subprocess = os.environ.copy()
+        env_for_subprocess["VIRTUAL_ENV"] = folder
+        env_for_subprocess["PYTHONPATH"] = folder
+        env_for_subprocess["PATH"] = ":".join([
+            os.path.join(os.path.expanduser("~"), ".pyenv", "shims"),
+            "/home/linuxbrew/.linuxbrew/bin",
+            "/home/linuxbrew/.linuxbrew/sbin",
+            os.path.join(os.path.expanduser("~"), "bin"),
+            "/usr/local/sbin",
+            "/usr/local/bin",
+            "/usr/sbin",
+            "/usr/bin",
+            "/sbin",
+            "/bin",
+            os.path.join(folder, "bin"),
+        ])
+        env_for_subprocess["PWD"] = folder
+        python_root = os.path.join(
+            folder,
+            "lib",
+            f"python{'.'.join(version_id.python_version.split('.')[:2])}")
+        if os.path.isdir(python_root):
+            env_for_subprocess["LIBRARY_ROOTS"] = python_root
+        return env_for_subprocess
+
     def create_venv_git_version(self, version_name):
         openupgrader_repo_obj = self.env["openupgrader.repo"]
         version_repos = openupgrader_repo_obj.search([
@@ -575,41 +615,58 @@ class OpenupgraderMigration(models.Model):
             "config_ids": [(6, 0, config_ids.ids)],
         })
         odoo_is_openupgrade = config_ids.odoo_version_id.odoo_is_openupgrade
-        # Install OpenUpgrade repository always in ./<folder>/<version>/openupgrade/
+        # Install OpenUpgrade repository always in ./<folder>/<version>/odoo/
         # Odoo is OpenUpgrade until v. 13.0, from v. 14.0 Odoo is in ./<version/odoo
 
         venv_path = os.path.join(self.folder, f"openupgrade{version_name}")
-        openupgrade_path = os.path.join(venv_path, "openupgrade")
+        openupgrade_path = os.path.join(venv_path, "odoo")
         odoo_path = openupgrade_path if odoo_is_openupgrade else (
             os.path.join(openupgrade_path, "repos", 'odoo'))
         py_version = config_ids.odoo_version_id.python_version
         # create virtualenv
+        subprocess_env = self._get_env_for_subprocess(
+            venv_path, config_ids.odoo_version_id)
         if not os.path.isdir(venv_path):
-            subprocess.Popen(['mkdir -p %s' % venv_path], shell=True).wait()
+            subprocess.Popen([f'mkdir -p {venv_path}'], shell=True).wait()
             # do not recreate virtualenv as it regenerate file with bug in split()
             # ../openupgrade10.0/lib/python2.7/site-packages/pip/_internal/vcs/git.py
-            subprocess.Popen([
-                'virtualenv -p python%s %s' % (py_version, venv_path)],
-                cwd=venv_path,
-                shell=True).wait()
+        subprocess.Popen([f'pyenv install -s {py_version}'], shell=True).wait()
+        subprocess.Popen(
+            [f'''virtualenv -p {
+                os.path.join(
+                    os.path.expanduser("~"), ".pyenv", "versions", py_version,
+                    "bin", "python"
+                )} {venv_path}'''],
+            cwd=venv_path,
+            env=subprocess_env,
+            shell=True).wait()
         # install odoo Openupgrade repo, from v. 14.0 it contains only migration script
         if not os.path.isdir(openupgrade_path):
             subprocess.Popen([
-                'cd %s && git clone --single-branch %s -b %s --depth 1 openupgrade' % (
+                'cd %s && git clone --single-branch %s -b %s --depth 1 odoo' % (
                     venv_path, self.openupgrade_repo, version_name)
-            ], cwd=venv_path, shell=True).wait()
+            ],
+                cwd=venv_path,
+                env=subprocess_env,  # forse qui non serve
+                shell=True
+            ).wait()
         else:
             subprocess.Popen([
                 'cd %s && git reset --hard origin/%s && git pull '
                 '&& git reset --hard origin/%s' % (
                     openupgrade_path, version_name, version_name
                 )
-            ], cwd=venv_path, shell=True).wait()
+            ],
+                cwd=venv_path,
+                env=subprocess_env,  # forse qui non serve
+                shell=True,
+            ).wait()
 
         if not odoo_is_openupgrade:
             # install odoo repo
-            self.install_repo(
-                "odoo", self.odoo_repo, version_name, version_name, venv_path)
+            self.install_repo( # TODO THIS DO NOT WORK?? install requirements for odoo from repos!!!
+                "odoo", self.odoo_repo, version_name, version_name,
+                os.path.join(venv_path, "repos", "odoo"))
         commands = [
             'bin/pip install "setuptools<58.0.0"',
             'bin/pip install -r '
@@ -619,7 +676,12 @@ class OpenupgraderMigration(models.Model):
             else f'cd {odoo_path} && ../../bin/pip install -e . ',
         ]
         for command in commands:
-            subprocess.Popen(command, cwd=venv_path, shell=True).wait()
+            subprocess.Popen(
+                command,
+                cwd=venv_path,
+                env=subprocess_env,
+                shell=True,
+            ).wait()
         extra_paths = ['%s/addons-extra' % venv_path, '%s/repos' % venv_path]
         for path in extra_paths:
             if not os.path.isdir(path):
