@@ -93,7 +93,7 @@ class OpenupgraderMigration(models.Model):
     )
     odoo_repo = fields.Char(
         string="Odoo Repository",
-        default="https://github.com/OCB/OCB.git",
+        default="https://github.com/OCA/OCB.git",
     )
     odoo_migrated_state = fields.Selection(
         selection=[
