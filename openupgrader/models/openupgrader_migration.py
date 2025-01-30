@@ -574,16 +574,7 @@ class OpenupgraderMigration(models.Model):
         env_for_subprocess["VIRTUAL_ENV"] = folder
         env_for_subprocess["PYTHONPATH"] = folder
         env_for_subprocess["PATH"] = ":".join([
-            os.path.join(os.path.expanduser("~"), ".pyenv", "shims"),
-            "/home/linuxbrew/.linuxbrew/bin",
-            "/home/linuxbrew/.linuxbrew/sbin",
-            os.path.join(os.path.expanduser("~"), "bin"),
-            "/usr/local/sbin",
-            "/usr/local/bin",
-            "/usr/sbin",
-            "/usr/bin",
-            "/sbin",
-            "/bin",
+            folder,
             os.path.join(folder, "bin"),
         ])
         env_for_subprocess["PWD"] = folder
@@ -632,10 +623,17 @@ class OpenupgraderMigration(models.Model):
             # ../openupgrade10.0/lib/python2.7/site-packages/pip/_internal/vcs/git.py
         subprocess.Popen([f'pyenv install -s {py_version}'], shell=True).wait()
         subprocess.Popen(
+            [f'bin/pip install virtualenv'], cwd=venv_path, shell=True).wait()
+        subprocess.Popen([f'ln -s /usr/bin/git'], cwd=venv_path, shell=True).wait()
+        subprocess.Popen(
             [f'''virtualenv -p {
                 os.path.join(
-                    os.path.expanduser("~"), ".pyenv", "versions", py_version,
-                    "bin", "python"
+                    os.path.expanduser("~"),
+                    ".pyenv",
+                    "versions",
+                    py_version,
+                    "bin",
+                    "python"
                 )} {venv_path}'''],
             cwd=venv_path,
             env=subprocess_env,
