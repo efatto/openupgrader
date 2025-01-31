@@ -21,5 +21,5 @@ class ProductPricelistXlsx(models.AbstractModel):
                 next_col += 1
                 sheet.write(row, next_col, product.with_context(lang=lang.code).name)
             # Override first column with default code
-            sheet.write(row, 0, product.default_code)
+            sheet.write(row, 0, product.default_code or "")
         return next_col
