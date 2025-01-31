@@ -1,0 +1,61 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* product_pricelist_direct_print_all_lang
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 14.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-01-31 18:19+0000\n"
+"PO-Revision-Date: 2025-01-31 18:19+0000\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Plural-Forms: \n"
+
+#. module: product_pricelist_direct_print_all_lang
+#: model:ir.model,name:product_pricelist_direct_print_all_lang.model_report_product_pricelist_direct_print_product_pricelist_xlsx
+msgid "Abstract model to export as xlsx the product pricelist"
+msgstr "Modello astratto per esportazione xlsx listino prezzi prodotto"
+
+#. module: product_pricelist_direct_print_all_lang
+#: model:ir.model.fields,field_description:product_pricelist_direct_print_all_lang.field_product_pricelist_print__assigned_attachment_ids
+#: model:ir.model.fields,field_description:product_pricelist_direct_print_all_lang.field_report_product_pricelist_direct_print_product_pricelist_xlsx__assigned_attachment_ids
+msgid "Assigned Attachments"
+msgstr "Allegati assegnati"
+
+#. module: product_pricelist_direct_print_all_lang
+#: code:addons/product_pricelist_direct_print_all_lang/models/product_pricelist_direct_print.py:0
+#, python-format
+msgid "Default Code"
+msgstr "Riferimento interno"
+
+#. module: product_pricelist_direct_print_all_lang
+#: model:ir.model.fields,field_description:product_pricelist_direct_print_all_lang.field_product_pricelist_print__display_name
+#: model:ir.model.fields,field_description:product_pricelist_direct_print_all_lang.field_report_product_pricelist_direct_print_product_pricelist_xlsx__display_name
+msgid "Display Name"
+msgstr "Nome visualizzato"
+
+#. module: product_pricelist_direct_print_all_lang
+#: model:ir.model.fields,field_description:product_pricelist_direct_print_all_lang.field_product_pricelist_print__id
+#: model:ir.model.fields,field_description:product_pricelist_direct_print_all_lang.field_report_product_pricelist_direct_print_product_pricelist_xlsx__id
+msgid "ID"
+msgstr ""
+
+#. module: product_pricelist_direct_print_all_lang
+#: model:ir.model.fields,field_description:product_pricelist_direct_print_all_lang.field_product_pricelist_print____last_update
+#: model:ir.model.fields,field_description:product_pricelist_direct_print_all_lang.field_report_product_pricelist_direct_print_product_pricelist_xlsx____last_update
+msgid "Last Modified on"
+msgstr "Ultima modifica il"
+
+#. module: product_pricelist_direct_print_all_lang
+#: model:ir.model,name:product_pricelist_direct_print_all_lang.model_product_pricelist_print
+msgid "Product Pricelist Print"
+msgstr "Stampa listino prezzi prodotto"
+
+#. module: product_pricelist_direct_print_all_lang
+#: model:ir.model.fields,field_description:product_pricelist_direct_print_all_lang.field_product_pricelist_print__show_all_langs
+msgid "Show All Langs"
+msgstr "Mostra tutte le lingue"
