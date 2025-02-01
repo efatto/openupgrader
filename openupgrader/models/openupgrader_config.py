@@ -90,7 +90,6 @@ class OdooVersion(models.Model):
             else:
                 record.odoo_is_openupgrade = False
 
-    @api.multi
     def button_create_venv(self):
         self.ensure_one()
         openupgrader_migration = self.env["openupgrader.migration"].search([])
