@@ -92,9 +92,11 @@ class OdooVersion(models.Model):
             env=subprocess_env,
             shell=True).wait()
         subprocess.Popen([f'ln -s /usr/bin/git'], cwd=venv_path, shell=True).wait()
+        subprocess.Popen([f'ln -s /usr/bin/gcc'], cwd=venv_path, shell=True).wait()
         subprocess.Popen(
             [f'{pyenv_path}/bin/virtualenv '
              f'-p {pyenv_path}/bin/python {venv_path}'],
+            cwd=venv_path,
             env=subprocess_env,
             shell=True).wait()
         return subprocess_env
