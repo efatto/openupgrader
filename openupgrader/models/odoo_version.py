@@ -62,6 +62,7 @@ class OdooVersion(models.Model):
             folder,
             os.path.join(folder, "bin"),
             "/bin/pip",
+            "/usr/bin",
         ])
         env_for_subprocess["PWD"] = folder
         python_root = os.path.join(
@@ -91,8 +92,6 @@ class OdooVersion(models.Model):
             cwd=venv_path,
             env=subprocess_env,
             shell=True).wait()
-        subprocess.Popen([f'ln -s /usr/bin/git'], cwd=venv_path, shell=True).wait()
-        subprocess.Popen([f'ln -s /usr/bin/gcc'], cwd=venv_path, shell=True).wait()
         subprocess.Popen(
             [f'{pyenv_path}/bin/virtualenv '
              f'-p {pyenv_path}/bin/python {venv_path}'],
