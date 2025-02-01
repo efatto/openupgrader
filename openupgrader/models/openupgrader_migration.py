@@ -89,11 +89,11 @@ class OpenupgraderMigration(models.Model):
     )
     openupgrade_repo = fields.Char(
         string="OpenUpgrade Repository",
-        default="https://github.com/efatto/OpenUpgrade.git",
+        default="git@github.com:efatto/OpenUpgrade.git",
     )
     odoo_repo = fields.Char(
         string="Odoo Repository",
-        default="https://github.com/OCA/OCB.git",
+        default="git@github.com:OCA/OCB.git",
     )
     odoo_migrated_state = fields.Selection(
         selection=[
@@ -552,8 +552,7 @@ class OpenupgraderMigration(models.Model):
             process = subprocess.Popen([
                 f'git clone --single-branch -b {repo_version} {repo_url} --depth 1 '
                 f'{repo_path}'
-            ], shell=True)
-            process.wait()
+            ], shell=True).wait()
         process = subprocess.Popen([
             f'cd {repo_path} && git fetch --all && git reset --hard '
             f'origin/{repo_version}'

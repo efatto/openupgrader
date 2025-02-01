@@ -156,8 +156,7 @@ class OdooVersion(models.Model):
                 # install odoo repo
                 openupgrader_migration_id.install_repo(
                     "odoo", openupgrader_migration_id.odoo_repo,
-                    version_name, version_name,
-                    os.path.join(venv_path, "repos", "odoo"))
+                    version_name, version_name, odoo_path)
             commands = [
                 'bin/pip install "setuptools<58.0.0"',
                 'bin/pip install -r '
