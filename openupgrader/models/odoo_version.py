@@ -1,8 +1,7 @@
 import os
 import subprocess
 
-from odoo import api, fields, models,  _
-from odoo.exceptions import UserError
+from odoo import api, fields, models
 
 
 class OdooVersion(models.Model):
@@ -55,7 +54,7 @@ class OdooVersion(models.Model):
         #     raise UserError(_("Only one Openupgrader Migration record can be created!"))
         self.create_venv_git_version(self.name, openupgrader_migration_id)
 
-    def _get_env_for_subprocess(self, folder, py_version):
+    def _get_env_for_subprocess(self, folder):
         env_for_subprocess = os.environ.copy()
         env_for_subprocess["VIRTUAL_ENV"] = folder
         env_for_subprocess["PYTHONPATH"] = folder
@@ -68,14 +67,14 @@ class OdooVersion(models.Model):
         python_root = os.path.join(
             folder,
             "lib",
-            f"python{'.'.join(py_version.split('.')[:2])}")
+            f"python{'.'.join(self.python_version.split('.')[:2])}")
         if os.path.isdir(python_root):
             env_for_subprocess["LIBRARY_ROOTS"] = python_root
         return env_for_subprocess
 
     def _create_python_venv(self, venv_path, py_version):
         # create virtualenv
-        subprocess_env = self._get_env_for_subprocess(venv_path, py_version)
+        subprocess_env = self._get_env_for_subprocess(venv_path)
         if not os.path.isdir(venv_path):
             subprocess.Popen([f'mkdir -p {venv_path}'], shell=True).wait()
             # do not recreate virtualenv as it regenerate file with bug in split()

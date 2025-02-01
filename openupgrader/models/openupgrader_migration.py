@@ -262,7 +262,7 @@ class OpenupgraderMigration(models.Model):
             bash_command += "-u all --stop "
         if save:
             bash_command += "-s --stop"
-        subprocess_env = self._get_env_for_subprocess(folder, version)
+        subprocess_env = version._get_env_for_subprocess(folder)
         process = subprocess.Popen(
             bash_command.split(),
             cwd=folder,
