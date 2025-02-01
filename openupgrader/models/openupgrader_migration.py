@@ -191,16 +191,15 @@ class OpenupgraderMigration(models.Model):
         ]
         mod_not_install = \
             f"modules_auto_install_disabled = {','.join(not_auto_install_list)}"
-        if not os.path.isfile(os.path.join(os.path.expanduser("~"), ".odoorc")):
-            raise UserError(_("Missing .odoorc file in home path!"))
-        subprocess.Popen(
-            [f'echo {mod_not_install} >> .odoorc'],
-            shell=True
-        ).wait()
-        shutil.move(
-            os.path.join(os.path.expanduser("~"), ".odoorc"),
-            os.path.join(self.folder, f"openupgrade{version_name}", ".odoorc"),
-        )
+        if os.path.isfile(os.path.join(os.path.expanduser("~"), ".odoorc")):
+            subprocess.Popen(
+                [f'echo {mod_not_install} >> .odoorc'],
+                shell=True
+            ).wait()
+            shutil.move(
+                os.path.join(os.path.expanduser("~"), ".odoorc"),
+                os.path.join(self.folder, f"openupgrade{version_name}", ".odoorc"),
+            )
 
     def button_start_odoo(self):
         self.start_odoo(version=self.from_version_id)
@@ -231,7 +230,9 @@ class OpenupgraderMigration(models.Model):
             load = 'base,web'
         if float(version_name) > 13:
             load += ',openupgrade_framework,module_change_auto_install'
-        executable = 'openerp-server' if float(version_name) < 10 else 'odoo-bin'
+        executable = f'{folder}/odoo/openerp-server' if float(version_name) < 10 \
+            else f'{folder}/odoo/odoo-bin' if float(version_name) < 14 \
+            else f'{folder}/repos/odoo/odoo-bin'
         odoorc_exist = self._set_odoorc(folder, version_name)
         addons_path = f'{folder}/repos/odoo/addons,'
         if float(version_name) < 14:
@@ -241,7 +242,7 @@ class OpenupgraderMigration(models.Model):
         if 9 < float(version_name) < 14:
             extra_addons_path = f',{folder}/odoo/odoo/addons'
         bash_command = \
-            f"{folder}/odoo/{executable} " \
+            f"{executable} " \
             f"{f'-c {folder}/.odoorc' if odoorc_exist else ''} " \
             f"{not odoorc_exist and f'--addons-path={addons_path}' or ''}" \
             f"{not odoorc_exist and f'{folder}/addons-extra' or ''}" \

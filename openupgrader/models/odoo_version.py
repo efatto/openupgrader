@@ -80,20 +80,22 @@ class OdooVersion(models.Model):
             # do not recreate virtualenv as it regenerate file with bug in split()
             # ../openupgrade10.0/lib/python2.7/site-packages/pip/_internal/vcs/git.py
         subprocess.Popen([f'pyenv install -s {py_version}'], shell=True).wait()
+        pyenv_path = os.path.join(
+            os.path.expanduser("~"),
+            ".pyenv",
+            "versions",
+            py_version,
+        )
         subprocess.Popen(
-            [f'pip install virtualenv'], shell=True).wait()
+            [f'{pyenv_path}/bin/pip install virtualenv'],
+            cwd=venv_path,
+            env=subprocess_env,
+            shell=True).wait()
         subprocess.Popen([f'ln -s /usr/bin/git'], cwd=venv_path, shell=True).wait()
         subprocess.Popen(
-            [f'''virtualenv -p {
-                os.path.join(
-                    os.path.expanduser("~"),
-                    ".pyenv",
-                    "versions",
-                    py_version,
-                    "bin",
-                    "python"
-                )} {venv_path}'''],
-            cwd=venv_path,
+            [f'{pyenv_path}/bin/virtualenv '
+             f'-p {pyenv_path}/bin/python {venv_path}'],
+            env=subprocess_env,
             shell=True).wait()
         return subprocess_env
 
