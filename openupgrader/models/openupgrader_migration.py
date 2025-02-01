@@ -569,7 +569,7 @@ class OpenupgraderMigration(models.Model):
                     process.wait()
             break
 
-    def _get_env_for_subprocess(self, folder, version_id):
+    def _get_env_for_subprocess(self, folder, py_version):
         env_for_subprocess = os.environ.copy()
         env_for_subprocess["VIRTUAL_ENV"] = folder
         env_for_subprocess["PYTHONPATH"] = folder
@@ -581,10 +581,36 @@ class OpenupgraderMigration(models.Model):
         python_root = os.path.join(
             folder,
             "lib",
-            f"python{'.'.join(version_id.python_version.split('.')[:2])}")
+            f"python{'.'.join(py_version.split('.')[:2])}")
         if os.path.isdir(python_root):
             env_for_subprocess["LIBRARY_ROOTS"] = python_root
         return env_for_subprocess
+
+    def _create_python_venv(self, venv_path, py_version):
+        # create virtualenv
+        subprocess_env = self._get_env_for_subprocess(venv_path, py_version)
+        if not os.path.isdir(venv_path):
+            subprocess.Popen([f'mkdir -p {venv_path}'], shell=True).wait()
+            # do not recreate virtualenv as it regenerate file with bug in split()
+            # ../openupgrade10.0/lib/python2.7/site-packages/pip/_internal/vcs/git.py
+        subprocess.Popen([f'pyenv install -s {py_version}'], shell=True).wait()
+        subprocess.Popen(
+            [f'bin/pip install virtualenv'], cwd=venv_path, shell=True).wait()
+        subprocess.Popen([f'ln -s /usr/bin/git'], cwd=venv_path, shell=True).wait()
+        subprocess.Popen(
+            [f'''virtualenv -p {
+                os.path.join(
+                    os.path.expanduser("~"),
+                    ".pyenv",
+                    "versions",
+                    py_version,
+                    "bin",
+                    "python"
+                )} {venv_path}'''],
+            cwd=venv_path,
+            env=subprocess_env,
+            shell=True).wait()
+        return subprocess_env
 
     def create_venv_git_version(self, version_name):
         openupgrader_repo_obj = self.env["openupgrader.repo"]
@@ -614,30 +640,7 @@ class OpenupgraderMigration(models.Model):
         odoo_path = openupgrade_path if odoo_is_openupgrade else (
             os.path.join(openupgrade_path, "repos", 'odoo'))
         py_version = config_ids.odoo_version_id.python_version
-        # create virtualenv
-        subprocess_env = self._get_env_for_subprocess(
-            venv_path, config_ids.odoo_version_id)
-        if not os.path.isdir(venv_path):
-            subprocess.Popen([f'mkdir -p {venv_path}'], shell=True).wait()
-            # do not recreate virtualenv as it regenerate file with bug in split()
-            # ../openupgrade10.0/lib/python2.7/site-packages/pip/_internal/vcs/git.py
-        subprocess.Popen([f'pyenv install -s {py_version}'], shell=True).wait()
-        subprocess.Popen(
-            [f'bin/pip install virtualenv'], cwd=venv_path, shell=True).wait()
-        subprocess.Popen([f'ln -s /usr/bin/git'], cwd=venv_path, shell=True).wait()
-        subprocess.Popen(
-            [f'''virtualenv -p {
-                os.path.join(
-                    os.path.expanduser("~"),
-                    ".pyenv",
-                    "versions",
-                    py_version,
-                    "bin",
-                    "python"
-                )} {venv_path}'''],
-            cwd=venv_path,
-            env=subprocess_env,
-            shell=True).wait()
+        subprocess_env = self._create_python_venv(venv_path, py_version)
         # install odoo Openupgrade repo, from v. 14.0 it contains only migration script
         if not os.path.isdir(openupgrade_path):
             subprocess.Popen([
