@@ -549,15 +549,14 @@ class OpenupgraderMigration(models.Model):
         repo_path = os.path.join(
             self.folder, f"openupgrade{version_name}", 'repos', repo_name)
         if not os.path.isdir(repo_path):
-            process = subprocess.Popen([
+            subprocess.Popen([
                 f'git clone --single-branch -b {repo_version} {repo_url} --depth 1 '
                 f'{repo_path}'
             ], shell=True).wait()
-        process = subprocess.Popen([
+        subprocess.Popen([
             f'cd {repo_path} && git fetch --all && git reset --hard '
             f'origin/{repo_version}'
-        ], shell=True)
-        process.wait()
+        ], shell=True).wait()
         # copy modules to create a unique addons path, unless it's odoo repo
         if repo_name == "odoo":
             return
