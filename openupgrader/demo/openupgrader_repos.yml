@@ -3,19 +3,19 @@ repositories:
     python_version: '3.10.6'
     remotes:
       l10n-italy: https://github.com/OCA/l10n-italy.git 16.0
-      odoo: https://github.com/OCA/OCB.git 16.0
+      odoo: git@github.com:OCA/OCB.git 16.0
   - version: '15.0'
     python_version: '3.8.16'
     remotes:
       openupgrader: https://github.com/efatto/openupgrader.git 15.0
       l10n-italy: https://github.com/OCA/l10n-italy.git 15.0
-      odoo: https://github.com/OCA/OCB.git 15.0
+      odoo: git@github.com:OCA/OCB.git 15.0
   - version: '14.0'
     python_version: '3.8.16'
     remotes:
       openupgrader: https://github.com/efatto/openupgrader.git 14.0
       l10n-italy: https://github.com/OCA/l10n-italy.git 14.0
-      odoo: https://github.com/OCA/OCB.git 14.0
+      odoo: git@github.com:OCA/OCB.git 14.0
   - version: '13.0'
     python_version: '3.6.15'
     remotes:
