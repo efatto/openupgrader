@@ -111,11 +111,11 @@ class OpenupgraderMigration(models.Model):
             ('restoring_db', 'Restoring DB'),
             ('restore_failed', 'Restore failed'),
             ('db_restored', 'DB restored'),
-            ('after_prepare_migration', 'After prepare migration'),
+            ('ready_for_migration', 'Ready for migration'),
             ('migrating', 'Migrating'),
             ('failed', 'Failed'),
-            ('migrated', 'Migrated'),
-            ('after_migration', 'After migration'),
+            ('db_migrated', 'Database migrated'),
+            ('done', 'Done'),
         ],
         string="Migration state",
         readonly=True,
@@ -417,7 +417,7 @@ class OpenupgraderMigration(models.Model):
         self.start_odoo(from_version_id, save=True, wait=True)
         self.start_odoo(from_version_id, update=True)
 
-    def button_after_prepare_migration(self):
+    def button_ready_for_migration(self):
         from_version_id = self.from_version_id
         to_version_id = self.to_version_id
         if self.filestore:
@@ -428,7 +428,7 @@ class OpenupgraderMigration(models.Model):
         # ("odoo_version_id", "=", from_version_id)]))
         self.uninstall_modules(from_version_id, before_migration=True)
         self.delete_old_modules(from_version_id)
-        self.state = 'after_prepare_migration'
+        self.state = 'ready_for_migration'
 
     def disable_cron(self, disable=False):
         # disable cron on current running istance, to be re-enabled in the migrated one
@@ -469,7 +469,7 @@ class OpenupgraderMigration(models.Model):
             self.start_odoo(to_version_id, save=True, wait=True)
         self.start_odoo(to_version_id, update=True)
 
-    def button_after_migration(self):
+    def button_done(self):
         to_version_id = self.to_version_id
         from_version_id = self.from_version_id
         self.uninstall_modules(to_version_id, after_migration=True)
@@ -494,7 +494,7 @@ class OpenupgraderMigration(models.Model):
         self.migrated_version_id = self.to_version_id
         self.next_version_id = str(float(self.from_version_id.name) + 1)
         logger.info(_(f"Set next version to {self.next_version_id}"))
-        self.state = 'after_migration'
+        self.state = 'done'
 
     def button_refresh_state(self):
         for version in [self.from_version_id, self.to_version_id]:
@@ -514,7 +514,7 @@ class OpenupgraderMigration(models.Model):
                         if "CRITICAL" in contents:
                             self.state = 'failed'
                         elif "Initiating shutdown" in contents:
-                            self.state = 'migrated'
+                            self.state = 'db_migrated'
 
     def sql_fixes(self, receipt):
         for part in receipt:
