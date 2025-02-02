@@ -17,12 +17,12 @@ repositories:
       l10n-italy: https://github.com/OCA/l10n-italy.git 14.0
       odoo: git@github.com:OCA/OCB.git 14.0
   - version: '13.0'
-    python_version: '3.6.15'
+    python_version: '3.7.16'
     remotes:
       openupgrader: https://github.com/efatto/openupgrader.git 13.0
       l10n-italy: https://github.com/OCA/l10n-italy.git 13.0
   - version: '12.0'
-    python_version: '3.6.15'
+    python_version: '3.7.16'
     remotes:
       openupgrader: https://github.com/efatto/openupgrader.git 12.0
       l10n-italy: https://github.com/OCA/l10n-italy.git 12.0
