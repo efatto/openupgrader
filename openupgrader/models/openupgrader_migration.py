@@ -281,18 +281,37 @@ class OpenupgraderMigration(models.Model):
                 self._set_not_installable_module_odoorc(version_name)
         time.sleep(5)
 
-    def button_stop_odoo(self):
-        if self.odoo_pid:
+    def _stop_pid(self, pid=False):
+        if not pid:
+            pid = self.odoo_pid
+        if pid:
             try:
-                os.kill(self.odoo_pid, signal.SIGTERM)
+                os.kill(pid, signal.SIGTERM)
+                time.sleep(5)
             except OSError:
                 time.sleep(10)
                 try:
-                    os.kill(self.odoo_pid, signal.SIGKILL)
+                    os.kill(pid, signal.SIGKILL)
                 except OSError:
                     pass
         self.odoo_pid = False
         self.odoo_migrated_state = "stopped"
+
+    def button_stop_odoo(self):
+        process = subprocess.Popen([
+            "pgrep -a python | grep openupgrade12.0"
+        ], shell=True, stdout=subprocess.PIPE)
+        has_stdout = True
+        pids = []
+        while has_stdout:
+            one_line_output = process.stdout.readline()
+            if one_line_output:
+                pids.append(int(one_line_output.split()[0]))
+            else:
+                has_stdout = False
+        for pid in pids:
+            self._stop_pid(pid)
+
 
     def disable_mail(self, disable=False):
         state = 'draft' if disable else 'done'
