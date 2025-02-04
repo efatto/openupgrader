@@ -3,10 +3,7 @@
     <record id="product_category_list_view" model="ir.ui.view">
         <field name="name">product.category.list.sequence</field>
         <field name="model">product.category</field>
-        <field
-      name="inherit_id"
-      ref="product.product_category_list_view"
-    />
+        <field name="inherit_id" ref="product.product_category_list_view" />
         <field name="arch" type="xml">
             <field name="display_name" position="before">
                 <field name="sequence" widget="handle" />

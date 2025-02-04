@@ -1,6 +1,7 @@
+from collections import defaultdict
+
 from odoo import fields, models
 from odoo.osv import expression
-from collections import defaultdict
 
 
 class ProductPricelistPrint(models.TransientModel):
@@ -12,13 +13,15 @@ class ProductPricelistPrint(models.TransientModel):
     def get_products_domain(self):
         domain = super().get_products_domain()
         if self.categ_ids and self.show_child_categ:
-            domain = expression.OR([
-                domain,
+            domain = expression.OR(
                 [
-                    ("sale_ok", "=", True),
-                    ("categ_id", "child_of", self.categ_ids.ids),
+                    domain,
+                    [
+                        ("sale_ok", "=", True),
+                        ("categ_id", "child_of", self.categ_ids.ids),
+                    ],
                 ]
-            ])
+            )
         return domain
 
     def get_group_key(self, product):
