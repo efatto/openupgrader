@@ -12,6 +12,7 @@
         "product_pricelist_direct_print",
     ],
     "data": [
+        "views/product_category.xml",
         "wizards/product_pricelist_print_view.xml",
     ],
     "installable": True,

@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 14.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-01-31 18:19+0000\n"
-"PO-Revision-Date: 2025-01-31 18:19+0000\n"
+"POT-Creation-Date: 2025-02-04 09:34+0000\n"
+"PO-Revision-Date: 2025-02-04 09:34+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -59,3 +59,8 @@ msgstr "Stampa listino prezzi prodotto"
 #: model:ir.model.fields,field_description:product_pricelist_direct_print_all_lang.field_product_pricelist_print__show_all_langs
 msgid "Show All Langs"
 msgstr "Mostra tutte le lingue"
+
+#. module: product_pricelist_direct_print_all_lang
+#: model:ir.model.fields,field_description:product_pricelist_direct_print_all_lang.field_product_pricelist_print__show_child_categ
+msgid "Show Child Categories"
+msgstr "Mostra categorie figlie"
