@@ -10,6 +10,7 @@
         <field name="arch" type="xml">
             <field name="show_standard_price" position="after">
                 <field name="show_all_langs" />
+                <field name="show_child_categ" />
             </field>
         </field>
     </record>
