@@ -525,6 +525,7 @@ class SaleOrder(models.Model):
         "picking_ids.move_lines.state",
         "picking_ids.state",
         "picking_ids.is_assigned",
+        "picking_ids.delivery_note_id.state",
         "production_ids.additional_state",
         "production_ids.is_blocked",
         "production_ids.move_raw_ids.state",
