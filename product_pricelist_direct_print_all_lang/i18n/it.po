@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 14.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-02-04 11:05+0000\n"
-"PO-Revision-Date: 2025-02-04 11:05+0000\n"
+"POT-Creation-Date: 2025-02-06 14:09+0000\n"
+"PO-Revision-Date: 2025-02-06 14:09+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -26,6 +26,12 @@ msgstr "Modello astratto per esportazione xlsx listino prezzi prodotto"
 #: model:ir.model.fields,field_description:product_pricelist_direct_print_all_lang.field_report_product_pricelist_direct_print_product_pricelist_xlsx__assigned_attachment_ids
 msgid "Assigned Attachments"
 msgstr "Allegati assegnati"
+
+#. module: product_pricelist_direct_print_all_lang
+#: code:addons/product_pricelist_direct_print_all_lang/models/product_pricelist_direct_print.py:0
+#, python-format
+msgid "Available till stock lasts"
+msgstr "Residuo disponibile a magazzino"
 
 #. module: product_pricelist_direct_print_all_lang
 #: code:addons/product_pricelist_direct_print_all_lang/models/product_pricelist_direct_print.py:0
@@ -78,3 +84,15 @@ msgstr "Mostra tutte le lingue"
 #: model:ir.model.fields,field_description:product_pricelist_direct_print_all_lang.field_product_pricelist_print__show_child_categ
 msgid "Show Child Categories"
 msgstr "Mostra categorie figlie"
+
+#. module: product_pricelist_direct_print_all_lang
+#: model:ir.model.fields,field_description:product_pricelist_direct_print_all_lang.field_product_category__show_stock_available
+msgid "Show stock availability in pricelist report"
+msgstr "Mostra quantità disponibile nella stampa del listino prezzi"
+
+#. module: product_pricelist_direct_print_all_lang
+#: model:ir.model.fields,field_description:product_pricelist_direct_print_all_lang.field_product_pricelist_print__show_stock_available
+msgid ""
+"Technical field when show stock availability in pricelist report is auto-"
+"enabled."
+msgstr ""

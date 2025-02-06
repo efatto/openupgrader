@@ -10,3 +10,6 @@ class ProductCategory(models.Model):
         index=True,
         default=1,
     )
+    show_stock_available = fields.Boolean(
+        string="Show stock availability in pricelist report",
+    )

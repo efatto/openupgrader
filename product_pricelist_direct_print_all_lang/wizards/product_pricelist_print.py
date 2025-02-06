@@ -9,6 +9,10 @@ class ProductPricelistPrint(models.TransientModel):
 
     show_all_langs = fields.Boolean(string="Show All Langs")
     show_child_categ = fields.Boolean(string="Show Child Categories")
+    show_stock_available = fields.Boolean(
+        string="Technical field when show stock availability in pricelist report is "
+               "auto-enabled.",
+    )
 
     def get_products_domain(self):
         domain = super().get_products_domain()
