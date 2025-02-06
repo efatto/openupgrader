@@ -15,9 +15,11 @@ class ProductPricelistXlsx(models.AbstractModel):
         if book.categ_ids:
             categ_ids = book.categ_ids
             if book.show_child_categ:
-                categ_ids |= self.env["product.category"].search([
-                    ("id", "child_of", categ_ids.ids),
-                ])
+                categ_ids |= self.env["product.category"].search(
+                    [
+                        ("id", "child_of", categ_ids.ids),
+                    ]
+                )
             if any(x.show_stock_available for x in categ_ids):
                 book.show_stock_available = True
                 next_col += 1
