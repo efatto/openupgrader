@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 14.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-02-06 14:09+0000\n"
-"PO-Revision-Date: 2025-02-06 14:09+0000\n"
+"POT-Creation-Date: 2025-02-06 14:20+0000\n"
+"PO-Revision-Date: 2025-02-06 14:20+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -59,6 +59,12 @@ msgstr ""
 #: model:ir.model.fields,field_description:product_pricelist_direct_print_all_lang.field_report_product_pricelist_direct_print_product_pricelist_xlsx____last_update
 msgid "Last Modified on"
 msgstr "Ultima modifica il"
+
+#. module: product_pricelist_direct_print_all_lang
+#: code:addons/product_pricelist_direct_print_all_lang/models/product_pricelist_direct_print.py:0
+#, python-format
+msgid "Not applicable"
+msgstr "Non applicabile"
 
 #. module: product_pricelist_direct_print_all_lang
 #: model:ir.model,name:product_pricelist_direct_print_all_lang.model_product_category
