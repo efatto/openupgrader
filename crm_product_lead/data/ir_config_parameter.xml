@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo noupdate="1">
+    <record id="probability_list" model="ir.config_parameter">
+        <field name="key">crm.product.lead.probability.list</field>
+        <field name="value">[(50, 20), (100, 100)]</field>
+    </record>
+</odoo>
