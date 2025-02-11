@@ -42,6 +42,7 @@ class CrmLead(models.Model):
                     reorder_increase = float(probability_list[1])
             # add to product_id reorder rules an extra qty on probability list value
             # store increased qty to remove if lead is lost or closed
+            # do for all the orderpoints as only one is used to compute procurement
             orderpoint_ids = lead.product_id.orderpoint_ids
             for orderpoint_id in orderpoint_ids:
                 lead_product_min_qty = lead.product_yearly_estimated_qty * (

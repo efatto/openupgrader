@@ -36,7 +36,7 @@ msgstr ""
 #. module: crm_lead_warehouse_orderpoint
 #: model:ir.model.fields,field_description:crm_lead_warehouse_orderpoint.field_product_category__is_special
 msgid "Is Special"
-msgstr ""
+msgstr "È speciale"
 
 #. module: crm_lead_warehouse_orderpoint
 #: model:ir.model.fields,field_description:crm_lead_warehouse_orderpoint.field_crm_lead____last_update
