@@ -4,29 +4,28 @@
         <field name="model">crm.lead</field>
         <field name="inherit_id" ref="crm.crm_lead_view_form" />
         <field name="arch" type="xml">
-            <xpath
-        expr="//h2[hasclass('o_row', 'no-gutters', 'align-items-end')]"
-        position="after"
-      >
-                <h2 class="o_row no-gutters align-items-end">
-                    <div class="col" attrs="{'invisible': [('type', '=', 'lead')]}">
-                        <label for="product_id" class="oe_edit_only" />
-                        <div class="o_row">
-                            <field name="product_id" class="oe_inline" />
+            <xpath expr="//h1/field[@name='name']" position="after">
+                <div>
+                    <h2 class="o_row no-gutters align-items-end">
+                        <div class="col" attrs="{'invisible': [('type', '=', 'lead')]}">
+                            <label for="product_id" class="oe_edit_only" />
+                            <div class="o_row">
+                                <field name="product_id" class="oe_inline" />
+                            </div>
                         </div>
-                    </div>
-                    <div class="col" attrs="{'invisible': [('type', '=', 'lead')]}">
-                        <div class="oe_edit_only d-flex align-items-center">
-                            <label for="product_yearly_estimated_qty" />
+                        <div class="col" attrs="{'invisible': [('type', '=', 'lead')]}">
+                            <div class="oe_edit_only d-flex align-items-center">
+                                <label for="product_yearly_estimated_qty" />
+                            </div>
+                            <div class="o_row d-flex">
+                                <field
+                  name="product_yearly_estimated_qty"
+                  class="oe_inline"
+                />
+                            </div>
                         </div>
-                        <div class="o_row d-flex">
-                            <field
-                name="product_yearly_estimated_qty"
-                class="oe_inline"
-              />
-                        </div>
-                    </div>
-                </h2>
+                    </h2>
+              </div>
             </xpath>
         </field>
     </record>
