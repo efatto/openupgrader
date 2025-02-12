@@ -9,15 +9,14 @@
     "license": "AGPL-3",
     "depends": [
         "sale_crm",
-        "stock",
+        "stock_orderpoint_generator_sale",
     ],
     "summary": "Add crm lead for products, with reflex on stock "
-    "warehouse orderpoint.",
+    "warehouse orderpoint through Stock orderpoint generator sale module.",
     "data": [
         "data/ir_config_parameter.xml",
         "views/product_category.xml",
         "views/crm.xml",
-        "views/stock_warehouse_orderpoint.xml",
     ],
     "installable": True,
 }
