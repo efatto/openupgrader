@@ -17,17 +17,17 @@ class ProductProduct(models.Model):
         domain_lead = [
             ("product_id", "in", self.ids),
         ]
-        if from_date:
-            domain_lead += [("date_deadline", ">=", from_date)]
         leads = lead_obj.search_read(
             domain_lead,
-            ["product_id", "lead_product_qty", "date_deadline"],
+            ["product_id", "lead_product_qty", "date_deadline", "create_date"],
             order="date_deadline asc",
         )
         for lead in leads:
             product_id = lead["product_id"][0]
             lead_product_qty = lead["lead_product_qty"]
-            date_deadline = fields.Datetime.to_datetime(lead["date_deadline"])
+            date_deadline = fields.Datetime.to_datetime(
+                lead["date_deadline"] or lead["create_date"]
+            )
             # If no there are no moves for a product we default the stock
             # to the one for the given period nevermind the dates
             if len(
