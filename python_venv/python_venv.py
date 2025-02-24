@@ -31,12 +31,14 @@ def _create_python_venv(venv_path, py_version):
         # do not recreate virtualenv as it regenerate file with bug in split()
     if not os.path.isdir(os.path.join(os.path.expanduser("~"), ".pyenv")):
         subprocess.Popen(["curl -fsSL https://pyenv.run | bash"], shell=True).wait()
-        # Load pyenv automatically by appending the following text
-        export_text = 'export PYENV_ROOT="$HOME/.pyenv\n"\
-        [[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH\n"\
-        eval "$(pyenv init - bash)\n'
-        for file in [".bash_profile", ".profile", ".bashrc"]:
-            with open(os.path.join(os.path.expanduser("~"), file), "w") as f:
+    # Load pyenv automatically by appending the following text
+    export_text = 'export PYENV_ROOT="$HOME/.pyenv\n"\
+    [[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH\n"\
+    eval "$(pyenv init - bash)\n'
+    for file in [".bash_profile", ".profile", ".bashrc"]:
+        file_path = os.path.join(os.path.expanduser("~"), file)
+        if not os.path.isfile(file_path):
+            with open(file_path, "w") as f:
                 f.write(export_text)
     # Restart your shell for the changes to take effect.
     # Load pyenv-virtualenv automatically by adding
