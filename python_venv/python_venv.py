@@ -49,7 +49,7 @@ def _create_python_venv(venv_path, py_version):
         shell=True).wait()
     # eval "$(pyenv virtualenv-init -)"
 
-    subprocess.Popen([f"pyenv install -s {py_version}"], shell=True).wait()
+    subprocess.Popen([f".pyenv/bin/pyenv install -s {py_version}"], shell=True).wait()
     pyenv_path = os.path.join(
         os.path.expanduser("~"),
         ".pyenv",
