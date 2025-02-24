@@ -36,10 +36,10 @@ def _create_python_venv(venv_path, py_version):
         file_path = os.path.join(os.path.expanduser("~"), file)
         if not os.path.isfile(file_path):
             with open(file_path, "w") as f:
-                f.write('export PYENV_ROOT="$HOME/.pyenv"')
+                f.write('export PYENV_ROOT="$HOME/.pyenv"\n')
                 f.write(
-                    '[[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH')
-                f.write('eval "$(pyenv init - bash)')
+                    '[[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH\n')
+                f.write('eval "$(pyenv init - bash)\n')
     # Restart your shell for the changes to take effect.
     # Load pyenv-virtualenv automatically by adding
     # the following to ~/.bashrc:
