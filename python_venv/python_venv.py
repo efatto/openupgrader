@@ -29,6 +29,8 @@ def _create_python_venv(venv_path, py_version):
     if not os.path.isdir(venv_path):
         subprocess.Popen([f"mkdir -p {venv_path}"], shell=True).wait()
         # do not recreate virtualenv as it regenerate file with bug in split()
+    if not os.path.isdir(os.path.join(os.path.expanduser("~"), ".pyenv")):
+        subprocess.Popen(["curl -fsSL https://pyenv.run | bash"], shell=True).wait()
     subprocess.Popen([f"pyenv install -s {py_version}"], shell=True).wait()
     pyenv_path = os.path.join(
         os.path.expanduser("~"),
