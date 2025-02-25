@@ -8,10 +8,8 @@
     "license": "AGPL-3",
     "summary": "Add method to create custom Python virtualenv.",
     "website": "https://github.com/efatto/efatto",
-    "depends": [
-    ],
-    "data": [
-    ],
+    "depends": [],
+    "data": [],
     "installable": True,
     "auto_install": False,
 }
