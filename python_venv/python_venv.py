@@ -6,15 +6,18 @@ def _get_env_for_subprocess(folder, py_version):
     env_for_subprocess = os.environ.copy()
     env_for_subprocess["VIRTUAL_ENV"] = folder
     env_for_subprocess["PYTHONPATH"] = folder
+    pyenv_path = os.path.join(os.path.expanduser("~"), ".pyenv")
     env_for_subprocess["PATH"] = ":".join(
         [
+            os.path.join(pyenv_path, "bin"),
             folder,
             os.path.join(folder, "bin"),
-            "/bin/pip",
+            "/bin",
             "/usr/bin",
         ]
     )
     env_for_subprocess["PWD"] = folder
+    env_for_subprocess["PYENV_ROOT"] = pyenv_path
     python_root = os.path.join(
         folder, "lib", f"python{'.'.join(py_version.split('.')[:2])}"
     )
@@ -31,25 +34,12 @@ def _create_python_venv(venv_path, py_version):
         # do not recreate virtualenv as it regenerate file with bug in split()
     if not os.path.isdir(os.path.join(os.path.expanduser("~"), ".pyenv")):
         subprocess.Popen(["curl -fsSL https://pyenv.run | bash"], shell=True).wait()
-    # Load pyenv automatically by appending the following text
-    # for file in [".bash_profile", ".profile", ".bashrc"]:
-    #     file_path = os.path.join(os.path.expanduser("~"), file)
-    #     if not os.path.isfile(file_path):
-    #         with open(file_path, "w") as f:
-    #             f.write('export PYENV_ROOT="$HOME/.pyenv"\n')
-    #             f.write(
-    #                 '[[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH\n')
-    #             f.write('eval "$(pyenv init - bash)\n')
-    # Restart your shell for the changes to take effect.
-    # Load pyenv-virtualenv automatically by adding
-    # the following to ~/.bashrc:
-    # file_path = os.path.join(os.path.expanduser("~"), ".bashrc")
     subprocess.Popen(
-        ['echo \'export PYENV_ROOT="$HOME/.pyenv"\' >> ~/.bashrc'],
-        shell=True).wait()
-    # eval "$(pyenv virtualenv-init -)"
-
-    subprocess.Popen([f".pyenv/bin/pyenv install -s {py_version}"], shell=True).wait()
+        [f"pyenv install -s {py_version}"],
+        cwd=venv_path,
+        env=subprocess_env,
+        shell=True,
+    ).wait()
     pyenv_path = os.path.join(
         os.path.expanduser("~"),
         ".pyenv",
@@ -57,13 +47,7 @@ def _create_python_venv(venv_path, py_version):
         py_version,
     )
     subprocess.Popen(
-        [f"{pyenv_path}/bin/pip install virtualenv"],
-        cwd=venv_path,
-        env=subprocess_env,
-        shell=True,
-    ).wait()
-    subprocess.Popen(
-        [f"{pyenv_path}/bin/virtualenv -p {pyenv_path}/bin/python {venv_path}"],
+        [f"{pyenv_path}/bin/python -m venv {venv_path}"],
         cwd=venv_path,
         env=subprocess_env,
         shell=True,
