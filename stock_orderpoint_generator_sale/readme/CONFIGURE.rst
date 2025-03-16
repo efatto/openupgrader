@@ -5,7 +5,7 @@ Nella configurazione di magazzino è presente un nuovo menu per creare e gestire
 
 Creando un nuovo modello ci sono alcuni campi che è possibile compilare per gestire la creazione automatica delle regole di riordino:
 
-Il campo `Genera regole automatiche`: se cliccato, disattiva le regole di riordino presenti e collegate al modello attuale e le ricrea, si può automatizzare con il campo indicato sotto.
+Il bottone `Genera regole automatiche`: se cliccato, disattiva le regole di riordino presenti e collegate al modello attuale e le ricrea, si può automatizzare con il campo indicato sotto.
 
 .. image:: ../static/description/genera.png
     :alt: Genera

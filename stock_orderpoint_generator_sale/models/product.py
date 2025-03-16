@@ -16,9 +16,12 @@ class ProductProduct(models.Model):
     def _compute_historic_sale_quantities_dict(
         self, location_id=False, from_date=False, to_date=False, compute_on_sale=False
     ):
-        """Returns a dict of products with a dict of historic moves as for
+        """
+        Returns a dict of products with a dict of historic moves as for
         a list of historic stock values resulting from those moves. If
-        a location_id is passed, we can restrict it to such location"""
+        a location_id is passed, we can restrict it to such location.
+        With compute_on_sale=True: restrict search only on moves towards customers
+        """
         # Search only stock.move not 'draft' nor 'cancel'
         location = location_id and location_id.id
         domain_quant_loc, domain_move_in_loc, domain_move_out_loc = self.with_context(
