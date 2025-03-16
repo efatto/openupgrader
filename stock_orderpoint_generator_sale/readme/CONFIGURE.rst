@@ -3,41 +3,51 @@ Nella configurazione di magazzino è presente un nuovo menu per creare e gestire
 .. image:: ../static/description/menu.png
     :alt: Menu
 
-Premendo su crea si apre la maschera in cui è possibile creare il modello, di cui ci sono alcuni campi extra rispetto alle regole di riordino generate:
+Creando un nuovo modello ci sono alcuni campi che è possibile compilare per gestire la creazione automatica delle regole di riordino:
 
-Il campo `Genera automaticamente` che sfrutta un cron con il quale le regole di riordino vengono create/aggiornate/eliminate ad ogni esecuzione, rendendole quindi sempre allineate con la situazione attuale dello stock. Nota: le regole di riordino vengono rigenerate disattivando quelle precedenti.
+Il campo `Genera regole automatiche`: se cliccato, disattiva le regole di riordino presenti e collegate al modello attuale e le ricrea, si può automatizzare con il campo indicato sotto.
+
+.. image:: ../static/description/genera.png
+    :alt: Genera
+
+Il campo `Crea le regole automaticamente`: se selezionato si evita di dover cliccare sul tasto `Genera regole automatiche` in alto. Attiva un cron che disattiva e ricrea le regole di riordino ad ogni esecuzione, rendendole quindi sempre allineate con la situazione attuale dello stock.
 
 .. image:: ../static/description/genera_automaticamente.png
     :alt: Genera automaticamente
 
-Il campo `Calcola sul venduto` che basa il calcolo del magazzino sulle vendite:
+Il campo `Calcola sull'uscito`: se selezionato, basa il calcolo su cui valutare la richiesta del prodotto sulle uscite di qualsiasi genere, quindi per vendite e consumi di produzione in genere. Selezionandolo spariscono i campi per l'impostazione di valori fissi sulle regole di riordino, l'auto minimo e massimo e altri criteri inutili con questa opzione.
+
+.. image:: ../static/description/calcola_sull_uscito.png
+    :alt: Calcola sull'uscito
+
+Il campo `Calcola sul venduto`: se selezionato, basa invece il calcolo sulle sole uscite per vendita. Se selezionato, prevale sul campo `Calcola sull'uscito` in quanto ne è un sottoinsieme. Selezionandolo spariscono i campi per l'impostazione di valori fissi sulle regole di riordino, l'auto minimo e massimo e altri criteri inutili con questa opzione.
 
 .. image:: ../static/description/calcola_sul_venduto.png
     :alt: Calcola sul venduto
 
-Il campo `Giorni movimenti precedenti` che viene usato come periodo su cui ricercare i movimenti di vendita nel caso in cui non siano indicati la data di inizio e di fine del periodo:
+Il campo `Giorni movimenti precedenti`: indica quanti giorni precedenti alla data attuale su cui andare a ricercare i movimenti di magazzino.
 
 .. image:: ../static/description/giorni_movimenti.png
     :alt: Giorni movimenti precedenti
 
-Il campo `Variazione percentuale`, che va a variare il valore delle vendite calcolato, che viene usato nella formula di calcolo della scorta:
+Il campo `Variazione percentuale`: impostando un valore tra -100 e 100, va a variare il valore della quantità di uscite calcolata in proporzione, usandolo nella formula di calcolo della scorta:
 
 .. image:: ../static/description/variazione.png
     :alt: Variazione percentuale
 
-Il campo `Livello di servizio` che viene usato nella formula di calcolo della scorta:
+Il campo `Livello di servizio`: viene usato nella formula di calcolo della scorta:
 
 .. image:: ../static/description/livello_servizio.png
     :alt: Livello di servizio
 
-Il campo `Costo gestione ordine` che viene usato nella formula di calcolo della scorta:
+Il campo `Costo gestione ordine`: anch'esso usato nella formula di calcolo della scorta:
 
 .. image:: ../static/description/costo_gestione_ordini.png
     :alt: Costo gestione ordine
 
-Il campo `Categoria prodotti` che filtra i prodotti su cui generare le regole di riordino. In questo modo è possibile creare diversi modelli per diverse categorie di prodotti. Nota: i prodotti vengono letti dalle categorie prodotti indicate senza tenere conto delle categorie figlie.
+Il campo `Categoria prodotti`: filtra i prodotti su cui generare le regole di riordino. In questo modo è possibile creare diversi modelli per diverse categorie di prodotti. Nota: i prodotti vengono letti dalle categorie prodotti indicate senza tenere conto delle categorie figlie.
 
 .. image:: ../static/description/categoria_prodotti.png
     :alt: Categoria prodotti
 
-Informazioni sulle formule usate nel file di calcolo https://github.com/sergiocorato/efatto/blob/12.0/stock_orderpoint_generator_sale/static/description/calculate-safety-stocks.ods
+Informazioni sulle formule usate nel file di calcolo https://github.com/efatto/efatto/blob/14.0/stock_orderpoint_generator_sale/static/description/calculate-safety-stocks.ods
