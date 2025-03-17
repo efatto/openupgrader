@@ -142,6 +142,9 @@
                     <field name="log_info" />
                 </page>
             </xpath>
+            <button name="create_auto_orderpoints" position="attributes">
+                <attribute name="attrs">{'invisible': False}</attribute>
+            </button>
         </field>
     </record>
 
