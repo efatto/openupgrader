@@ -35,7 +35,7 @@ class CrmLead(models.Model):
         probability_lists = safe_eval(
             self.env["ir.config_parameter"]
             .sudo()
-            .get_param("crm.product.lead.probability.list", [(50, 20), (100, 100)])
+            .get_param("crm.product.lead.probability.list", "[(50, 20), (100, 100)]")
         )
         lead_stock_ids = self.filtered(
             lambda le: le.product_id
