@@ -6,7 +6,7 @@
     'category': 'other',
     'description': "Allows ddt change number on done state.",
     'author': "Sergio Corato",
-    'website': 'https://github.com/sergiocorato/efatto',
+    'website': 'https://github.com/efatto/efatto',
     'license': 'AGPL-3',
     'depends': [
         'l10n_it_ddt_force_number',
