@@ -1,0 +1,71 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* sale_stats_days_custom
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 14.0+e\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2024-04-26 15:26+0000\n"
+"PO-Revision-Date: 2024-04-26 15:26+0000\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Plural-Forms: \n"
+
+#. module: sale_stats_days_custom
+#: model:ir.model,name:sale_stats_days_custom.model_res_company
+msgid "Companies"
+msgstr "Aziende"
+
+#. module: sale_stats_days_custom
+#: model:ir.model,name:sale_stats_days_custom.model_res_config_settings
+msgid "Config Settings"
+msgstr "Impostazioni di configurazione"
+
+#. module: sale_stats_days_custom
+#: model:ir.model.fields,field_description:sale_stats_days_custom.field_res_company__sale_stat_days
+#: model:ir.model.fields,field_description:sale_stats_days_custom.field_res_config_settings__sale_stat_days
+msgid "Days for sale statistics"
+msgstr "Giorni per le statistiche di vendita"
+
+#. module: sale_stats_days_custom
+#: model:ir.model.fields,field_description:sale_stats_days_custom.field_product_product__display_name
+#: model:ir.model.fields,field_description:sale_stats_days_custom.field_res_company__display_name
+#: model:ir.model.fields,field_description:sale_stats_days_custom.field_res_config_settings__display_name
+msgid "Display Name"
+msgstr "Nome visualizzato"
+
+#. module: sale_stats_days_custom
+#: model:ir.model.fields,field_description:sale_stats_days_custom.field_product_product__id
+#: model:ir.model.fields,field_description:sale_stats_days_custom.field_res_company__id
+#: model:ir.model.fields,field_description:sale_stats_days_custom.field_res_config_settings__id
+msgid "ID"
+msgstr ""
+
+#. module: sale_stats_days_custom
+#: model:ir.model.fields,field_description:sale_stats_days_custom.field_product_product____last_update
+#: model:ir.model.fields,field_description:sale_stats_days_custom.field_res_company____last_update
+#: model:ir.model.fields,field_description:sale_stats_days_custom.field_res_config_settings____last_update
+msgid "Last Modified on"
+msgstr "Ultima modifica il"
+
+#. module: sale_stats_days_custom
+#: model:ir.model.fields,help:sale_stats_days_custom.field_res_company__sale_stat_days
+#: model:ir.model.fields,help:sale_stats_days_custom.field_res_config_settings__sale_stat_days
+msgid "Number of days for sale statistic shown in smart buttons in product."
+msgstr ""
+"Numero di giorni per le statistiche di vendita mostrate negli smart button "
+"nel prodotto."
+
+#. module: sale_stats_days_custom
+#: model_terms:ir.ui.view,arch_db:sale_stats_days_custom.res_config_settings_view_form
+msgid "Number of days on which sale statistics are computed"
+msgstr "Numero di giorni su cui sono calcolate le statistiche di vendita"
+
+#. module: sale_stats_days_custom
+#: model:ir.model,name:sale_stats_days_custom.model_product_product
+msgid "Product"
+msgstr "Prodotto"
