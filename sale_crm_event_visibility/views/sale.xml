@@ -5,16 +5,16 @@
         <field name="inherit_id" ref="sale.view_order_form" />
         <field name="arch" type="xml">
             <field name="opportunity_id" position="after">
-                <field name="event_id"/>
+                <field name="event_id" />
             </field>
         </field>
     </record>
     <record model="ir.ui.view" id="view_sales_order_filter">
         <field name="model">sale.order</field>
-        <field name="inherit_id" ref="sale.view_sales_order_filter"/>
+        <field name="inherit_id" ref="sale.view_sales_order_filter" />
         <field name="arch" type="xml">
             <field name="user_id" position="after">
-                <field name="event_id"/>
+                <field name="event_id" />
             </field>
         </field>
     </record>
