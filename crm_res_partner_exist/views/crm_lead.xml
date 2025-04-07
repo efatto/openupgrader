@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <record id="view_order_form" model="ir.ui.view">
+        <field name="model">crm.lead</field>
+        <field name="inherit_id" ref="crm.crm_lead_view_form" />
+        <field name="arch" type="xml">
+            <field name="email_from" position="before">
+                <field name="partner_email_exists" invisible="1" />
+            </field>
+            <field name="email_from" position="attributes">
+                <t t-if="partner_email_exists">
+                    <attribute name="style">background-color:#58d014c9</attribute>
+                </t>
+            </field>
+        </field>
+    </record>
+    <record model="ir.ui.view" id="view_crm_case_opportunities_filter">
+        <field name="model">crm.lead</field>
+        <field name="inherit_id" ref="crm.view_crm_case_opportunities_filter" />
+        <field name="arch" type="xml">
+            <field name="user_id" position="after">
+                <field name="partner_email_exists" />
+            </field>
+        </field>
+    </record>
+</odoo>
