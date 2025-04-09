@@ -1,0 +1,98 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* link_tracker_partner
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 14.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-04-09 13:16+0000\n"
+"PO-Revision-Date: 2025-04-09 13:16+0000\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Plural-Forms: \n"
+
+#. module: link_tracker_partner
+#: model:ir.model.fields,field_description:link_tracker_partner.field_link_tracker__assigned_attachment_ids
+msgid "Assigned Attachments"
+msgstr "Allegati assegnati"
+
+#. module: link_tracker_partner
+#: code:addons/link_tracker_partner/models/link_tracker.py:0
+#: model:ir.model.fields,field_description:link_tracker_partner.field_link_tracker__campaign_partner_ids
+#: model_terms:ir.ui.view,arch_db:link_tracker_partner.link_tracker_view_form
+#: model_terms:ir.ui.view,arch_db:link_tracker_partner.link_tracker_view_tree
+#, python-format
+msgid "Campaign Partners"
+msgstr "Contatti da campagne"
+
+#. module: link_tracker_partner
+#: model:ir.model.fields,field_description:link_tracker_partner.field_link_tracker__campaign_partners_count
+msgid "Campaign Partners Count"
+msgstr "Numero contatti da campagne"
+
+#. module: link_tracker_partner
+#: model:ir.model.fields,field_description:link_tracker_partner.field_link_tracker__display_name
+msgid "Display Name"
+msgstr "Nome visualizzato"
+
+#. module: link_tracker_partner
+#: model:ir.model.fields,field_description:link_tracker_partner.field_link_tracker__id
+msgid "ID"
+msgstr ""
+
+#. module: link_tracker_partner
+#: model:ir.model.fields,field_description:link_tracker_partner.field_link_tracker____last_update
+msgid "Last Modified on"
+msgstr "Ultima modifica il"
+
+#. module: link_tracker_partner
+#: model:ir.model,name:link_tracker_partner.model_link_tracker
+msgid "Link Tracker"
+msgstr "Monitoraggio link"
+
+#. module: link_tracker_partner
+#: code:addons/link_tracker_partner/models/link_tracker.py:0
+#: model:ir.model.fields,field_description:link_tracker_partner.field_link_tracker__mailing_partner_ids
+#: model_terms:ir.ui.view,arch_db:link_tracker_partner.link_tracker_view_form
+#: model_terms:ir.ui.view,arch_db:link_tracker_partner.link_tracker_view_tree
+#, python-format
+msgid "Mailing Partners"
+msgstr "Contatti da Mass Mailing"
+
+#. module: link_tracker_partner
+#: model:ir.model.fields,field_description:link_tracker_partner.field_link_tracker__mailing_partners_count
+msgid "Mailing Partners Count"
+msgstr "Numero contatti da Mass Mailing"
+
+#. module: link_tracker_partner
+#: model:ir.model.fields,help:link_tracker_partner.field_link_tracker__campaign_partner_ids
+msgid "Partners originated from this tracker by campaign"
+msgstr "Contatti originati da campagne"
+
+#. module: link_tracker_partner
+#: model:ir.model.fields,help:link_tracker_partner.field_link_tracker__mailing_partner_ids
+msgid "Partners originated from this tracker by mass mailing"
+msgstr "Contatti originati da mass mailing"
+
+#. module: link_tracker_partner
+#: model:ir.model.fields,help:link_tracker_partner.field_link_tracker__source_partner_ids
+msgid "Partners originated from this tracker by source"
+msgstr "Contatti originati da origine"
+
+#. module: link_tracker_partner
+#: code:addons/link_tracker_partner/models/link_tracker.py:0
+#: model:ir.model.fields,field_description:link_tracker_partner.field_link_tracker__source_partner_ids
+#: model_terms:ir.ui.view,arch_db:link_tracker_partner.link_tracker_view_form
+#: model_terms:ir.ui.view,arch_db:link_tracker_partner.link_tracker_view_tree
+#, python-format
+msgid "Source Partners"
+msgstr "Contatti da Origine"
+
+#. module: link_tracker_partner
+#: model:ir.model.fields,field_description:link_tracker_partner.field_link_tracker__source_partners_count
+msgid "Source Partners Count"
+msgstr "Numero contatti da Origine"
