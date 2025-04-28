@@ -1,7 +1,8 @@
 
 from odoo import fields, models, api, _
 from odoo.exceptions import UserError
-
+from odoo.tools import config
+from .python_venv import _get_env_for_subprocess, _create_python_venv
 import odoorpc
 import shutil
 import subprocess
@@ -36,9 +37,10 @@ class OpenupgraderMigration(models.Model):
 
     db_name = fields.Char(string="Database name",
                           default=lambda self: self.env.cr.dbname)
-    db_user = fields.Char(string="Database user")
-    db_password = fields.Char(string="Database password")
-    pg_user = fields.Char(string="Postgres user", default="odoo")
+    db_user = fields.Char(string="Database user", default='admin')
+    db_password = fields.Char(string="Database password", default='admin')
+    pg_user = fields.Char(string="Postgres user",
+                          default=lambda self: config.get('db_user', 'odoo'))
     verify_ssl = fields.Boolean()
     address = fields.Char("Odoo URL")
     local = fields.Boolean("Odoo is in local network")
@@ -47,8 +49,10 @@ class OpenupgraderMigration(models.Model):
         string="Disabled ir crons",
     )
     odoo_pid = fields.Integer(string="Odoo migrated process PID")
-    db_port = fields.Char(string="Database port", default='5432')
-    xmlrpc_port = fields.Char(string="XmlRpc port", default='8032')
+    db_port = fields.Char(string="Database port",
+                          default=lambda self: config.get('db_port', '5432'))
+    xmlrpc_port = fields.Char(string="XmlRpc port",
+                              default=lambda self: config.get('http_port', '8032'))
     folder = fields.Char(
         default=lambda self: self._default_folder(),
         help="Absolute path for migrated Odoo instance",
@@ -263,7 +267,7 @@ class OpenupgraderMigration(models.Model):
             bash_command += "-u all --stop "
         if save:
             bash_command += "-s --stop"
-        subprocess_env = version._get_env_for_subprocess(folder)
+        subprocess_env = _get_env_for_subprocess(folder, version.python_version)
         process = subprocess.Popen(
             bash_command.split(),
             cwd=folder,
@@ -311,7 +315,6 @@ class OpenupgraderMigration(models.Model):
                 has_stdout = False
         for pid in pids:
             self._stop_pid(pid)
-
 
     def disable_mail(self, disable=False):
         state = 'draft' if disable else 'done'
