@@ -19,10 +19,6 @@
         "views/openupgrader_version_view.xml",
     ],
     "installable": True,
-    "demo": [
-        "demo/openupgrader_config.yml",
-        "demo/openupgrader_repos.yml",
-    ],
     "external_dependencies": {
         "python": ["odoorpc", ],
     }
