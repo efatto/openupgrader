@@ -9,24 +9,34 @@ class Openupgrader(SavepointCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        cls.version_obj = cls.env["odoo.version"]
         cls.base_version = "12.0"
-        for version in ["12.0", "13.0", "14.0"]:
-            if not cls.env["odoo.version"].search([
+        cls.middle_version = "13.0"
+        cls.to_version = "14.0"
+        for version in [cls.base_version, cls.middle_version, cls.to_version]:
+            version_id = cls.version_obj.search([
                 ("name", "=", version),
-            ]):
-                version = cls.env["odoo.version"].create({
+            ])
+            if not version_id:
+                version_id = cls.version_obj.create({
                     "name": version,
                     "python_version": "3.8.16" if version == "14.0" else "3.7.16",
                 })
-                version.button_create_venv()
+        cls.from_version_id = cls.version_obj.search([
+            ("name", "=", cls.base_version),
+        ])
+        cls.middle_version_id = cls.version_obj.search([
+            ("name", "=", cls.middle_version),
+        ])
+        cls.to_version_id = cls.version_obj.search([
+            ("name", "=", cls.to_version),
+        ])
         cls.openupgrader_config = cls.env["openupgrader.config"].search([
             ("odoo_version_id.name", "=", cls.base_version),
         ])
         if not cls.openupgrader_config:
             cls.openupgrader_config = cls.env["openupgrader.config"].create({
-                "odoo_version_id": cls.env["odoo.version"].search([
-                    ("name", "=", cls.base_version),
-                ]).id,
+                "odoo_version_id": cls.from_version_id.id,
             })
         config_file_path = get_module_resource(
             "openupgrader", "tests", "data", "openupgrader_config.yml"
@@ -44,7 +54,15 @@ class Openupgrader(SavepointCase):
             file.close()
             cls.openupgrader_config.repos_file = repos_file
             cls.openupgrader_config.button_load_repos()
+        cls.openupgrader_migration = cls.env["openupgrader.migration"].create({
+            "from_version_id": cls.from_version_id.id,
+            "to_version_id": cls.to_version_id.id,
+            "openupgrade_repo": "git@github.com:efatto/OpenUpgrade.git",
+            "odoo_repo": "git@github.com:OCA/OCB.git",
+        })
+        cls.from_version_id.button_create_venv()
+        cls.middle_version_id.button_create_venv()
+        cls.to_version_id.button_create_venv()
 
     def test_openupgrader(self):
-
-        pass
+        self.openupgrader_migration.button_restore_db()
