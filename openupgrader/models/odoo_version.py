@@ -1,6 +1,6 @@
 import os
 import subprocess
-from .python_venv import _create_python_venv
+from odoo.addons.python_venv.python_venv import _create_python_venv
 from odoo import api, fields, models
 
 

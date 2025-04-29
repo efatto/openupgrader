@@ -2,10 +2,10 @@
 from odoo import fields, models, api, _
 from odoo.exceptions import UserError
 from odoo.tools import config
-from .python_venv import _get_env_for_subprocess, _create_python_venv
+from odoo.addons.python_venv.python_venv import _get_env_for_subprocess
 import odoorpc
 import shutil
-import subprocess
+from subprocess import Popen, PIPE
 import time
 import os
 import signal

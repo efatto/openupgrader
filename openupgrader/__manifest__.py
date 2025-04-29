@@ -10,6 +10,7 @@
     "website": "https://github.com/sergiocorato/efatto",
     "depends": [
         "mail",
+        "python_venv",
     ],
     "data": [
         "security/ir.model.access.csv",
