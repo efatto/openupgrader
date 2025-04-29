@@ -1,6 +1,6 @@
 import base64
 
-from odoo.tests.common import Form, SavepointCase
+from odoo.tests.common import SavepointCase
 
 from odoo.modules import get_module_resource
 
