@@ -18,7 +18,7 @@ class Openupgrader(SavepointCase):
                 ("name", "=", version),
             ])
             if not version_id:
-                version_id = cls.version_obj.create({
+                cls.version_obj.create({
                     "name": version,
                     "python_version": "3.8.16" if version == "14.0" else "3.7.16",
                 })
@@ -72,4 +72,15 @@ class Openupgrader(SavepointCase):
         self.assertEqual(
             self.openupgrader_migration.state,
             "db_restored"
+        )
+        self.openupgrader_migration.button_update_from_version()
+        self.openupgrader_migration.button_ready_for_migration()
+        self.assertEqual(
+            self.openupgrader_migration.state,
+            "ready_for_migration"
+        )
+        self.openupgrader_migration.button_do_migration()
+        self.assertEqual(
+            self.openupgrader_migration.state,
+            "db_migrated"
         )

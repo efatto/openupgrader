@@ -1,6 +1,7 @@
 
 from odoo import fields, models, api, _
 from odoo.exceptions import UserError
+from odoo.modules import get_module_resource
 from odoo.tools import config
 from odoo.addons.python_venv.python_venv import _get_env_for_subprocess
 import odoorpc
@@ -51,8 +52,11 @@ class OpenupgraderMigration(models.Model):
     odoo_pid = fields.Integer(string="Odoo migrated process PID")
     db_port = fields.Char(string="Database port",
                           default=lambda self: config.get('db_port', '5432'))
-    xmlrpc_port = fields.Char(string="XmlRpc port",
-                              default=lambda self: config.get('http_port', '8032'))
+    xmlrpc_port = fields.Char(
+        string="XmlRpc port",
+        help="Set a different port from the current one used, as this would block the "
+             "instance.",
+        default=lambda self: str(int(config.get('http_port', '8032') + 1)))
     folder = fields.Char(
         default=lambda self: self._default_folder(),
         help="Absolute path for migrated Odoo instance",
@@ -176,17 +180,15 @@ class OpenupgraderMigration(models.Model):
         opener = build_opener(*handlers)
         return opener
 
-    def _set_odoorc(self, folder, version_name):
-        odoorc_exist = bool(
-            os.path.isfile(
-                os.path.join(folder, '.odoorc')
+    def _set_odoorc(self, folder):
+        odoorc_path = os.path.join(folder, '.odoorc')
+        if not os.path.isfile(odoorc_path):
+            odoorc_basic_path = get_module_resource(
+                "openupgrader", "data", ".odoorc"
             )
+            shutil.copyfile(odoorc_basic_path, odoorc_path)
             # and not self.migrate_ddt
             # and not save
-        )
-        return odoorc_exist
-        # if not odoorc_exist:
-        #     copy from current initial version, valid only for compatible version conf
 
     def _set_not_installable_module_odoorc(self, version_name):
         not_auto_install_list = [
@@ -243,7 +245,7 @@ class OpenupgraderMigration(models.Model):
         executable = f'{folder}/odoo/openerp-server' if float(version_name) < 10 \
             else f'{folder}/odoo/odoo-bin' if float(version_name) < 14 \
             else f'{folder}/repos/odoo/odoo-bin'
-        odoorc_exist = self._set_odoorc(folder, version_name)
+        self._set_odoorc(folder)
         addons_path = f'{folder}/repos/odoo/addons,'
         if float(version_name) < 14:
             addons_path = f"{folder}/odoo/addons,"
@@ -253,22 +255,25 @@ class OpenupgraderMigration(models.Model):
             extra_addons_path = f',{folder}/odoo/odoo/addons'
         bash_command = \
             f"{executable} " \
-            f"{f'-c {folder}/.odoorc' if odoorc_exist else ''} " \
-            f"{not odoorc_exist and f'--addons-path={addons_path}' or ''}" \
-            f"{not odoorc_exist and f'{folder}/addons-extra' or ''}" \
-            f"{not odoorc_exist and extra_addons_path or ''}" \
+            f"{f'-c {folder}/.odoorc'} " \
+            f"{f'--addons-path={addons_path}'}" \
+            f"{f'{folder}/addons-extra'}" \
+            f"{extra_addons_path}" \
             f" {extra_command} " \
-            f"{not odoorc_exist and f'--db_port={self.db_port}' or ''} " \
+            f"{f'--db_port={self.db_port}'} " \
             f"--xmlrpc-port={self.xmlrpc_port} " \
-            f"{not odoorc_exist and f'--logfile={folder}/migration.log' or ''} " \
-            f"{not odoorc_exist and '--limit-time-cpu=16000' or ''} " \
-            f"{not odoorc_exist and '--limit-time-real=32000' or ''} " \
-            f"{not odoorc_exist and '--limit-memory-soft=4147483648' or ''} " \
-            f"{not odoorc_exist and '--limit-memory-hard=4679107584' or ''} " \
-            f"{not odoorc_exist and f'--load={load}' or ''} " \
+            f"{f'--logfile={folder}/migration.log'} " \
+            f"{'--limit-time-cpu=16000'} " \
+            f"{'--limit-time-real=32000'} " \
+            f"{'--limit-memory-soft=4147483648'} " \
+            f"{'--limit-memory-hard=4679107584'} " \
+            f"{f'--load={load}'} " \
             f"-d {self.env.cr.dbname}_migrate "
-        if not odoorc_exist and version_name != '7.0':
-            bash_command += f"--data-dir={folder}/data_dir "
+        if version_name != '7.0':
+            data_dir = os.path.join(folder, "data_dir")
+            if not os.path.isdir(data_dir):
+                os.makedirs(data_dir)
+            bash_command += f"--data-dir={data_dir} "
         if update:
             bash_command += "-u all --stop "
         if save:
