@@ -10,10 +10,10 @@ class Openupgrader(SavepointCase):
     def setUpClass(cls):
         super().setUpClass()
         cls.version_obj = cls.env["odoo.version"]
-        cls.base_version = "12.0"
+        cls.from_version = "12.0"
         cls.middle_version = "13.0"
         cls.to_version = "14.0"
-        for version in [cls.base_version, cls.middle_version, cls.to_version]:
+        for version in [cls.from_version, cls.middle_version, cls.to_version]:
             version_id = cls.version_obj.search([
                 ("name", "=", version),
             ])
@@ -23,7 +23,7 @@ class Openupgrader(SavepointCase):
                     "python_version": "3.8.16" if version == "14.0" else "3.7.16",
                 })
         cls.from_version_id = cls.version_obj.search([
-            ("name", "=", cls.base_version),
+            ("name", "=", cls.from_version),
         ])
         cls.middle_version_id = cls.version_obj.search([
             ("name", "=", cls.middle_version),
@@ -32,7 +32,7 @@ class Openupgrader(SavepointCase):
             ("name", "=", cls.to_version),
         ])
         cls.openupgrader_config = cls.env["openupgrader.config"].search([
-            ("odoo_version_id.name", "=", cls.base_version),
+            ("odoo_version_id.name", "=", cls.from_version),
         ])
         if not cls.openupgrader_config:
             cls.openupgrader_config = cls.env["openupgrader.config"].create({
@@ -60,9 +60,16 @@ class Openupgrader(SavepointCase):
             "openupgrade_repo": "git@github.com:efatto/OpenUpgrade.git",
             "odoo_repo": "git@github.com:OCA/OCB.git",
         })
-        cls.from_version_id.button_create_venv()
-        cls.middle_version_id.button_create_venv()
-        cls.to_version_id.button_create_venv()
+        if not cls.openupgrader_migration.check_venv(cls.from_version):
+            cls.from_version_id.button_create_venv()
+        if not cls.openupgrader_migration.check_venv(cls.middle_version):
+            cls.middle_version_id.button_create_venv()
+        if not cls.openupgrader_migration.check_venv(cls.to_version):
+            cls.to_version_id.button_create_venv()
 
     def test_openupgrader(self):
         self.openupgrader_migration.button_restore_db()
+        self.assertEqual(
+            self.openupgrader_migration.state,
+            "db_restored"
+        )

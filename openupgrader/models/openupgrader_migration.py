@@ -208,6 +208,12 @@ class OpenupgraderMigration(models.Model):
     def button_start_odoo(self):
         self.start_odoo(version=self.from_version_id)
 
+    def check_venv(self, version_name):
+        folder = os.path.join(self.folder, f"openupgrade{version_name}")
+        if os.path.isdir(os.path.join(folder, "bin")):
+            return folder
+        return False
+
     def start_odoo(
         self, version, update=False, extra_command='', save=False, wait=False
     ):
@@ -222,8 +228,8 @@ class OpenupgraderMigration(models.Model):
         version_name = version.name
         if self.odoo_migrated_state == "running":
             self.button_stop_odoo()
-        folder = os.path.join(self.folder, f"openupgrade{version_name}")
-        if not os.path.isdir(os.path.join(folder, "bin")):
+        folder = self.check_venv(version_name)
+        if not folder:
             raise UserError(_(
                 "Missing env for version %s! Create in Odoo Version menu."
             ) % version_name)
