@@ -196,7 +196,7 @@ class OpenupgraderMigration(models.Model):
         mod_not_install = \
             f"modules_auto_install_disabled = {','.join(not_auto_install_list)}"
         if os.path.isfile(os.path.join(os.path.expanduser("~"), ".odoorc")):
-            subprocess.Popen(
+            Popen(
                 [f'echo {mod_not_install} >> .odoorc'],
                 shell=True
             ).wait()
@@ -268,10 +268,10 @@ class OpenupgraderMigration(models.Model):
         if save:
             bash_command += "-s --stop"
         subprocess_env = _get_env_for_subprocess(folder, version.python_version)
-        process = subprocess.Popen(
+        process = Popen(
             bash_command.split(),
             cwd=folder,
-            stdout=subprocess.PIPE,
+            stdout=PIPE,
             env=subprocess_env,
             shell=True)
         self.odoo_pid = process.pid
@@ -302,9 +302,9 @@ class OpenupgraderMigration(models.Model):
         self.odoo_migrated_state = "stopped"
 
     def button_stop_odoo(self):
-        process = subprocess.Popen([
+        process = Popen([
             "pgrep -a python | grep openupgrade12.0"
-        ], shell=True, stdout=subprocess.PIPE)
+        ], shell=True, stdout=PIPE)
         has_stdout = True
         pids = []
         while has_stdout:
@@ -367,20 +367,20 @@ class OpenupgraderMigration(models.Model):
         )
         if not os.path.isdir(filestore_db_path):
             os.mkdir(filestore_db_path)
-        process = subprocess.Popen([
+        process = Popen([
             f'tar -zxvf {dump_file} --strip-components=1 -C {filestore_db_path}/'
         ], shell=True)
         process.wait()
 
     def dump_filestore(self, version):
-        process = subprocess.Popen([
+        process = Popen([
             'cd %s/%s/data_dir/filestore && tar -zcvf %s/filestore.%s.tar %s' % (
                 self.folder, version, self.folder, version, self.env.cr.dbname)
         ], shell=True)
         process.wait()
 
     def dump_database(self, version):
-        process = subprocess.Popen(
+        process = Popen(
             [
                 f"pg_dump -O -p {self.db_port} -d {self.env.cr.dbname} > "
                 f"{os.path.join(self.folder, 'database.%s.sql' % version)}"
@@ -388,10 +388,10 @@ class OpenupgraderMigration(models.Model):
         process.wait()
 
     def restore_db(self):
-        subprocess.Popen(
+        Popen(
             [f'dropdb -p {self.db_port} {self.env.cr.dbname}_migrate'],
             shell=True).wait()
-        subprocess.Popen(
+        Popen(
             [f'createdb -p {self.db_port} {self.env.cr.dbname}_migrate'],
             shell=True).wait()
         dump_file_sql = os.path.join(
@@ -399,7 +399,7 @@ class OpenupgraderMigration(models.Model):
         if not os.path.isfile(dump_file_sql):
             raise UserError(_("Dump sql file %s not found!") % dump_file_sql)
 
-        subprocess.Popen(
+        Popen(
             [
                 f'cat {dump_file_sql} | psql -U {self.pg_user} -p {self.db_port} '
                 f'-d {self.env.cr.dbname}_migrate'
@@ -462,7 +462,7 @@ class OpenupgraderMigration(models.Model):
         if not disable and self.disabled_cron_ids:
             sql = (f"UPDATE ir_cron SET active = true WHERE id in "
                    f"{(_id for _id in self.disabled_cron_ids.ids)};")
-            subprocess.Popen(
+            Popen(
                 [f'psql -p {self.db_port} -d '
                  f'{self.env.cr.dbname}_migrate -c "{sql}"'],
                 shell=True
@@ -549,7 +549,7 @@ class OpenupgraderMigration(models.Model):
                         bash_command,
                     )
                 ]
-                subprocess.Popen(command, shell=True).wait()
+                Popen(command, shell=True).wait()
             bash_update_commands = part.get('sql_update_commands', [])
             if bash_update_commands:
                 for bash_update_command in bash_update_commands:
@@ -560,7 +560,7 @@ class OpenupgraderMigration(models.Model):
                             bash_update_command,
                         )
                     ]
-                    subprocess.Popen(upd_command, shell=True).wait()
+                    Popen(upd_command, shell=True).wait()
 
     def post_migration(self, version):
         # re-enable mail servers and clean db
@@ -571,11 +571,11 @@ class OpenupgraderMigration(models.Model):
         repo_path = os.path.join(
             self.folder, f"openupgrade{version_name}", 'repos', repo_name)
         if not os.path.isdir(repo_path):
-            subprocess.Popen([
+            Popen([
                 f'git clone --single-branch -b {repo_version} {repo_url} --depth 1 '
                 f'{repo_path}'
             ], shell=True).wait()
-        subprocess.Popen([
+        Popen([
             f'cd {repo_path} && git fetch --all && git reset --hard '
             f'origin/{repo_version}'
         ], shell=True).wait()
@@ -585,7 +585,7 @@ class OpenupgraderMigration(models.Model):
         for root, dirs, files in os.walk(repo_path):
             for d in dirs:
                 if d not in ['.git', 'setup']:
-                    process = subprocess.Popen([
+                    process = Popen([
                         f"cp -rf {repo_path}/{d} "
                         f"{os.path.join(venv_path, 'addons-extra')}"
                     ], shell=True)
