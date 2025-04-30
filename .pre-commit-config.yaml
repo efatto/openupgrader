@@ -44,9 +44,6 @@ repos:
       # update the NOT INSTALLABLE ADDONS section above
       - id: oca-update-pre-commit-excluded-addons
       - id: oca-fix-manifest-website
-<<<<<<< before updating
-        args: ["https://github.com/sergiocorato/efatto"]
-=======
         args: ["https://github.com/efatto/openupgrader"]
       - id: oca-gen-addon-readme
         args:
@@ -143,7 +140,6 @@ repos:
         args:
           - --settings=.
         exclude: /__init__\.py$
->>>>>>> after updating
   - repo: https://github.com/acsone/setuptools-odoo
     rev: 3.1.8
     hooks:

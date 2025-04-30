@@ -30,10 +30,11 @@
         <field name="arch" type="xml">
             <form string="OpenUpgrader migration">
                 <header>
-                    <button name="button_draft" type="object" string="Set to draft"/>
-                    <field name="state"
-                           widget="statusbar"
-                           statusbar_visible="draft,created_venv,restoring_db,restore_failed,db_restored,ready_for_migration,migrating,failed,db_migrated,done"
+                    <button name="button_draft" type="object" string="Set to draft" />
+                    <field
+                        name="state"
+                        widget="statusbar"
+                        statusbar_visible="draft,created_venv,restoring_db,restore_failed,db_restored,ready_for_migration,migrating,failed,db_migrated,done"
                     />
                 </header>
                 <sheet string="OpenUpgrader migration">
@@ -45,21 +46,26 @@
                             <field name="next_version_id" />
                             <field name="db_name" />
                             <field name="db_user" />
-                            <field name="db_password" password="1"/>
-                            <field name="pg_user"/>
+                            <field name="db_password" password="1" />
+                            <field name="pg_user" />
                             <field name="openupgrade_repo" />
-                            <field name="odoo_repo" placeholder="https://github.com/OCB/OCB.git" />
+                            <field
+                                name="odoo_repo"
+                                placeholder="https://github.com/OCB/OCB.git"
+                            />
                         </group>
                         <group>
                             <field name="db_port" />
                             <field name="xmlrpc_port" />
                             <field name="folder" />
                             <field name="odoo_migrated_state" />
-                            <button name="button_start_odoo"
+                            <button
+                                name="button_start_odoo"
                                 type="object"
                                 string="Start Odoo (from version)"
                             />
-                            <button name="button_stop_odoo"
+                            <button
+                                name="button_stop_odoo"
                                 type="object"
                                 string="Stop Odoo"
                             />
@@ -70,28 +76,42 @@
                             <field name="filestore" />
                         </group>
                         <group>
-                            <button name="button_refresh_state"
+                            <button
+                                name="button_refresh_state"
                                 type="object"
-                                string="Refresh state"/>
-                            <button name="button_restore_db_update"
+                                string="Refresh state"
+                            />
+                            <button
+                                name="button_restore_db_update"
                                 type="object"
-                                string="Prepare migration restoring db and updating"/>
-                            <button name="button_restore_db"
+                                string="Prepare migration restoring db and updating"
+                            />
+                            <button
+                                name="button_restore_db"
                                 type="object"
-                                string="Prepare migration restoring db"/>
-                            <button name="button_update_current_version"
+                                string="Prepare migration restoring db"
+                            />
+                            <button
+                                name="button_update_current_version"
                                 type="object"
-                                string="Prepare migration updating only"/>
-                            <button name="button_ready_for_migration"
+                                string="Prepare migration updating only"
+                            />
+                            <button
+                                name="button_ready_for_migration"
                                 type="object"
-                                string="Complete prepare of migration"/>
-                            <button name="button_do_migration"
+                                string="Complete prepare of migration"
+                            />
+                            <button
+                                name="button_do_migration"
                                 type="object"
-                                string="Do migration"/>
-                            <button name="button_done"
+                                string="Do migration"
+                            />
+                            <button
+                                name="button_done"
                                 type="object"
                                 states="db_migrated"
-                                string="Complete migration"/>
+                                string="Complete migration"
+                            />
                         </group>
                     </group>
                     <group>

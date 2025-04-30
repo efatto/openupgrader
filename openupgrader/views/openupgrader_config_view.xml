@@ -41,54 +41,76 @@
                     <div class="oe_title">
                         <label for="odoo_version_id" string="Odoo Version" />
                         <h1>
-                            <field name="odoo_version_id"
-                                class="oe_inline"/>
+                            <field name="odoo_version_id" class="oe_inline" />
                         </h1>
                     </div>
                     <group>
                         <group>
                             <group name="repos_file" string="Repos File">
-                                <field name="repos_file" filename="repos_file_name" nolabel="1"/>
-                                <field name="repos_file_name" invisible="1"/>
-                                <button type="object" name="button_load_repos"
-                                attrs="{'invisible': ['|',
+                                <field
+                                    name="repos_file"
+                                    filename="repos_file_name"
+                                    nolabel="1"
+                                />
+                                <field name="repos_file_name" invisible="1" />
+                                <button
+                                    type="object"
+                                    name="button_load_repos"
+                                    attrs="{'invisible': ['|',
                                     ('odoo_version_id', '=', False),
                                     ('repos_file', '=', False),
                                 ]}"
-                                string="Load repos"/>
+                                    string="Load repos"
+                                />
                             </group>
                         </group>
                         <group>
                             <group name="config_file" string="Config File">
-                                <field name="config_file" filename="config_file_name" nolabel="1"/>
-                                <field name="config_file_name" invisible="1"/>
-                                <button type="object" name="button_load_config"
-                                attrs="{'invisible': ['|',
+                                <field
+                                    name="config_file"
+                                    filename="config_file_name"
+                                    nolabel="1"
+                                />
+                                <field name="config_file_name" invisible="1" />
+                                <button
+                                    type="object"
+                                    name="button_load_config"
+                                    attrs="{'invisible': ['|',
                                     ('odoo_version_id', '=', False),
                                     ('config_file', '=', False),
                                 ]}"
-                                string="Load receipt"/>
+                                    string="Load receipt"
+                                />
                             </group>
                         </group>
                     </group>
                     <group>
                         <field name="sql_update_command_ids">
                             <tree editable="top">
-                                <field name="sequence" widget="handle"/>
+                                <field name="sequence" widget="handle" />
                                 <field name="name" />
                             </tree>
                         </field>
                         <field name="module_auto_install_ids">
                             <tree editable="top">
-                                <field name="sequence" widget="handle"/>
+                                <field name="sequence" widget="handle" />
                                 <field name="name" />
                                 <field name="module_installed_name" />
                                 <field name="module_to_install_name" />
                             </tree>
                         </field>
-                        <field name="module_to_delete_after_migration_ids" widget="many2many_tags" />
-                        <field name="module_to_uninstall_after_migration_ids" widget="many2many_tags" />
-                        <field name="module_to_uninstall_before_migration_ids" widget="many2many_tags" />
+                        <field
+                            name="module_to_delete_after_migration_ids"
+                            widget="many2many_tags"
+                        />
+                        <field
+                            name="module_to_uninstall_after_migration_ids"
+                            widget="many2many_tags"
+                        />
+                        <field
+                            name="module_to_uninstall_before_migration_ids"
+                            widget="many2many_tags"
+                        />
                     </group>
                 </sheet>
             </form>

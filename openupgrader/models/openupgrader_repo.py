@@ -1,4 +1,3 @@
-
 from odoo import fields, models
 
 
@@ -7,9 +6,7 @@ class RemoteRepo(models.Model):
     _description = "Remote Repo"
 
     name = fields.Char(string="Remote Repo Name")
-    openupgrader_repo_id = fields.Many2one(
-        comodel_name="openupgrader.repo"
-    )
+    openupgrader_repo_id = fields.Many2one(comodel_name="openupgrader.repo")
     remote_url = fields.Char(string="Remote Repo URL")
     remote_branch = fields.Char(string="Remote Repo Branch")
 

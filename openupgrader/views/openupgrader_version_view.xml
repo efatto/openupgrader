@@ -28,9 +28,11 @@
         <field name="arch" type="xml">
             <form string="Odoo Version">
                 <header>
-                    <button name="button_create_venv"
+                    <button
+                        name="button_create_venv"
                         type="object"
-                        string="Create virtualenv"/>
+                        string="Create virtualenv"
+                    />
                 </header>
                 <sheet string="Odoo Version">
                     <group>

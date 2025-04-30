@@ -1,9 +1,11 @@
 import base64
+import logging
 
 import yaml
-from odoo import fields, models, _
+
+from odoo import _, fields, models
 from odoo.exceptions import UserError
-import logging
+
 logger = logging.getLogger(__name__)
 
 
@@ -21,8 +23,7 @@ class AutoInstallModule(models.Model):
         string="Module Installed (alternative of name)",
     )
     module_installed_name = fields.Char(
-        related="module_installed_id.name",
-        string="Module Installed Name"
+        related="module_installed_id.name", string="Module Installed Name"
     )
     module_to_install_name = fields.Text(
         string="Technical Name of Module To Install",
@@ -73,7 +74,8 @@ class OpenupgraderConfig(models.Model):
     sql_update_command_ids = fields.One2many(
         comodel_name="sql.update.command",
         inverse_name="openupgrade_config_id",
-        string="SQL update commands")
+        string="SQL update commands",
+    )
     module_auto_install_ids = fields.One2many(
         comodel_name="auto.install.module",
         inverse_name="openupgrade_config_id",
@@ -103,11 +105,13 @@ class OpenupgraderConfig(models.Model):
         string="Module to uninstall before migration",
     )
 
-    _sql_constraints = [(
-        'version_unique',
-        'unique(odoo_version_id)',
-        _('This odoo version already exists!')
-    )]
+    _sql_constraints = [
+        (
+            "version_unique",
+            "unique(odoo_version_id)",
+            _("This odoo version already exists!"),
+        )
+    ]
 
     def button_load_repos(self):
         op_repo_obj = self.env["openupgrader.repo"]
@@ -116,37 +120,62 @@ class OpenupgraderConfig(models.Model):
         remotes, python_version = self.load_repos_file(version)
         odoo_version_id = odoo_version_obj.search([("name", "=", version)])
         if not odoo_version_id:
-            odoo_version_obj.create([{
-                "name": version,
-                "python_version": python_version,
-            }])
+            odoo_version_obj.create(
+                [
+                    {
+                        "name": version,
+                        "python_version": python_version,
+                    }
+                ]
+            )
         else:
             odoo_version_id.python_version = python_version
-        op_repo = op_repo_obj.search([
-            ("odoo_version_id", "=", odoo_version_id.id),
-        ])
+        op_repo = op_repo_obj.search(
+            [
+                ("odoo_version_id", "=", odoo_version_id.id),
+            ]
+        )
         if op_repo:
             remote_repo_names = op_repo.remote_repo_ids.mapped("name")
-            op_repo.write({
-                "remote_repo_ids": [
-                    (0, 0, {
-                        "name": remote,
-                        "remote_url": remotes[remote].split(" ")[0],
-                        "remote_branch": remotes[remote].split(" ")[1] or version,
-                    }) for remote in remotes if remote not in remote_repo_names
-                ]
-            })
+            op_repo.write(
+                {
+                    "remote_repo_ids": [
+                        (
+                            0,
+                            0,
+                            {
+                                "name": remote,
+                                "remote_url": remotes[remote].split(" ")[0],
+                                "remote_branch": remotes[remote].split(" ")[1]
+                                or version,
+                            },
+                        )
+                        for remote in remotes
+                        if remote not in remote_repo_names
+                    ]
+                }
+            )
         else:
-            op_repo_obj.create([{
-                "odoo_version_id": odoo_version_id.id,
-                "remote_repo_ids": [
-                    (0, 0, {
-                        "name": remote,
-                        "remote_url": remotes[remote].split(" ")[0],
-                        "remote_branch": remotes[remote].split(" ")[1] or version,
-                    }) for remote in remotes
+            op_repo_obj.create(
+                [
+                    {
+                        "odoo_version_id": odoo_version_id.id,
+                        "remote_repo_ids": [
+                            (
+                                0,
+                                0,
+                                {
+                                    "name": remote,
+                                    "remote_url": remotes[remote].split(" ")[0],
+                                    "remote_branch": remotes[remote].split(" ")[1]
+                                    or version,
+                                },
+                            )
+                            for remote in remotes
+                        ],
+                    }
                 ]
-            }])
+            )
 
     def load_repos_file(self, version):
         if not self.repos_file:
@@ -159,10 +188,10 @@ class OpenupgraderConfig(models.Model):
             logger.info(exc)
         remotes = {}
         python_version = False
-        for repo in repos.get('repositories'):
-            if repo.get('version') == version:
-                remotes = repo.get('remotes')
-                python_version = repo.get('python_version')
+        for repo in repos.get("repositories"):
+            if repo.get("version") == version:
+                remotes = repo.get("remotes")
+                python_version = repo.get("python_version")
         return remotes, python_version
 
     def button_load_config(self):
@@ -173,56 +202,78 @@ class OpenupgraderConfig(models.Model):
             if receipt.get("sql_update_commands"):
                 sql_update_commands = receipt.get("sql_update_commands")
                 self.sql_update_command_ids = [
-                    (0, 0, {
-                        "name": sql_update_command,
-                        "sequence": i,
-                    })
+                    (
+                        0,
+                        0,
+                        {
+                            "name": sql_update_command,
+                            "sequence": i,
+                        },
+                    )
                     for i, sql_update_command in enumerate(sql_update_commands)
-                    if sql_update_command not in self.sql_update_command_ids
-                    .mapped("name")
+                    if sql_update_command
+                    not in self.sql_update_command_ids.mapped("name")
                 ]
             if receipt.get("auto_install"):
                 auto_install = receipt.get("auto_install")
                 self.module_auto_install_ids = [
-                    (0, 0, {
-                        "name": module.split(" ")[0],
-                        "sequence": i,
-                        "module_to_install_name": module.split(" ")[1],
-                    })
+                    (
+                        0,
+                        0,
+                        {
+                            "name": module.split(" ")[0],
+                            "sequence": i,
+                            "module_to_install_name": module.split(" ")[1],
+                        },
+                    )
                     for i, module in enumerate(auto_install)
                     if module not in self.module_auto_install_ids.mapped("name")
                 ]
             if receipt.get("delete"):
                 delete = receipt.get("delete")
                 self.module_to_delete_after_migration_ids = [
-                    (0, 0, {
-                        "name": module,
-                    })
+                    (
+                        0,
+                        0,
+                        {
+                            "name": module,
+                        },
+                    )
                     for module in delete
-                    if module not in self.module_to_delete_after_migration_ids
-                    .mapped("name")
+                    if module
+                    not in self.module_to_delete_after_migration_ids.mapped("name")
                 ]
             if receipt.get("uninstall_after_migration_to_this_version"):
                 uninstall_after = receipt.get(
-                    "uninstall_after_migration_to_this_version")
+                    "uninstall_after_migration_to_this_version"
+                )
                 self.module_to_uninstall_after_migration_ids = [
-                    (0, 0, {
-                        "name": module,
-                    })
+                    (
+                        0,
+                        0,
+                        {
+                            "name": module,
+                        },
+                    )
                     for module in uninstall_after
-                    if module not in self.module_to_uninstall_after_migration_ids
-                    .mapped("name")
+                    if module
+                    not in self.module_to_uninstall_after_migration_ids.mapped("name")
                 ]
             if receipt.get("uninstall_before_migration_to_next_version"):
                 uninstall_before = receipt.get(
-                    "uninstall_before_migration_to_next_version")
+                    "uninstall_before_migration_to_next_version"
+                )
                 self.module_to_uninstall_before_migration_ids = [
-                    (0, 0, {
-                        "name": module,
-                    })
+                    (
+                        0,
+                        0,
+                        {
+                            "name": module,
+                        },
+                    )
                     for module in uninstall_before
-                    if module not in self.module_to_uninstall_before_migration_ids
-                    .mapped("name")
+                    if module
+                    not in self.module_to_uninstall_before_migration_ids.mapped("name")
                 ]
 
     def load_config_file(self):
