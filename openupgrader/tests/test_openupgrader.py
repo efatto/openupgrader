@@ -60,12 +60,9 @@ class Openupgrader(SavepointCase):
             "openupgrade_repo": "git@github.com:efatto/OpenUpgrade.git",
             "odoo_repo": "git@github.com:OCA/OCB.git",
         })
-        if not cls.openupgrader_migration.check_venv(cls.from_version):
-            cls.from_version_id.button_create_venv()
-        if not cls.openupgrader_migration.check_venv(cls.middle_version):
-            cls.middle_version_id.button_create_venv()
-        if not cls.openupgrader_migration.check_venv(cls.to_version):
-            cls.to_version_id.button_create_venv()
+        cls.from_version_id.button_create_venv()
+        cls.middle_version_id.button_create_venv()
+        cls.to_version_id.button_create_venv()
 
     def test_openupgrader(self):
         self.openupgrader_migration.button_restore_db()

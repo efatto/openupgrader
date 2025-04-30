@@ -301,7 +301,7 @@ class OpenupgraderMigration(models.Model):
 
     def button_stop_odoo(self):
         process = Popen([
-            "pgrep -a python | grep openupgrade12.0"
+            f"pgrep -a python | grep {self.env.cr.dbname}_migrate"
         ], shell=True, stdout=PIPE)
         has_stdout = True
         pids = []
