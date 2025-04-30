@@ -13,14 +13,18 @@ class Openupgrader(SavepointCase):
         cls.from_version = "12.0"
         cls.middle_version = "13.0"
         cls.to_version = "14.0"
-        for version in [cls.from_version, cls.middle_version, cls.to_version]:
+        cls.future_version = "15.0"
+        for version in [
+            cls.from_version, cls.middle_version, cls.to_version, cls.future_version
+        ]:
             version_id = cls.version_obj.search([
                 ("name", "=", version),
             ])
             if not version_id:
                 cls.version_obj.create({
                     "name": version,
-                    "python_version": "3.8.16" if version == "14.0" else "3.7.16",
+                    "python_version": "3.8.16" if version in ["14.0", "15.0"]
+                    else "3.7.16",
                 })
         cls.from_version_id = cls.version_obj.search([
             ("name", "=", cls.from_version),
@@ -30,6 +34,9 @@ class Openupgrader(SavepointCase):
         ])
         cls.to_version_id = cls.version_obj.search([
             ("name", "=", cls.to_version),
+        ])
+        cls.future_version_id = cls.version_obj.search([
+            ("name", "=", cls.future_version),
         ])
         for version in [cls.from_version, cls.middle_version, cls.to_version]:
             openupgrader_config = cls.env["openupgrader.config"].search([
@@ -100,4 +107,23 @@ class Openupgrader(SavepointCase):
         self.assertEqual(
             self.openupgrader_migration.next_version_id,
             self.to_version_id,
+        )
+        self.openupgrader_migration.button_update_current_version()
+        self.openupgrader_migration.button_ready_for_migration()
+        self.assertEqual(
+            self.openupgrader_migration.state,
+            "ready_for_migration"
+        )
+        self.openupgrader_migration.button_do_migration()
+        self.assertEqual(
+            self.openupgrader_migration.state,
+            "done"
+        )
+        self.assertEqual(
+            self.openupgrader_migration.current_version_id,
+            self.to_version_id,
+        )
+        self.assertEqual(
+            self.openupgrader_migration.next_version_id,
+            self.future_version_id,
         )

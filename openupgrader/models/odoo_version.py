@@ -119,6 +119,10 @@ class OdooVersion(models.Model):
                 if odoo_is_openupgrade
                 else f'cd {odoo_path} && ../../bin/pip install -e . ',
             ]
+            if not odoo_is_openupgrade:
+                commands.append(
+                    f'bin/pip install -r {openupgrade_path}/requirements.txt'
+                )
             for command in commands:
                 subprocess.Popen(
                     command,
@@ -129,9 +133,11 @@ class OdooVersion(models.Model):
             extra_paths = ['%s/addons-extra' % venv_path, '%s/repos' % venv_path]
             for path in extra_paths:
                 if not os.path.isdir(path):
-                    process = subprocess.Popen('mkdir %s' % path, cwd=venv_path,
-                                               shell=True)
-                    process.wait()
+                    subprocess.Popen(
+                        'mkdir %s' % path,
+                        cwd=venv_path,
+                        shell=True
+                    ).wait()
             migration_log_path = os.path.join(venv_path, 'migration.log')
             if os.path.isfile(migration_log_path):
                 os.remove(migration_log_path)
