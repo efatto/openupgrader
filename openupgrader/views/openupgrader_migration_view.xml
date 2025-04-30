@@ -106,12 +106,12 @@
                                 type="object"
                                 string="Do migration"
                             />
-                            <button
-                                name="button_done"
-                                type="object"
-                                states="db_migrated"
-                                string="Complete migration"
-                            />
+<!--                            <button-->
+<!--                                name="button_done"-->
+<!--                                type="object"-->
+<!--                                states="db_migrated"-->
+<!--                                string="Complete migration"-->
+<!--                            />-->
                         </group>
                     </group>
                     <group>
