@@ -275,7 +275,9 @@ class OpenupgraderMigration(models.Model):
             env=subprocess_env,
             shell=True)
         self.odoo_pid = process.pid
-        process.wait()
+        if update:
+            # only updating the process will end automatically
+            process.wait()
         if not update and not extra_command:
             time.sleep(1)
             self.odoo_migrated_state = "running"
