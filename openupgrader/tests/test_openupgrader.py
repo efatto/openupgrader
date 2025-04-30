@@ -2,6 +2,7 @@ import base64
 
 from odoo.modules import get_module_resource
 from odoo.tests.common import SavepointCase
+from odoo.release import version_info
 
 
 class Openupgrader(SavepointCase):
@@ -9,10 +10,10 @@ class Openupgrader(SavepointCase):
     def setUpClass(cls):
         super().setUpClass()
         cls.version_obj = cls.env["odoo.version"]
-        cls.from_version = "12.0"
-        cls.middle_version = "13.0"
-        cls.to_version = "14.0"
-        cls.future_version = "15.0"
+        cls.from_version = ".".join(str(v) for v in version_info[:2])
+        cls.middle_version = str(float(cls.from_version) + 1)
+        cls.to_version = str(float(cls.middle_version) + 1)
+        cls.future_version = str(float(cls.to_version) + 1)
         for version in [
             cls.from_version,
             cls.middle_version,
