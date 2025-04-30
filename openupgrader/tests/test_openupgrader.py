@@ -74,7 +74,15 @@ class Openupgrader(SavepointCase):
             self.openupgrader_migration.state,
             "db_restored"
         )
-        self.openupgrader_migration.button_update_from_version()
+        self.assertEqual(
+            self.openupgrader_migration.current_version_id,
+            self.from_version_id,
+        )
+        self.assertEqual(
+            self.openupgrader_migration.next_version_id,
+            self.middle_version_id,
+        )
+        self.openupgrader_migration.button_update_current_version()
         self.openupgrader_migration.button_ready_for_migration()
         self.assertEqual(
             self.openupgrader_migration.state,
@@ -83,6 +91,13 @@ class Openupgrader(SavepointCase):
         self.openupgrader_migration.button_do_migration()
         self.assertEqual(
             self.openupgrader_migration.state,
-            "db_migrated"
+            "done"
         )
-        # check actual migrated version is the middle one
+        self.assertEqual(
+            self.openupgrader_migration.current_version_id,
+            self.middle_version_id,
+        )
+        self.assertEqual(
+            self.openupgrader_migration.next_version_id,
+            self.to_version_id,
+        )
