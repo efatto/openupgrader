@@ -10,6 +10,7 @@
     "website": "https://github.com/sergiocorato/efatto",
     "depends": [
         "mail",
+        "python_venv",
     ],
     "data": [
         "security/ir.model.access.csv",
@@ -19,10 +20,6 @@
         "views/openupgrader_version_view.xml",
     ],
     "installable": True,
-    "demo": [
-        "demo/openupgrader_config.yml",
-        "demo/openupgrader_repos.yml",
-    ],
     "external_dependencies": {
         "python": ["odoorpc", ],
     }

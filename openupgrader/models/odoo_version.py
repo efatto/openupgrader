@@ -1,6 +1,7 @@
 import os
 import subprocess
 
+from odoo.addons.python_venv.python_venv import _create_python_venv
 from odoo import api, fields, models
 
 
@@ -48,59 +49,12 @@ class OdooVersion(models.Model):
     def button_create_venv(self):
         self.ensure_one()
         openupgrader_migration_id = self.env["openupgrader.migration"].search([])
-        # if len(openupgrader_migration) != 1:
+        # if not openupgrader_migration_id:
         #     raise UserError(_("Missing Openupgrader Migration record!"))
-        # if len(openupgrader_migration) > 1:
-        #     raise UserError(_("Only one Openupgrader Migration record can be created!"))
-        self.create_venv_git_version(self.name, openupgrader_migration_id)
-
-    def _get_env_for_subprocess(self, folder):
-        env_for_subprocess = os.environ.copy()
-        env_for_subprocess["VIRTUAL_ENV"] = folder
-        env_for_subprocess["PYTHONPATH"] = folder
-        env_for_subprocess["PATH"] = ":".join([
-            folder,
-            os.path.join(folder, "bin"),
-            "/bin/pip",
-            "/usr/bin",
-        ])
-        env_for_subprocess["PWD"] = folder
-        python_root = os.path.join(
-            folder,
-            "lib",
-            f"python{'.'.join(self.python_version.split('.')[:2])}")
-        if os.path.isdir(python_root):
-            env_for_subprocess["LIBRARY_ROOTS"] = python_root
-        return env_for_subprocess
-
-    def _create_python_venv(self, venv_path, py_version):
-        # create virtualenv
-        subprocess_env = self._get_env_for_subprocess(venv_path)
-        if not os.path.isdir(venv_path):
-            subprocess.Popen([f'mkdir -p {venv_path}'], shell=True).wait()
-            # do not recreate virtualenv as it regenerate file with bug in split()
-            # ../openupgrade10.0/lib/python2.7/site-packages/pip/_internal/vcs/git.py
-        subprocess.Popen([f'pyenv install -s {py_version}'], shell=True).wait()
-        pyenv_path = os.path.join(
-            os.path.expanduser("~"),
-            ".pyenv",
-            "versions",
-            py_version,
-        )
-        subprocess.Popen(
-            [f'{pyenv_path}/bin/pip install virtualenv'],
-            cwd=venv_path,
-            env=subprocess_env,
-            shell=True).wait()
-        subprocess.Popen(
-            [f'{pyenv_path}/bin/virtualenv '
-             f'-p {pyenv_path}/bin/python {venv_path}'],
-            cwd=venv_path,
-            env=subprocess_env,
-            shell=True).wait()
-        return subprocess_env
-
-    def create_venv_git_version(self, version_name, openupgrader_migration_id):
+        # if len(openupgrader_migration_id) > 1:
+        #     raise UserError(_(
+        #     "Only one Openupgrader Migration record can be created!"))
+        version_name = self.name
         openupgrader_repo_obj = self.env["openupgrader.repo"]
         version_repos = openupgrader_repo_obj.search([
             ("odoo_version_id", "=", version_name),
@@ -127,7 +81,7 @@ class OdooVersion(models.Model):
         if openupgrader_migration_id:
             venv_path = os.path.join(
                 openupgrader_migration_id.folder, f"openupgrade{version_name}")
-            subprocess_env = self._create_python_venv(venv_path, self.python_version)
+            subprocess_env = _create_python_venv(venv_path, self.python_version)
             openupgrade_path = os.path.join(venv_path, "odoo")
             odoo_path = openupgrade_path if odoo_is_openupgrade else (
                 os.path.join(venv_path, "repos", 'odoo'))
@@ -166,6 +120,10 @@ class OdooVersion(models.Model):
                 if odoo_is_openupgrade
                 else f'cd {odoo_path} && ../../bin/pip install -e . ',
             ]
+            if not odoo_is_openupgrade:
+                commands.append(
+                    f'bin/pip install -r {openupgrade_path}/requirements.txt'
+                )
             for command in commands:
                 subprocess.Popen(
                     command,
@@ -176,9 +134,11 @@ class OdooVersion(models.Model):
             extra_paths = ['%s/addons-extra' % venv_path, '%s/repos' % venv_path]
             for path in extra_paths:
                 if not os.path.isdir(path):
-                    process = subprocess.Popen('mkdir %s' % path, cwd=venv_path,
-                                               shell=True)
-                    process.wait()
+                    subprocess.Popen(
+                        'mkdir %s' % path,
+                        cwd=venv_path,
+                        shell=True
+                    ).wait()
             migration_log_path = os.path.join(venv_path, 'migration.log')
             if os.path.isfile(migration_log_path):
                 os.remove(migration_log_path)

@@ -41,7 +41,7 @@
                         <group>
                             <field name="from_version_id" />
                             <field name="to_version_id" />
-                            <field name="migrated_version_id" />
+                            <field name="current_version_id" />
                             <field name="next_version_id" />
                             <field name="db_name" />
                             <field name="db_user" />
@@ -79,7 +79,7 @@
                             <button name="button_restore_db"
                                 type="object"
                                 string="Prepare migration restoring db"/>
-                            <button name="button_update_from_version"
+                            <button name="button_update_current_version"
                                 type="object"
                                 string="Prepare migration updating only"/>
                             <button name="button_ready_for_migration"

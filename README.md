@@ -1,8 +1,8 @@
 
 <!-- /!\ Non OCA Context : Set here the badge of your runbot / runboat instance. -->
-[![Pre-commit Status](https://github.com/sergiocorato/efatto/actions/workflows/pre-commit.yml/badge.svg?branch=12.0)](https://github.com/sergiocorato/efatto/actions/workflows/pre-commit.yml?query=branch%3A12.0)
-[![Build Status](https://github.com/sergiocorato/efatto/actions/workflows/test.yml/badge.svg?branch=12.0)](https://github.com/sergiocorato/efatto/actions/workflows/test.yml?query=branch%3A12.0)
-[![codecov](https://codecov.io/gh/sergiocorato/efatto/branch/12.0/graph/badge.svg)](https://codecov.io/gh/sergiocorato/efatto)
+[![Pre-commit Status](https://github.com/efatto/openupgrader/actions/workflows/pre-commit.yml/badge.svg?branch=12.0)](https://github.com/efatto/openupgrader/actions/workflows/pre-commit.yml?query=branch%3A12.0)
+[![Build Status](https://github.com/efatto/openupgrader/actions/workflows/test.yml/badge.svg?branch=12.0)](https://github.com/efatto/openupgrader/actions/workflows/test.yml?query=branch%3A12.0)
+[![codecov](https://codecov.io/gh/efatto/openupgrader/branch/12.0/graph/badge.svg)](https://codecov.io/gh/efatto/openupgrader)
 <!-- /!\ Non OCA Context : Set here the badge of your translation instance. -->
 
 <!-- /!\ do not modify above this line -->

@@ -1,7 +1,7 @@
 import base64
 
 import yaml
-from odoo import fields, models, _, api
+from odoo import fields, models, _
 from odoo.exceptions import UserError
 import logging
 logger = logging.getLogger(__name__)
