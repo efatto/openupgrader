@@ -7,7 +7,7 @@
     "author": "Sergio Corato",
     "license": "AGPL-3",
     "summary": "Migrate Odoo.",
-    "website": "https://github.com/sergiocorato/efatto",
+    "website": "https://github.com/efatto/openupgrader",
     "depends": [
         "mail",
         "python_venv",
@@ -21,6 +21,8 @@
     ],
     "installable": True,
     "external_dependencies": {
-        "python": ["odoorpc", ],
-    }
+        "python": [
+            "odoorpc",
+        ],
+    },
 }

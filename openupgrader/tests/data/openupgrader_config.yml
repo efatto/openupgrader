@@ -1,58 +1,58 @@
-'7.0':
+"7.0":
   - sql_update_commands:
   - auto_install:
   - delete:
   - uninstall_after_migration_to_this_version:
   - uninstall_before_migration_to_next_version:
-'8.0':
+"8.0":
   - sql_update_commands:
   - auto_install:
   - delete:
   - uninstall_after_migration_to_this_version:
   - uninstall_before_migration_to_next_version:
-'9.0':
+"9.0":
   - sql_update_commands:
   - auto_install:
   - delete:
   - uninstall_after_migration_to_this_version:
   - uninstall_before_migration_to_next_version:
-'10.0':
+"10.0":
   - sql_update_commands:
   - auto_install:
   - delete:
   - uninstall_after_migration_to_this_version:
   - uninstall_before_migration_to_next_version:
-'11.0':
+"11.0":
   - sql_update_commands:
   - auto_install:
   - delete:
   - uninstall_after_migration_to_this_version:
   - uninstall_before_migration_to_next_version:
-'12.0':
+"12.0":
   - sql_update_commands:
   - auto_install:
   - delete:
   - uninstall_after_migration_to_this_version:
   - uninstall_before_migration_to_next_version:
-'13.0':
+"13.0":
   - sql_update_commands:
   - auto_install:
   - delete:
   - uninstall_after_migration_to_this_version:
   - uninstall_before_migration_to_next_version:
-'14.0':
+"14.0":
   - sql_update_commands:
   - auto_install:
   - delete:
   - uninstall_after_migration_to_this_version:
   - uninstall_before_migration_to_next_version:
-'15.0':
+"15.0":
   - sql_update_commands:
   - auto_install:
   - delete:
   - uninstall_after_migration_to_this_version:
   - uninstall_before_migration_to_next_version:
-'16.0':
+"16.0":
   - sql_update_commands:
   - auto_install:
   - delete:

@@ -7,7 +7,7 @@
     "author": "Sergio Corato",
     "license": "AGPL-3",
     "summary": "Add method to create custom Python virtualenv.",
-    "website": "https://github.com/sergiocorato/efatto",
+    "website": "https://github.com/efatto/openupgrader",
     "depends": [],
     "data": [],
     "installable": True,
