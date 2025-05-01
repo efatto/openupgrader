@@ -47,7 +47,10 @@
                             <field name="db_name" />
                             <field name="db_user" />
                             <field name="db_password" password="1" />
+                            <field name="pg_host" />
                             <field name="pg_user" />
+                            <field name="pg_password" password="1" />
+                            <field name="pg_password_var" />
                             <field name="openupgrade_repo" />
                             <field
                                 name="odoo_repo"

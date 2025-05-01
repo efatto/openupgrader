@@ -42,8 +42,22 @@ class OpenupgraderMigration(models.Model):
     db_user = fields.Char(string="Odoo user", default="admin")
     db_password = fields.Char(string="Odoo password", default="admin")
     pg_user = fields.Char(
-        string="Postgres user", default=lambda self: config.get("db_user", "odoo")
+        string="Postgres user",
+        default=lambda self: config.get("db_user", "odoo"),
+        help="Set the user or a environment variable (like $POSTGRES_USER",
     )
+    pg_password = fields.Char(
+        string="Postgres password",
+        help="Set the password directly, alternative to pg_password_var",
+    )
+    pg_password_var = fields.Char(
+        string="Postgres password environment variable",
+        help="Set the environment variable (like $POSTGRES_PASSWORD), alternative to "
+             "setting the password directly",
+    )
+    pg_host = fields.Char(
+        string="Postgres Host",
+        default=lambda self: config.get("db_host", "db"))
     verify_ssl = fields.Boolean()
     address = fields.Char("Odoo URL")
     local = fields.Boolean("Odoo is in local network")
@@ -405,8 +419,11 @@ class OpenupgraderMigration(models.Model):
     def dump_database(self, version):
         process = Popen(
             [
-                f"pg_dump -Fc -O -p {self.db_port} -d {self.env.cr.dbname} > "
-                f"{os.path.join(self.folder, 'database.%s.sql' % version)}"
+                "pg_dump -Fc -O "
+                f"'postgresql://{self.pg_user}:"
+                f"{self.pg_password_var or self.pg_password}@"
+                f"{self.pg_host}:{self.db_port}/{self.env.cr.dbname}' "
+                f"> {os.path.join(self.folder, 'database.%s.sql' % version)}"
             ],
             shell=True,
         )
@@ -427,8 +444,11 @@ class OpenupgraderMigration(models.Model):
 
         Popen(
             [
-                f"pg_restore -p {self.db_port} -d {self.env.cr.dbname}_migrate "
-                f"{dump_file_sql}"
+                f"pg_restore "
+                f"'postgresql://{self.pg_user}:"
+                f"{self.pg_password_var or self.pg_password}@"
+                f"{self.pg_host}:{self.db_port}/{self.env.cr.dbname}' "
+                f"-d {self.env.cr.dbname}_migrate {dump_file_sql}"
             ],
             shell=True,
         ).wait()
