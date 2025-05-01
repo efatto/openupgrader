@@ -1,6 +1,6 @@
 repositories:
   - version: "16.0"
-    python_version: "3.10.6"
+    python_version: "3.8.16"
     remotes:
       openupgrader: https://github.com/efatto/openupgrader.git 16.0
       l10n-italy: https://github.com/OCA/l10n-italy.git 16.0
