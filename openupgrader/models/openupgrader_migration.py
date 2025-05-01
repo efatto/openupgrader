@@ -39,8 +39,8 @@ class OpenupgraderMigration(models.Model):
     db_name = fields.Char(
         string="Database name", default=lambda self: self.env.cr.dbname
     )
-    db_user = fields.Char(string="Database user", default="admin")
-    db_password = fields.Char(string="Database password", default="admin")
+    db_user = fields.Char(string="Odoo user", default="admin")
+    db_password = fields.Char(string="Odoo password", default="admin")
     pg_user = fields.Char(
         string="Postgres user", default=lambda self: config.get("db_user", "odoo")
     )
