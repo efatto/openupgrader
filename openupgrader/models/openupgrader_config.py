@@ -59,9 +59,9 @@ class OpenupgraderConfig(models.Model):
     odoo_version_id = fields.Many2one(
         comodel_name="odoo.version",
         string="Odoo version",
-        default=lambda self: self.env["odoo.version"].search([
-            ("name", "=", '.'.join(str(v) for v in version_info[:2]))
-        ])
+        default=lambda self: self.env["odoo.version"].search(
+            [("name", "=", ".".join(str(v) for v in version_info[:2]))]
+        ),
     )
     config_file = fields.Binary(
         string="Config file (yml)",

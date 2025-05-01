@@ -606,9 +606,7 @@ class OpenupgraderMigration(models.Model):
                 shell=True,
             ).wait()
         Popen(
-            [
-                f"git pull && git reset --hard origin/{repo_version}"
-            ],
+            [f"git pull && git reset --hard origin/{repo_version}"],
             cwd=repo_path,
             shell=True,
         ).wait()
@@ -618,7 +616,7 @@ class OpenupgraderMigration(models.Model):
         for _root, dirs, _files in os.walk(repo_path):
             for d in dirs:
                 if d not in [".git", "setup"]:
-                    process = Popen(
+                    Popen(
                         [
                             f"cp -rf {repo_path}/{d} "
                             f"{os.path.join(venv_path, 'addons-extra')}"

@@ -1,8 +1,8 @@
 import base64
 
 from odoo.modules import get_module_resource
-from odoo.tests.common import SavepointCase
 from odoo.release import version_info
+from odoo.tests.common import SavepointCase
 
 
 class Openupgrader(SavepointCase):
