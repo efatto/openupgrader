@@ -31,7 +31,7 @@ class Openupgrader(SavepointCase):
                         "name": version,
                         "python_version": "3.8.16"
                         if version in ["14.0", "15.0"]
-                        else "3.10.16",
+                        else "3.10.6",
                     }
                 )
         cls.from_version_id = cls.version_obj.search(
