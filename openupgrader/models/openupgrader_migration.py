@@ -558,25 +558,33 @@ class OpenupgraderMigration(models.Model):
         repo_path = os.path.join(
             self.folder, f"openupgrade{version_name}", 'repos', repo_name)
         if not os.path.isdir(repo_path):
-            Popen([
-                f'git clone --single-branch -b {repo_version} {repo_url} --depth 1 '
-                f'{repo_path}'
-            ], shell=True).wait()
-        Popen([
-            f'cd {repo_path} && git fetch --all && git reset --hard '
-            f'origin/{repo_version}'
-        ], shell=True).wait()
+            Popen(
+                [
+                    f"git clone --single-branch -b {repo_version} {repo_url} --depth 1 "
+                    f"{repo_path}"
+                ],
+                shell=True,
+            ).wait()
+        Popen(
+            [
+                f"git pull && git reset --hard origin/{repo_version}"
+            ],
+            cwd=repo_path,
+            shell=True,
+        ).wait()
         # copy modules to create a unique addons path, unless it's odoo repo
         if repo_name == "odoo":
             return
         for root, dirs, files in os.walk(repo_path):
             for d in dirs:
-                if d not in ['.git', 'setup']:
-                    process = Popen([
-                        f"cp -rf {repo_path}/{d} "
-                        f"{os.path.join(venv_path, 'addons-extra')}"
-                    ], shell=True)
-                    process.wait()
+                if d not in [".git", "setup"]:
+                    process = Popen(
+                        [
+                            f"cp -rf {repo_path}/{d} "
+                            f"{os.path.join(venv_path, 'addons-extra')}"
+                        ],
+                        shell=True,
+                    ).wait()
             break
 
     def auto_install_modules(self, version):
