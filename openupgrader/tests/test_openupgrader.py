@@ -89,8 +89,8 @@ class Openupgrader(SavepointCase):
             {
                 "from_version_id": cls.from_version_id.id,
                 "to_version_id": cls.to_version_id.id,
-                "openupgrade_repo": "git@github.com:efatto/OpenUpgrade.git",
-                "odoo_repo": "git@github.com:OCA/OCB.git",
+                "openupgrade_repo": "https://github.com/efatto/OpenUpgrade.git",
+                "odoo_repo": "https://github.com/OCA/OCB.git",
                 "pg_host": "localhost",
                 "pg_password_var": "$POSTGRES_PASSWORD",
             }
