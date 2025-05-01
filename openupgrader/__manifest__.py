@@ -23,6 +23,7 @@
     "external_dependencies": {
         "python": [
             "odoorpc",
+            "PyYAML",
         ],
     },
 }
