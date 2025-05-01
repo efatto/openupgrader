@@ -405,7 +405,7 @@ class OpenupgraderMigration(models.Model):
     def dump_database(self, version):
         process = Popen(
             [
-                f"pg_dump -O -p {self.db_port} -d {self.env.cr.dbname} > "
+                f"pg_dump -Fc -O -p {self.db_port} -d {self.env.cr.dbname} > "
                 f"{os.path.join(self.folder, 'database.%s.sql' % version)}"
             ],
             shell=True,
@@ -427,8 +427,8 @@ class OpenupgraderMigration(models.Model):
 
         Popen(
             [
-                f"cat {dump_file_sql} | psql -U {self.pg_user} -p {self.db_port} "
-                f"-d {self.env.cr.dbname}_migrate"
+                f"pg_restore -p {self.db_port} -d {self.env.cr.dbname}_migrate "
+                f"{dump_file_sql}"
             ],
             shell=True,
         ).wait()
