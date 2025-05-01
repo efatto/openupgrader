@@ -607,9 +607,9 @@ class OpenupgraderMigration(models.Model):
             ).wait()
         Popen(
             [
-                f"cd {repo_path} && git fetch --all && git reset --hard "
-                f"origin/{repo_version}"
+                f"git pull && git reset --hard origin/{repo_version}"
             ],
+            cwd=repo_path,
             shell=True,
         ).wait()
         # copy modules to create a unique addons path, unless it's odoo repo
@@ -624,8 +624,7 @@ class OpenupgraderMigration(models.Model):
                             f"{os.path.join(venv_path, 'addons-extra')}"
                         ],
                         shell=True,
-                    )
-                    process.wait()
+                    ).wait()
             break
 
     def auto_install_modules(self, version):
