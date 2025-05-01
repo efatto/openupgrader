@@ -2,20 +2,16 @@
 
 # A tool to automate OpenUpgrade to upgrade Odoo in an easy way
 <!-- /!\ Non OCA Context : Set here the badge of your runbot / runboat instance. -->
-[![Pre-commit Status](https://github.com/efatto/openupgrader/actions/workflows/pre-commit.yml/badge.svg?branch=14.0)](https://github.com/efatto/openupgrader/actions/workflows/pre-commit.yml?query=branch%3A14.0)
-[![Build Status](https://github.com/efatto/openupgrader/actions/workflows/test.yml/badge.svg?branch=14.0)](https://github.com/efatto/openupgrader/actions/workflows/test.yml?query=branch%3A14.0)
-[![codecov](https://codecov.io/gh/efatto/openupgrader/branch/14.0/graph/badge.svg)](https://codecov.io/gh/efatto/openupgrader)
+[![Pre-commit Status](https://github.com/efatto/openupgrader/actions/workflows/pre-commit.yml/badge.svg?branch=15.0)](https://github.com/efatto/openupgrader/actions/workflows/pre-commit.yml?query=branch%3A15.0)
+[![Build Status](https://github.com/efatto/openupgrader/actions/workflows/test.yml/badge.svg?branch=15.0)](https://github.com/efatto/openupgrader/actions/workflows/test.yml?query=branch%3A15.0)
+[![codecov](https://codecov.io/gh/efatto/openupgrader/branch/15.0/graph/badge.svg)](https://codecov.io/gh/efatto/openupgrader)
 <!-- /!\ Non OCA Context : Set here the badge of your translation instance. -->
 
 <!-- /!\ do not modify above this line -->
 
-<<<<<<< before updating
 # A tool to automate OpenUpgrade to upgrade Odoo in an easy way
 
 Modules for extend and fix use of Odoo
-=======
-Modules to upgrade Odoo in-place
->>>>>>> after updating
 
 <!-- /!\ do not modify below this line -->
 

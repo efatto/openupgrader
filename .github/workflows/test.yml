@@ -3,11 +3,11 @@ name: tests
 on:
   pull_request:
     branches:
-      - "14.0*"
+      - "15.0*"
   push:
     branches:
-      - "14.0"
-      - "14.0-ocabot-*"
+      - "15.0"
+      - "15.0-ocabot-*"
 
 jobs:
   unreleased-deps:
@@ -37,7 +37,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - container: ghcr.io/oca/oca-ci/py3.6-ocb14.0:latest
+          - container: ghcr.io/oca/oca-ci/py3.8-ocb15.0:latest
             name: test with OCB
             makepot: "false"
     services:
@@ -65,8 +65,6 @@ jobs:
         run: oca_init_test_database
       - name: Run tests
         run: oca_run_tests
-<<<<<<< before updating
-=======
       - name: Upload screenshots from JS tests
         uses: actions/upload-artifact@v4
         if: ${{ failure() }}
@@ -77,4 +75,3 @@ jobs:
       - name: Update .pot files
         run: oca_export_and_push_pot https://x-access-token:${{ secrets.GIT_PUSH_TOKEN }}@github.com/${{ github.repository }}
         if: ${{ matrix.makepot == 'true' && github.event_name == 'push' && github.repository_owner == 'efatto' }}
->>>>>>> after updating

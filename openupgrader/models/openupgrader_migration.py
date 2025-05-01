@@ -306,15 +306,16 @@ class OpenupgraderMigration(models.Model):
         else:
             self._start_odoo(version_id, update, migrate, extra_command)
 
-    def _start_odoo_thread(
-        self, version_id, update=False, migrate=False, extra_command=""
-    ):
-        with api.Environment.manage():
-            new_cr = self.pool.cursor()
-            self = self.with_env(self.env(cr=new_cr))
-            self._start_odoo(version_id, update, migrate, extra_command)
-            new_cr.commit()
-            new_cr.close()
+    def _start_odoo_thread(self, version_id, update=False, extra_command=""):
+        new_cr = self.pool.cursor()
+        self = self.with_env(self.env(cr=new_cr))
+        state, migration_errors = self._start_odoo(version_id, update, extra_command)
+        logger.info("Current migration log is: %s" % self.migration_error_log)
+        logger.info("Migration error log is: %s" % str(migration_errors))
+        self.flush()
+        new_cr.commit()
+        new_cr.close()
+        return state, migration_errors
 
     def _start_odoo(  # noqa C901
         self, version_id, update=False, migrate=False, extra_command=""
