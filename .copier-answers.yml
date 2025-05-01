@@ -1,5 +1,5 @@
 # Do NOT update manually; changes here will be overwritten by Copier
-_commit: v1.32
+_commit: v1.33
 _src_path: https://github.com/OCA/oca-addons-repo-template.git
 ci: GitHub
 convert_readme_fragments_to_markdown: false
@@ -13,7 +13,7 @@ github_enable_stale_action: false
 github_enforce_dev_status_compatibility: true
 include_wkhtmltopdf: false
 odoo_test_flavor: OCB
-odoo_version: 14.0
+odoo_version: 15.0
 org_name: Sergio Corato
 org_slug: efatto
 rebel_module_groups: []

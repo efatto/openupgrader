@@ -106,7 +106,6 @@ class OpenupgraderConfig(models.Model):
     )
     python_version = fields.Char(required=True, default="3.7.16")
     odoo_is_openupgrade = fields.Boolean(
-        string="Odoo is Openupgrade",
         compute="_compute_odoo_is_openupgrade",
         store=True,
     )
@@ -151,9 +150,7 @@ class OpenupgraderConfig(models.Model):
     config_file = fields.Binary(
         string="Config file (yml)",
     )
-    config_file_name = fields.Char(
-        string="Config file name",
-    )
+    config_file_name = fields.Char()
     sql_after_migration_command_ids = fields.One2many(
         comodel_name="sql.update.command",
         inverse_name="openupgrade_after_config_id",

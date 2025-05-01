@@ -1,3 +1,35 @@
+"18.0":
+  - python_version: "3.10.12"
+  - pip_requirements:
+      - setuptools
+      - git+https://github.com/OCA/openupgradelib.git@master#egg=openupgradelib
+      - odoorpc
+      - pysftp
+      - PyYAML
+  - odoo: https://github.com/OCA/OCB.git 18.0
+  - odoo_pip_requirements:
+      - module_change_auto_install
+  - sql_update_commands:
+  - auto_install:
+  - delete:
+  - uninstall_after_migration_to_this_version:
+  - uninstall_before_migration_to_next_version:
+"17.0":
+  - python_version: "3.10.12"
+  - pip_requirements:
+      - setuptools
+      - git+https://github.com/OCA/openupgradelib.git@master#egg=openupgradelib
+      - odoorpc
+      - pysftp
+      - PyYAML
+  - odoo: https://github.com/OCA/OCB.git 17.0
+  - odoo_pip_requirements:
+      - module_change_auto_install
+  - sql_update_commands:
+  - auto_install:
+  - delete:
+  - uninstall_after_migration_to_this_version:
+  - uninstall_before_migration_to_next_version:
 "16.0":
   - python_version: "3.10.12"
   - pip_requirements:
