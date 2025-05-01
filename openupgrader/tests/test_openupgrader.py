@@ -91,6 +91,8 @@ class Openupgrader(SavepointCase):
                 "to_version_id": cls.to_version_id.id,
                 "openupgrade_repo": "git@github.com:efatto/OpenUpgrade.git",
                 "odoo_repo": "git@github.com:OCA/OCB.git",
+                "pg_host": "localhost",
+                "pg_password_var": "$POSTGRES_PASSWORD",
             }
         )
         cls.from_version_id.button_create_venv()

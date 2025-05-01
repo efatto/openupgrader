@@ -417,13 +417,16 @@ class OpenupgraderMigration(models.Model):
         process.wait()
 
     def dump_database(self, version):
+        connection_string = (
+            f"postgresql://{self.pg_user}:"
+            f"{self.pg_password_var or self.pg_password}@"
+            f"{self.pg_host}:{self.db_port}/{self.env.cr.dbname}"
+        )
+        logger.info("Connection string to pg: %s" % connection_string)
         process = Popen(
             [
-                "pg_dump -Fc -O "
-                f"'postgresql://{self.pg_user}:"
-                f"{self.pg_password_var or self.pg_password}@"
-                f"{self.pg_host}:{self.db_port}/{self.env.cr.dbname}' "
-                f"> {os.path.join(self.folder, 'database.%s.sql' % version)}"
+                f"pg_dump -Fc -O {connection_string} "
+                f"> {os.path.join(self.folder, f'database.{version}.sql')}"
             ],
             shell=True,
         )
@@ -447,8 +450,8 @@ class OpenupgraderMigration(models.Model):
                 f"pg_restore "
                 f"'postgresql://{self.pg_user}:"
                 f"{self.pg_password_var or self.pg_password}@"
-                f"{self.pg_host}:{self.db_port}/{self.env.cr.dbname}' "
-                f"-d {self.env.cr.dbname}_migrate {dump_file_sql}"
+                f"{self.pg_host}:{self.db_port}/{self.env.cr.dbname}_migrate' "
+                f" {dump_file_sql}"
             ],
             shell=True,
         ).wait()
