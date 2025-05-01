@@ -444,14 +444,15 @@ class OpenupgraderMigration(models.Model):
         )
         if not os.path.isfile(dump_file_sql):
             raise UserError(_("Dump sql file %s not found!") % dump_file_sql)
-
+        connection_string = (
+            f"postgresql://{self.pg_user}:"
+            f"{self.pg_password_var or self.pg_password}@"
+            f"{self.pg_host}:{self.db_port}/{self.env.cr.dbname}_migrate"
+        )
+        logger.info("Connection string to pg: %s" % connection_string)
         Popen(
             [
-                f"pg_restore "
-                f"'postgresql://{self.pg_user}:"
-                f"{self.pg_password_var or self.pg_password}@"
-                f"{self.pg_host}:{self.db_port}/{self.env.cr.dbname}_migrate' "
-                f" {dump_file_sql}"
+                f"pg_restore {connection_string} {dump_file_sql}"
             ],
             shell=True,
         ).wait()
