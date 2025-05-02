@@ -644,7 +644,7 @@ class OpenupgraderMigration(models.Model):
                 shell=True,
             ).wait()
         Popen(
-            [f"git pull && git reset --hard origin/{repo_version}"],
+            ["git pull --ff-only"],
             cwd=repo_path,
             shell=True,
         ).wait()
