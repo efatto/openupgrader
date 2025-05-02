@@ -437,18 +437,18 @@ class OpenupgraderMigration(models.Model):
     def restore_db(self):
         Popen(
             [
-                f"export PGPORT={self.db_port}",
-                f"export PGHOST={self.pg_host}",
-                f"export PGPASSWORD={self.pg_password_var or self.pg_password}",
+                f"export PGPORT={self.db_port} && "
+                f"export PGHOST={self.pg_host} && "
+                f"export PGPASSWORD={self.pg_password_var or self.pg_password} && "
                 f"dropdb -U {self.pg_user} {self.env.cr.dbname}_migrate",
             ],
             shell=True
         ).wait()
         Popen(
             [
-                f"export PGPORT={self.db_port}",
-                f"export PGHOST={self.pg_host}",
-                f"export PGPASSWORD={self.pg_password_var or self.pg_password}",
+                f"export PGPORT={self.db_port} && "
+                f"export PGHOST={self.pg_host} && "
+                f"export PGPASSWORD={self.pg_password_var or self.pg_password} && "
                 f"createdb -U {self.pg_user} {self.env.cr.dbname}_migrate",
             ],
             shell=True
