@@ -25,3 +25,7 @@ class OpenupgraderRepo(models.Model):
         inverse_name="openupgrader_repo_id",
         string="Remote",
     )
+    pip_requirement_ids = fields.Many2many(
+        comodel_name="pip.requirement",
+        string="Pip requirements",
+    )

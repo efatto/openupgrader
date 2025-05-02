@@ -40,6 +40,13 @@ class ModuleName(models.Model):
     name = fields.Text(string="Module Technical Name")
 
 
+class PipRequirement(models.Model):
+    _name = "pip.requirement"
+    _description = "Pip requirement"
+
+    name = fields.Text(string="Pip requirement")
+
+
 class SqlUpdateCommand(models.Model):
     _name = "sql.update.command"
     _description = "SQL Update Command"
@@ -121,7 +128,7 @@ class OpenupgraderConfig(models.Model):
         op_repo_obj = self.env["openupgrader.repo"]
         odoo_version_obj = self.env["odoo.version"]
         version = self.odoo_version_id.name
-        remotes, python_version = self.load_repos_file(version)
+        remotes, pip_names, python_version = self.load_repos_file(version)
         odoo_version_id = odoo_version_obj.search([("name", "=", version)])
         if not odoo_version_id:
             odoo_version_obj.create(
@@ -141,6 +148,7 @@ class OpenupgraderConfig(models.Model):
         )
         if op_repo:
             remote_repo_names = op_repo.remote_repo_ids.mapped("name")
+            pip_requirements = op_repo.pip_requirement_ids.mapped("name")
             op_repo.write(
                 {
                     "remote_repo_ids": [
@@ -156,7 +164,18 @@ class OpenupgraderConfig(models.Model):
                         )
                         for remote in remotes
                         if remote not in remote_repo_names
-                    ]
+                    ],
+                    "pip_requirement_ids": [
+                        (
+                            0,
+                            0,
+                            {
+                                "name": pip_name,
+                            },
+                        )
+                        for pip_name in pip_names
+                        if pip_name not in pip_requirements
+                    ],
                 }
             )
         else:
@@ -177,6 +196,16 @@ class OpenupgraderConfig(models.Model):
                             )
                             for remote in remotes
                         ],
+                        "pip_requirement_ids": [
+                            (
+                                0,
+                                0,
+                                {
+                                    "name": pip_name,
+                                },
+                            )
+                            for pip_name in pip_names
+                        ]
                     }
                 ]
             )
@@ -191,12 +220,14 @@ class OpenupgraderConfig(models.Model):
         except yaml.YAMLError as exc:
             logger.info(exc)
         remotes = {}
+        pip_names = []
         python_version = False
         for repo in repos.get("repositories"):
             if repo.get("version") == version:
                 remotes = repo.get("remotes")
+                pip_names = repo.get("pip_requirements")
                 python_version = repo.get("python_version")
-        return remotes, python_version
+        return remotes, pip_names, python_version
 
     def button_load_config(self):
         version = self.odoo_version_id.name

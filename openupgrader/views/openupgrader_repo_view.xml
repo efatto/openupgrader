@@ -6,6 +6,7 @@
         <field name="arch" type="xml">
             <search string="OpenUpgrader Repo Search">
                 <field name="odoo_version_id" />
+                <field name="pip_requirement_ids" />
                 <field name="remote_repo_ids" />
             </search>
         </field>
@@ -17,7 +18,8 @@
         <field name="arch" type="xml">
             <tree>
                 <field name="odoo_version_id" />
-                <field name="remote_repo_ids" />
+                <field name="pip_requirement_ids" widget="many2many_tags" />
+                <field name="remote_repo_ids" widget="many2many_tags" />
             </tree>
         </field>
     </record>
@@ -32,6 +34,7 @@
                 <sheet string="OpenUpgrader Repo">
                     <group>
                         <field name="odoo_version_id" />
+                        <field name="pip_requirement_ids" />
                     </group>
                     <group>
                         <field name="remote_repo_ids">
