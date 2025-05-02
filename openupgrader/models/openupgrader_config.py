@@ -231,11 +231,11 @@ class OpenupgraderConfig(models.Model):
 
     def button_load_config(self):
         version = self.odoo_version_id.name
-        receipts = self.load_config_file()
-        receipt_data = receipts[version]
-        for receipt in receipt_data:
-            if receipt.get("sql_update_commands"):
-                sql_update_commands = receipt.get("sql_update_commands")
+        recipes = self.load_config_file()
+        recipe_data = recipes[version]
+        for recipe in recipe_data:
+            if recipe.get("sql_update_commands"):
+                sql_update_commands = recipe.get("sql_update_commands")
                 self.sql_update_command_ids = [
                     (
                         0,
@@ -249,8 +249,8 @@ class OpenupgraderConfig(models.Model):
                     if sql_update_command
                     not in self.sql_update_command_ids.mapped("name")
                 ]
-            if receipt.get("auto_install"):
-                auto_install = receipt.get("auto_install")
+            if recipe.get("auto_install"):
+                auto_install = recipe.get("auto_install")
                 self.module_auto_install_ids = [
                     (
                         0,
@@ -264,8 +264,8 @@ class OpenupgraderConfig(models.Model):
                     for i, module in enumerate(auto_install)
                     if module not in self.module_auto_install_ids.mapped("name")
                 ]
-            if receipt.get("delete"):
-                delete = receipt.get("delete")
+            if recipe.get("delete"):
+                delete = recipe.get("delete")
                 self.module_to_delete_after_migration_ids = [
                     (
                         0,
@@ -278,8 +278,8 @@ class OpenupgraderConfig(models.Model):
                     if module
                     not in self.module_to_delete_after_migration_ids.mapped("name")
                 ]
-            if receipt.get("uninstall_after_migration_to_this_version"):
-                uninstall_after = receipt.get(
+            if recipe.get("uninstall_after_migration_to_this_version"):
+                uninstall_after = recipe.get(
                     "uninstall_after_migration_to_this_version"
                 )
                 self.module_to_uninstall_after_migration_ids = [
@@ -294,8 +294,8 @@ class OpenupgraderConfig(models.Model):
                     if module
                     not in self.module_to_uninstall_after_migration_ids.mapped("name")
                 ]
-            if receipt.get("uninstall_before_migration_to_next_version"):
-                uninstall_before = receipt.get(
+            if recipe.get("uninstall_before_migration_to_next_version"):
+                uninstall_before = recipe.get(
                     "uninstall_before_migration_to_next_version"
                 )
                 self.module_to_uninstall_before_migration_ids = [

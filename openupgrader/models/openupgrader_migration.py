@@ -44,7 +44,7 @@ class OpenupgraderMigration(models.Model):
     pg_user = fields.Char(
         string="Postgres user",
         default=lambda self: config.get("db_user", "odoo"),
-        help="Set the user or a environment variable (like $POSTGRES_USER",
+        help="Set the user or a environment variable (like $POSTGRES_USER)",
     )
     pg_password = fields.Char(
         string="Postgres password",
@@ -83,19 +83,19 @@ class OpenupgraderMigration(models.Model):
     # self.fixes = openupgrade_fixes.Fixes()
     from_version_id = fields.Many2one(
         comodel_name="odoo.version",
-        string="From Odoo Version",
+        string="From version",
     )
     to_version_id = fields.Many2one(
         comodel_name="odoo.version",
-        string="To Odoo Version",
+        string="To version",
     )
     current_version_id = fields.Many2one(
         comodel_name="odoo.version",
-        string="Current Odoo migrated version",
+        string="Current migrated version",
     )
     next_version_id = fields.Many2one(
         comodel_name="odoo.version",
-        string="Next Odoo version to be migrated",
+        string="Next version to be migrated",
     )
     filestore = fields.Boolean()
     migrate_ddt = fields.Boolean()
@@ -126,7 +126,7 @@ class OpenupgraderMigration(models.Model):
             ("running", "Running"),
             ("stopped", "Stopped"),
         ],
-        string="Migrated Odoo state",
+        string="Migrated state",
         help="Migrated Odoo is running or stopped",
         default="stopped",
     )
@@ -600,8 +600,8 @@ class OpenupgraderMigration(models.Model):
                         elif "Initiating shutdown" in contents:
                             self.state = "db_migrated"
 
-    def sql_fixes(self, receipt):
-        for part in receipt:
+    def sql_fixes(self, recipe):
+        for part in recipe:
             bash_commands = part.get("sql_commands", [])
             for bash_command in bash_commands:
                 command = [

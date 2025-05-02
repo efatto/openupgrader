@@ -65,7 +65,7 @@
                             <button
                                 name="button_start_odoo"
                                 type="object"
-                                string="Start Odoo (from version)"
+                                string="Start Odoo (current migrated version)"
                             />
                             <button
                                 name="button_stop_odoo"

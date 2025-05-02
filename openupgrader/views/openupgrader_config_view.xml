@@ -79,7 +79,7 @@
                                     ('odoo_version_id', '=', False),
                                     ('config_file', '=', False),
                                 ]}"
-                                    string="Load receipt"
+                                    string="Load recipe"
                                 />
                             </group>
                         </group>
