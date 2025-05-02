@@ -48,6 +48,7 @@
                             <field name="db_user" />
                             <field name="db_password" password="1" />
                             <field name="pg_host" />
+                            <field name="pg_options" />
                             <field name="pg_user" />
                             <field name="pg_password" password="1" />
                             <field name="pg_password_var" />

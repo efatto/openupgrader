@@ -779,7 +779,7 @@ msgstr "Questa versione Odoo esiste già!"
 #. module: openupgrader
 #: model:ir.model.fields,field_description:openupgrader.field_openupgrader_migration__to_version_id
 msgid "To Version"
-msgstr "Alla version"
+msgstr "Alla versione"
 
 #. module: openupgrader
 #: model:ir.model.fields,field_description:openupgrader.field_openupgrader_migration__verify_ssl
