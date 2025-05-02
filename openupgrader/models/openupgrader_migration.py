@@ -299,6 +299,7 @@ class OpenupgraderMigration(models.Model):
         if update:
             bash_command += "-u all --stop "
         subprocess_env = _get_env_for_subprocess(folder, version.python_version)
+        logger.info(bash_command)
         process = Popen(
             bash_command, cwd=folder, stdout=PIPE, env=subprocess_env, shell=True
         )
@@ -424,7 +425,6 @@ class OpenupgraderMigration(models.Model):
             f"{self.pg_password_var or self.pg_password}@"
             f"{self.pg_host}:{self.db_port}/{self.env.cr.dbname}"
         )
-        logger.info("Connection string to pg: %s" % connection_string)
         process = Popen(
             [
                 f"pg_dump -Fc -O {connection_string} "
