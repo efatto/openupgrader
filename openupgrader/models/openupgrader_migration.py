@@ -636,6 +636,7 @@ class OpenupgraderMigration(models.Model):
             self.folder, f"openupgrade{version_name}", "repos", repo_name
         )
         if not os.path.isdir(repo_path):
+            # todo private repos need credentials
             Popen(
                 [
                     f"git clone --single-branch -b {repo_version} {repo_url} --depth 1 "

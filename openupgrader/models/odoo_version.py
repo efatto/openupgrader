@@ -45,14 +45,22 @@ class OdooVersion(models.Model):
             else:
                 record.odoo_is_openupgrade = False
 
+    def button_clean_venv(self):
+        # Remove folder and re-create a clean virtual environment
+        self.ensure_one()
+        openupgrader_migration_id = self.env["openupgrader.migration"].search([])
+        openupgrader_migration_id.ensure_one()
+        version_name = self.name
+        if openupgrader_migration_id:
+            venv_path = os.path.join(
+                openupgrader_migration_id.folder, f"openupgrade{version_name}"
+            )
+        self.button_create_venv()
+
     def button_create_venv(self):
         self.ensure_one()
         openupgrader_migration_id = self.env["openupgrader.migration"].search([])
-        # if not openupgrader_migration_id:
-        #     raise UserError(_("Missing Openupgrader Migration record!"))
-        # if len(openupgrader_migration_id) > 1:
-        #     raise UserError(_(
-        #     "Only one Openupgrader Migration record can be created!"))
+        openupgrader_migration_id.ensure_one()
         version_name = self.name
         openupgrader_repo_obj = self.env["openupgrader.repo"]
         version_repos = openupgrader_repo_obj.search(
@@ -60,8 +68,7 @@ class OdooVersion(models.Model):
                 ("odoo_version_id", "=", version_name),
             ]
         )
-        # if len(version_repos) != 1:
-        #     raise UserError(_("Version repositories not found!"))
+        version_repos.ensure_one()
         if openupgrader_migration_id:
             openupgrader_migration_id.write(
                 {
@@ -74,8 +81,7 @@ class OdooVersion(models.Model):
                 ("odoo_version_id", "=", version_name),
             ]
         )
-        # if len(config_ids) != 1:
-        #     raise UserError(_("OpenUpgrader config not found!"))
+        config_ids.ensure_one()
         if openupgrader_migration_id:
             openupgrader_migration_id.write(
                 {
