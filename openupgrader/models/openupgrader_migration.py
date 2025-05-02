@@ -733,17 +733,22 @@ class OpenupgraderMigration(models.Model):
         logger.info(_("Modules after: %s" % msg_modules_after))
 
     @staticmethod
-    def uninst(module_to_uninstall, module_to_unistall_id, success):
+    def uninst(module_to_unistall_id, success):
         try:
             module_to_unistall_id.button_immediate_uninstall()
             module_to_unistall_id.unlink()
-            logger.info(_("Module %s uninstalled" % module_to_uninstall))
+            logger.info(_("Module %s uninstalled" % module_to_unistall_id.name))
             success = 5
         except Exception as e:
             logger.info(
                 _(
                     "Module %s not uninstalled for %s, trying %s/%s times."
-                    % (module_to_uninstall, str(e).replace("\n", ""), success + 1, 5)
+                    % (
+                        module_to_unistall_id.name,
+                        str(e).replace("\n", ""),
+                        success + 1,
+                        5,
+                    )
                 )
             )
             time.sleep(10)
@@ -756,19 +761,15 @@ class OpenupgraderMigration(models.Model):
         to_remove_modules = module_obj.search([("state", "=", "to remove")])
         for module_to_remove in to_remove_modules:
             module_to_remove.button_uninstall_cancel()
-        state = odoo_client.env.modules(module)
-        if state:
+        module_id = module_obj.search([("name", "=", module)])
+        if module_id:
             if install:
                 odoo_client.env.install(module)
             elif (
-                state.get("installed", False)
-                or state.get("to upgrade", False)
-                or state.get("uninstallable")
+                module_id.state in ["installed", "to upgrade", "uninstallable"]
             ):
-                module_id = module_obj.search([("name", "=", module)])
-                if module_id:
-                    res = 0
-                    while res < 5:
-                        res = self.uninst(module, module_id, res)
-                else:
-                    logger.info(_("Module %s not found" % module))
+                res = 0
+                while res < 5:
+                    res = self.uninst(module_id, res)
+        else:
+            logger.info(_("Module %s not found" % module))
