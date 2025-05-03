@@ -74,25 +74,6 @@ class OdooVersion(models.Model):
             ]
         )
         version_repos.ensure_one()
-        if openupgrader_migration_id:
-            openupgrader_migration_id.write(
-                {
-                    "repo_ids": [(6, 0, version_repos.ids)],
-                }
-            )
-        openupgrader_config_obj = self.env["openupgrader.config"]
-        config_ids = openupgrader_config_obj.search(
-            [
-                ("odoo_version_id", "=", version_name),
-            ]
-        )
-        config_ids.ensure_one()
-        if openupgrader_migration_id:
-            openupgrader_migration_id.write(
-                {
-                    "config_ids": [(6, 0, config_ids.ids)],
-                }
-            )
         odoo_is_openupgrade = self.odoo_is_openupgrade
         # Odoo is OpenUpgrade until v. 13.0, from v. 14.0 Odoo is in ./<version/odoo
         # install odoo Openupgrade repo, from v. 14.0 it contains only migration script

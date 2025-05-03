@@ -103,20 +103,6 @@ class OpenupgraderMigration(models.Model):
     )
     filestore = fields.Boolean()
     migrate_ddt = fields.Boolean()
-    repo_ids = fields.Many2many(
-        comodel_name="openupgrader.repo",
-        relation="openupgrader_migration_repo_rel",
-        column1="migration_id",
-        column2="repo_id",
-        string="Repositories",
-    )
-    config_ids = fields.Many2many(
-        comodel_name="openupgrader.config",
-        relation="openupgrader_migration_config_rel",
-        column1="migration_id",
-        column2="config_id",
-        string="Openupgrader config",
-    )
     openupgrade_repo = fields.Char(
         string="OpenUpgrade Repository",
         default="git@github.com:efatto/OpenUpgrade.git",

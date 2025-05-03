@@ -145,8 +145,6 @@
                     </group>
                     <group>
                         <field name="disabled_cron_ids" />
-                        <field name="repo_ids" />
-                        <field name="config_ids" />
                     </group>
                 </sheet>
             </form>
