@@ -144,7 +144,7 @@ class OdooVersion(models.Model):
                 else f"cd {odoo_path} && ../../bin/pip install -e . ",
             ]
             commands += [
-                "bin/pip install %s" % name
+                "bin/pip install '%s'" % name
                 for name in version_repos.pip_requirement_ids.mapped("name")
             ]
             if not odoo_is_openupgrade:
