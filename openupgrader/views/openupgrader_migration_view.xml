@@ -70,6 +70,8 @@
                     <button
                         name="button_ready_for_migration"
                         type="object"
+                        class="oe_highlight"
+                        attrs="{'invisible': [('state', '!=', 'db_restored')]}"
                         string="Step 3: prepare migration"
                         help="Do some useful stuff before migration"
                     />

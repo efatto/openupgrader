@@ -179,6 +179,7 @@ class OpenupgraderMigration(models.Model):
             )
             time.sleep(5)
             return client
+        return None
 
     @staticmethod
     def _get_opener(verify_ssl=True, sessions=True):
@@ -238,12 +239,11 @@ class OpenupgraderMigration(models.Model):
             return folder
         return False
 
-    def start_odoo(self, version, update=False, extra_command="", wait=False):
+    def start_odoo(self, version, update=False, extra_command=""):
         """
         :param version: odoo version to start (8.0, 9.0, 10.0, ...)
         :param update: if True odoo will be updated with -u all and stopped
         :param extra_command: command that will be passed after executable
-        :param wait: if True process will wait for execution
         :return: Odoo instance in "self.odoo_client" if not updated, else nothing
         """
         version_name = version.name
@@ -396,8 +396,8 @@ class OpenupgraderMigration(models.Model):
         )
         if not os.path.isdir(filestore_path):
             os.makedirs(filestore_path, exist_ok=True)
-        dump_folder = os.path.join(self.path, "filestore")
-        dump_file = os.path.join(self.path, "filestore.tar")
+        dump_folder = os.path.join(self.folder, "filestore")
+        dump_file = os.path.join(self.folder, "filestore.tar")
         if os.path.isdir(dump_folder):
             self.move_filestore(from_folder=dump_folder, to_version_id=to_version_id)
             return
@@ -724,14 +724,18 @@ class OpenupgraderMigration(models.Model):
             state = ["to remove", "to install"]
         odoo_client = self.odoo_connect()
         module_obj = odoo_client.env["ir.module.module"]
-        modules = module_obj.search([("state", "in", state)])
+        modules = module_obj.browse(
+            module_obj.search([("state", "in", state)])
+        )
         msg_modules = ""
         msg_modules_after = ""
         if modules:
             msg_modules = str([x.name for x in modules])
         for module in modules:
             module.button_uninstall_cancel()
-        modules_after = module_obj.search([("state", "=", "to upgrade")])
+        modules_after = module_obj.browse(
+            module_obj.search([("state", "=", "to upgrade")])
+        )
         if modules_after:
             msg_modules_after = str([x.name for x in modules_after])
         logger.info(_("Modules: %s" % msg_modules))
