@@ -136,21 +136,24 @@ class OdooVersion(models.Model):
                 )
             commands = [
                 'bin/pip install "setuptools<58.0.0"',
-                "bin/pip install -r "
-                f"{openupgrade_path if odoo_is_openupgrade else odoo_path}"
-                "/requirements.txt",
-                f"cd {openupgrade_path} && ../bin/pip install -e . "
-                if odoo_is_openupgrade
-                else f"cd {odoo_path} && ../../bin/pip install -e . ",
             ]
             commands += [
                 "bin/pip install '%s'" % name
                 for name in version_repos.pip_requirement_ids.mapped("name")
             ]
-            if not odoo_is_openupgrade:
-                commands.append(
-                    f"bin/pip install -r {openupgrade_path}/requirements.txt"
-                )
+            if odoo_is_openupgrade:
+                for c in [
+                    f"cd {openupgrade_path} && ../bin/pip install -e . ",
+                    f"bin/pip install -r {odoo_path}/requirements.txt",
+                ]:
+                    commands.append(c)
+            else:
+                for c in [
+                    f"cd {odoo_path} && ../../bin/pip install -e . ",
+                    f"bin/pip install -r {openupgrade_path}/requirements.txt",
+                    f"bin/pip install -r {odoo_path}/requirements.txt",
+                ]:
+                    commands.append(c)
             for command in commands:
                 subprocess.Popen(
                     command,
