@@ -34,35 +34,49 @@
                     <button
                         name="button_restore_db_update"
                         type="object"
-                        string="Prepare migration restoring db and updating"
+                        string="Step 1 and 2: restore and update"
+                        help="Restore and update db of current version before migration, alternative to use the two separated buttons"
                     />
                     <button
                         name="button_restore_db"
                         type="object"
                         class="oe_highlight"
                         attrs="{'invisible': [('state', '!=', 'created_venv')]}"
-                        string="Prepare migration restoring db"
+                        string="Step 1: restore"
+                        help="Restore db of current version before migration"
                     />
                     <button
                         name="button_restore_db"
                         type="object"
                         attrs="{'invisible': [('state', '=', 'created_venv')]}"
-                        string="Prepare migration restoring db"
+                        string="Step 1: restore"
+                        help="Restore db of current version before migration"
                     />
                     <button
                         name="button_update_current_version"
                         type="object"
-                        string="Prepare migration updating only"
+                        class="oe_highlight"
+                        attrs="{'invisible': [('state', '!=', 'db_restored')]}"
+                        string="Step 2: update"
+                        help="Update db of current version before migration"
+                    />
+                    <button
+                        name="button_update_current_version"
+                        type="object"
+                        attrs="{'invisible': [('state', '=', 'db_restored')]}"
+                        string="Step 2: update"
+                        help="Update db of current version before migration"
                     />
                     <button
                         name="button_ready_for_migration"
                         type="object"
-                        string="Complete prepare of migration"
+                        string="Step 3: prepare migration"
+                        help="Do some useful stuff before migration"
                     />
                     <button
                         name="button_do_migration"
                         type="object"
-                        string="Do migration"
+                        string="Step 4: migrate"
                     />
                     <field
                         name="state"
