@@ -284,7 +284,7 @@ class OpenupgraderMigration(models.Model):
             f"{extra_addons_path}"
             f" {extra_command} "
             f"--db_user={self.pg_user} "
-            f"--db_password={self.pg_password_var or self.pg_password} "
+            f"--db_password={self.pg_password_var or self.pg_password or ''} "
             f"--db_port={self.db_port} "
             f"--xmlrpc-port={self.xmlrpc_port} "
             f"--logfile={folder}/migration.log "
