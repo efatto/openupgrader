@@ -31,6 +31,39 @@
             <form string="OpenUpgrader migration">
                 <header>
                     <button name="button_draft" type="object" string="Set to draft" />
+                    <button
+                        name="button_restore_db_update"
+                        type="object"
+                        string="Prepare migration restoring db and updating"
+                    />
+                    <button
+                        name="button_restore_db"
+                        type="object"
+                        class="oe_highlight"
+                        attrs="{'invisible': [('state', '!=', 'created_venv')]}"
+                        string="Prepare migration restoring db"
+                    />
+                    <button
+                        name="button_restore_db"
+                        type="object"
+                        attrs="{'invisible': [('state', '=', 'created_venv')]}"
+                        string="Prepare migration restoring db"
+                    />
+                    <button
+                        name="button_update_current_version"
+                        type="object"
+                        string="Prepare migration updating only"
+                    />
+                    <button
+                        name="button_ready_for_migration"
+                        type="object"
+                        string="Complete prepare of migration"
+                    />
+                    <button
+                        name="button_do_migration"
+                        type="object"
+                        string="Do migration"
+                    />
                     <field
                         name="state"
                         widget="statusbar"
@@ -44,14 +77,8 @@
                             <field name="to_version_id" />
                             <field name="current_version_id" />
                             <field name="next_version_id" />
-                            <field name="db_name" />
-                            <field name="db_user" />
-                            <field name="db_password" password="1" />
-                            <field name="pg_host" />
-                            <field name="pg_options" />
-                            <field name="pg_user" />
-                            <field name="pg_password" password="1" />
-                            <field name="pg_password_var" />
+                            <field name="filestore" />
+                            <field name="folder" />
                             <field name="openupgrade_repo" />
                             <field
                                 name="odoo_repo"
@@ -61,8 +88,24 @@
                         <group>
                             <field name="db_port" />
                             <field name="xmlrpc_port" />
-                            <field name="folder" />
-                            <field name="odoo_migrated_state" />
+                            <field name="db_name" />
+                            <field name="db_user" />
+                            <field name="db_password" password="1" />
+                            <field name="pg_host" />
+                            <field name="pg_options" />
+                            <field name="pg_user" />
+                            <field name="pg_password" password="1" />
+                            <field name="pg_password_var" />
+                        </group>
+                        <group>
+                            <field name="odoo_migrated_state"/>
+                        </group>
+                        <group colspan="2" col="3">
+                            <button
+                                name="button_refresh_state"
+                                type="object"
+                                string="Refresh state"
+                            />
                             <button
                                 name="button_start_odoo"
                                 type="object"
@@ -73,49 +116,6 @@
                                 type="object"
                                 string="Stop Odoo"
                             />
-                        </group>
-                    </group>
-                    <group>
-                        <group>
-                            <field name="filestore" />
-                        </group>
-                        <group>
-                            <button
-                                name="button_refresh_state"
-                                type="object"
-                                string="Refresh state"
-                            />
-                            <button
-                                name="button_restore_db_update"
-                                type="object"
-                                string="Prepare migration restoring db and updating"
-                            />
-                            <button
-                                name="button_restore_db"
-                                type="object"
-                                string="Prepare migration restoring db"
-                            />
-                            <button
-                                name="button_update_current_version"
-                                type="object"
-                                string="Prepare migration updating only"
-                            />
-                            <button
-                                name="button_ready_for_migration"
-                                type="object"
-                                string="Complete prepare of migration"
-                            />
-                            <button
-                                name="button_do_migration"
-                                type="object"
-                                string="Do migration"
-                            />
-<!--                            <button-->
-<!--                                name="button_done"-->
-<!--                                type="object"-->
-<!--                                states="db_migrated"-->
-<!--                                string="Complete migration"-->
-<!--                            />-->
                         </group>
                     </group>
                     <group>
