@@ -102,9 +102,9 @@ class OdooVersion(models.Model):
             else:
                 subprocess.Popen(
                     [
-                        f"git reset --hard origin/{version_name}",
-                        "git pull",
-                        f"git reset --hard origin/{version_name}",
+                        # f"git reset --hard origin/{version_name}",
+                        "git pull --rebase",
+                        # f"git reset --hard origin/{version_name}",
                     ],
                     cwd=openupgrade_path,
                     env=subprocess_env,  # forse qui non serve
