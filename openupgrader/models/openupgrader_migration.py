@@ -244,8 +244,8 @@ class OpenupgraderMigration(models.Model):
         :param version: odoo version to start (8.0, 9.0, 10.0, ...)
         :param update: if True odoo will be updated with -u all and stopped
         :param extra_command: command that will be passed after executable
-        :return: Odoo instance in "self.odoo_client" if not updated, else nothing
-        """
+        :return: null
+        """ # FIXME non trova gli addons di odoo nel docker!
         version_name = version.name
         if self.odoo_migrated_state == "running":
             self.button_stop_odoo()
@@ -403,25 +403,39 @@ class OpenupgraderMigration(models.Model):
             return
         elif os.path.isfile(dump_file):
             os.rename(dump_file, f"{self.folder}/filestore.{from_version_id.name}.tar")
-        dump_file = os.path.join(self.folder, f"filestore.{from_version_id.name}.tar")
         filestore_db_path = os.path.join(filestore_path, self.env.cr.dbname)
         if not os.path.isdir(filestore_db_path):
             os.mkdir(filestore_db_path)
         process = Popen(
-            [f"tar -zxvf {dump_file} --strip-components=1 -C {filestore_db_path}/"],
+            [
+                f"tar -zxvf filestore.{from_version_id.name}.tar --strip-components=1 "
+                f"-C {filestore_db_path}/",
+            ],
+            cwd=self.folder,
             shell=True,
         )
         process.wait()
 
     def dump_filestore(self, version):
-        process = Popen(
+        filestore_path = os.path.join(self.folder, version, "data_dir", "filestore")
+        if version == self.from_version_id.name:
+            # get the filestore from running production instance of Odoo
+            initial_path = os.path.join(
+                self.folder,
+                version,
+                "data_dir",
+                "filestore",
+            )
+            if os.path.isdir(initial_path):
+                filestore_path = initial_path
+        Popen(
             [
-                "cd %s/%s/data_dir/filestore && tar -zcvf %s/filestore.%s.tar %s"
-                % (self.folder, version, self.folder, version, self.env.cr.dbname)
+                f"tar -zcvf {os.path.join(self.folder, f'filestore.{version}.tar')} "
+                f"{self.env.cr.dbname}",
             ],
+            cwd=filestore_path,
             shell=True,
-        )
-        process.wait()
+        ).wait()
 
     def dump_database(self, version):
         connection_string = (
@@ -497,6 +511,7 @@ class OpenupgraderMigration(models.Model):
             # already present
             self.dump_database(self.current_version_id.name)
             if self.filestore:
+                self.dump_filestore(self.current_version_id.name)
                 self.restore_filestore(self.current_version_id, self.current_version_id)
             self.restore_db()
         self.state = "db_restored"
@@ -569,8 +584,8 @@ class OpenupgraderMigration(models.Model):
             self.install_uninstall_module("l10n_it_intrastat")
             self.button_stop_odoo()
         self.dump_database(self.next_version_id.name)
-        # if self.filestore:
-        #     self.dump_filestore(to_version_id.name)
+        if self.filestore:
+            self.dump_filestore(self.current_version_id.name)
         logger.info(
             _(
                 f"Migration done from version {self.current_version_id.name} "
