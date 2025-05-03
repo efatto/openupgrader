@@ -650,7 +650,7 @@ class OpenupgraderMigration(models.Model):
                 shell=True,
             ).wait()
         Popen(
-            ["git pull --ff-only"],
+            ["git pull --rebase"],
             cwd=repo_path,
             shell=True,
         ).wait()
