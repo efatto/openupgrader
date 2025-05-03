@@ -37,9 +37,10 @@
                 <sheet string="Odoo Version">
                     <group>
                         <field name="name" />
+                        <field name="python_version" />
                     </group>
                     <group>
-                        <field name="python_version" />
+                        <field name="openupgrader_repo_ids"/>
                     </group>
                 </sheet>
             </form>

@@ -36,6 +36,11 @@ class OdooVersion(models.Model):
         compute="_compute_odoo_is_openupgrade",
         store=True,
     )
+    openupgrader_repo_ids = fields.One2many(
+        comodel_name="openupgrader.repo",
+        inverse_name="odoo_version_id",
+        string="OpenUpgrade Repositories",
+    )
 
     @api.depends("name")
     def _compute_odoo_is_openupgrade(self):
@@ -161,12 +166,11 @@ class OdooVersion(models.Model):
                     env=subprocess_env,
                     shell=True,
                 ).wait()
-            extra_paths = ["%s/addons-extra" % venv_path, "%s/repos" % venv_path]
-            for path in extra_paths:
-                if not os.path.isdir(path):
-                    subprocess.Popen(
-                        "mkdir %s" % path, cwd=venv_path, shell=True
-                    ).wait()
+            extra_path = os.path.join(venv_path, "repos")
+            if not os.path.isdir(extra_path):
+                subprocess.Popen(
+                    "mkdir %s" % extra_path, cwd=venv_path, shell=True
+                ).wait()
             migration_log_path = os.path.join(venv_path, "migration.log")
             if os.path.isfile(migration_log_path):
                 os.remove(migration_log_path)

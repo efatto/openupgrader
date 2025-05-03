@@ -270,17 +270,21 @@ class OpenupgraderMigration(models.Model):
             else f"{folder}/repos/odoo/odoo-bin"
         )
         self._set_odoorc(folder)
-        addons_path = f"{folder}/repos/odoo/addons,"
+        addons_path = f"{folder}/repos/odoo/addons"
         if float(version_name) < 14:
-            addons_path = f"{folder}/odoo/addons,"
+            addons_path = f"{folder}/odoo/addons"
         extra_addons_path = f",{folder}/repos/odoo/odoo/addons,{folder}/odoo"
         if 9 < float(version_name) < 14:
             extra_addons_path = f",{folder}/odoo/odoo/addons"
+        for remote_repo in version.openupgrader_repo_ids.mapped(
+            "remote_repo_ids"
+        ).filtered(lambda x: x.name != "odoo").mapped("name"):
+            # add to addons_path all repos
+            extra_addons_path += f",{os.path.join(folder, 'repos', remote_repo)}"
         bash_command = (
             f"{executable} "
             f"-c {folder}/.odoorc "
             f"--addons-path={addons_path}"
-            f"{folder}/addons-extra"
             f"{extra_addons_path}"
             f" {extra_command} "
             f"--db_user={self.pg_user} "
@@ -670,20 +674,6 @@ class OpenupgraderMigration(models.Model):
             cwd=repo_path,
             shell=True,
         ).wait()
-        # copy modules to create a unique addons path, unless it's odoo repo
-        if repo_name == "odoo":
-            return
-        for _root, dirs, _files in os.walk(repo_path):
-            for d in dirs:
-                if d not in [".git", "setup"]:
-                    Popen(
-                        [
-                            f"cp -rf {repo_path}/{d} "
-                            f"{os.path.join(venv_path, 'addons-extra')}"
-                        ],
-                        shell=True,
-                    ).wait()
-            break
 
     def auto_install_modules(self, version):
         self.start_odoo(version)
