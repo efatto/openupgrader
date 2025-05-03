@@ -696,10 +696,10 @@ class OpenupgraderMigration(models.Model):
         )
         if after_migration:
             for module in openupgrader_config.module_to_uninstall_after_migration_ids:
-                self.install_uninstall_module(module, install=False)
+                self.install_uninstall_module(module.name, install=False)
         if before_migration:
             for module in openupgrader_config.module_to_uninstall_before_migration_ids:
-                self.install_uninstall_module(module, install=False)
+                self.install_uninstall_module(module.name, install=False)
         self.button_stop_odoo()
 
     def delete_old_modules(self, version):
@@ -760,21 +760,23 @@ class OpenupgraderMigration(models.Model):
             success += 1
         return success
 
-    def install_uninstall_module(self, module, install=True):
+    def install_uninstall_module(self, module_name, install=True):
         odoo_client = self.odoo_connect()
         module_obj = odoo_client.env["ir.module.module"]
         to_remove_modules = module_obj.search([("state", "=", "to remove")])
-        for module_to_remove in to_remove_modules:
-            module_to_remove.button_uninstall_cancel()
-        module_id = module_obj.search([("name", "=", module)])
-        if module_id:
-            if install:
-                odoo_client.env.install(module)
-            elif (
-                module_id.state in ["installed", "to upgrade", "uninstallable"]
-            ):
-                res = 0
-                while res < 5:
-                    res = self.uninst(module_id, res)
+        for module_to_remove_id in to_remove_modules:
+            module_obj.browse(module_to_remove_id).button_uninstall_cancel()
+        module_ids = module_obj.search([("name", "=", module_name)])
+        if module_ids:
+            modules = module_obj.browse(module_ids)
+            for module in modules:
+                if install:
+                    odoo_client.env.install(module_name)
+                elif (
+                    module.state in ["installed", "to upgrade", "uninstallable"]
+                ):
+                    res = 0
+                    while res < 5:
+                        res = self.uninst(module, res)
         else:
-            logger.info(_("Module %s not found" % module))
+            logger.info(_("Module %s not found" % module_name))
