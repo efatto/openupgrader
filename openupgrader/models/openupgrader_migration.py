@@ -420,11 +420,12 @@ class OpenupgraderMigration(models.Model):
         filestore_path = os.path.join(self.folder, version, "data_dir", "filestore")
         if version == self.from_version_id.name:
             # get the filestore from running production instance of Odoo
+            filestore_path = config.filestore(self.env.cr.dbname)
             initial_path = os.path.join(
-                self.folder,
-                version,
-                "data_dir",
-                "filestore",
+                *[
+                    x for x in filestore_path.split("/")
+                    if x != "" and x != self.env.cr.dbname
+                ]
             )
             if os.path.isdir(initial_path):
                 filestore_path = initial_path

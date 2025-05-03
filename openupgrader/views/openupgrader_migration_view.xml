@@ -71,13 +71,22 @@
                         name="button_ready_for_migration"
                         type="object"
                         class="oe_highlight"
-                        attrs="{'invisible': [('state', '!=', 'db_restored')]}"
+                        attrs="{'invisible': [('state', '!=', 'ready_for_migration')]}"
+                        string="Step 3: prepare migration"
+                        help="Do some useful stuff before migration"
+                    />
+                    <button
+                        name="button_ready_for_migration"
+                        type="object"
+                        attrs="{'invisible': [('state', '=', 'ready_for_migration')]}"
                         string="Step 3: prepare migration"
                         help="Do some useful stuff before migration"
                     />
                     <button
                         name="button_do_migration"
                         type="object"
+                        class="oe_highlight"
+                        attrs="{'invisible': [('state', '!=', 'ready_for_migration')]}"
                         string="Step 4: migrate"
                     />
                     <field
