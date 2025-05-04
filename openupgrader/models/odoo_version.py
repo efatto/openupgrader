@@ -41,6 +41,11 @@ class OdooVersion(models.Model):
         inverse_name="odoo_version_id",
         string="OpenUpgrade Repositories",
     )
+    openupgrader_config_ids = fields.One2many(
+        comodel_name="openupgrader.config",
+        inverse_name="odoo_version_id",
+        string="OpenUpgrade Configurations",
+    )
 
     @api.depends("name")
     def _compute_odoo_is_openupgrade(self):
@@ -113,13 +118,13 @@ class OdooVersion(models.Model):
 
             if not odoo_is_openupgrade:
                 # install odoo repo
-                openupgrader_migration_id.install_repo(
-                    "odoo",
-                    openupgrader_migration_id.odoo_repo,
-                    version_name,
-                    version_name,
-                    odoo_path,
-                )
+                odoo_repo = version_repos.remote_repo_ids.filtered("is_odoo")
+                if odoo_repo:
+                    openupgrader_migration_id.install_repo(
+                        odoo_repo,
+                        version_name,
+                        odoo_path,
+                    )
             commands = [
                 'bin/pip install "setuptools<58.0.0"',
             ]
@@ -158,10 +163,7 @@ class OdooVersion(models.Model):
 
             for remote_repo in version_repos.remote_repo_ids:
                 openupgrader_migration_id.install_repo(
-                    remote_repo.name,
-                    remote_repo.remote_url,
-                    remote_repo.remote_branch,
+                    remote_repo,
                     version_name,
-                    venv_path,
                 )
             openupgrader_migration_id.state = "created_venv"

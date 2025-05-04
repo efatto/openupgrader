@@ -105,10 +105,6 @@
                             <field name="filestore" />
                             <field name="folder" />
                             <field name="openupgrade_repo" />
-                            <field
-                                name="odoo_repo"
-                                placeholder="https://github.com/OCB/OCB.git"
-                            />
                         </group>
                         <group>
                             <field name="db_port" />
@@ -123,7 +119,7 @@
                             <field name="pg_password_var" />
                         </group>
                         <group>
-                            <field name="odoo_migrated_state"/>
+                            <field name="odoo_migrated_state" />
                         </group>
                         <group colspan="2" col="3">
                             <button

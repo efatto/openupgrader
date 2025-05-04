@@ -40,7 +40,8 @@
                         <field name="python_version" />
                     </group>
                     <group>
-                        <field name="openupgrader_repo_ids"/>
+                        <field name="openupgrader_repo_ids" />
+                        <field name="openupgrader_config_ids" />
                     </group>
                 </sheet>
             </form>

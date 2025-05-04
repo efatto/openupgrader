@@ -9,6 +9,9 @@ class RemoteRepo(models.Model):
     openupgrader_repo_id = fields.Many2one(comodel_name="openupgrader.repo")
     remote_url = fields.Char(string="Remote Repo URL")
     remote_branch = fields.Char(string="Remote Repo Branch")
+    github_user = fields.Char()
+    github_token = fields.Char()
+    is_odoo = fields.Boolean()
 
 
 class OpenupgraderRepo(models.Model):

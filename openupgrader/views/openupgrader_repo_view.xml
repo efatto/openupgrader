@@ -42,6 +42,9 @@
                                 <field name="name" />
                                 <field name="remote_url" />
                                 <field name="remote_branch" />
+                                <field name="is_odoo" />
+                                <field name="github_user" />
+                                <field name="github_token" password="1" />
                             </tree>
                         </field>
                     </group>

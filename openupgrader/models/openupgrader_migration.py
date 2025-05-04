@@ -53,14 +53,14 @@ class OpenupgraderMigration(models.Model):
     pg_password_var = fields.Char(
         string="Postgres password environment variable",
         help="Set the environment variable (like $POSTGRES_PASSWORD), alternative to "
-             "setting the password directly",
+        "setting the password directly",
     )
     pg_host = fields.Char(
-        string="Postgres Host",
-        default=lambda self: config.get("db_host", "db"))
+        string="Postgres Host", default=lambda self: config.get("db_host", "db")
+    )
     pg_options = fields.Char(
         string="Postgres options",
-        help="Custom options for the postgres connection, like '--cluster 14/main'"
+        help="Custom options for the postgres connection, like '--cluster 14/main'",
     )
     verify_ssl = fields.Boolean()
     address = fields.Char("Odoo URL")
@@ -106,10 +106,6 @@ class OpenupgraderMigration(models.Model):
     openupgrade_repo = fields.Char(
         string="OpenUpgrade Repository",
         default="git@github.com:efatto/OpenUpgrade.git",
-    )
-    odoo_repo = fields.Char(
-        string="Odoo Repository",
-        default="git@github.com:OCA/OCB.git",
     )
     odoo_migrated_state = fields.Selection(
         selection=[
@@ -231,7 +227,7 @@ class OpenupgraderMigration(models.Model):
         :param update: if True odoo will be updated with -u all and stopped
         :param extra_command: command that will be passed after executable
         :return: null
-        """ # FIXME non trova gli addons di odoo nel docker!
+        """  # FIXME non trova gli addons di odoo nel docker!
         version_name = version.name
         if self.odoo_migrated_state == "running":
             self.button_stop_odoo()
@@ -262,9 +258,11 @@ class OpenupgraderMigration(models.Model):
         extra_addons_path = f",{folder}/repos/odoo/odoo/addons,{folder}/odoo"
         if 9 < float(version_name) < 14:
             extra_addons_path = f",{folder}/odoo/odoo/addons"
-        for remote_repo in version.openupgrader_repo_ids.mapped(
-            "remote_repo_ids"
-        ).filtered(lambda x: x.name != "odoo").mapped("name"):
+        for remote_repo in (
+            version.openupgrader_repo_ids.mapped("remote_repo_ids")
+            .filtered(lambda x: x.name != "odoo")
+            .mapped("name")
+        ):
             # add to addons_path all repos
             extra_addons_path += f",{os.path.join(folder, 'repos', remote_repo)}"
         bash_command = (
@@ -413,7 +411,8 @@ class OpenupgraderMigration(models.Model):
             filestore_path = config.filestore(self.env.cr.dbname)
             initial_path = os.path.join(
                 *[
-                    x for x in filestore_path.split("/")
+                    x
+                    for x in filestore_path.split("/")
                     if x != "" and x != self.env.cr.dbname
                 ]
             )
@@ -451,7 +450,7 @@ class OpenupgraderMigration(models.Model):
                 f"export PGPASSWORD={self.pg_password_var or self.pg_password or ''} &&"
                 f" dropdb -U {self.pg_user} {self.env.cr.dbname}_migrate",
             ],
-            shell=True
+            shell=True,
         ).wait()
         Popen(
             [
@@ -460,7 +459,7 @@ class OpenupgraderMigration(models.Model):
                 f"export PGPASSWORD={self.pg_password_var or self.pg_password or ''} &&"
                 f" createdb -U {self.pg_user} {self.env.cr.dbname}_migrate",
             ],
-            shell=True
+            shell=True,
         ).wait()
         dump_file_sql = os.path.join(
             self.folder, f"database.{self.current_version_id.name}.sql"
@@ -520,8 +519,7 @@ class OpenupgraderMigration(models.Model):
                 to_version_id=self.next_version_id,
             )
         self.disable_mail(disable=True)
-        # self.sql_fixes(self.env["openupgrader.config"].search([
-        # ("odoo_version_id", "=", from_version_id)]))
+        self.sql_fixes(self.current_version_id.openupgrader_config_ids)
         self.uninstall_modules(self.current_version_id, before_migration=True)
         self.delete_old_modules(self.current_version_id)
         self.state = "ready_for_migration"
@@ -551,23 +549,13 @@ class OpenupgraderMigration(models.Model):
 
     def button_do_migration(self):
         self.disable_cron(True)
-        # to_version_id = self.to_version_id
-        # from_version_id = self.from_version_id
-        # if to_version_id == '11.0':
-        #     self.fix_taxes(from_version_id)
-        # if to_version_id == '12.0' and self.fix_banks:
-        #     self.fixes.migrate_bank_riba_id_bank_ids(from_version_id)
-        #     self.fixes.migrate_bank_riba_id_bank_ids_invoice(from_version_id)
-        # if from_version_id == '12.0' and self.migrate_ddt:
-        #     self.migrate_l10n_it_ddt_to_l10n_it_delivery_note(from_version_id)
         self.start_odoo(self.next_version_id, update=True)
         self._action_done()
 
     def _action_done(self):
         self.uninstall_modules(self.next_version_id, after_migration=True)
         self.auto_install_modules(self.next_version_id)
-        # self.sql_fixes(self.env["openupgrader.config"].search([
-        #     ("odoo_version_id", "=", to_version_id.name)]))
+        self.sql_fixes(self.next_version_id.openupgrader_config_ids)
         if self.next_version_id.name == "10.0":
             self.start_odoo(self.next_version_id)
             self.remove_modules("upgrade")
@@ -593,8 +581,10 @@ class OpenupgraderMigration(models.Model):
 
     def button_refresh_state(self):
         for version in [self.current_version_id, self.next_version_id]:
-            venv_path = os.path.join(self.folder, f"openupgrade{version.name}")
-            migration_log_path = os.path.join(venv_path, "migration.log")
+            migration_log_path = os.path.join(
+                os.path.join(self.folder, f"openupgrade{version.name}"),
+                "migration.log",
+            )
             if os.path.isfile(migration_log_path):
                 with open(migration_log_path) as file:
                     contents = file.read()
@@ -611,47 +601,46 @@ class OpenupgraderMigration(models.Model):
                         elif "Initiating shutdown" in contents:
                             self.state = "db_migrated"
 
-    def sql_fixes(self, recipe):
-        for part in recipe:
-            bash_commands = part.get("sql_commands", [])
-            for bash_command in bash_commands:
-                command = [
-                    "psql -p %s -d %s -c '%s'"
-                    % (
-                        self.db_port,
-                        f"{self.env.cr.dbname}_migrate",
-                        bash_command,
-                    )
-                ]
-                Popen(command, shell=True).wait()
-            bash_update_commands = part.get("sql_update_commands", [])
-            if bash_update_commands:
-                for bash_update_command in bash_update_commands:
-                    upd_command = [
-                        'psql -p %s -d %s -c "%s"'
-                        % (
-                            self.db_port,
-                            f"{self.env.cr.dbname}_migrate",
-                            bash_update_command,
-                        )
-                    ]
-                    Popen(upd_command, shell=True).wait()
+    def sql_fixes(self, openupgrader_config_ids):
+        openupgrader_config_ids.ensure_one()
+        for sql_update_command in openupgrader_config_ids.sql_update_command_ids:
+            Popen(
+                [
+                    f"export PGPORT={self.db_port} && "
+                    f"export PGHOST={self.pg_host or ''} && "
+                    "export "
+                    f"PGPASSWORD={self.pg_password_var or self.pg_password or ''} && "
+                    f"psql -U {self.pg_user} -d {self.env.cr.dbname}_migrate "
+                    f"-c '{sql_update_command.name}'",
+                ],
+                shell=True,
+            ).wait()
 
     def post_migration(self, version):
         # re-enable mail servers and clean db
         self.disable_mail(disable=False)
         # self.database_cleanup(version)
 
-    def install_repo(self, repo_name, repo_url, repo_version, version_name, venv_path):
-        repo_path = os.path.join(
-            self.folder, f"openupgrade{version_name}", "repos", repo_name
-        )
+    def install_repo(self, remote_repo, version_name, repo_path=None):
+        if repo_path is None:
+            repo_path = os.path.join(
+                self.folder, f"openupgrade{version_name}", "repos", remote_repo.name
+            )
         if not os.path.isdir(repo_path):
-            # todo private repos need credentials
+            # private repos need token
+            repo_url = remote_repo.remote_url
+            if repo_url.startswith("git@github.com:"):
+                # from git@github.com:username/repo.git
+                # to https://username:token@github.com/username/repo.git
+                repo_url = repo_url.replace(
+                    "git@github.com:",
+                    f"https://{remote_repo.github_user}:{remote_repo.github_token}"
+                    f"@github.com/",
+                )
             Popen(
                 [
-                    f"git clone --single-branch -b {repo_version} {repo_url} --depth 1 "
-                    f"{repo_path}"
+                    f"git clone --single-branch -b {remote_repo.remote_branch} "
+                    f"{repo_url} --depth 1 {repo_path}"
                 ],
                 shell=True,
             ).wait()
@@ -716,9 +705,7 @@ class OpenupgraderMigration(models.Model):
             state = ["to remove", "to install"]
         odoo_client = self.odoo_connect()
         module_obj = odoo_client.env["ir.module.module"]
-        modules = module_obj.browse(
-            module_obj.search([("state", "in", state)])
-        )
+        modules = module_obj.browse(module_obj.search([("state", "in", state)]))
         msg_modules = ""
         msg_modules_after = ""
         if modules:
@@ -768,9 +755,7 @@ class OpenupgraderMigration(models.Model):
             for module in modules:
                 if install:
                     odoo_client.env.install(module_name)
-                elif (
-                    module.state in ["installed", "to upgrade", "uninstallable"]
-                ):
+                elif module.state in ["installed", "to upgrade", "uninstallable"]:
                     res = 0
                     while res < 5:
                         res = self.uninst(module, res)

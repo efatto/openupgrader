@@ -50,6 +50,7 @@ class PipRequirement(models.Model):
 class SqlUpdateCommand(models.Model):
     _name = "sql.update.command"
     _description = "SQL Update Command"
+    _order = "sequence, id"
 
     name = fields.Text(string="SQL Command")
     sequence = fields.Integer(string="SQL Sequence")
@@ -205,7 +206,7 @@ class OpenupgraderConfig(models.Model):
                                 },
                             )
                             for pip_name in pip_names
-                        ]
+                        ],
                     }
                 ]
             )
