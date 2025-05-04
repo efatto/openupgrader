@@ -71,7 +71,10 @@ class OpenupgraderMigration(models.Model):
     )
     odoo_pid = fields.Integer(string="Odoo migrated process PID")
     db_port = fields.Char(
-        string="Database port", default=lambda self: config.get("db_port", "5432")
+        string="Database port",
+        default=lambda self: config.get("db_port") != "False"
+        and config.get("db_port")
+        or "5432",
     )
     xmlrpc_port = fields.Char(
         string="XmlRpc port",
