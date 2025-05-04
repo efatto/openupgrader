@@ -161,6 +161,7 @@ class OpenupgraderConfig(models.Model):
                                 "remote_url": remotes[remote].split(" ")[0],
                                 "remote_branch": remotes[remote].split(" ")[1]
                                 or version,
+                                "is_odoo": remote == "odoo",
                             },
                         )
                         for remote in remotes
@@ -193,6 +194,7 @@ class OpenupgraderConfig(models.Model):
                                     "remote_url": remotes[remote].split(" ")[0],
                                     "remote_branch": remotes[remote].split(" ")[1]
                                     or version,
+                                    "is_odoo": remote == "odoo",
                                 },
                             )
                             for remote in remotes
