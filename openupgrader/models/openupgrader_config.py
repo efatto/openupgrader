@@ -150,36 +150,40 @@ class OpenupgraderConfig(models.Model):
         if op_repo:
             remote_repo_names = op_repo.remote_repo_ids.mapped("name")
             pip_requirements = op_repo.pip_requirement_ids.mapped("name")
-            op_repo.write(
-                {
-                    "remote_repo_ids": [
-                        (
-                            0,
-                            0,
-                            {
-                                "name": remote,
-                                "remote_url": remotes[remote].split(" ")[0],
-                                "remote_branch": remotes[remote].split(" ")[1]
-                                or version,
-                                "is_odoo": remote == "odoo",
-                            },
-                        )
-                        for remote in remotes
-                        if remote not in remote_repo_names
-                    ],
-                    "pip_requirement_ids": [
-                        (
-                            0,
-                            0,
-                            {
-                                "name": pip_name,
-                            },
-                        )
-                        for pip_name in pip_names
-                        if pip_name not in pip_requirements
-                    ],
-                }
-            )
+            for remote in remotes:
+                if remote not in remote_repo_names:
+                    op_repo.write(
+                        {
+                            "remote_repo_ids": [
+                                (
+                                    0,
+                                    0,
+                                    {
+                                        "name": remote,
+                                        "remote_url": remotes[remote].split(" ")[0],
+                                        "remote_branch": remotes[remote].split(" ")[1]
+                                        or version,
+                                        "is_odoo": remote == "odoo",
+                                    },
+                                )
+                            ],
+                        }
+                    )
+            for pip_name in pip_names:
+                if pip_name not in pip_requirements:
+                    op_repo.write(
+                        {
+                            "pip_requirement_ids": [
+                                (
+                                    0,
+                                    0,
+                                    {
+                                        "name": pip_name,
+                                    },
+                                )
+                            ],
+                        }
+                    )
         else:
             op_repo_obj.create(
                 [
@@ -199,6 +203,12 @@ class OpenupgraderConfig(models.Model):
                             )
                             for remote in remotes
                         ],
+                    }
+                ]
+            )
+            if pip_names:
+                op_repo.write(
+                    {
                         "pip_requirement_ids": [
                             (
                                 0,
@@ -210,8 +220,7 @@ class OpenupgraderConfig(models.Model):
                             for pip_name in pip_names
                         ],
                     }
-                ]
-            )
+                )
 
     def load_repos_file(self, version):
         if not self.repos_file:
