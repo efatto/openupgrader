@@ -62,9 +62,7 @@ class OdooVersion(models.Model):
         openupgrader_migration_id.ensure_one()
         version_name = self.name
         if openupgrader_migration_id:
-            os.path.join(
-                openupgrader_migration_id.folder, f"openupgrade{version_name}"
-            )
+            os.path.join(openupgrader_migration_id.folder, f"openupgrade{version_name}")
             # todo Remove folder
         self.button_create_venv()
 
