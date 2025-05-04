@@ -198,6 +198,7 @@ class OpenupgraderMigration(models.Model):
         if not os.path.isfile(odoorc_path):
             odoorc_basic_path = get_module_resource("openupgrader", "data", ".odoorc")
             shutil.copyfile(odoorc_basic_path, odoorc_path)
+            # todo move disabled modules to configuration
             not_auto_install_list = [
                 "partner_autocomplete",
                 "iap",
@@ -206,6 +207,7 @@ class OpenupgraderMigration(models.Model):
                 "account_edi_facturx",
                 "account_edi_ubl",
                 "l10n_it_stock_ddt",
+                "l10n_it_edi",
             ]
             mod_not_install = (
                 f"modules_auto_install_disabled = {','.join(not_auto_install_list)}"
