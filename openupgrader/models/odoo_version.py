@@ -161,7 +161,10 @@ class OdooVersion(models.Model):
             if os.path.isfile(migration_log_path):
                 os.remove(migration_log_path)
 
-            for remote_repo in version_repos.remote_repo_ids:
+            for remote_repo in version_repos.remote_repo_ids.filtered(
+                lambda x: not x.is_odoo
+            ):
+                # do not reinstall odoo repo
                 openupgrader_migration_id.install_repo(
                     remote_repo,
                     version_name,
