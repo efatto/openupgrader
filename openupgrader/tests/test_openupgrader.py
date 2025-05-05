@@ -92,6 +92,8 @@ class Openupgrader(SavepointCase):
                 "openupgrade_repo": "https://github.com/efatto/OpenUpgrade.git",
                 "pg_password_var": "$PGPASSWORD",  # PGPASSWORD=odoo
                 "pg_host": "$PGHOST",  # PGHOST=postgres
+                "pg_user": "$PGUSER",  # PGUSER=odoo
+                "db_name": "$PGDATABASE",  # PGDATABASE=odoo
             }
         )
         cls.from_version_id.button_create_venv()
