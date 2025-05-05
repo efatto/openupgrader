@@ -384,8 +384,9 @@ class OpenupgraderMigration(models.Model):
         os.rename(from_folder, to_version_filestore)
 
     def restore_filestore(self, from_version_id, to_version_id):
+        filestore_torestore_path = f"filestore.{from_version_id.name}.tar"
         filestore_path = os.path.join(
-            self.folder, to_version_id.name, "data_dir", "filestore"
+            self.folder, f"openupgrade{to_version_id.name}", "data_dir", "filestore"
         )
         if not os.path.isdir(filestore_path):
             os.makedirs(filestore_path, exist_ok=True)
@@ -399,38 +400,39 @@ class OpenupgraderMigration(models.Model):
         filestore_db_path = os.path.join(filestore_path, self.env.cr.dbname)
         if not os.path.isdir(filestore_db_path):
             os.mkdir(filestore_db_path)
-        process = Popen(
-            [
-                f"tar -zxvf filestore.{from_version_id.name}.tar --strip-components=1 "
-                f"-C {filestore_db_path}/",
-            ],
-            cwd=self.folder,
-            shell=True,
-        )
-        process.wait()
+        if os.path.isfile(filestore_torestore_path):
+            Popen(
+                [
+                    f"tar -zxvf {filestore_torestore_path} --strip-components=1 "
+                    f"-C {filestore_db_path}/",
+                ],
+                cwd=self.folder,
+                shell=True,
+            ).wait()
 
     def dump_filestore(self, version):
         filestore_path = os.path.join(self.folder, version, "data_dir", "filestore")
         if version == self.from_version_id.name:
             # get the filestore from running production instance of Odoo
-            filestore_path = config.filestore(self.env.cr.dbname)
             initial_path = os.path.join(
                 *[
                     x
-                    for x in filestore_path.split("/")
+                    for x in config.filestore(self.env.cr.dbname).split("/")
                     if x != "" and x != self.env.cr.dbname
                 ]
             )
             if os.path.isdir(initial_path):
                 filestore_path = initial_path
-        Popen(
-            [
-                f"tar -zcvf {os.path.join(self.folder, f'filestore.{version}.tar')} "
-                f"{self.env.cr.dbname}",
-            ],
-            cwd=filestore_path,
-            shell=True,
-        ).wait()
+        destination_path = os.path.join(self.folder, f'filestore.{version}.tar')
+        if os.path.isdir(filestore_path):
+            Popen(
+                [
+                    f"tar -zcvf {destination_path}"
+                    f" {self.env.cr.dbname}",
+                ],
+                cwd=filestore_path,
+                shell=True,
+            ).wait()
 
     def dump_database(self, version):
         connection_string = (
