@@ -423,12 +423,11 @@ class OpenupgraderMigration(models.Model):
             )
             if os.path.isdir(initial_path):
                 filestore_path = initial_path
-        destination_path = os.path.join(self.folder, f'filestore.{version}.tar')
+        destination_path = os.path.join(self.folder, f"filestore.{version}.tar")
         if os.path.isdir(filestore_path):
             Popen(
                 [
-                    f"tar -zcvf {destination_path}"
-                    f" {self.env.cr.dbname}",
+                    f"tar -zcvf {destination_path} {self.env.cr.dbname}",
                 ],
                 cwd=filestore_path,
                 shell=True,
