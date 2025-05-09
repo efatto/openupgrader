@@ -6,14 +6,19 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 14.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-11-11 17:00+0000\n"
-"PO-Revision-Date: 2024-11-11 17:00+0000\n"
+"POT-Creation-Date: 2025-05-09 13:27+0000\n"
+"PO-Revision-Date: 2025-05-09 13:27+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: \n"
 "Plural-Forms: \n"
+
+#. module: stock_orderpoint_generator_sale
+#: model:ir.model.fields,field_description:stock_orderpoint_generator_sale.field_stock_warehouse_orderpoint_template__draft_orderpoint_count
+msgid "# Draft Orderpoint"
+msgstr "# Regole in bozza"
 
 #. module: stock_orderpoint_generator_sale
 #: model:ir.model.fields,field_description:stock_orderpoint_generator_sale.field_stock_warehouse_orderpoint_template__orderpoint_count
@@ -49,12 +54,22 @@ msgid "Compute On Sale"
 msgstr "Calcola sul venduto"
 
 #. module: stock_orderpoint_generator_sale
+#: model_terms:ir.ui.view,arch_db:stock_orderpoint_generator_sale.view_warehouse_orderpoint_template_form
+msgid "Confirm Draft Orderpoints"
+msgstr "Conferma regole di riordino in bozza"
+
+#. module: stock_orderpoint_generator_sale
 #: model:ir.model.fields,field_description:stock_orderpoint_generator_sale.field_product_product__display_name
 #: model:ir.model.fields,field_description:stock_orderpoint_generator_sale.field_product_template__display_name
 #: model:ir.model.fields,field_description:stock_orderpoint_generator_sale.field_stock_warehouse_orderpoint__display_name
 #: model:ir.model.fields,field_description:stock_orderpoint_generator_sale.field_stock_warehouse_orderpoint_template__display_name
 msgid "Display Name"
 msgstr "Nome visualizzato"
+
+#. module: stock_orderpoint_generator_sale
+#: model_terms:ir.ui.view,arch_db:stock_orderpoint_generator_sale.view_warehouse_orderpoint_template_form
+msgid "Draft Orderpoints"
+msgstr "Regole di riordino in bozza"
 
 #. module: stock_orderpoint_generator_sale
 #: model:ir.model.fields,field_description:stock_orderpoint_generator_sale.field_product_product__id
@@ -73,6 +88,12 @@ msgstr "Valore incremento/decremento percentuale"
 #: model_terms:ir.ui.view,arch_db:stock_orderpoint_generator_sale.view_warehouse_orderpoint_template_form
 msgid "Info"
 msgstr "Informazioni"
+
+#. module: stock_orderpoint_generator_sale
+#: model:ir.model.fields,field_description:stock_orderpoint_generator_sale.field_stock_warehouse_orderpoint__is_draft
+#: model:ir.model.fields,field_description:stock_orderpoint_generator_sale.field_stock_warehouse_orderpoint_template__is_draft
+msgid "Is Draft"
+msgstr "È in bozza"
 
 #. module: stock_orderpoint_generator_sale
 #: model:ir.model.fields,field_description:stock_orderpoint_generator_sale.field_product_product____last_update
@@ -112,6 +133,16 @@ msgid ""
 msgstr ""
 "I giorni dei movimenti non possono essere uguali a 0 se Quantità massima "
 "automatica è impostata e né la minima né la massima data sono impostate!"
+
+#. module: stock_orderpoint_generator_sale
+#: model:ir.model.fields,field_description:stock_orderpoint_generator_sale.field_stock_warehouse_orderpoint_template__is_new_orderpoint_draft
+msgid "New Orderpoints are in Draft"
+msgstr "Le nuove regole di riordino sono in bozza"
+
+#. module: stock_orderpoint_generator_sale
+#: model:ir.model.fields,help:stock_orderpoint_generator_sale.field_stock_warehouse_orderpoint_template__is_new_orderpoint_draft
+msgid "New orderpoints are not confirmed by default"
+msgstr "Le nuove regole di riordino non sono confermate per default"
 
 #. module: stock_orderpoint_generator_sale
 #: model:ir.model.fields,field_description:stock_orderpoint_generator_sale.field_stock_warehouse_orderpoint_template__order_mngt_cost
@@ -185,6 +216,12 @@ msgid "Sum"
 msgstr "Somma"
 
 #. module: stock_orderpoint_generator_sale
+#: model:ir.model.fields,help:stock_orderpoint_generator_sale.field_stock_warehouse_orderpoint__is_draft
+#: model:ir.model.fields,help:stock_orderpoint_generator_sale.field_stock_warehouse_orderpoint_template__is_draft
+msgid "To be enabled manually"
+msgstr "Da abilitare manualmente"
+
+#. module: stock_orderpoint_generator_sale
 #: model:ir.model.fields,help:stock_orderpoint_generator_sale.field_stock_warehouse_orderpoint_template__move_days
 msgid "Used when not filled date from and to in maximum criteria"
 msgstr "Usato quando le date non sono impostate nel criterio del massimo"
@@ -203,7 +240,8 @@ msgid ""
 "%s, Service factor: %s, Lead time factor: %s, Security stock: %s, Minimum "
 "qty: %s, Lot to reorder: %s, Maximum qty: %s)"
 msgstr ""
-"[%s] Regola di riordino creata (dalla quantità massima nel periodo selezionato / lasso "
-"di giorni: %s) (Giorni: %s, consumo giornaliero: %s, consumo pezzi nei giorni di LEAD TIME: "
-"%s, fattore di servizio (k): %s, fattore di lead time: %s, stock di sicurezza (SS): %s, quantità minima"
-": %s, lotto economico di riodino (EOQ): %s, quantità massima: %s)"
+"[%s] Regola di riordino creata (dalla quantità massima nel periodo "
+"selezionato / lasso di giorni: %s) (Giorni: %s, consumo giornaliero: %s, "
+"consumo pezzi nei giorni di LEAD TIME: %s, fattore di servizio (k): %s, "
+"fattore di lead time: %s, stock di sicurezza (SS): %s, quantità minima: %s, "
+"lotto economico di riodino (EOQ): %s, quantità massima: %s)"
