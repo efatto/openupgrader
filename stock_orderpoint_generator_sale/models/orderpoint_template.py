@@ -16,6 +16,10 @@ class Orderpoint(models.Model):
     _inherit = "stock.warehouse.orderpoint"
 
     orderpoint_tmpl_id = fields.Many2one("stock.warehouse.orderpoint.template")
+    is_draft = fields.Boolean(
+        string="Is Draft",
+        help="To be enabled manually",
+    )
 
 
 class OrderpointTemplate(models.Model):
@@ -40,12 +44,52 @@ class OrderpointTemplate(models.Model):
     orderpoint_count = fields.Integer(
         "# Orderpoint", compute="_compute_orderpoint_count"
     )
+    draft_orderpoint_count = fields.Integer(
+        "# Draft Orderpoint", compute="_compute_orderpoint_count"
+    )
+    is_new_orderpoint_draft = fields.Boolean(
+        string="New Orderpoints are in Draft",
+        default=True,
+        help="New orderpoints are not confirmed by default",
+    )
+
+    def create_orderpoints(self, products):
+        """Override to create new orderpoints in draft optionally"""
+        if self.is_new_orderpoint_draft:
+            # create new istances to put in a new o2m
+            self.with_context(
+                is_draft=True)._create_instances(products)
+        else:
+            self._disable_old_instances(products)
+            self._create_instances(products)
+
+    def button_confirm_orderpoints(self):
+        # disable current orderpoints and re-enable the newly created
+        self.env[
+            "stock.warehouse.orderpoint"
+        ].search([
+            ("orderpoint_tmpl_id", "=", self.id),
+            ("is_draft", "=", False),
+        ]).write({"active": False})
+        self.env[
+            "stock.warehouse.orderpoint"
+        ].search([
+            ("orderpoint_tmpl_id", "=", self.id),
+            ("is_draft", "=", True),
+            ("active", "=", False),
+        ]).write({"is_draft": False, "active": True})
 
     def _compute_orderpoint_count(self):
         for record in self:
             record.orderpoint_count = self.env[
                 "stock.warehouse.orderpoint"
-            ].search_count([("orderpoint_tmpl_id", "=", record.id)])
+            ].search_count([("orderpoint_tmpl_id", "=", record.id),
+                            ("is_draft", "=", False)])
+            record.draft_orderpoint_count = self.env[
+                "stock.warehouse.orderpoint"
+            ].search_count([("orderpoint_tmpl_id", "=", record.id),
+                            ("is_draft", "=", True),
+                            ("active", "=", False)])
 
     @api.onchange("compute_on_sale", "compute_on_out", "auto_max_qty_criteria")
     def _onchange_compute_on(self):
@@ -111,6 +155,7 @@ class OrderpointTemplate(models.Model):
             "log_info",
             "variation_percent",
             "product_ctg_ids",
+            "is_new_orderpoint_draft",
         ]
         return res
 
@@ -274,6 +319,9 @@ class OrderpointTemplate(models.Model):
                         vals["product_max_qty"] = max_qty
                     vals["qty_multiple"] = product_id.purchase_multiple_qty
                     vals["orderpoint_tmpl_id"] = record.id
+                    if self.env.context.get("is_draft"):
+                        vals["is_draft"] = True
+                        vals["active"] = False
                     orderpoint_model.create(vals)
                     record.log_info = "\n".join(
                         [

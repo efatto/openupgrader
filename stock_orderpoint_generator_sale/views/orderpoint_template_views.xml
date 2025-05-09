@@ -23,6 +23,8 @@
         <field name="arch" type="xml">
             <xpath expr="//search/field[@name='name']" position="after">
                 <field name="orderpoint_tmpl_id" />
+                <field name="is_draft" />
+                <filter name="is_not_active" domain="[('active', '=', False)]" />
             </xpath>
         </field>
     </record>
@@ -36,6 +38,7 @@
     />
         <field name="arch" type="xml">
             <field name="auto_generate" position="after">
+                <field name="is_new_orderpoint_draft"/>
                 <field name="compute_on_sale" />
                 <field
           name="compute_on_out"
@@ -119,7 +122,23 @@
             type="action"
             class="oe_stat_button"
             icon="fa-list"
-            context="{'search_default_orderpoint_tmpl_id': active_id}"
+            context="{
+                'search_default_orderpoint_tmpl_id': active_id,
+                'search_default_is_not_active': True,
+                'search_default_is_draft': True}"
+          >
+                            <field
+              string="Draft Orderpoints"
+              name="draft_orderpoint_count"
+              widget="statinfo"
+            />
+                    </button>
+                    <button
+            name="%(stock.action_orderpoint)d"
+            type="action"
+            class="oe_stat_button"
+            icon="fa-list"
+            context="{'search_default_orderpoint_tmpl_id': active_id, 'search_default_is_draft': False}"
           >
                             <field
               string="Orderpoints"
@@ -144,6 +163,13 @@
             </xpath>
             <button name="create_auto_orderpoints" position="attributes">
                 <attribute name="attrs">{'invisible': False}</attribute>
+            </button>
+            <button name="create_auto_orderpoints" position="after">
+                <button name="button_confirm_orderpoints"
+                        type="object"
+                        string="Confirm Draft Orderpoints"
+                        attrs="{'invisible': [('draft_orderpoint_count', '=', 0)]}"
+                />
             </button>
         </field>
     </record>
