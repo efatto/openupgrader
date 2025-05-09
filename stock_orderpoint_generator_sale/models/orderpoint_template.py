@@ -57,39 +57,43 @@ class OrderpointTemplate(models.Model):
         """Override to create new orderpoints in draft optionally"""
         if self.is_new_orderpoint_draft:
             # create new istances to put in a new o2m
-            self.with_context(
-                is_draft=True)._create_instances(products)
+            self.with_context(is_draft=True)._create_instances(products)
         else:
             self._disable_old_instances(products)
             self._create_instances(products)
 
     def button_confirm_orderpoints(self):
         # disable current orderpoints and re-enable the newly created
-        self.env[
-            "stock.warehouse.orderpoint"
-        ].search([
-            ("orderpoint_tmpl_id", "=", self.id),
-            ("is_draft", "=", False),
-        ]).write({"active": False})
-        self.env[
-            "stock.warehouse.orderpoint"
-        ].search([
-            ("orderpoint_tmpl_id", "=", self.id),
-            ("is_draft", "=", True),
-            ("active", "=", False),
-        ]).write({"is_draft": False, "active": True})
+        self.env["stock.warehouse.orderpoint"].search(
+            [
+                ("orderpoint_tmpl_id", "=", self.id),
+                ("is_draft", "=", False),
+            ]
+        ).write({"active": False})
+        self.env["stock.warehouse.orderpoint"].search(
+            [
+                ("orderpoint_tmpl_id", "=", self.id),
+                ("is_draft", "=", True),
+                ("active", "=", False),
+            ]
+        ).write({"is_draft": False, "active": True})
 
     def _compute_orderpoint_count(self):
         for record in self:
             record.orderpoint_count = self.env[
                 "stock.warehouse.orderpoint"
-            ].search_count([("orderpoint_tmpl_id", "=", record.id),
-                            ("is_draft", "=", False)])
+            ].search_count(
+                [("orderpoint_tmpl_id", "=", record.id), ("is_draft", "=", False)]
+            )
             record.draft_orderpoint_count = self.env[
                 "stock.warehouse.orderpoint"
-            ].search_count([("orderpoint_tmpl_id", "=", record.id),
-                            ("is_draft", "=", True),
-                            ("active", "=", False)])
+            ].search_count(
+                [
+                    ("orderpoint_tmpl_id", "=", record.id),
+                    ("is_draft", "=", True),
+                    ("active", "=", False),
+                ]
+            )
 
     @api.onchange("compute_on_sale", "compute_on_out", "auto_max_qty_criteria")
     def _onchange_compute_on(self):
@@ -179,7 +183,7 @@ class OrderpointTemplate(models.Model):
                     )
                 template.create_orderpoints(product_ids)
 
-    def _create_instances(self, product_ids):
+    def _create_instances(self, product_ids):  # noqa C901
         """Create instances of model using template inherited model and
         compute autovalues if needed"""
         orderpoint_model = self.env["stock.warehouse.orderpoint"]

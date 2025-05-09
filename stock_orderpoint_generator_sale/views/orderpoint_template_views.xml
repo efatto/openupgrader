@@ -38,7 +38,7 @@
     />
         <field name="arch" type="xml">
             <field name="auto_generate" position="after">
-                <field name="is_new_orderpoint_draft"/>
+                <field name="is_new_orderpoint_draft" />
                 <field name="compute_on_sale" />
                 <field
           name="compute_on_out"
@@ -165,11 +165,12 @@
                 <attribute name="attrs">{'invisible': False}</attribute>
             </button>
             <button name="create_auto_orderpoints" position="after">
-                <button name="button_confirm_orderpoints"
-                        type="object"
-                        string="Confirm Draft Orderpoints"
-                        attrs="{'invisible': [('draft_orderpoint_count', '=', 0)]}"
-                />
+                <button
+          name="button_confirm_orderpoints"
+          type="object"
+          string="Confirm Draft Orderpoints"
+          attrs="{'invisible': [('draft_orderpoint_count', '=', 0)]}"
+        />
             </button>
         </field>
     </record>
