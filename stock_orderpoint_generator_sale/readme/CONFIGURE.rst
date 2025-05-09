@@ -10,6 +10,21 @@ Il bottone `Genera regole automatiche`: se cliccato, disattiva le regole di rior
 .. image:: ../static/description/genera.png
     :alt: Genera
 
+Se il campo `Le nuove regole di riordino sono in bozza` è attivo:
+
+.. image:: ../static/description/booleano_bozza.png
+    :alt: Check regole in bozza
+
+verranno mantenute le regole di riordino esistenti e quelle create verranno esposte separatamente e resteranno disattive:
+
+.. image:: ../static/description/regole_in_bozza.png
+    :alt: Numero regole in bozza
+
+Si potranno poi confermare, e contemporaneamente disattivare quelle esistenti, con il bottoe `Conferma regole di riordino in bozza`:
+
+.. image:: ../static/description/bottone_conferma.png
+    :alt: Conferma regole in bozza
+
 Il campo `Crea le regole automaticamente`: se selezionato si evita di dover cliccare sul tasto `Genera regole automatiche` in alto. Attiva un cron che disattiva e ricrea le regole di riordino ad ogni esecuzione, rendendole quindi sempre allineate con la situazione attuale dello stock.
 
 .. image:: ../static/description/genera_automaticamente.png

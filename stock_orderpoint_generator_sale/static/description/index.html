@@ -390,6 +390,12 @@ ul.auto-toc {
 <p>Creando un nuovo modello ci sono alcuni campi che è possibile compilare per gestire la creazione automatica delle regole di riordino:</p>
 <p>Il bottone <cite>Genera regole automatiche</cite>: se cliccato, disattiva le regole di riordino presenti e collegate al modello attuale e le ricrea, si può automatizzare con il campo indicato sotto.</p>
 <img alt="Genera" src="https://raw.githubusercontent.com/efatto/efatto/14.0/stock_orderpoint_generator_sale/static/description/genera.png" />
+<p>Se il campo <cite>Le nuove regole di riordino sono in bozza</cite> è attivo:</p>
+<img alt="Check regole in bozza" src="https://raw.githubusercontent.com/efatto/efatto/14.0/stock_orderpoint_generator_sale/static/description/booleano_bozza.png" />
+<p>verranno mantenute le regole di riordino esistenti e quelle create verranno esposte separatamente e resteranno disattive:</p>
+<img alt="Numero regole in bozza" src="https://raw.githubusercontent.com/efatto/efatto/14.0/stock_orderpoint_generator_sale/static/description/regole_in_bozza.png" />
+<p>Si potranno poi confermare, e contemporaneamente disattivare quelle esistenti, con il bottoe <cite>Conferma regole di riordino in bozza</cite>:</p>
+<img alt="Conferma regole in bozza" src="https://raw.githubusercontent.com/efatto/efatto/14.0/stock_orderpoint_generator_sale/static/description/bottone_conferma.png" />
 <p>Il campo <cite>Crea le regole automaticamente</cite>: se selezionato si evita di dover cliccare sul tasto <cite>Genera regole automatiche</cite> in alto. Attiva un cron che disattiva e ricrea le regole di riordino ad ogni esecuzione, rendendole quindi sempre allineate con la situazione attuale dello stock.</p>
 <img alt="Genera automaticamente" src="https://raw.githubusercontent.com/efatto/efatto/14.0/stock_orderpoint_generator_sale/static/description/genera_automaticamente.png" />
 <p>Il campo <cite>Calcola sull’uscito</cite>: se selezionato, basa il calcolo su cui valutare la richiesta del prodotto sulle uscite di qualsiasi genere, quindi per vendite e consumi di produzione in genere. Selezionandolo spariscono i campi per l’impostazione di valori fissi sulle regole di riordino, l’auto minimo e massimo e altri criteri inutili con questa opzione.</p>
