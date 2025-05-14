@@ -2,7 +2,7 @@
 # License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl).
 {
     'name': 'Stock picking update move price',
-    'version': '12.0.1.0.1',
+    'version': '12.0.1.0.2',
     'license': 'AGPL-3',
     'author': 'Sergio Corato',
     'website': 'https://github.com/efatto/efatto',

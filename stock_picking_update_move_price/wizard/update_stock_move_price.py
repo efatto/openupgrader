@@ -1,5 +1,3 @@
-# Copyright 2021 Sergio Corato <https://github.com/sergiocorato>
-# License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl).
 from odoo import api, fields, models
 
 
@@ -11,8 +9,12 @@ class UpdateStockMovePriceWizard(models.TransientModel):
 
     @api.multi
     def update_stock_move_price(self):
-        move_ids = self.env.context.get('active_ids', False)
-        moves = self.env['stock.move'].browse(move_ids)
+        if self.env.context.get("active_model") == "stock.move.line":
+            move_line_ids = self.env.context.get('active_ids', False)
+            moves = self.env['stock.move.line'].browse(move_line_ids).mapped('move_id')
+        else:
+            move_ids = self.env.context.get('active_ids', False)
+            moves = self.env['stock.move'].browse(move_ids)
         for move in moves:
             # ensure only outgoing move price is negative, leave other decisions to user
             sign = -1 if move.picking_type_id.code == 'outgoing' else 1
