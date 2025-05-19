@@ -9,25 +9,19 @@ class StockMove(models.Model):
         # 1 in all cases exept the ones specified below
         sign = 1
         # -1 if from internal to others or scrap or return
-        if (
-            rec.location_id.usage == "internal"
-            and (
-                rec.location_dest_id.usage in [
-                    "customer", "inventory", "production", "supplier"]
-                or rec.location_dest_id.scrap_location
-                or rec.location_dest_id.return_location
-            )
+        if rec.location_id.usage == "internal" and (
+            rec.location_dest_id.usage
+            in ["customer", "inventory", "production", "supplier"]
+            or rec.location_dest_id.scrap_location
+            or rec.location_dest_id.return_location
         ):
             sign = -1
         # 0 if not from internal to others or scrap or return
-        elif (
-            rec.location_id.usage != "internal"
-            and (
-                rec.location_dest_id.usage in [
-                    "customer", "inventory", "production", "supplier"]
-                or rec.location_dest_id.scrap_location
-                or rec.location_dest_id.return_location
-            )
+        elif rec.location_id.usage != "internal" and (
+            rec.location_dest_id.usage
+            in ["customer", "inventory", "production", "supplier"]
+            or rec.location_dest_id.scrap_location
+            or rec.location_dest_id.return_location
         ):
             sign = 0
         # 0 if the origin location is the same as the dest location
