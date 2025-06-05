@@ -70,6 +70,7 @@ class OpenupgraderConfig(models.Model):
         default=lambda self: self.env["odoo.version"].search(
             [("name", "=", ".".join(str(v) for v in version_info[:2]))]
         ),
+        copy=False,
     )
     config_file = fields.Binary(
         string="Config file (yml)",
