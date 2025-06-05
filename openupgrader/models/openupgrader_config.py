@@ -88,12 +88,14 @@ class OpenupgraderConfig(models.Model):
         comodel_name="sql.update.command",
         inverse_name="openupgrade_config_id",
         string="SQL update commands",
+        copy=False,
     )
     module_auto_install_ids = fields.One2many(
         comodel_name="auto.install.module",
         inverse_name="openupgrade_config_id",
         string="Auto install modules",
         help="List of modules to install if there is another module installed",
+        copy=False,
     )
     module_to_delete_after_migration_ids = fields.Many2many(
         comodel_name="module.name",
