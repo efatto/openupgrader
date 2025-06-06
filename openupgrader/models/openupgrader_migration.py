@@ -233,7 +233,7 @@ class OpenupgraderMigration(models.Model):
         :param update: if True odoo will be updated with -u all and stopped
         :param extra_command: command that will be passed after executable
         :return: null
-        """  # FIXME non trova gli addons di odoo nel docker!
+        """
         version_name = version.name
         if self.odoo_migrated_state == "running":
             self.button_stop_odoo()
