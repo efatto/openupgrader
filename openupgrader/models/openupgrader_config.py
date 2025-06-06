@@ -266,19 +266,23 @@ class OpenupgraderConfig(models.Model):
                 ]
             if recipe.get("auto_install"):
                 auto_install = recipe.get("auto_install")
-                self.module_auto_install_ids = [
-                    (
-                        0,
-                        0,
-                        {
-                            "name": module.split(" ")[0],
-                            "sequence": i,
-                            "module_to_install_name": module.split(" ")[1],
-                        },
-                    )
-                    for i, module in enumerate(auto_install)
-                    if module not in self.module_auto_install_ids.mapped("name")
-                ]
+                for i, module in enumerate(auto_install):
+                    if all(
+                        m.name != module.split()[0]
+                        and m.module_to_install_name != module.split()[1]
+                        for m in self.module_auto_install_ids
+                    ):
+                        self.module_auto_install_ids = [
+                            (
+                                0,
+                                0,
+                                {
+                                    "name": module.split()[0],
+                                    "sequence": i,
+                                    "module_to_install_name": module.split()[1],
+                                },
+                            )
+                        ]
             if recipe.get("delete"):
                 delete = recipe.get("delete")
                 self.module_to_delete_after_migration_ids = [
