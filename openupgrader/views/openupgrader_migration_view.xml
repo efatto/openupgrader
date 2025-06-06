@@ -34,7 +34,7 @@
                     <button
                         name="button_restore_db_update"
                         type="object"
-                        string="Step 1 and 2: restore and update"
+                        string="1&amp;2: restore and update"
                         help="Restore and update db of current version before migration, alternative to use the two separated buttons"
                     />
                     <button
@@ -42,14 +42,14 @@
                         type="object"
                         class="oe_highlight"
                         attrs="{'invisible': [('state', '!=', 'created_venv')]}"
-                        string="Step 1: restore"
+                        string="1: restore"
                         help="Restore db of current version before migration"
                     />
                     <button
                         name="button_restore_db"
                         type="object"
                         attrs="{'invisible': [('state', '=', 'created_venv')]}"
-                        string="Step 1: restore"
+                        string="1: restore"
                         help="Restore db of current version before migration"
                     />
                     <button
@@ -57,29 +57,29 @@
                         type="object"
                         class="oe_highlight"
                         attrs="{'invisible': [('state', '!=', 'db_restored')]}"
-                        string="Step 2: update"
+                        string="2: update"
                         help="Update db of current version before migration"
                     />
                     <button
                         name="button_update_current_version"
                         type="object"
                         attrs="{'invisible': [('state', '=', 'db_restored')]}"
-                        string="Step 2: update"
+                        string="2: update"
                         help="Update db of current version before migration"
                     />
                     <button
-                        name="button_ready_for_migration"
+                        name="button_prepare_for_migration"
                         type="object"
                         class="oe_highlight"
-                        attrs="{'invisible': [('state', '!=', 'ready_for_migration')]}"
-                        string="Step 3: prepare migration"
+                        attrs="{'invisible': [('state', '!=', 'db_updated')]}"
+                        string="3: prepare migration"
                         help="Do some useful stuff before migration"
                     />
                     <button
-                        name="button_ready_for_migration"
+                        name="button_prepare_for_migration"
                         type="object"
-                        attrs="{'invisible': [('state', '=', 'ready_for_migration')]}"
-                        string="Step 3: prepare migration"
+                        attrs="{'invisible': [('state', '=', 'db_updated')]}"
+                        string="3: prepare migration"
                         help="Do some useful stuff before migration"
                     />
                     <button
@@ -87,7 +87,7 @@
                         type="object"
                         class="oe_highlight"
                         attrs="{'invisible': [('state', '!=', 'ready_for_migration')]}"
-                        string="Step 4: migrate"
+                        string="4: migrate"
                     />
                     <field
                         name="state"

@@ -126,6 +126,7 @@ class OpenupgraderMigration(models.Model):
             ("restoring_db", "Restoring DB"),
             ("restore_failed", "Restore failed"),
             ("db_restored", "DB restored"),
+            ("db_updated", "DB updated"),
             ("ready_for_migration", "Ready for migration"),
             ("migrating", "Migrating"),
             ("failed", "Failed"),
@@ -517,8 +518,9 @@ class OpenupgraderMigration(models.Model):
         self.disable_mail(disable=True)
         # n.b. when updating, at the end odoo service is stopped automatically
         self.start_odoo(self.current_version_id, update=True)
+        self.state = "db_updated"
 
-    def button_ready_for_migration(self):
+    def button_prepare_for_migration(self):
         if self.filestore:
             self.move_filestore(
                 from_version_id=self.current_version_id,

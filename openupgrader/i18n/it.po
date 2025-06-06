@@ -757,28 +757,28 @@ msgstr "Avvia Odoo"
 
 #. module: openupgrader
 #: model_terms:ir.ui.view,arch_db:openupgrader.view_openupgrader_migration_form
-msgid "Step 1 and 2: restore and update"
-msgstr "Passi 1 e 2: ripristina e aggiorna"
+msgid "1&2: restore and update"
+msgstr "1&2: ripristina e aggiorna"
 
 #. module: openupgrader
 #: model_terms:ir.ui.view,arch_db:openupgrader.view_openupgrader_migration_form
-msgid "Step 1: restore"
-msgstr "Passo 1: ripristina"
+msgid "1: restore"
+msgstr "1: ripristina"
 
 #. module: openupgrader
 #: model_terms:ir.ui.view,arch_db:openupgrader.view_openupgrader_migration_form
-msgid "Step 2: update"
-msgstr "Passo 2: aggiorna"
+msgid "2: update"
+msgstr "2: aggiorna"
 
 #. module: openupgrader
 #: model_terms:ir.ui.view,arch_db:openupgrader.view_openupgrader_migration_form
-msgid "Step 3: prepare migration"
-msgstr "Passo 3: prepara la migrazione"
+msgid "3: prepare migration"
+msgstr "3: prepara la migrazione"
 
 #. module: openupgrader
 #: model_terms:ir.ui.view,arch_db:openupgrader.view_openupgrader_migration_form
-msgid "Step 4: migrate"
-msgstr "Step 4: migra"
+msgid "4: migrate"
+msgstr "4: migra"
 
 #. module: openupgrader
 #: model_terms:ir.ui.view,arch_db:openupgrader.view_openupgrader_migration_form
