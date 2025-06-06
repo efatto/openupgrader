@@ -611,6 +611,8 @@ class OpenupgraderMigration(models.Model):
 
     def sql_fixes(self, openupgrader_config_ids):
         openupgrader_config_ids.ensure_one()
+        # do not change quote order as it will change the way the sql command is
+        # interpreted!
         for sql_update_command in openupgrader_config_ids.sql_update_command_ids:
             Popen(
                 [
@@ -619,7 +621,7 @@ class OpenupgraderMigration(models.Model):
                     "export "
                     f"PGPASSWORD={self.pg_password_var or self.pg_password or ''} && "
                     f"psql -U {self.pg_user} -d {self.env.cr.dbname}_migrate "
-                    f"-c '{sql_update_command.name}'",
+                    f'-c "{sql_update_command.name}"',
                 ],
                 shell=True,
             ).wait()
