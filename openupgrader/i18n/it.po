@@ -6,14 +6,19 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 14.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-05-03 14:12+0000\n"
-"PO-Revision-Date: 2025-05-03 14:12+0000\n"
+"POT-Creation-Date: 2025-06-07 08:11+0000\n"
+"PO-Revision-Date: 2025-06-07 08:11+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: \n"
 "Plural-Forms: \n"
+
+#. module: openupgrader
+#: model_terms:ir.ui.view,arch_db:openupgrader.view_openupgrader_migration_form
+msgid "1&2: restore and update"
+msgstr "1&2: ripristina e aggiorna"
 
 #. module: openupgrader
 #: model:ir.model.fields.selection,name:openupgrader.selection__odoo_version__name__10_0
@@ -61,6 +66,26 @@ msgid "18.0"
 msgstr ""
 
 #. module: openupgrader
+#: model_terms:ir.ui.view,arch_db:openupgrader.view_openupgrader_migration_form
+msgid "1: restore"
+msgstr "1: ripristina"
+
+#. module: openupgrader
+#: model_terms:ir.ui.view,arch_db:openupgrader.view_openupgrader_migration_form
+msgid "2: update"
+msgstr "2: aggiorna"
+
+#. module: openupgrader
+#: model_terms:ir.ui.view,arch_db:openupgrader.view_openupgrader_migration_form
+msgid "3: prepare migration"
+msgstr "3: prepara la migrazione"
+
+#. module: openupgrader
+#: model_terms:ir.ui.view,arch_db:openupgrader.view_openupgrader_migration_form
+msgid "4: migrate"
+msgstr "4: migra"
+
+#. module: openupgrader
 #: model:ir.model.fields.selection,name:openupgrader.selection__odoo_version__name__7_0
 msgid "7.0"
 msgstr ""
@@ -104,6 +129,11 @@ msgid "AutoInstall Module"
 msgstr "Moduli da auto installare"
 
 #. module: openupgrader
+#: model_terms:ir.ui.view,arch_db:openupgrader.view_openupgrader_migration_form
+msgid "Clean migration log"
+msgstr "Pulisci log migrazione"
+
+#. module: openupgrader
 #: model_terms:ir.ui.view,arch_db:openupgrader.view_openupgrader_config_form
 msgid "Config File"
 msgstr "File di configurazione"
@@ -122,11 +152,6 @@ msgstr "Nome del file di configuazione"
 #: model_terms:ir.ui.view,arch_db:openupgrader.view_odoo_version_form
 msgid "Create virtualenv"
 msgstr "Crea virtualenv"
-
-#. module: openupgrader
-#: model:ir.model.fields.selection,name:openupgrader.selection__openupgrader_migration__state__created_venv
-msgid "Venv created"
-msgstr "Virtualenv creato"
 
 #. module: openupgrader
 #: model:ir.model.fields,field_description:openupgrader.field_auto_install_module__create_uid
@@ -163,16 +188,6 @@ msgstr "Versione migrata corrente"
 #: model:ir.model.fields,help:openupgrader.field_openupgrader_migration__pg_options
 msgid "Custom options for the postgres connection, like '--cluster 14/main'"
 msgstr "Opzioni custom per la connessione postgres, tipo '--cluster 14/main'"
-
-#. module: openupgrader
-#: model:ir.model.fields.selection,name:openupgrader.selection__openupgrader_migration__state__restored
-msgid "Restored"
-msgstr "Ripristinato"
-
-#. module: openupgrader
-#: model:ir.model.fields.selection,name:openupgrader.selection__openupgrader_migration__state__migrated
-msgid "Migrated"
-msgstr "Migrato"
 
 #. module: openupgrader
 #: model:ir.model.fields,field_description:openupgrader.field_openupgrader_migration__db_name
@@ -244,6 +259,16 @@ msgid "From version"
 msgstr "Dalla versione"
 
 #. module: openupgrader
+#: model:ir.model.fields,field_description:openupgrader.field_remote_repo__github_token
+msgid "Git Token"
+msgstr "Token Git"
+
+#. module: openupgrader
+#: model:ir.model.fields,field_description:openupgrader.field_remote_repo__github_user
+msgid "Git User"
+msgstr "User Git"
+
+#. module: openupgrader
 #: model:ir.model.fields,field_description:openupgrader.field_auto_install_module__id
 #: model:ir.model.fields,field_description:openupgrader.field_module_name__id
 #: model:ir.model.fields,field_description:openupgrader.field_odoo_version__id
@@ -255,6 +280,11 @@ msgstr "Dalla versione"
 #: model:ir.model.fields,field_description:openupgrader.field_sql_update_command__id
 msgid "ID"
 msgstr ""
+
+#. module: openupgrader
+#: model:ir.model.fields,field_description:openupgrader.field_remote_repo__is_odoo
+msgid "Is Odoo"
+msgstr "È Odoo"
 
 #. module: openupgrader
 #: model:ir.model.fields,field_description:openupgrader.field_auto_install_module____last_update
@@ -321,6 +351,11 @@ msgid "Migrate Ddt"
 msgstr ""
 
 #. module: openupgrader
+#: model:ir.model.fields.selection,name:openupgrader.selection__openupgrader_migration__state__migrated
+msgid "Migrated"
+msgstr "Migrato"
+
+#. module: openupgrader
 #: model:ir.model.fields,help:openupgrader.field_openupgrader_migration__odoo_migrated_state
 msgid "Migrated Odoo is running or stopped"
 msgstr "L'Odoo migrato è acceso o spento"
@@ -334,6 +369,17 @@ msgstr "Stato della migrazione"
 #: model:ir.model.fields.selection,name:openupgrader.selection__openupgrader_migration__state__migrating
 msgid "Migrating"
 msgstr "In migrazione"
+
+#. module: openupgrader
+#: code:addons/openupgrader/models/openupgrader_migration.py:0
+#, python-format
+msgid "Migration done from version %s to version %s"
+msgstr "Migrazione eseguita dalla versione %s alla versione %s"
+
+#. module: openupgrader
+#: model:ir.model.fields,field_description:openupgrader.field_openupgrader_migration__migration_error_log
+msgid "Migration error log"
+msgstr "Log errori migrazione"
 
 #. module: openupgrader
 #: model:ir.model.fields,field_description:openupgrader.field_openupgrader_migration__state
@@ -358,6 +404,24 @@ msgstr ""
 #, python-format
 msgid "Missing repos file!"
 msgstr "File dei repositories mancante!"
+
+#. module: openupgrader
+#: code:addons/openupgrader/models/openupgrader_migration.py:0
+#, python-format
+msgid "Module %s not found"
+msgstr "Modulo %s non trovato"
+
+#. module: openupgrader
+#: code:addons/openupgrader/models/openupgrader_migration.py:0
+#, python-format
+msgid "Module %s not uninstalled for %s, trying %s/%s times."
+msgstr "Modulo %s non disinstallato per %s, riprovato %s/%s volte."
+
+#. module: openupgrader
+#: code:addons/openupgrader/models/openupgrader_migration.py:0
+#, python-format
+msgid "Module %s uninstalled"
+msgstr "Modulo %s disinstallato"
 
 #. module: openupgrader
 #: model:ir.model.fields,field_description:openupgrader.field_auto_install_module__module_installed_id
@@ -390,19 +454,26 @@ msgid "Module to uninstall before migration"
 msgstr "Modulo da disinstallare prima della migrazione"
 
 #. module: openupgrader
+#: code:addons/openupgrader/models/openupgrader_migration.py:0
+#, python-format
+msgid "Modules after: %s"
+msgstr "Moduli dopo: %s"
+
+#. module: openupgrader
 #: model:ir.model.fields,field_description:openupgrader.field_openupgrader_config__module_to_delete_after_migration_ids
 msgid "Modules to delete after migration"
 msgstr "Moduli da cancellare dopo la migrazione"
 
 #. module: openupgrader
+#: code:addons/openupgrader/models/openupgrader_migration.py:0
+#, python-format
+msgid "Modules: %s"
+msgstr "Moduli: %s"
+
+#. module: openupgrader
 #: model:ir.model.fields,field_description:openupgrader.field_openupgrader_migration__next_version_id
 msgid "Next version to be migrated"
 msgstr "Prossima versione da migrare"
-
-#. module: openupgrader
-#: model:ir.model.fields,field_description:openupgrader.field_openupgrader_migration__odoo_repo
-msgid "Odoo Repository"
-msgstr "Repository Odoo"
 
 #. module: openupgrader
 #: model:ir.model.fields,field_description:openupgrader.field_openupgrader_migration__address
@@ -427,6 +498,11 @@ msgstr "Ricerca versione Odoo"
 #: model:ir.model.fields,field_description:openupgrader.field_odoo_version__name
 msgid "Odoo Version name"
 msgstr "Nome versione Odoo"
+
+#. module: openupgrader
+#: model:ir.model.fields,field_description:openupgrader.field_openupgrader_migration__odoo_error_log
+msgid "Odoo error log"
+msgstr "Log errori Odoo"
 
 #. module: openupgrader
 #: model:ir.model.fields,field_description:openupgrader.field_odoo_version__odoo_is_openupgrade
@@ -458,6 +534,16 @@ msgstr "Utente Odoo"
 #: model:ir.model.fields,field_description:openupgrader.field_openupgrader_repo__odoo_version_id
 msgid "Odoo version"
 msgstr "Versione Odoo"
+
+#. module: openupgrader
+#: model:ir.model.fields,field_description:openupgrader.field_odoo_version__openupgrader_config_ids
+msgid "OpenUpgrader Configurations"
+msgstr "Configurazioni OpenUpgrader"
+
+#. module: openupgrader
+#: model:ir.model.fields,field_description:openupgrader.field_odoo_version__openupgrader_repo_ids
+msgid "OpenUpgrader Repositories"
+msgstr "Repositories OpenUpgrader"
 
 #. module: openupgrader
 #: model:ir.model.fields,field_description:openupgrader.field_openupgrader_migration__openupgrade_repo
@@ -531,7 +617,6 @@ msgstr "Repository OpenUpgrader"
 
 #. module: openupgrader
 #: model:ir.model,name:openupgrader.model_openupgrader_config
-#: model:ir.model.fields,field_description:openupgrader.field_openupgrader_migration__config_ids
 msgid "Openupgrader config"
 msgstr "Configurazione OpenUpgrader"
 
@@ -580,6 +665,11 @@ msgstr "Utente Postgres"
 #: model:ir.model.fields,field_description:openupgrader.field_odoo_version__python_version
 msgid "Python Version"
 msgstr "Versione Python"
+
+#. module: openupgrader
+#: model_terms:ir.ui.view,arch_db:openupgrader.view_odoo_version_form
+msgid "Re-create virtualenv"
+msgstr "Ricrea virtualenv"
 
 #. module: openupgrader
 #: model:ir.model.fields.selection,name:openupgrader.selection__openupgrader_migration__state__ready_for_migration
@@ -632,18 +722,13 @@ msgid "Repos file name"
 msgstr "Nome file repositories"
 
 #. module: openupgrader
-#: model:ir.model.fields,field_description:openupgrader.field_openupgrader_migration__repo_ids
-msgid "Repositories"
-msgstr ""
-
-#. module: openupgrader
 #: model_terms:ir.ui.view,arch_db:openupgrader.view_openupgrader_migration_form
 msgid ""
 "Restore and update db of current version before migration, alternative to "
 "use the two separated buttons"
 msgstr ""
-"Ripristina e aggiorna il db della versione corrente prima di migrarlo, in alternativa all'"
-"uso dei due bottoni separati"
+"Ripristina e aggiorna il db della versione corrente prima di migrarlo, in "
+"alternativa all'uso dei due bottoni separati"
 
 #. module: openupgrader
 #: model_terms:ir.ui.view,arch_db:openupgrader.view_openupgrader_migration_form
@@ -654,6 +739,11 @@ msgstr "Ripristina alla versione corrente prima di migrare"
 #: model:ir.model.fields.selection,name:openupgrader.selection__openupgrader_migration__state__restore_failed
 msgid "Restore failed"
 msgstr "Ripristino fallito"
+
+#. module: openupgrader
+#: model:ir.model.fields.selection,name:openupgrader.selection__openupgrader_migration__state__restored
+msgid "Restored"
+msgstr "Ripristinato"
 
 #. module: openupgrader
 #: model:ir.model.fields.selection,name:openupgrader.selection__openupgrader_migration__state__restoring
@@ -696,6 +786,12 @@ msgstr ""
 "usare la stessa."
 
 #. module: openupgrader
+#: code:addons/openupgrader/models/openupgrader_migration.py:0
+#, python-format
+msgid "Set next version to %s"
+msgstr "Impostata prossima versione a %s"
+
+#. module: openupgrader
 #: model:ir.model.fields,help:openupgrader.field_openupgrader_migration__pg_password_var
 msgid ""
 "Set the environment variable (like $POSTGRES_PASSWORD), alternative to "
@@ -724,31 +820,6 @@ msgstr "Imposta a bozza"
 #: model_terms:ir.ui.view,arch_db:openupgrader.view_openupgrader_migration_form
 msgid "Start Odoo (current migrated version)"
 msgstr "Avvia Odoo"
-
-#. module: openupgrader
-#: model_terms:ir.ui.view,arch_db:openupgrader.view_openupgrader_migration_form
-msgid "1&2: restore and update"
-msgstr "1&2: ripristina e aggiorna"
-
-#. module: openupgrader
-#: model_terms:ir.ui.view,arch_db:openupgrader.view_openupgrader_migration_form
-msgid "1: restore"
-msgstr "1: ripristina"
-
-#. module: openupgrader
-#: model_terms:ir.ui.view,arch_db:openupgrader.view_openupgrader_migration_form
-msgid "2: update"
-msgstr "2: aggiorna"
-
-#. module: openupgrader
-#: model_terms:ir.ui.view,arch_db:openupgrader.view_openupgrader_migration_form
-msgid "3: prepare migration"
-msgstr "3: prepara la migrazione"
-
-#. module: openupgrader
-#: model_terms:ir.ui.view,arch_db:openupgrader.view_openupgrader_migration_form
-msgid "4: migrate"
-msgstr "4: migra"
 
 #. module: openupgrader
 #: model_terms:ir.ui.view,arch_db:openupgrader.view_openupgrader_migration_form
@@ -788,6 +859,21 @@ msgid "Update db of current version before migration"
 msgstr "Aggiorna il db della versione corrente prima di migrarlo"
 
 #. module: openupgrader
+#: model:ir.model.fields.selection,name:openupgrader.selection__openupgrader_migration__state__updated
+msgid "Updated"
+msgstr "Aggiornato"
+
+#. module: openupgrader
+#: model_terms:ir.ui.view,arch_db:openupgrader.view_openupgrader_migration_form
+msgid "Utilities"
+msgstr "Utilità"
+
+#. module: openupgrader
+#: model:ir.model.fields.selection,name:openupgrader.selection__openupgrader_migration__state__created_venv
+msgid "Venv created"
+msgstr "Virtualenv creato"
+
+#. module: openupgrader
 #: model:ir.model.fields,field_description:openupgrader.field_openupgrader_migration__verify_ssl
 msgid "Verify Ssl"
 msgstr "Verifica Ssl"
@@ -796,8 +882,3 @@ msgstr "Verifica Ssl"
 #: model:ir.model.fields,field_description:openupgrader.field_openupgrader_migration__xmlrpc_port
 msgid "XmlRpc port"
 msgstr "Porta XmlRpc"
-
-#. module: openupgrader
-#: model_terms:ir.ui.view,arch_db:openupgrader.view_openupgrader_migration_form
-msgid "https://github.com/OCB/OCB.git"
-msgstr ""

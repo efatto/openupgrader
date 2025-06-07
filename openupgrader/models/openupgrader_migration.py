@@ -635,16 +635,15 @@ class OpenupgraderMigration(models.Model):
             self.dump_filestore(self.current_version_id.name)
         logger.info(
             _(
-                f"Migration done from version {self.current_version_id.name} "
-                f"to version {self.next_version_id.name}"
-            )
+                "Migration done from version %s to version %s"
+            ) % (self.current_version_id.name, self.next_version_id.name)
         )
         # self.disable_cron() # to be re-enabled manually after all is gone ok
         self.current_version_id = self.next_version_id
         self.next_version_id = self.env["odoo.version"].search(
             [("name", "=", str(float(self.current_version_id.name) + 1))]
         )
-        logger.info(_(f"Set next version to {self.next_version_id}"))
+        logger.info(_("Set next version to %s") % self.next_version_id)
         self.state = "done"
 
     def button_refresh_state(self):

@@ -40,12 +40,12 @@ class OdooVersion(models.Model):
     openupgrader_repo_ids = fields.One2many(
         comodel_name="openupgrader.repo",
         inverse_name="odoo_version_id",
-        string="OpenUpgrade Repositories",
+        string="OpenUpgrader Repositories",
     )
     openupgrader_config_ids = fields.One2many(
         comodel_name="openupgrader.config",
         inverse_name="odoo_version_id",
-        string="OpenUpgrade Configurations",
+        string="OpenUpgrader Configurations",
     )
 
     @api.depends("name")
@@ -64,7 +64,8 @@ class OdooVersion(models.Model):
         version_name = self.name
         if openupgrader_migration_id:
             venv_folder = os.path.join(
-                openupgrader_migration_id.folder, f"openupgrade{version_name}")
+                openupgrader_migration_id.folder, f"openupgrade{version_name}"
+            )
             if os.path.isdir(venv_folder):
                 shutil.rmtree(venv_folder)
         self.button_create_venv()
