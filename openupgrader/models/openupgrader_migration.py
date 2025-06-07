@@ -675,9 +675,10 @@ class OpenupgraderMigration(models.Model):
                             self.state = "failed"
                         elif "Initiating shutdown" in contents:
                             self.state = "migrated"
-                    for x in contents.split(" ERROR "):
-                        # add the first 5 rows after the error to the log
-                        self.migration_error_log += "\n".join(x.split("\n")[:5])
+                    if contents and " ERROR " in contents:
+                        for x in contents.split(" ERROR "):
+                            # add the first 5 rows after the error to the log
+                            self.migration_error_log += "\n".join(x.split("\n")[:5])
 
     def sql_fixes(self, openupgrader_config_ids):
         openupgrader_config_ids.ensure_one()
