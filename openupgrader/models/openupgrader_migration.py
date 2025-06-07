@@ -122,21 +122,23 @@ class OpenupgraderMigration(models.Model):
     state = fields.Selection(
         selection=[
             ("draft", "Draft"),
-            ("created_venv", "Created Venv"),
-            ("restoring_db", "Restoring DB"),
+            ("created_venv", "Venv created"),
+            ("restoring", "Restoring"),
             ("restore_failed", "Restore failed"),
-            ("db_restored", "DB restored"),
-            ("db_updated", "DB updated"),
+            ("restored", "Restored"),
+            ("updated", "Updated"),
             ("ready_for_migration", "Ready for migration"),
             ("migrating", "Migrating"),
             ("failed", "Failed"),
-            ("db_migrated", "Database migrated"),
+            ("migrated", "Migrated"),
             ("done", "Done"),
         ],
         string="Migration state",
         readonly=True,
         default="draft",
     )
+    odoo_error_log = fields.Text(string="Odoo error log")
+    migration_error_log = fields.Text(string="Migration error log")
 
     @api.model
     def _default_folder(self):
@@ -449,7 +451,7 @@ class OpenupgraderMigration(models.Model):
         )
         process.wait()
 
-    def restore_db(self):
+    def restore(self):
         Popen(
             [
                 f"export PGPORT={self.db_port} && "
@@ -488,11 +490,11 @@ class OpenupgraderMigration(models.Model):
         ).wait()
         os.unlink(dump_file_sql)
 
-    def button_restore_db_update(self):
-        self.button_restore_db()
+    def button_restore_update(self):
+        self.button_restore()
         self.button_update_current_version()
 
-    def button_restore_db(self):
+    def button_restore(self):
         self.ensure_one()
         if not self.next_version_id:
             self.current_version_id = self.from_version_id
@@ -510,15 +512,15 @@ class OpenupgraderMigration(models.Model):
             if self.filestore:
                 self.dump_filestore(self.current_version_id.name)
                 self.restore_filestore(self.current_version_id, self.current_version_id)
-            self.restore_db()
-        self.state = "db_restored"
+            self.restore()
+        self.state = "restored"
 
     def button_update_current_version(self):
         self.ensure_one()
         self.disable_mail(disable=True)
         # n.b. when updating, at the end odoo service is stopped automatically
         self.start_odoo(self.current_version_id, update=True)
-        self.state = "db_updated"
+        self.state = "updated"
 
     def button_prepare_for_migration(self):
         if self.filestore:
@@ -588,6 +590,15 @@ class OpenupgraderMigration(models.Model):
         self.state = "done"
 
     def button_refresh_state(self):
+        self._refresh_state()
+
+    def _refresh_state(self):
+        if self.odoo_pid:
+            if psutil.pid_exists(self.odoo_pid):
+                self.odoo_migrated_state = "running"
+            else:
+                self.odoo_migrated_state = "stopped"
+
         for version in [self.current_version_id, self.next_version_id]:
             migration_log_path = os.path.join(
                 os.path.join(self.folder, f"openupgrade{version.name}"),
@@ -597,17 +608,20 @@ class OpenupgraderMigration(models.Model):
                 with open(migration_log_path) as file:
                     contents = file.read()
                     if version == self.current_version_id:
-                        self.state = "restoring_db"
+                        self.state = "restoring"
                         if "CRITICAL" in contents:
                             self.state = "restore_failed"
                         elif "Initiating shutdown" in contents:
-                            self.state = "db_restored"
+                            self.state = "restored"
                     if version == self.next_version_id:
                         self.state = "migrating"
                         if "CRITICAL" in contents:
                             self.state = "failed"
                         elif "Initiating shutdown" in contents:
-                            self.state = "db_migrated"
+                            self.state = "migrated"
+                    for x in contents.split(" ERROR "):
+                        # add the first 5 rows after the error to the log
+                        self.migration_error_log += "\n".join(x.split("\n")[:5])
 
     def sql_fixes(self, openupgrader_config_ids):
         openupgrader_config_ids.ensure_one()

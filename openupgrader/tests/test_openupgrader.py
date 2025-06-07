@@ -101,8 +101,8 @@ class Openupgrader(SavepointCase):
         cls.to_version_id.button_create_venv()
 
     def test_openupgrader(self):
-        self.openupgrader_migration.button_restore_db()
-        self.assertEqual(self.openupgrader_migration.state, "db_restored")
+        self.openupgrader_migration.button_restore()
+        self.assertEqual(self.openupgrader_migration.state, "restored")
         self.assertEqual(
             self.openupgrader_migration.current_version_id,
             self.from_version_id,

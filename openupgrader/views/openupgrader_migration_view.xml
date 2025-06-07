@@ -32,13 +32,13 @@
                 <header>
                     <button name="button_draft" type="object" string="Set to draft" />
                     <button
-                        name="button_restore_db_update"
+                        name="button_restore_update"
                         type="object"
                         string="1&amp;2: restore and update"
                         help="Restore and update db of current version before migration, alternative to use the two separated buttons"
                     />
                     <button
-                        name="button_restore_db"
+                        name="button_restore"
                         type="object"
                         class="oe_highlight"
                         attrs="{'invisible': [('state', '!=', 'created_venv')]}"
@@ -46,7 +46,7 @@
                         help="Restore db of current version before migration"
                     />
                     <button
-                        name="button_restore_db"
+                        name="button_restore"
                         type="object"
                         attrs="{'invisible': [('state', '=', 'created_venv')]}"
                         string="1: restore"
@@ -56,14 +56,14 @@
                         name="button_update_current_version"
                         type="object"
                         class="oe_highlight"
-                        attrs="{'invisible': [('state', '!=', 'db_restored')]}"
+                        attrs="{'invisible': [('state', '!=', 'restored')]}"
                         string="2: update"
                         help="Update db of current version before migration"
                     />
                     <button
                         name="button_update_current_version"
                         type="object"
-                        attrs="{'invisible': [('state', '=', 'db_restored')]}"
+                        attrs="{'invisible': [('state', '=', 'restored')]}"
                         string="2: update"
                         help="Update db of current version before migration"
                     />
@@ -71,14 +71,14 @@
                         name="button_prepare_for_migration"
                         type="object"
                         class="oe_highlight"
-                        attrs="{'invisible': ['|', ('state', 'not in', ['db_updated', 'done']), ('next_version_id', '!=', True)]}"
+                        attrs="{'invisible': ['|', ('state', 'not in', ['updated', 'done']), ('next_version_id', '=', False)]}"
                         string="3: prepare migration"
                         help="Do some useful stuff before migration"
                     />
                     <button
                         name="button_prepare_for_migration"
                         type="object"
-                        attrs="{'invisible': ['|', ('state', 'in', ['db_updated', 'done']), ('next_version_id', '!=', True)]}"
+                        attrs="{'invisible': ['|', ('state', 'in', ['updated', 'done']), ('next_version_id', '=', False)]}"
                         string="3: prepare migration"
                         help="Do some useful stuff before migration"
                     />
@@ -86,13 +86,13 @@
                         name="button_do_migration"
                         type="object"
                         class="oe_highlight"
-                        attrs="{'invisible': ['|', ('state', '!=', 'ready_for_migration'), ('next_version_id', '!=', True)]}"
+                        attrs="{'invisible': ['|', ('state', '!=', 'ready_for_migration'), ('next_version_id', '=', False)]}"
                         string="4: migrate"
                     />
                     <field
                         name="state"
                         widget="statusbar"
-                        statusbar_visible="draft,created_venv,restoring_db,restore_failed,db_restored,ready_for_migration,migrating,failed,db_migrated,done"
+                        statusbar_visible="draft,created_venv,restoring,restore_failed,restored,ready_for_migration,migrating,failed,migrated,done"
                     />
                 </header>
                 <sheet string="OpenUpgrader migration">
@@ -141,6 +141,10 @@
                     </group>
                     <group>
                         <field name="disabled_cron_ids" />
+                    </group>
+                    <group>
+                        <field name="odoo_error_log" />
+                        <field name="migration_error_log" />
                     </group>
                 </sheet>
             </form>
