@@ -121,6 +121,18 @@
                         <group>
                             <field name="odoo_migrated_state" />
                         </group>
+                        <group>
+                            <group>
+                                <field name="migrated_file"/>
+                            </group>
+                            <group>
+                                <button
+                                    name="button_upload_migrated_file"
+                                    type="object"
+                                    string="Upload migrated file"
+                                />
+                            </group>
+                        </group>
                         <group colspan="4" col="2">
                             <group string="Utilities" />
                             <group colspan="2" col="4">

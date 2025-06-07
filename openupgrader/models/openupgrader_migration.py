@@ -1,4 +1,4 @@
-# from main import openupgrade_fixes
+import base64
 import logging
 import os
 import shutil
@@ -16,6 +16,7 @@ from odoorpc.rpc import CookieJar, HTTPCookieProcessor, build_opener
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
 from odoo.modules import get_module_resource
+from odoo.service import db
 from odoo.tools import config
 
 from odoo.addons.python_venv.python_venv import _get_env_for_subprocess
@@ -140,6 +141,7 @@ class OpenupgraderMigration(models.Model):
     )
     odoo_error_log = fields.Text(string="Odoo error log")
     migration_error_log = fields.Text(string="Migration error log")
+    migrated_file = fields.Binary()
 
     @api.model
     def _default_folder(self):
@@ -238,6 +240,7 @@ class OpenupgraderMigration(models.Model):
         :return: null
         """
         version_name = version.name
+        version_float = float(version_name)
         if self.odoo_migrated_state == "running":
             self.button_stop_odoo()
         folder = self.check_venv(version_name)
@@ -249,23 +252,23 @@ class OpenupgraderMigration(models.Model):
         load = "web"
         if version_name == "10.0":
             load = "web,web_kanban"
-        if float(version_name) > 11:
+        if version_float > 11:
             load = "base,web"
-        if float(version_name) > 13:
+        if version_float > 13:
             load += ",openupgrade_framework,module_change_auto_install"
         executable = (
             f"{folder}/odoo/openerp-server"
-            if float(version_name) < 10
+            if version_float < 10
             else f"{folder}/odoo/odoo-bin"
-            if float(version_name) < 14
+            if version_float < 14
             else f"{folder}/repos/odoo/odoo-bin"
         )
         self._set_odoorc(folder)
         addons_path = f"{folder}/repos/odoo/addons"
-        if float(version_name) < 14:
+        if version_float < 14:
             addons_path = f"{folder}/odoo/addons"
         extra_addons_path = f",{folder}/repos/odoo/odoo/addons,{folder}/odoo"
-        if 9 < float(version_name) < 14:
+        if 9 < version_float < 14:
             extra_addons_path = f",{folder}/odoo/odoo/addons"
         for remote_repo in (
             version.openupgrader_repo_ids.mapped("remote_repo_ids")
@@ -466,6 +469,19 @@ class OpenupgraderMigration(models.Model):
                 cwd=self.folder,
                 shell=True,
             ).wait()
+
+    def button_upload_migrated_file(self):
+        with open(
+            os.path.join(
+                self.folder,
+                f'database.{self.current_version_id.name}.zip'
+            ), "wb"
+        ) as destiny:
+            db.dump_db(
+                f"{self.env.cr.dbname}_migrate", destiny, backup_format="zip"
+            )
+            data = open(destiny.name, "rb").read()
+            self.migrated_file = base64.encodebytes(data)
 
     def dump_filestore(self, version):
         filestore_path = os.path.join(self.folder, version, "data_dir", "filestore")
