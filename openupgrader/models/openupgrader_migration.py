@@ -634,9 +634,8 @@ class OpenupgraderMigration(models.Model):
         if self.filestore:
             self.dump_filestore(self.current_version_id.name)
         logger.info(
-            _(
-                "Migration done from version %s to version %s"
-            ) % (self.current_version_id.name, self.next_version_id.name)
+            _("Migration done from version %s to version %s")
+            % (self.current_version_id.name, self.next_version_id.name)
         )
         # self.disable_cron() # to be re-enabled manually after all is gone ok
         self.current_version_id = self.next_version_id
@@ -650,8 +649,7 @@ class OpenupgraderMigration(models.Model):
         self._refresh_state()
 
     def _refresh_state(self):
-        if not self.migration_error_log:
-            self.migration_error_log = " "
+        self.migration_error_log = " "
         if self.odoo_pid:
             if psutil.pid_exists(self.odoo_pid):
                 self.odoo_migrated_state = "running"

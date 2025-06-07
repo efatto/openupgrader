@@ -127,7 +127,7 @@
                                 <button
                                     name="button_refresh_state"
                                     type="object"
-                                    string="Refresh state"
+                                    string="Refresh state and log"
                                 />
                                 <button
                                     name="button_clean_migration_error_log"
