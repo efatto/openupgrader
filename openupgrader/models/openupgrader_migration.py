@@ -292,6 +292,7 @@ class OpenupgraderMigration(models.Model):
             f"--limit-time-real=32000 "
             f"--limit-memory-soft=4147483648 "
             f"--limit-memory-hard=4679107584 "
+            f"--{'longpolling' if version_float < 16 else 'gevent'}-port=8072 "
             f"--load={load} "
             f"-d {self.env.cr.dbname}_migrate "
         )
