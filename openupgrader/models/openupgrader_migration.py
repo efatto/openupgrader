@@ -507,6 +507,7 @@ class OpenupgraderMigration(models.Model):
             ).wait()
 
     def dump_database(self, version):
+        destination_path = os.path.join(self.folder, f'database.{version}.sql')
         connection_string = (
             f"postgresql://{self.pg_user}:"
             f"{self.pg_password_var or self.pg_password or ''}@"
@@ -515,7 +516,7 @@ class OpenupgraderMigration(models.Model):
         process = Popen(
             [
                 f"pg_dump {self.pg_options or ''} -Fc -O {connection_string}"
-                f"> {os.path.join(self.folder, f'database.{version}.sql')}"
+                f"> {destination_path}"
             ],
             shell=True,
         )
