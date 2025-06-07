@@ -33,6 +33,12 @@
                         type="object"
                         string="Create virtualenv"
                     />
+                    <button
+                        name="button_recreate_venv"
+                        type="object"
+                        string="Re-create virtualenv"
+                        help="To recreate a clean virtualenv after removing some repos or libraries"
+                    />
                 </header>
                 <sheet string="Odoo Version">
                     <group>

@@ -1,4 +1,5 @@
 import os
+import shutil
 import subprocess
 
 from odoo import api, fields, models
@@ -55,15 +56,17 @@ class OdooVersion(models.Model):
             else:
                 record.odoo_is_openupgrade = False
 
-    def button_clean_venv(self):
+    def button_recreate_venv(self):
         # Remove folder and re-create a clean virtual environment
         self.ensure_one()
         openupgrader_migration_id = self.env["openupgrader.migration"].search([])
         openupgrader_migration_id.ensure_one()
         version_name = self.name
         if openupgrader_migration_id:
-            os.path.join(openupgrader_migration_id.folder, f"openupgrade{version_name}")
-            # todo Remove folder
+            venv_folder = os.path.join(
+                openupgrader_migration_id.folder, f"openupgrade{version_name}")
+            if os.path.isdir(venv_folder):
+                shutil.rmtree(venv_folder)
         self.button_create_venv()
 
     def button_create_venv(self):
@@ -106,9 +109,7 @@ class OdooVersion(models.Model):
             else:
                 subprocess.Popen(
                     [
-                        # f"git reset --hard origin/{version_name}",
                         "git pull --rebase",
-                        # f"git reset --hard origin/{version_name}",
                     ],
                     cwd=openupgrade_path,
                     env=subprocess_env,  # forse qui non serve
