@@ -1,19 +1,22 @@
 # from main import openupgrade_fixes
 import logging
 import os
+import queue
 import shutil
 import signal
 import ssl
 import sys
+import threading
 import time
 from subprocess import PIPE, Popen
 from urllib.request import HTTPSHandler
 
 import odoorpc
+import psutil
 from odoorpc.rpc import CookieJar, HTTPCookieProcessor, build_opener
 
 from odoo import _, api, fields, models
-from odoo.exceptions import UserError
+from odoo.exceptions import UserError, ValidationError
 from odoo.modules import get_module_resource
 from odoo.tools import config
 
@@ -301,8 +304,15 @@ class OpenupgraderMigration(models.Model):
         subprocess_env = _get_env_for_subprocess(folder, version.python_version)
         logger.info(bash_command)
         process = Popen(
-            bash_command, cwd=folder, stdout=PIPE, env=subprocess_env, shell=True
+            bash_command,
+            cwd=folder,
+            stdout=PIPE,
+            # stderr=PIPE,
+            # text=True,
+            env=subprocess_env,
+            shell=True,
         )
+        # self._log_process(process, bash_command)
         self.odoo_pid = process.pid
         if update:
             # only updating the process will end automatically
@@ -311,6 +321,52 @@ class OpenupgraderMigration(models.Model):
             time.sleep(1)
             self.odoo_migrated_state = "running"
         time.sleep(1)
+        self._refresh_state()
+
+    # def _log_process(self, process, full_command):
+    #     output_queue = queue.Queue()
+    #
+    #     def reader_thread(pipe, output_queue):
+    #         try:
+    #             for l in pipe:
+    #                 output_queue.put(l)
+    #         finally:
+    #             output_queue.put(None)
+    #
+    #     stdout_thread = threading.Thread(
+    #         target=reader_thread,
+    #         args=(process.stdout, output_queue)
+    #     )
+    #     stderr_thread = threading.Thread(
+    #         target=reader_thread,
+    #         args=(process.stderr, output_queue)
+    #     )
+    #
+    #     stdout_thread.start()
+    #     stderr_thread.start()
+    #
+    #     while True:
+    #         # if self._stop_event.is_set():
+    #         #     process.terminate()
+    #         #     break
+    #
+    #         try:
+    #             line = output_queue.get(timeout=0.1)
+    #             if line is None:
+    #                 break
+    #             self.migration_error_log += line
+    #             logger.info(line)
+    #         except queue.Empty:
+    #             continue
+    #
+    #     stdout_thread.join()
+    #     stderr_thread.join()
+    #     return_code = process.wait()
+    #
+    #     if return_code != 0:
+    #         raise ValidationError(
+    #             return_code, full_command
+    #         )
 
     def _stop_pid(self, pid=False):
         if not pid:
