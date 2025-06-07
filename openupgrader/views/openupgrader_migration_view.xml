@@ -71,14 +71,14 @@
                         name="button_prepare_for_migration"
                         type="object"
                         class="oe_highlight"
-                        attrs="{'invisible': [('state', '!=', 'db_updated')]}"
+                        attrs="{'invisible': ['|', ('state', 'not in', ['db_updated', 'done']), ('next_version_id', '!=', True)]}"
                         string="3: prepare migration"
                         help="Do some useful stuff before migration"
                     />
                     <button
                         name="button_prepare_for_migration"
                         type="object"
-                        attrs="{'invisible': [('state', '=', 'db_updated')]}"
+                        attrs="{'invisible': ['|', ('state', 'in', ['db_updated', 'done']), ('next_version_id', '!=', True)]}"
                         string="3: prepare migration"
                         help="Do some useful stuff before migration"
                     />
@@ -86,7 +86,7 @@
                         name="button_do_migration"
                         type="object"
                         class="oe_highlight"
-                        attrs="{'invisible': [('state', '!=', 'ready_for_migration')]}"
+                        attrs="{'invisible': ['|', ('state', '!=', 'ready_for_migration'), ('next_version_id', '!=', True)]}"
                         string="4: migrate"
                     />
                     <field
