@@ -31,7 +31,6 @@ repositories:
       - git+https://github.com/OCA/openupgradelib.git@master#egg=openupgradelib
     remotes:
       openupgrader: https://github.com/efatto/openupgrader.git 13.0
-      l10n-italy: https://github.com/OCA/l10n-italy.git 13.0
       server-tools: https://github.com/OCA/server-tools.git 13.0
   - version: "12.0"
     python_version: "3.7.16"
