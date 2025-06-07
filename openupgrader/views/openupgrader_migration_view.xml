@@ -121,22 +121,30 @@
                         <group>
                             <field name="odoo_migrated_state" />
                         </group>
-                        <group colspan="2" col="3">
-                            <button
-                                name="button_refresh_state"
-                                type="object"
-                                string="Refresh state"
-                            />
-                            <button
-                                name="button_start_odoo"
-                                type="object"
-                                string="Start Odoo (current migrated version)"
-                            />
-                            <button
-                                name="button_stop_odoo"
-                                type="object"
-                                string="Stop Odoo"
-                            />
+                        <group colspan="4" col="2">
+                            <group string="Utilities"/>
+                            <group colspan="2" col="4">
+                                <button
+                                    name="button_refresh_state"
+                                    type="object"
+                                    string="Refresh state"
+                                />
+                                <button
+                                    name="button_clean_migration_error_log"
+                                    type="object"
+                                    string="Clean migration log"
+                                />
+                                <button
+                                    name="button_start_odoo"
+                                    type="object"
+                                    string="Start Odoo (current migrated version)"
+                                />
+                                <button
+                                    name="button_stop_odoo"
+                                    type="object"
+                                    string="Stop Odoo"
+                                />
+                            </group>
                         </group>
                     </group>
                     <group>

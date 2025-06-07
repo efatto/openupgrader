@@ -1,12 +1,10 @@
 # from main import openupgrade_fixes
 import logging
 import os
-import queue
 import shutil
 import signal
 import ssl
 import sys
-import threading
 import time
 from subprocess import PIPE, Popen
 from urllib.request import HTTPSHandler
@@ -16,7 +14,7 @@ import psutil
 from odoorpc.rpc import CookieJar, HTTPCookieProcessor, build_opener
 
 from odoo import _, api, fields, models
-from odoo.exceptions import UserError, ValidationError
+from odoo.exceptions import UserError
 from odoo.modules import get_module_resource
 from odoo.tools import config
 
@@ -546,12 +544,16 @@ class OpenupgraderMigration(models.Model):
         ).wait()
         os.unlink(dump_file_sql)
 
+    def button_clean_migration_error_log(self):
+        self.migration_error_log = " "
+
     def button_restore_update(self):
         self.button_restore()
         self.button_update_current_version()
 
     def button_restore(self):
         self.ensure_one()
+        self.migration_error_log = " "
         if not self.next_version_id:
             self.current_version_id = self.from_version_id
         self.next_version_id = self.env["odoo.version"].search(
@@ -649,6 +651,8 @@ class OpenupgraderMigration(models.Model):
         self._refresh_state()
 
     def _refresh_state(self):
+        if not self.migration_error_log:
+            self.migration_error_log = " "
         if self.odoo_pid:
             if psutil.pid_exists(self.odoo_pid):
                 self.odoo_migrated_state = "running"
