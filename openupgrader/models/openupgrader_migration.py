@@ -1,10 +1,12 @@
 import base64
+import json
 import logging
 import os
 import shutil
 import signal
 import ssl
 import sys
+import tempfile
 import time
 from subprocess import PIPE, Popen
 from urllib.request import HTTPSHandler
@@ -16,8 +18,9 @@ from odoorpc.rpc import CookieJar, HTTPCookieProcessor, build_opener
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
 from odoo.modules import get_module_resource
-from odoo.service import db
-from odoo.tools import config
+from odoo.sql_db import db_connect
+from odoo.tools import config, exec_pg_command
+from odoo.tools.osutil import zip_dir
 
 from odoo.addons.python_venv.python_venv import _get_env_for_subprocess
 
@@ -471,15 +474,64 @@ class OpenupgraderMigration(models.Model):
                 shell=True,
             ).wait()
 
+    @staticmethod
+    def dump_db_manifest(cr, version, dbname):
+        pg_version = "%d.%d" % divmod(cr._obj.connection.server_version / 100, 100)
+        cr.execute(
+            "SELECT name, latest_version FROM ir_module_module WHERE state = 'installed'"
+        )
+        modules = dict(cr.fetchall())
+        manifest = {
+            "odoo_dump": "1",
+            "db_name": dbname,
+            "version": version,
+            "version_info": (version.split(".")[0], 0, 0, "", 0, ""),
+            "major_version": version,
+            "pg_version": pg_version,
+            "modules": modules,
+        }
+        return manifest
+
+    def dump_db(self, db_name, version, stream):
+        cmd = ["pg_dump", "--no-owner"]
+        cmd.append(db_name)
+        filestore = os.path.join(self.folder, version, "data_dir", "filestore")
+        with tempfile.TemporaryDirectory() as dump_dir:
+            if os.path.exists(filestore):
+                shutil.copytree(filestore, os.path.join(dump_dir, "filestore"))
+            with open(os.path.join(dump_dir, "manifest.json"), "w") as fh:
+                db = db_connect(db_name)
+                with db.cursor() as cr:
+                    json.dump(self.dump_db_manifest(cr, version, db_name), fh, indent=4)
+            cmd.insert(-1, "--file=" + os.path.join(dump_dir, "dump.sql"))
+            exec_pg_command(*cmd)
+            if stream:
+                zip_dir(
+                    dump_dir,
+                    stream,
+                    include_dir=False,
+                    fnct_sort=lambda file_name: file_name != "dump.sql",
+                )
+            else:
+                t = tempfile.TemporaryFile()
+                zip_dir(
+                    dump_dir,
+                    t,
+                    include_dir=False,
+                    fnct_sort=lambda file_name: file_name != "dump.sql",
+                )
+                t.seek(0)
+                return t
+
     def button_upload_migrated_file(self):
+        version = self.current_version_id.name
         with open(
-            os.path.join(
-                self.folder,
-                f'database.{self.current_version_id.name}.zip'
-            ), "wb"
+            os.path.join(self.folder, f"database.{version}.zip"), "wb"
         ) as destiny:
-            db.dump_db(
-                f"{self.env.cr.dbname}_migrate", destiny, backup_format="zip"
+            self.dump_db(
+                db_name=f"{self.env.cr.dbname}_migrate",
+                version=version,
+                stream=destiny,
             )
             data = open(destiny.name, "rb").read()
             self.migrated_file = base64.encodebytes(data)
@@ -508,7 +560,7 @@ class OpenupgraderMigration(models.Model):
             ).wait()
 
     def dump_database(self, version):
-        destination_path = os.path.join(self.folder, f'database.{version}.sql')
+        destination_path = os.path.join(self.folder, f"database.{version}.sql")
         connection_string = (
             f"postgresql://{self.pg_user}:"
             f"{self.pg_password_var or self.pg_password or ''}@"

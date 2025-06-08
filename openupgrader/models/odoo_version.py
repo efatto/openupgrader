@@ -67,7 +67,7 @@ class OdooVersion(models.Model):
                 openupgrader_migration_id.folder, f"openupgrade{version_name}"
             )
             if os.path.isdir(venv_folder):
-                shutil.rmtree(venv_folder)
+                shutil.rmtree(venv_folder, ignore_errors=True)
         self.button_create_venv()
 
     def button_create_venv(self):
