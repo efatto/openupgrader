@@ -120,7 +120,7 @@ class OpenupgraderMigration(models.Model):
             ("running", "Running"),
             ("stopped", "Stopped"),
         ],
-        string="Migrated state",
+        string="Odoo migrating instance state",
         help="Migrated Odoo is running or stopped",
         default="stopped",
     )
@@ -389,7 +389,7 @@ class OpenupgraderMigration(models.Model):
         self.odoo_pid = False
         self.odoo_migrated_state = "stopped"
 
-    def button_stop_odoo(self):
+    def _get_odoo_pids(self):
         process = Popen(
             [f"pgrep -a python | grep {self.env.cr.dbname}_migrate"],
             shell=True,
@@ -403,6 +403,10 @@ class OpenupgraderMigration(models.Model):
                 pids.append(int(one_line_output.split()[0]))
             else:
                 has_stdout = False
+        return pids
+
+    def button_stop_odoo(self):
+        pids = self._get_odoo_pids()
         for pid in pids:
             self._stop_pid(pid)
 
@@ -690,6 +694,8 @@ class OpenupgraderMigration(models.Model):
             )
             if os.path.isfile(migration_log_path):
                 os.remove(migration_log_path)
+        self.current_version_id = False
+        self.next_version_id = False
         self._refresh_state()
         self.state = "draft"
 
@@ -728,8 +734,9 @@ class OpenupgraderMigration(models.Model):
 
     def _refresh_state(self):
         self.migration_error_log = " "
-        if self.odoo_pid:
-            if psutil.pid_exists(self.odoo_pid):
+        odoo_pids = self._get_odoo_pids()
+        for odoo_pid in odoo_pids:
+            if psutil.pid_exists(odoo_pid):
                 self.odoo_migrated_state = "running"
             else:
                 self.odoo_migrated_state = "stopped"
