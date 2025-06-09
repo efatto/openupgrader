@@ -683,6 +683,14 @@ class OpenupgraderMigration(models.Model):
             )
 
     def button_draft(self):
+        for version in [self.current_version_id, self.next_version_id]:
+            migration_log_path = os.path.join(
+                os.path.join(self.folder, f"openupgrade{version.name}"),
+                "migration.log",
+            )
+            if os.path.isfile(migration_log_path):
+                os.remove(migration_log_path)
+        self._refresh_state()
         self.state = "draft"
 
     def button_do_migration(self):
