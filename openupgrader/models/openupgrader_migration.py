@@ -743,16 +743,24 @@ class OpenupgraderMigration(models.Model):
                 with open(migration_log_path) as file:
                     contents = file.read()
                     if version == self.current_version_id:
-                        self.state = "restoring"
+                        if self.state != "ready_for_migration":
+                            self.state = "restoring"
                         if "CRITICAL" in contents:
                             self.state = "restore_failed"
-                        elif "Initiating shutdown" in contents:
+                        elif (
+                            "Initiating shutdown" in contents
+                            and self.state != "ready_for_migration"
+                        ):
                             self.state = "restored"
                     if version == self.next_version_id:
-                        self.state = "migrating"
+                        if self.state != "ready_for_migration":
+                            self.state = "migrating"
                         if "CRITICAL" in contents:
                             self.state = "failed"
-                        elif "Initiating shutdown" in contents:
+                        elif (
+                            "Initiating shutdown" in contents
+                            and self.state != "ready_for_migration"
+                        ):
                             self.state = "migrated"
                     if contents and " ERROR " in contents:
                         for x in contents.split(" ERROR "):
