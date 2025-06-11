@@ -119,19 +119,39 @@
                             <field name="pg_password_var" />
                         </group>
                         <group>
-                            <field name="odoo_migrated_state" />
+                            <group>
+                                <field name="odoo_migrated_state" readonly="True" />
+                            </group>
+                            <div
+                                class="alert alert-warning"
+                                aria-label="Warning"
+                                title="Warning"
+                                role="alert"
+                                attrs="{'invisible': [('odoo_migrated_state', '=', 'stopped')]}"
+                                style="margin-bottom:0;"
+                            >
+                                <p>
+                                    <i class="fa fa-info-circle" />
+                                    <span>Warning: Migrated Odoo is running!</span>
+                                </p>
+                            </div>
                         </group>
                         <group>
-                            <group>
-                                <field name="migrated_file" />
-                            </group>
-                            <group>
+                            <div>
                                 <button
                                     name="button_upload_migrated_file"
                                     type="object"
                                     string="Upload migrated file"
                                 />
-                            </group>
+                            </div>
+                            <div>
+                                <field
+                                    name="migrated_file"
+                                    readonly="1"
+                                    filename="migrated_file_name"
+                                />
+                                <field name="migrated_file_name" invisible="1" />
+                            </div>
                         </group>
                         <group colspan="4" col="2">
                             <group string="Utilities" />

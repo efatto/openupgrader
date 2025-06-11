@@ -144,7 +144,8 @@ class OpenupgraderMigration(models.Model):
     )
     odoo_error_log = fields.Text(string="Odoo error log")
     migration_error_log = fields.Text(string="Migration error log")
-    migrated_file = fields.Binary()
+    migrated_file = fields.Binary(string="Migrated File")
+    migrated_file_name = fields.Char(string="Migrated File Name")
 
     @api.model
     def _default_folder(self):
@@ -529,9 +530,10 @@ class OpenupgraderMigration(models.Model):
 
     def button_upload_migrated_file(self):
         version = self.current_version_id.name
-        with open(
-            os.path.join(self.folder, f"database.{version}.zip"), "wb"
-        ) as destiny:
+        if not version:
+            raise UserError(_("Current version is required!"))
+        file_name = f"database.{version}.zip"
+        with open(os.path.join(self.folder, file_name), "wb") as destiny:
             self.dump_db(
                 db_name=f"{self.env.cr.dbname}_migrate",
                 version=version,
@@ -539,6 +541,7 @@ class OpenupgraderMigration(models.Model):
             )
             data = open(destiny.name, "rb").read()
             self.migrated_file = base64.encodebytes(data)
+            self.migrated_file_name = file_name
 
     def dump_filestore(self, version):
         filestore_path = os.path.join(self.folder, version, "data_dir", "filestore")
@@ -734,12 +737,11 @@ class OpenupgraderMigration(models.Model):
 
     def _refresh_state(self):
         self.migration_error_log = " "
+        self.odoo_migrated_state = "stopped"
         odoo_pids = self._get_odoo_pids()
         for odoo_pid in odoo_pids:
             if psutil.pid_exists(odoo_pid):
                 self.odoo_migrated_state = "running"
-            else:
-                self.odoo_migrated_state = "stopped"
 
         for version in [self.current_version_id, self.next_version_id]:
             migration_log_path = os.path.join(
