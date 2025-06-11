@@ -583,7 +583,7 @@ class OpenupgraderMigration(models.Model):
         process.wait()
 
     def restore(self):
-        Popen(
+        process = Popen(
             [
                 f"export PGPORT={self.db_port} && "
                 f"export PGHOST={self.pg_host or ''} && "
@@ -591,7 +591,12 @@ class OpenupgraderMigration(models.Model):
                 f" dropdb --if-exists -U {self.pg_user} {self.env.cr.dbname}_migrate",
             ],
             shell=True,
-        ).wait()
+            stderr=PIPE,
+            stdout=PIPE,
+        )
+        error = process.stderr.readlines()
+        if error:
+            raise UserError("\n".join(str(e) for e in error))
         Popen(
             [
                 f"export PGPORT={self.db_port} && "
