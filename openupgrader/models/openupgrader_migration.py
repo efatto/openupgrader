@@ -112,7 +112,6 @@ class OpenupgraderMigration(models.Model):
     migrate_filestore = fields.Boolean(
         string="Migrate Filestore",
         default=True)
-    migrate_ddt = fields.Boolean()
     openupgrade_repo = fields.Char(
         string="OpenUpgrade Repository",
         default="git@github.com:efatto/OpenUpgrade.git",

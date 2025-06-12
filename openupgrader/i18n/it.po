@@ -346,11 +346,6 @@ msgid "Load repos"
 msgstr "Carica repositories"
 
 #. module: openupgrader
-#: model:ir.model.fields,field_description:openupgrader.field_openupgrader_migration__migrate_ddt
-msgid "Migrate Ddt"
-msgstr ""
-
-#. module: openupgrader
 #: model:ir.model.fields.selection,name:openupgrader.selection__openupgrader_migration__state__migrated
 msgid "Migrated"
 msgstr "Migrato"
