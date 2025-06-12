@@ -16,7 +16,7 @@ import psutil
 from odoorpc.rpc import CookieJar, HTTPCookieProcessor, build_opener
 
 from odoo import _, api, fields, models
-from odoo.exceptions import UserError
+from odoo.exceptions import UserError, ValidationError
 from odoo.modules import get_module_resource
 from odoo.sql_db import db_connect
 from odoo.tools import config, exec_pg_command
@@ -441,16 +441,23 @@ class OpenupgraderMigration(models.Model):
         )
         if not os.path.isdir(filestore_torestore_path):
             os.makedirs(filestore_torestore_path, exist_ok=True)
-        # in case of first version, copy from initial folder to initial migration folder
         from_folder = os.path.join(
-            self.get_filestore_path(from_version_id.name), self.env.cr.dbname
+            self.get_filestore_path(from_version_id.name, migration_folder=True),
+            self.env.cr.dbname,
         )
         if from_version_id == to_version_id:
+            # in case of first version, copy from initial folder to initial migration folder
+            from_folder = os.path.join(
+                self.get_filestore_path(from_version_id.name),
+                self.env.cr.dbname,
+            )
             shutil.copytree(from_folder, filestore_torestore_path, dirs_exist_ok=True)
         else:
             # in case of next versions, move folder to the next version
             if os.path.isdir(filestore_torestore_path):
                 shutil.rmtree(filestore_torestore_path, ignore_errors=True)
+            if not os.path.exists(from_folder):
+                raise ValidationError(_("Folder %s does not exist!") % from_folder)
             os.rename(from_folder, filestore_torestore_path)
 
         # todo restore from .tar when retrying a migration after the first version
