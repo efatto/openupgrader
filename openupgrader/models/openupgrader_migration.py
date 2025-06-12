@@ -109,9 +109,7 @@ class OpenupgraderMigration(models.Model):
         comodel_name="odoo.version",
         string="Next version to be migrated",
     )
-    migrate_filestore = fields.Boolean(
-        string="Migrate Filestore",
-        default=True)
+    migrate_filestore = fields.Boolean(string="Migrate Filestore", default=True)
     openupgrade_repo = fields.Char(
         string="OpenUpgrade Repository",
         default="git@github.com:efatto/OpenUpgrade.git",
@@ -596,8 +594,9 @@ class OpenupgraderMigration(models.Model):
             stdout=PIPE,
         )
         error = process.stderr.readlines()
-        if error:
-            raise UserError("\n".join(str(e) for e in error))
+        errors = [str(e).lower() for e in error if "error" in str(e)]
+        if errors:
+            raise UserError("\n".join(e for e in errors))
         Popen(
             [
                 f"export PGPORT={self.db_port} && "
