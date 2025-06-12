@@ -1,12 +1,16 @@
 import logging
 
-from odoo import models
+from odoo import models, fields
 
 logger = logging.getLogger(__name__)
 
 
 class OpenupgraderMigration(models.Model):
     _inherit = "openupgrader.migration"
+
+    migrate_ddt = fields.Boolean(
+        string="Migrate DDT",
+    )
 
     def button_do_migration(self):
         self.disable_cron(True)
@@ -15,8 +19,9 @@ class OpenupgraderMigration(models.Model):
         if self.to_version_id.name == '12.0':  # and self.fix_banks:
             self.migrate_bank_riba_id_bank_ids(self.current_version_id.name)
             self.migrate_bank_riba_id_bank_ids_invoice(self.current_version_id.name)
-        # if self.current_version_id.name == '12.0' and self.migrate_ddt:
-        #     migrate_l10n_it_ddt_to_l10n_it_delivery_note(self, self.current_version_id)
+        if self.current_version_id.name == '12.0' and self.migrate_ddt:
+            self.migrate_l10n_it_ddt_to_l10n_it_delivery_note(
+                self.current_version_id.name)
         return super().button_do_migration()
 
     # in migration to 10.0, some account.move.line created from account.invoice
@@ -243,16 +248,16 @@ class OpenupgraderMigration(models.Model):
     #             logger.info(_('Fixed child tax %s' % child_tax.name))
     #     self.button_stop_odoo()
 
-    # def migrate_l10n_it_ddt_to_l10n_it_delivery_note(self, version):
-    #     self.start_odoo(version)
-    #     if self.odoo_client.env['ir.module.module'].search([
-    #         ('name', '=', 'l10n_it_ddt'),
-    #         ('state', '=', 'installed'),
-    #     ]):
-    #         self.install_uninstall_module(
-    #             'l10n_it_delivery_note', install=True
-    #         )
-    #         self.button_stop_odoo()
-    #         self.start_odoo(
-    #           version=version,
-    #           extra_command=f'migrate_l10n_it_ddt -d {self.env.cr.dbname}')
+    def migrate_l10n_it_ddt_to_l10n_it_delivery_note(self, version):
+        self.start_odoo(version)
+        if self.odoo_client.env['ir.module.module'].search([
+            ('name', '=', 'l10n_it_ddt'),
+            ('state', '=', 'installed'),
+        ]):
+            self.install_uninstall_module(
+                'l10n_it_delivery_note', install=True
+            )
+            self.button_stop_odoo()
+            self.start_odoo(
+              version=version,
+              extra_command=f'migrate_l10n_it_ddt -d {self.env.cr.dbname}')
