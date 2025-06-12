@@ -104,6 +104,7 @@ class OpenupgraderConfig(models.Model):
         column2="delete_module_id",
         string="Modules to delete after migration",
         help="List of modules to delete",
+        copy=False,
     )
     module_to_uninstall_after_migration_ids = fields.Many2many(
         comodel_name="module.name",
@@ -111,6 +112,7 @@ class OpenupgraderConfig(models.Model):
         column1="uninstall_after_current_module_id",
         column2="uninstall_after_module_id",
         string="Module to uninstall after migration",
+        copy=False,
     )
     module_to_uninstall_before_migration_ids = fields.Many2many(
         comodel_name="module.name",
@@ -118,6 +120,7 @@ class OpenupgraderConfig(models.Model):
         column1="uninstall_before_current_module_id",
         column2="uninstall_before_module_id",
         string="Module to uninstall before migration",
+        copy=False,
     )
 
     _sql_constraints = [

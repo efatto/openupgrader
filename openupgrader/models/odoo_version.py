@@ -41,11 +41,13 @@ class OdooVersion(models.Model):
         comodel_name="openupgrader.repo",
         inverse_name="odoo_version_id",
         string="OpenUpgrader Repositories",
+        copy=False,
     )
     openupgrader_config_ids = fields.One2many(
         comodel_name="openupgrader.config",
         inverse_name="odoo_version_id",
         string="OpenUpgrader Configurations",
+        copy=False,
     )
 
     @api.depends("name")
