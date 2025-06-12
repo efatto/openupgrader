@@ -434,49 +434,36 @@ class OpenupgraderMigration(models.Model):
         if ir_mail_server_ids:
             ir_mail_server_ids.write({"active": active})
 
-    def move_filestore(
-        self, from_folder=False, from_version_id=False, to_version_id=False
-    ):
-        if not from_folder:
-            from_folder = (
-                f"{self.folder}/{from_version_id.name}/data_dir"
-                f"/filestore/{self.env.cr.dbname}"
-            )
-        to_version_filestore = (
-            f"{self.folder}/{to_version_id.name}/data_dir"
-            f"/filestore/{self.env.cr.dbname}"
-        )
-        if os.path.isdir(to_version_filestore):  # todo check: and not restore_db_only:
-            shutil.rmtree(to_version_filestore, ignore_errors=True)
-        # todo check: if not restore_db_only:
-        os.rename(from_folder, to_version_filestore)
-
     def restore_filestore(self, from_version_id, to_version_id):
-        filestore_torestore_path = f"filestore.{from_version_id.name}.tar"
-        filestore_path = os.path.join(
-            self.folder, f"openupgrade{to_version_id.name}", "data_dir", "filestore"
+        filestore_torestore_path = os.path.join(
+            self.get_filestore_path(to_version_id.name, migration_folder=True),
+            self.env.cr.dbname,
         )
-        if not os.path.isdir(filestore_path):
-            os.makedirs(filestore_path, exist_ok=True)
-        dump_folder = os.path.join(self.folder, "filestore")
-        dump_file = os.path.join(self.folder, "filestore.tar")
-        if os.path.isdir(dump_folder):
-            self.move_filestore(from_folder=dump_folder, to_version_id=to_version_id)
-            return
-        elif os.path.isfile(dump_file):
-            os.rename(dump_file, f"{self.folder}/filestore.{from_version_id.name}.tar")
-        filestore_db_path = os.path.join(filestore_path, self.env.cr.dbname)
-        if not os.path.isdir(filestore_db_path):
-            os.mkdir(filestore_db_path)
-        if os.path.isfile(filestore_torestore_path):
-            Popen(
-                [
-                    f"tar -zxvf {filestore_torestore_path} --strip-components=1 "
-                    f"-C {filestore_db_path}/",
-                ],
-                cwd=self.folder,
-                shell=True,
-            ).wait()
+        if not os.path.isdir(filestore_torestore_path):
+            os.makedirs(filestore_torestore_path, exist_ok=True)
+        # in case of first version, copy from initial folder to initial migration folder
+        from_folder = os.path.join(
+            self.get_filestore_path(from_version_id.name), self.env.cr.dbname
+        )
+        if from_version_id == to_version_id:
+            shutil.copytree(from_folder, filestore_torestore_path, dirs_exist_ok=True)
+        else:
+            # in case of next versions, move folder to the next version
+            if os.path.isdir(filestore_torestore_path):
+                shutil.rmtree(filestore_torestore_path, ignore_errors=True)
+            os.rename(from_folder, filestore_torestore_path)
+
+        # todo restore from .tar when retrying a migration after the first version
+        # filestore_torestore_tar_path = f"filestore.{from_version_id.name}.tar"
+        # if os.path.isfile(filestore_torestore_tar_path):
+        #     Popen(
+        #         [
+        #             f"tar -zxvf {filestore_torestore_tar_path} --strip-components=1 "
+        #             f"-C {filestore_db_path}/",
+        #         ],
+        #         cwd=self.folder,
+        #         shell=True,
+        #     ).wait()
 
     @staticmethod
     def dump_db_manifest(cr, version, dbname):
@@ -542,19 +529,27 @@ class OpenupgraderMigration(models.Model):
             self.migrated_file = base64.encodebytes(data)
             self.migrated_file_name = file_name
 
-    def dump_filestore(self, version):
-        filestore_path = os.path.join(self.folder, version, "data_dir", "filestore")
-        if version == self.from_version_id.name:
-            # get the filestore from running production instance of Odoo
+    def get_filestore_path(self, version, migration_folder=False):
+        # get filestore path for a version
+        filestore_path = os.path.join(
+            self.folder, f"openupgrade{version}", "data_dir", "filestore"
+        )
+        if version == self.from_version_id.name and not migration_folder:
+            # get the filestore from running production instance of Odoo if initial one
             initial_path = os.path.join(
+                "/",
                 *[
                     x
                     for x in config.filestore(self.env.cr.dbname).split("/")
                     if x != "" and x != self.env.cr.dbname
-                ]
+                ],
             )
-            if os.path.isdir(initial_path):
+            if os.path.exists(initial_path):
                 filestore_path = initial_path
+        return filestore_path
+
+    def dump_filestore(self, version):
+        filestore_path = self.get_filestore_path(version)
         destination_path = os.path.join(self.folder, f"filestore.{version}.tar")
         if os.path.isdir(filestore_path):
             Popen(
@@ -664,7 +659,7 @@ class OpenupgraderMigration(models.Model):
 
     def button_prepare_for_migration(self):
         if self.migrate_filestore:
-            self.move_filestore(
+            self.restore_filestore(
                 from_version_id=self.current_version_id,
                 to_version_id=self.next_version_id,
             )
