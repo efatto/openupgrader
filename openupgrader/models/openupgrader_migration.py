@@ -445,20 +445,24 @@ class OpenupgraderMigration(models.Model):
             self.get_filestore_path(from_version_id.name, migration_folder=True),
             self.env.cr.dbname,
         )
+        initial_from_folder = os.path.join(
+            self.get_filestore_path(from_version_id.name),
+            self.env.cr.dbname,
+        )
         if from_version_id == to_version_id:
             # in case of first version, copy from initial folder to initial migration folder
-            from_folder = os.path.join(
-                self.get_filestore_path(from_version_id.name),
-                self.env.cr.dbname,
-            )
-            shutil.copytree(from_folder, filestore_torestore_path, dirs_exist_ok=True)
+            shutil.copytree(
+                initial_from_folder, filestore_torestore_path, dirs_exist_ok=True)
         else:
             # in case of next versions, move folder to the next version
             if os.path.isdir(filestore_torestore_path):
                 shutil.rmtree(filestore_torestore_path, ignore_errors=True)
             if not os.path.exists(from_folder):
-                raise ValidationError(_("Folder %s does not exist!") % from_folder)
-            os.rename(from_folder, filestore_torestore_path)
+                # filestore has been removed, restore from initial folder
+                shutil.copytree(
+                    initial_from_folder, filestore_torestore_path, dirs_exist_ok=True)
+            else:
+                os.rename(from_folder, filestore_torestore_path)
 
         # todo restore from .tar when retrying a migration after the first version
         # filestore_torestore_tar_path = f"filestore.{from_version_id.name}.tar"
