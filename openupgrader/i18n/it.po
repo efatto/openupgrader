@@ -245,8 +245,8 @@ msgstr "Fallito"
 
 #. module: openupgrader
 #: model:ir.model.fields,field_description:openupgrader.field_openupgrader_migration__filestore
-msgid "Filestore"
-msgstr ""
+msgid "Migrate Filestore"
+msgstr "Migra il filestore"
 
 #. module: openupgrader
 #: model:ir.model.fields,field_description:openupgrader.field_openupgrader_migration__folder

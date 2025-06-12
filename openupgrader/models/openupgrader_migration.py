@@ -109,7 +109,9 @@ class OpenupgraderMigration(models.Model):
         comodel_name="odoo.version",
         string="Next version to be migrated",
     )
-    filestore = fields.Boolean()
+    migrate_filestore = fields.Boolean(
+        string="Migrate Filestore",
+        default=True)
     migrate_ddt = fields.Boolean()
     openupgrade_repo = fields.Char(
         string="OpenUpgrade Repository",
@@ -649,7 +651,7 @@ class OpenupgraderMigration(models.Model):
             # restore is needed only when we migrate the first version, then the db is
             # already present
             self.dump_database(self.current_version_id.name)
-            if self.filestore:
+            if self.migrate_filestore:
                 self.dump_filestore(self.current_version_id.name)
                 self.restore_filestore(self.current_version_id, self.current_version_id)
             self.restore()
@@ -663,7 +665,7 @@ class OpenupgraderMigration(models.Model):
         self.state = "updated"
 
     def button_prepare_for_migration(self):
-        if self.filestore:
+        if self.migrate_filestore:
             self.move_filestore(
                 from_version_id=self.current_version_id,
                 to_version_id=self.next_version_id,
@@ -723,7 +725,7 @@ class OpenupgraderMigration(models.Model):
             self.install_uninstall_module("l10n_it_intrastat")
             self.button_stop_odoo()
         self.dump_database(self.next_version_id.name)
-        if self.filestore:
+        if self.migrate_filestore:
             self.dump_filestore(self.current_version_id.name)
         logger.info(
             _("Migration done from version %s to version %s")

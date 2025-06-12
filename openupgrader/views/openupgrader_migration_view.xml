@@ -102,7 +102,7 @@
                             <field name="to_version_id" />
                             <field name="current_version_id" />
                             <field name="next_version_id" />
-                            <field name="filestore" />
+                            <field name="migrate_filestore" />
                             <field name="folder" />
                             <field name="openupgrade_repo" />
                         </group>
