@@ -725,7 +725,9 @@ class OpenupgraderMigration(models.Model):
         if self.next_version_id.name == "10.0":
             self.start_odoo(self.next_version_id)
             self.remove_modules("upgrade")
+            self.button_stop_odoo()
             self.remove_modules()
+            self.button_stop_odoo()
             self.install_uninstall_module("l10n_it_intrastat")
             self.button_stop_odoo()
         self.dump_database(self.next_version_id.name)
