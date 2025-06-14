@@ -5,6 +5,8 @@ import shutil
 import tempfile
 from datetime import datetime
 
+from pysftp import ConnectionException
+
 from odoo import fields, models
 from odoo.sql_db import db_connect
 from odoo.tools import exec_pg_command
@@ -86,7 +88,7 @@ class DbBackup(models.Model):
                             # Directory must exist
                             try:
                                 remote.makedirs(rec.folder)
-                            except pysftp.ConnectionException:
+                            except ConnectionException:
                                 pass
 
                             # Copy cached backup to remote server

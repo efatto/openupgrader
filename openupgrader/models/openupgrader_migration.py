@@ -384,7 +384,10 @@ class OpenupgraderMigration(models.Model):
 
     def _get_odoo_pids(self):
         process = Popen(
-            [f"pgrep -a python | grep {self.env.cr.dbname}_migrate"],
+            [
+                f"pgrep -a python | grep {self.env.cr.dbname}_migrate",
+                f"pgrep -a postgres | grep {self.env.cr.dbname}_migrate",
+            ],
             shell=True,
             stdout=PIPE,
         )

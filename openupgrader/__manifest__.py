@@ -26,6 +26,7 @@
         "python": [
             "odoorpc",
             "PyYAML",
+            "pysftp",
         ],
     },
 }
