@@ -504,6 +504,8 @@ class OpenupgraderMigration(models.Model):
                 path = shutil.copytree(filestore, os.path.join(dump_dir, "filestore"))
                 logger.info(f"Path of copied filestore {path}")
                 logger.info(f"ls of copied files {os.listdir(path)}")
+                shutil.copytree(
+                    filestore, os.path.join(os.path.expanduser("~"), "filestore_prova"))
             with open(os.path.join(dump_dir, "manifest.json"), "w") as fh:
                 db = db_connect(db_name)
                 with db.cursor() as cr:
