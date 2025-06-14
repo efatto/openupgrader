@@ -435,20 +435,15 @@ class OpenupgraderMigration(models.Model):
             ir_mail_server_ids.write({"active": active})
 
     def restore_filestore(self, from_version_id, to_version_id):
-        filestore_torestore_path = os.path.join(
-            self.get_filestore_path(to_version_id.name, migration_folder=True),
-            f"{self.env.cr.dbname}_migrate",
+        filestore_torestore_path = self.get_filestore_path(
+            to_version_id.name, migration_folder=True
         )
         if not os.path.isdir(filestore_torestore_path):
             os.makedirs(filestore_torestore_path, exist_ok=True)
-        from_folder = os.path.join(
-            self.get_filestore_path(from_version_id.name, migration_folder=True),
-            f"{self.env.cr.dbname}_migrate",
+        from_folder = self.get_filestore_path(
+            from_version_id.name, migration_folder=True
         )
-        initial_from_folder = os.path.join(
-            self.get_filestore_path(from_version_id.name),
-            self.env.cr.dbname,
-        )
+        initial_from_folder = self.get_filestore_path(from_version_id.name)
         if from_version_id == to_version_id:
             # in case of first version, copy from initial folder to initial migration folder
             shutil.copytree(
@@ -499,7 +494,7 @@ class OpenupgraderMigration(models.Model):
     def dump_db(self, db_name, version_name, stream):
         cmd = ["pg_dump", "--no-owner"]
         cmd.append(db_name)
-        filestore = os.path.join(self.folder, version_name, "data_dir", "filestore")
+        filestore = self.get_filestore_path(version_name, migration_folder=True)
         with tempfile.TemporaryDirectory() as dump_dir:
             if os.path.exists(filestore):
                 shutil.copytree(filestore, os.path.join(dump_dir, "filestore"))
@@ -530,10 +525,10 @@ class OpenupgraderMigration(models.Model):
                 return t
 
     def button_upload_migrated_file(self):
-        version_name = self.current_version_id.name
-        if not version_name:
+        if not self.current_version_id:
             raise UserError(_("Current version is required!"))
-        file_name = f"database.{version_name}.zip"
+        version_name = self.current_version_id.name
+        file_name = f"{self.env.cr.dbname}_migrate.{version_name}.zip"
         with open(os.path.join(self.folder, file_name), "wb") as destiny:
             self.dump_db(
                 db_name=f"{self.env.cr.dbname}_migrate",
@@ -547,7 +542,11 @@ class OpenupgraderMigration(models.Model):
     def get_filestore_path(self, version_name, migration_folder=False):
         # get filestore path for a version
         filestore_path = os.path.join(
-            self.folder, f"openupgrade{version_name}", "data_dir", "filestore"
+            self.folder,
+            f"openupgrade{version_name}",
+            "data_dir",
+            "filestore",
+            f"{self.env.cr.dbname}_migrate",
         )
         if version_name == self.from_version_id.name and not migration_folder:
             # get the filestore from running production instance of Odoo if initial one
@@ -556,7 +555,7 @@ class OpenupgraderMigration(models.Model):
                 *[
                     x
                     for x in config.filestore(self.env.cr.dbname).split("/")
-                    if x != "" and x != self.env.cr.dbname
+                    if x != ""
                 ],
             )
             if os.path.exists(initial_path):
@@ -569,7 +568,7 @@ class OpenupgraderMigration(models.Model):
         if os.path.isdir(filestore_path):
             Popen(
                 [
-                    f"tar -zcvf {destination_path} {self.env.cr.dbname}",
+                    f"tar -zcvf {destination_path}",
                 ],
                 cwd=filestore_path,
                 shell=True,
