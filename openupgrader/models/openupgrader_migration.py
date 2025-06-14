@@ -437,13 +437,13 @@ class OpenupgraderMigration(models.Model):
     def restore_filestore(self, from_version_id, to_version_id):
         filestore_torestore_path = os.path.join(
             self.get_filestore_path(to_version_id.name, migration_folder=True),
-            self.env.cr.dbname,
+            f"{self.env.cr.dbname}_migrate",
         )
         if not os.path.isdir(filestore_torestore_path):
             os.makedirs(filestore_torestore_path, exist_ok=True)
         from_folder = os.path.join(
             self.get_filestore_path(from_version_id.name, migration_folder=True),
-            self.env.cr.dbname,
+            f"{self.env.cr.dbname}_migrate",
         )
         initial_from_folder = os.path.join(
             self.get_filestore_path(from_version_id.name),
