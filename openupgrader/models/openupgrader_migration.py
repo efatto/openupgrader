@@ -868,6 +868,7 @@ class OpenupgraderMigration(models.Model):
         openupgrader_config = self.env["openupgrader.config"].search(
             [("odoo_version_id.id", "=", version_id.id)]
         )
+        self.start_odoo(version_id)
         if after_migration:
             for module in openupgrader_config.module_to_uninstall_after_migration_ids:
                 self.install_uninstall_module(module.name, install=False)
