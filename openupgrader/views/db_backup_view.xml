@@ -8,6 +8,18 @@
                 <field name="is_migration_backup"/>
                 <field name="odoo_version_id" attrs="{'invisible': [('is_migration_backup', '=', False)]}"/>
             </field>
+            <button name="action_backup" position="attributes">
+                <attribute name="attrs">{'invisible': [('is_migration_backup', '=', True)]}</attribute>
+            </button>
+            <button name="action_backup" position="after">
+                <button
+                    name="action_backup_migration"
+                    type="object"
+                    string="Execute migration backup"
+                    class="oe_highlight"
+                />
+                <attribute name="attrs">{'invisible': [('is_migration_backup', '!=', True)]}</attribute>
+            </button>
         </field>
     </record>
 </odoo>

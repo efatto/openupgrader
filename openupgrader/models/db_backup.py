@@ -8,8 +8,7 @@ from odoo.modules import get_module_resource
 from odoo.sql_db import db_connect
 from odoo.tools import config, exec_pg_command
 from odoo.tools.osutil import zip_dir
-from odoo import api, fields, models, _
-from .openupgrader_migration import OpenupgraderMigration
+from odoo import fields, models, _
 logger = logging.getLogger(__name__)
 
 
@@ -99,12 +98,14 @@ class DbBackup(models.Model):
         # Remove old files for successful backups
         successful.cleanup()
 
-    def dump_db_migration(self, db_name, stream):
+    def dump_db_migration(self, db_name, stream, backup_format="zip"):
         version_name = self.odoo_version_id.name
         cmd = ["pg_dump", "--no-owner"]
         cmd.append(db_name)
-        filestore = OpenupgraderMigration.get_filestore_path(
-            version_name, migration_folder=True)
+        openupgrader_migration_id = self.env["openupgrader.migration"].search([])
+        openupgrader_migration_id.ensure_one()
+        filestore = openupgrader_migration_id.get_filestore_path(
+            version_name=version_name, migration_folder=True)
         with tempfile.TemporaryDirectory() as dump_dir:
             if os.path.exists(filestore):
                 path = shutil.copytree(filestore, os.path.join(dump_dir, "filestore"))
