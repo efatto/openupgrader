@@ -1,12 +1,9 @@
-import base64
-import json
 import logging
 import os
 import shutil
 import signal
 import ssl
 import sys
-import tempfile
 import time
 from subprocess import PIPE, Popen
 from urllib.request import HTTPSHandler
@@ -18,9 +15,7 @@ from odoorpc.rpc import CookieJar, HTTPCookieProcessor, build_opener
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
 from odoo.modules import get_module_resource
-from odoo.sql_db import db_connect
-from odoo.tools import config, exec_pg_command
-from odoo.tools.osutil import zip_dir
+from odoo.tools import config
 
 from odoo.addons.python_venv.python_venv import _get_env_for_subprocess
 
@@ -143,8 +138,6 @@ class OpenupgraderMigration(models.Model):
     )
     odoo_error_log = fields.Text(string="Odoo error log")
     migration_error_log = fields.Text(string="Migration error log")
-    migrated_file = fields.Binary(string="Migrated File")
-    migrated_file_name = fields.Char(string="Migrated File Name")
 
     @api.model
     def _default_folder(self):
@@ -473,77 +466,12 @@ class OpenupgraderMigration(models.Model):
         #         shell=True,
         #     ).wait()
 
-    @staticmethod
-    def dump_db_manifest(cr, version_name, dbname):
-        pg_version = "%d.%d" % divmod(cr._obj.connection.server_version / 100, 100)
-        cr.execute(
-            "SELECT name, latest_version FROM ir_module_module WHERE state = 'installed'"
-        )
-        modules = dict(cr.fetchall())
-        manifest = {
-            "odoo_dump": "1",
-            "db_name": dbname,
-            "version": version_name,
-            "version_info": (version_name.split(".")[0], 0, 0, "", 0, ""),
-            "major_version": version_name,
-            "pg_version": pg_version,
-            "modules": modules,
-        }
-        return manifest
-
-    def dump_db(self, db_name, version_name, stream):
-        cmd = ["pg_dump", "--no-owner"]
-        cmd.append(db_name)
-        filestore = self.get_filestore_path(version_name, migration_folder=True)
-        logger.info(f"Dumping filestore {filestore}")
-        with tempfile.TemporaryDirectory() as dump_dir:
-            if os.path.exists(filestore):
-                logger.info(
-                    f"Copy filestore {filestore} in "
-                    f"{os.path.join(dump_dir, 'filestore')}")
-                path = shutil.copytree(filestore, os.path.join(dump_dir, "filestore"))
-                logger.info(f"Path of copied filestore {path}")
-                logger.info(f"ls of copied files {os.listdir(path)}")
-            with open(os.path.join(dump_dir, "manifest.json"), "w") as fh:
-                db = db_connect(db_name)
-                with db.cursor() as cr:
-                    json.dump(
-                        self.dump_db_manifest(cr, version_name, db_name), fh, indent=4
-                    )
-            cmd.insert(-1, "--file=" + os.path.join(dump_dir, "dump.sql"))
-            exec_pg_command(*cmd)
-            if stream:
-                zip_dir(
-                    dump_dir,
-                    stream,
-                    include_dir=False,
-                    fnct_sort=lambda file_name: file_name != "dump.sql",
-                )
-            else:
-                t = tempfile.TemporaryFile()
-                zip_dir(
-                    dump_dir,
-                    t,
-                    include_dir=False,
-                    fnct_sort=lambda file_name: file_name != "dump.sql",
-                )
-                t.seek(0)
-                return t
-
-    def button_upload_migrated_file(self):
+    def button_backup_migration(self):
         if not self.current_version_id:
             raise UserError(_("Current version is required!"))
-        version_name = self.current_version_id.name
-        file_name = f"{self.env.cr.dbname}_migrate.{version_name}.zip"
-        with open(os.path.join(self.folder, file_name), "wb") as destiny:
-            self.dump_db(
-                db_name=f"{self.env.cr.dbname}_migrate",
-                version_name=version_name,
-                stream=destiny,
-            )
-            data = open(destiny.name, "rb").read()
-            self.migrated_file = base64.encodebytes(data)
-            self.migrated_file_name = file_name
+        if not self.current_version_id.db_backup_id:
+            self.current_version_id._create_db_backup(folder=self.folder)
+        self.current_version_id.db_backup_id.action_backup_migration()
 
     def get_filestore_path(self, version_name, migration_folder=False):
         # get filestore path for a version

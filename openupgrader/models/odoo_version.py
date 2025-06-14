@@ -49,6 +49,46 @@ class OdooVersion(models.Model):
         string="OpenUpgrader Configurations",
         copy=False,
     )
+    db_backup_id = fields.Many2one(
+        comodel_name="db.backup",
+        string="Database Backup",
+        domain=[("is_migration_backup", "=", True)],
+    )
+
+    def _create_db_backup(self, folder):
+        self.ensure_one()
+        if not self.db_backup_id:
+            db_backup_id = self.env["db.backup"].search(
+                [
+                    ("odoo_version_id", "=", self.id),
+                    ("is_migration_backup", "=", True),
+                ]
+            )
+            if not db_backup_id:
+                db_backup_id = self.env["db.backup"].create(
+                    {
+                        "odoo_version_id": self.id,
+                        "is_migration_backup": True,
+                        "folder": os.path.join(folder, f"openupgrade{self.name}"),
+                        "days_to_keep": 1,
+                        "method": "local",
+                        "backup_format": "zip",
+                    }
+                )
+            self.db_backup_id = db_backup_id
+
+    _sql_constraints = [
+        (
+            "version_unique",
+            "unique(name)",
+            "This odoo version already exists!",
+        ),
+        (
+            "db_backup_unique",
+            "unique(db_backup_id)",
+            "This odoo version already has a backup!",
+        ),
+    ]
 
     @api.depends("name")
     def _compute_odoo_is_openupgrade(self):

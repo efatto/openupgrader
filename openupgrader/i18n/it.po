@@ -351,14 +351,9 @@ msgid "Migrated"
 msgstr "Migrato"
 
 #. module: openupgrader
-#: model:ir.model.fields,field_description:openupgrader.field_openupgrader_migration__migrated_file
-msgid "Migrated File"
-msgstr "File migrazione"
-
-#. module: openupgrader
 #: model:ir.model.fields,help:openupgrader.field_openupgrader_migration__odoo_migrated_state
 msgid "Migrated Odoo is running or stopped"
-msgstr "L'Odoo migrato è acceso o spento"
+msgstr "L'istanza Odoo migrata è acceso o spento"
 
 #. module: openupgrader
 #: model:ir.model.fields,field_description:openupgrader.field_openupgrader_migration__odoo_migrated_state

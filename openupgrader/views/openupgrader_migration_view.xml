@@ -139,18 +139,10 @@
                         <group>
                             <div>
                                 <button
-                                    name="button_upload_migrated_file"
+                                    name="button_backup_migration"
                                     type="object"
-                                    string="Upload migrated file"
+                                    string="Generation migration file"
                                 />
-                            </div>
-                            <div>
-                                <field
-                                    name="migrated_file"
-                                    readonly="1"
-                                    filename="migrated_file_name"
-                                />
-                                <field name="migrated_file_name" invisible="1" />
                             </div>
                         </group>
                         <group colspan="4" col="2">

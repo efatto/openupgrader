@@ -9,6 +9,7 @@
     "summary": "Migrate Odoo.",
     "website": "https://github.com/efatto/openupgrader",
     "depends": [
+        "auto_backup",
         "mail",
         "python_venv",
     ],
@@ -18,6 +19,7 @@
         "views/openupgrader_config_view.xml",
         "views/openupgrader_repo_view.xml",
         "views/openupgrader_version_view.xml",
+        "views/db_backup_view.xml",
     ],
     "installable": True,
     "external_dependencies": {
