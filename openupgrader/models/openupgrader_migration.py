@@ -16,7 +16,7 @@ import psutil
 from odoorpc.rpc import CookieJar, HTTPCookieProcessor, build_opener
 
 from odoo import _, api, fields, models
-from odoo.exceptions import UserError, ValidationError
+from odoo.exceptions import UserError
 from odoo.modules import get_module_resource
 from odoo.sql_db import db_connect
 from odoo.tools import config, exec_pg_command
@@ -452,7 +452,8 @@ class OpenupgraderMigration(models.Model):
         if from_version_id == to_version_id:
             # in case of first version, copy from initial folder to initial migration folder
             shutil.copytree(
-                initial_from_folder, filestore_torestore_path, dirs_exist_ok=True)
+                initial_from_folder, filestore_torestore_path, dirs_exist_ok=True
+            )
         else:
             # in case of next versions, move folder to the next version
             if os.path.isdir(filestore_torestore_path):
@@ -460,7 +461,8 @@ class OpenupgraderMigration(models.Model):
             if not os.path.exists(from_folder):
                 # filestore has been removed, restore from initial folder
                 shutil.copytree(
-                    initial_from_folder, filestore_torestore_path, dirs_exist_ok=True)
+                    initial_from_folder, filestore_torestore_path, dirs_exist_ok=True
+                )
             else:
                 os.rename(from_folder, filestore_torestore_path)
 
@@ -504,7 +506,9 @@ class OpenupgraderMigration(models.Model):
             with open(os.path.join(dump_dir, "manifest.json"), "w") as fh:
                 db = db_connect(db_name)
                 with db.cursor() as cr:
-                    json.dump(self.dump_db_manifest(cr, version_name, db_name), fh, indent=4)
+                    json.dump(
+                        self.dump_db_manifest(cr, version_name, db_name), fh, indent=4
+                    )
             cmd.insert(-1, "--file=" + os.path.join(dump_dir, "dump.sql"))
             exec_pg_command(*cmd)
             if stream:
