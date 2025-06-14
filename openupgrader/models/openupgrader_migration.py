@@ -115,7 +115,7 @@ class OpenupgraderMigration(models.Model):
             ("stopped", "Stopped"),
         ],
         string="Odoo migrating instance state",
-        help="Migrated Odoo is running or stopped",
+        help="Migrated Odo instance is running or stopped",
         default="stopped",
     )
     state = fields.Selection(
@@ -230,7 +230,7 @@ class OpenupgraderMigration(models.Model):
 
     def start_odoo(self, version_id, update=False, extra_command=""):
         """
-        :param version_id: odoo version_id to start (8.0, 9.0, 10.0, ...)
+        :param version_id: Odoo version_id to start (8.0, 9.0, 10.0, ...)
         :param update: if True odoo will be updated with -u all and stopped
         :param extra_command: command that will be passed after executable
         :return: null

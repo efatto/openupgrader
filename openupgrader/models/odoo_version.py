@@ -81,12 +81,12 @@ class OdooVersion(models.Model):
         (
             "version_unique",
             "unique(name)",
-            "This odoo version already exists!",
+            "This Odoo version already exists!",
         ),
         (
             "db_backup_unique",
             "unique(db_backup_id)",
-            "This odoo version already has a backup!",
+            "This Odoo version already has a backup!",
         ),
     ]
 

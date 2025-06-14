@@ -141,7 +141,7 @@
                                 <button
                                     name="button_backup_migration"
                                     type="object"
-                                    string="Generation migration file"
+                                    string="Generate migration backup"
                                 />
                             </div>
                         </group>

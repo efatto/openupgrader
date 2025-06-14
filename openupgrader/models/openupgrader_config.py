@@ -127,7 +127,7 @@ class OpenupgraderConfig(models.Model):
         (
             "version_unique",
             "unique(odoo_version_id)",
-            _("This odoo version already exists!"),
+            _("This Odoo version already exists!"),
         )
     ]
 
