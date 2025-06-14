@@ -498,6 +498,7 @@ class OpenupgraderMigration(models.Model):
         logger.info(f"Dumping filestore {filestore}")
         with tempfile.TemporaryDirectory() as dump_dir:
             if os.path.exists(filestore):
+                logger.info(f"Copy filestore {filestore}")
                 shutil.copytree(filestore, os.path.join(dump_dir, "filestore"))
             with open(os.path.join(dump_dir, "manifest.json"), "w") as fh:
                 db = db_connect(db_name)
