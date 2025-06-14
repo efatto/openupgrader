@@ -134,14 +134,14 @@ class OpenupgraderConfig(models.Model):
     def button_load_repos(self):
         op_repo_obj = self.env["openupgrader.repo"]
         odoo_version_obj = self.env["odoo.version"]
-        version = self.odoo_version_id.name
-        remotes, pip_names, python_version = self.load_repos_file(version)
-        odoo_version_id = odoo_version_obj.search([("name", "=", version)])
+        version_name = self.odoo_version_id.name
+        remotes, pip_names, python_version = self.load_repos_file(version_name)
+        odoo_version_id = odoo_version_obj.search([("name", "=", version_name)])
         if not odoo_version_id:
             odoo_version_obj.create(
                 [
                     {
-                        "name": version,
+                        "name": version_name,
                         "python_version": python_version,
                     }
                 ]
@@ -175,7 +175,7 @@ class OpenupgraderConfig(models.Model):
                                     "name": remote,
                                     "remote_url": remotes[remote].split(" ")[0],
                                     "remote_branch": remotes[remote].split(" ")[1]
-                                    or version,
+                                    or version_name,
                                     "is_odoo": remote == "odoo",
                                 },
                             )
@@ -198,7 +198,7 @@ class OpenupgraderConfig(models.Model):
                     }
                 )
 
-    def load_repos_file(self, version):
+    def load_repos_file(self, version_name):
         if not self.repos_file:
             raise UserError(_("Missing repos file!"))
         file_content = base64.decodebytes(self.repos_file)  # noqa
@@ -211,16 +211,16 @@ class OpenupgraderConfig(models.Model):
         pip_names = []
         python_version = False
         for repo in repos.get("repositories"):
-            if repo.get("version") == version:
+            if repo.get("version") == version_name:
                 remotes = repo.get("remotes")
                 pip_names = repo.get("pip_requirements")
                 python_version = repo.get("python_version")
         return remotes, pip_names, python_version
 
     def button_load_config(self):
-        version = self.odoo_version_id.name
+        version_name = self.odoo_version_id.name
         recipes = self.load_config_file()
-        recipe_data = recipes[version]
+        recipe_data = recipes[version_name]
         for recipe in recipe_data:
             if recipe.get("sql_update_commands"):
                 sql_update_commands = recipe.get("sql_update_commands")
