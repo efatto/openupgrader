@@ -495,6 +495,7 @@ class OpenupgraderMigration(models.Model):
         cmd = ["pg_dump", "--no-owner"]
         cmd.append(db_name)
         filestore = self.get_filestore_path(version_name, migration_folder=True)
+        logger.info(f"Dumping filestore {filestore}")
         with tempfile.TemporaryDirectory() as dump_dir:
             if os.path.exists(filestore):
                 shutil.copytree(filestore, os.path.join(dump_dir, "filestore"))
