@@ -667,7 +667,6 @@ class OpenupgraderMigration(models.Model):
             self.remove_modules(self.next_version_id, "upgrade")
             self.remove_modules(self.next_version_id)
             self.install_uninstall_module("l10n_it_intrastat")
-            self.button_stop_odoo()
         self.dump_database(self.next_version_id.name)
         if self.migrate_filestore:
             self.dump_filestore(self.current_version_id.name)
@@ -818,6 +817,7 @@ class OpenupgraderMigration(models.Model):
             [("odoo_version_id.id", "=", version_id.id)]
         )
         if openupgrader_config.module_to_delete_after_migration_ids:
+            self.start_odoo(version_id)
             odoo_client = self.odoo_connect()
             module_obj = odoo_client.env["ir.module.module"]
             for module in openupgrader_config.module_to_delete_after_migration_ids:
