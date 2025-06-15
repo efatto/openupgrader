@@ -237,8 +237,7 @@ class OpenupgraderMigration(models.Model):
         """
         version_name = version_id.name
         version_float = float(version_name)
-        if self.odoo_migrated_state == "running":
-            self.button_stop_odoo()
+        self.button_stop_odoo()
         folder = self.check_venv(version_name)
         if not folder:
             raise UserError(
