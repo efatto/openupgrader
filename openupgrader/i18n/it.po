@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 14.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-06-14 17:05+0000\n"
-"PO-Revision-Date: 2025-06-14 17:05+0000\n"
+"POT-Creation-Date: 2025-06-17 09:31+0000\n"
+"PO-Revision-Date: 2025-06-17 09:31+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -636,8 +636,17 @@ msgid "OpenUpgrader migration Search"
 msgstr "Ricerca migrazione OpenUpgrader"
 
 #. module: openupgrader
+#: model:ir.model.fields,field_description:openupgrader.field_sql_update_command__openupgrade_after_config_id
+msgid "Openupgrade After Config"
+msgstr "Configurazione OpenUpgrader SQL dopo la migrazione"
+
+#. module: openupgrader
+#: model:ir.model.fields,field_description:openupgrader.field_sql_update_command__openupgrade_before_config_id
+msgid "Openupgrade Before Config"
+msgstr "Configurazione OpenUpgrader SQL prima dell migrazione"
+
+#. module: openupgrader
 #: model:ir.model.fields,field_description:openupgrader.field_auto_install_module__openupgrade_config_id
-#: model:ir.model.fields,field_description:openupgrader.field_sql_update_command__openupgrade_config_id
 msgid "Openupgrade Config"
 msgstr "Configurazione OpenUpgrade"
 
