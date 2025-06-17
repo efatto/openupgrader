@@ -85,7 +85,7 @@
                     <button
                         name="button_do_migration"
                         type="object"
-                        attrs="{'invisible': [('next_version_id', '=', False)]}"
+                        attrs="{'invisible': ['|', ('state', '=', 'ready_for_migration'), ('next_version_id', '=', False)]}"
                         string="4: migrate"
                     />
                     <button
