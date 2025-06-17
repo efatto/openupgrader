@@ -85,6 +85,12 @@
                     <button
                         name="button_do_migration"
                         type="object"
+                        attrs="{'invisible': [('next_version_id', '=', False)]}"
+                        string="4: migrate"
+                    />
+                    <button
+                        name="button_do_migration"
+                        type="object"
                         class="oe_highlight"
                         attrs="{'invisible': ['|', ('state', '!=', 'ready_for_migration'), ('next_version_id', '=', False)]}"
                         string="4: migrate"
