@@ -440,12 +440,13 @@ class OpenupgraderMigration(models.Model):
         )
         initial_from_folder = self.get_filestore_path(from_version_id.name)
         if from_version_id == to_version_id:
-            # in case of first version, copy from initial folder to initial migration folder
+            # When it's the first version, copy from initial folder to initial migration
+            # folder
             shutil.copytree(
                 initial_from_folder, filestore_torestore_path, dirs_exist_ok=True
             )
         else:
-            # in case of next versions, move folder to the next version
+            # When it's a following version, move the folder to the next version
             if os.path.isdir(filestore_torestore_path):
                 shutil.rmtree(filestore_torestore_path, ignore_errors=True)
             if not os.path.exists(from_folder):
@@ -455,18 +456,6 @@ class OpenupgraderMigration(models.Model):
                 )
             else:
                 os.rename(from_folder, filestore_torestore_path)
-
-        # todo restore from .tar when retrying a migration after the first version
-        # filestore_torestore_tar_path = f"filestore.{from_version_id.name}.tar"
-        # if os.path.isfile(filestore_torestore_tar_path):
-        #     Popen(
-        #         [
-        #             f"tar -zxvf {filestore_torestore_tar_path} --strip-components=1 "
-        #             f"-C {filestore_db_path}/",
-        #         ],
-        #         cwd=self.folder,
-        #         shell=True,
-        #     ).wait()
 
     def button_backup_migration(self):
         if not self.current_version_id:
@@ -497,18 +486,6 @@ class OpenupgraderMigration(models.Model):
             if os.path.exists(initial_path):
                 filestore_path = initial_path
         return filestore_path
-
-    def dump_filestore(self, version_name):
-        filestore_path = self.get_filestore_path(version_name)
-        destination_path = os.path.join(self.folder, f"filestore.{version_name}.tar")
-        if os.path.isdir(filestore_path):
-            Popen(
-                [
-                    f"tar -zcvf {destination_path}",
-                ],
-                cwd=filestore_path,
-                shell=True,
-            ).wait()
 
     def dump_database(self, version_name):
         destination_path = os.path.join(self.folder, f"database.{version_name}.sql")
@@ -595,7 +572,6 @@ class OpenupgraderMigration(models.Model):
             # already present
             self.dump_database(self.current_version_id.name)
             if self.migrate_filestore:
-                self.dump_filestore(self.current_version_id.name)
                 self.restore_filestore(self.current_version_id, self.current_version_id)
             self.restore()
         self.state = "restored"
@@ -671,8 +647,6 @@ class OpenupgraderMigration(models.Model):
             self.remove_modules(self.next_version_id)
             self.install_uninstall_module("l10n_it_intrastat")
         self.dump_database(self.next_version_id.name)
-        if self.migrate_filestore:
-            self.dump_filestore(self.current_version_id.name)
         logger.info(
             _("Migration done from version %s to version %s")
             % (self.current_version_id.name, self.next_version_id.name)
