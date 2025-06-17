@@ -720,10 +720,15 @@ class OpenupgraderMigration(models.Model):
                             and self.state != "ready_for_migration"
                         ):
                             self.state = "migrated"
-                    if contents and " ERROR " in contents:
-                        for x in contents.split(" ERROR "):
-                            # add the first 5 rows after the error to the log
-                            self.migration_error_log += "\n".join(x.split("\n")[:5])
+                    if contents:
+                        if " ERROR " in contents:
+                            for x in contents.split(" ERROR "):
+                                # add the first 5 rows after the error to the log
+                                self.migration_error_log += "\n".join(x.split("\n")[:5])
+                        if " WARNING " in contents:
+                            for x in contents.split(" WARNING "):
+                                # add the first row after the warning to the log
+                                self.migration_error_log += "\n".join(x.split("\n")[:1])
 
     def sql_fixes(self, openupgrader_config_ids):
         openupgrader_config_ids.ensure_one()
