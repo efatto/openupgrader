@@ -54,7 +54,10 @@ class SqlUpdateCommand(models.Model):
 
     name = fields.Text(string="SQL Command")
     sequence = fields.Integer(string="SQL Sequence")
-    openupgrade_config_id = fields.Many2one(
+    openupgrade_after_config_id = fields.Many2one(
+        comodel_name="openupgrader.config",
+    )
+    openupgrade_before_config_id = fields.Many2one(
         comodel_name="openupgrader.config",
     )
 
@@ -84,10 +87,16 @@ class OpenupgraderConfig(models.Model):
     repos_file_name = fields.Char(
         string="Repos file name",
     )
-    sql_update_command_ids = fields.One2many(
+    sql_after_migration_command_ids = fields.One2many(
         comodel_name="sql.update.command",
-        inverse_name="openupgrade_config_id",
-        string="SQL update commands",
+        inverse_name="openupgrade_after_config_id",
+        string="SQL after commands",
+        copy=False,
+    )
+    sql_before_migration_command_ids = fields.One2many(
+        comodel_name="sql.update.command",
+        inverse_name="openupgrade_before_config_id",
+        string="SQL before commands",
         copy=False,
     )
     module_auto_install_ids = fields.One2many(
@@ -222,20 +231,43 @@ class OpenupgraderConfig(models.Model):
         recipes = self.load_config_file()
         recipe_data = recipes[version_name]
         for recipe in recipe_data:
-            if recipe.get("sql_update_commands"):
-                sql_update_commands = recipe.get("sql_update_commands")
-                self.sql_update_command_ids = [
+            if recipe.get("after_migration_to_this_version_sql_command"):
+                after_migration_to_this_version_sql_command = recipe.get(
+                    "after_migration_to_this_version_sql_command"
+                )
+                self.sql_after_migration_command_ids = [
                     (
                         0,
                         0,
                         {
-                            "name": sql_update_command,
+                            "name": command,
                             "sequence": i,
                         },
                     )
-                    for i, sql_update_command in enumerate(sql_update_commands)
-                    if sql_update_command
-                    not in self.sql_update_command_ids.mapped("name")
+                    for i, command in enumerate(
+                        after_migration_to_this_version_sql_command
+                    )
+                    if command
+                    not in self.sql_after_migration_command_ids.mapped("name")
+                ]
+            if recipe.get("before_migration_to_next_version_sql_command"):
+                before_migration_to_next_version_sql_command = recipe.get(
+                    "before_migration_to_next_version_sql_command"
+                )
+                self.sql_before_migration_command_ids = [
+                    (
+                        0,
+                        0,
+                        {
+                            "name": command,
+                            "sequence": i,
+                        },
+                    )
+                    for i, command in enumerate(
+                        before_migration_to_next_version_sql_command
+                    )
+                    if command
+                    not in self.sql_before_migration_command_ids.mapped("name")
                 ]
             if recipe.get("auto_install"):
                 auto_install = recipe.get("auto_install")

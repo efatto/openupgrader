@@ -614,7 +614,9 @@ class OpenupgraderMigration(models.Model):
                 to_version_id=self.next_version_id,
             )
         self.disable_mail(disable=True)
-        self.sql_fixes(self.current_version_id.openupgrader_config_ids)
+        self.sql_fixes(
+            self.current_version_id.openupgrader_config_ids.sql_before_migration_command_ids
+        )
         self.uninstall_modules(self.current_version_id, before_migration=True)
         self.delete_old_modules(self.current_version_id)
         self.state = "ready_for_migration"
@@ -661,7 +663,9 @@ class OpenupgraderMigration(models.Model):
     def _action_done(self):
         self.uninstall_modules(self.next_version_id, after_migration=True)
         self.auto_install_modules(self.next_version_id)
-        self.sql_fixes(self.next_version_id.openupgrader_config_ids)
+        self.sql_fixes(
+            self.current_version_id.openupgrader_config_ids.sql_after_migration_command_ids
+        )
         if self.next_version_id.name == "10.0":
             self.remove_modules(self.next_version_id, "upgrade")
             self.remove_modules(self.next_version_id)
@@ -684,7 +688,7 @@ class OpenupgraderMigration(models.Model):
     def button_refresh_state(self):
         self._refresh_state()
 
-    def _refresh_state(self):
+    def _refresh_state(self):  # noqa C901
         self.migration_error_log = " "
         self.odoo_migrated_state = "stopped"
         odoo_pids = self._get_odoo_pids()
@@ -730,11 +734,10 @@ class OpenupgraderMigration(models.Model):
                                 # add the first row after the warning to the log
                                 self.migration_error_log += "\n".join(x.split("\n")[:1])
 
-    def sql_fixes(self, openupgrader_config_ids):
-        openupgrader_config_ids.ensure_one()
+    def sql_fixes(self, sql_commands):
         # do not change quote order as it will change the way the sql command is
         # interpreted!
-        for sql_update_command in openupgrader_config_ids.sql_update_command_ids:
+        for sql_command in sql_commands:
             Popen(
                 [
                     f"export PGPORT={self.db_port} && "
@@ -742,7 +745,7 @@ class OpenupgraderMigration(models.Model):
                     "export "
                     f"PGPASSWORD={self.pg_password_var or self.pg_password or ''} && "
                     f"psql -U {self.pg_user} -d {self.env.cr.dbname}_migrate "
-                    f'-c "{sql_update_command.name}"',
+                    f'-c "{sql_command.name}"',
                 ],
                 shell=True,
             ).wait()

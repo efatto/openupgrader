@@ -808,9 +808,14 @@ msgid "SQL Update Command"
 msgstr "Comando d'aggiornamento SQL"
 
 #. module: openupgrader
-#: model:ir.model.fields,field_description:openupgrader.field_openupgrader_config__sql_update_command_ids
-msgid "SQL update commands"
-msgstr "Comandi d'aggiornamento SQL"
+#: model:ir.model.fields,field_description:openupgrader.field_openupgrader_config__sql_after_migration_command_ids
+msgid "SQL after commands"
+msgstr "Comandi d'aggiornamento SQL dopo la migrazione"
+
+#. module: openupgrader
+#: model:ir.model.fields,field_description:openupgrader.field_openupgrader_config__sql_before_migration_command_ids
+msgid "SQL before commands"
+msgstr "Comandi d'aggiornamento SQL prima della migrazione"
 
 #. module: openupgrader
 #: model:ir.model.fields,help:openupgrader.field_openupgrader_migration__xmlrpc_port
