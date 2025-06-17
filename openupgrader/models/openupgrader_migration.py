@@ -382,22 +382,23 @@ class OpenupgraderMigration(models.Model):
         self.odoo_migrated_state = "stopped"
 
     def _get_odoo_pids(self):
-        process = Popen(
-            [
-                f"pgrep -a python | grep {self.env.cr.dbname}_migrate",
-                f"pgrep -a postgres | grep {self.env.cr.dbname}_migrate",
-            ],
-            shell=True,
-            stdout=PIPE,
-        )
-        has_stdout = True
         pids = []
-        while has_stdout:
-            one_line_output = process.stdout.readline()
-            if one_line_output:
-                pids.append(int(one_line_output.split()[0]))
-            else:
-                has_stdout = False
+        for command in [
+            f"pgrep -a python | grep {self.env.cr.dbname}_migrate",
+            f"pgrep -a postgres | grep {self.env.cr.dbname}_migrate",
+        ]:
+            process = Popen(
+                command,
+                shell=True,
+                stdout=PIPE,
+            )
+            has_stdout = True
+            while has_stdout:
+                one_line_output = process.stdout.readline()
+                if one_line_output:
+                    pids.append(int(one_line_output.split()[0]))
+                else:
+                    has_stdout = False
         return pids
 
     def button_stop_odoo(self):
@@ -504,6 +505,7 @@ class OpenupgraderMigration(models.Model):
         process.wait()
 
     def restore(self):
+        self.button_stop_odoo()
         process = Popen(
             [
                 f"export PGPORT={self.db_port} && "
