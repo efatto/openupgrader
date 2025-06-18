@@ -671,7 +671,8 @@ class OpenupgraderMigration(models.Model):
         for odoo_pid in odoo_pids:
             if psutil.pid_exists(odoo_pid):
                 self.odoo_migrated_state = "running"
-
+        # TODO implementation: get running Odoo istance log to grep ERROR (or all docker
+        #  logs with postgres too?)
         for version_id in [self.current_version_id, self.next_version_id]:
             migration_log_path = os.path.join(
                 os.path.join(self.folder, f"openupgrade{version_id.name}"),
