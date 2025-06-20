@@ -1,3 +1,6 @@
+Questo modulo funziona con una serie di librerie presenti normalmente in ambiente Debian/Ubuntu, con alcune aggiunte, una configurazione docker utilizzabile di esempio è qui: https://github.com/kenayagi/docker-odoo/blob/14.0/Dockerfile
+
+#### ISTRUZIONI DA AGGIORNARE ####
 La migrazione viene eseguita con i seguenti passaggi, impostando:
 
 #. crea virtualenv: settare a True, a meno che non siano già stati creati per evitarne la ri-creazione
