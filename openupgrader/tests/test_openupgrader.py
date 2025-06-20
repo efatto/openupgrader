@@ -2,10 +2,9 @@ import base64
 
 from odoo.modules import get_module_resource
 from odoo.release import version_info
-from odoo.tests.common import SavepointCase, tagged
+from odoo.tests.common import SavepointCase
 
 
-@tagged("-standard", "test_openupgrader")
 class Openupgrader(SavepointCase):
     @classmethod
     def setUpClass(cls):
