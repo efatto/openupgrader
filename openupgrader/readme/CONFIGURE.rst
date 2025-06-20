@@ -1,14 +1,7 @@
-This module works with some extra Debian packages, a working docker instance example is here: https://github.com/kenayagi/docker-odoo/blob/14.0/Dockerfile
-
 Menu for the module is in Configuration/Settings:
 
 .. image:: ../static/description/menu.png
     :alt: Menu
-
-USAGE
-~~~~~
-
-This module migrate the current instance of Odoo in virtualenv, copying the database and the filestore.
 
 The configuration is done in the main view:
 
@@ -43,5 +36,7 @@ Notes:
 #. Every instance of the migrated Odoo with virtualenv and log of the migration process is saved in configured folder or ~/odoo_migration/<database><version>/
 #. If there are errors in the log of the Odoo migration it is shown in the main view
 #. If the migration stops for some reasons, it can be corrected and retried with the `migrate` button, as normally in Odoo
+
+This module works with some extra Debian packages, so tests are not possible now in the OCA container. A working docker instance example, with other packages not needed for this module, is here: https://github.com/kenayagi/docker-odoo/blob/14.0/Dockerfile
 
 IMPROVEMENTS TODO: use queue_job to bypass limits of CPU times.
