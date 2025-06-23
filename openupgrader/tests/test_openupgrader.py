@@ -100,6 +100,7 @@ class Openupgrader(SavepointCase):
             version.button_create_venv()
 
     def test_openupgrader(self):
+        self.openupgrader_migration.button_stop_odoo()
         self.openupgrader_migration.button_restore()
         self.assertEqual(self.openupgrader_migration.state, "restored")
         self.assertEqual(
