@@ -443,18 +443,14 @@ class OpenupgraderMigration(models.Model):
         if from_version_id == to_version_id:
             # When it's the first version, copy from initial folder to initial migration
             # folder
-            shutil.copytree(
-                initial_from_folder, filestore_torestore_path, dirs_exist_ok=True
-            )
+            shutil.copytree(initial_from_folder, filestore_torestore_path)
         else:
             # When it's a following version, move the folder to the next version
             if os.path.isdir(filestore_torestore_path):
                 shutil.rmtree(filestore_torestore_path, ignore_errors=True)
             if not os.path.exists(from_folder):
                 # filestore has been removed, restore from initial folder
-                shutil.copytree(
-                    initial_from_folder, filestore_torestore_path, dirs_exist_ok=True
-                )
+                shutil.copytree(initial_from_folder, filestore_torestore_path)
             else:
                 os.rename(from_folder, filestore_torestore_path)
 
