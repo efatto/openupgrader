@@ -6,7 +6,8 @@
         <field name="arch" type="xml">
             <search string="OpenUpgrader Configuration Search">
                 <field name="odoo_version_id" />
-                <field name="sql_update_command_ids" />
+                <field name="sql_after_migration_command_ids" />
+                <field name="sql_before_migration_command_ids" />
                 <field name="module_auto_install_ids" />
                 <field name="module_to_delete_after_migration_ids" />
                 <field name="module_to_uninstall_after_migration_ids" />
@@ -21,7 +22,8 @@
         <field name="arch" type="xml">
             <tree>
                 <field name="odoo_version_id" />
-                <field name="sql_update_command_ids" />
+                <field name="sql_after_migration_command_ids" />
+                <field name="sql_before_migration_command_ids" />
                 <field name="module_auto_install_ids" />
                 <field name="module_to_delete_after_migration_ids" />
                 <field name="module_to_uninstall_after_migration_ids" />
@@ -79,13 +81,19 @@
                                     ('odoo_version_id', '=', False),
                                     ('config_file', '=', False),
                                 ]}"
-                                    string="Load receipt"
+                                    string="Load recipe"
                                 />
                             </group>
                         </group>
                     </group>
                     <group>
-                        <field name="sql_update_command_ids">
+                        <field name="sql_after_migration_command_ids">
+                            <tree editable="top">
+                                <field name="sequence" widget="handle" />
+                                <field name="name" />
+                            </tree>
+                        </field>
+                        <field name="sql_before_migration_command_ids">
                             <tree editable="top">
                                 <field name="sequence" widget="handle" />
                                 <field name="name" />

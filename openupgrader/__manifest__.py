@@ -2,13 +2,14 @@
 # License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl).
 {
     "name": "Openupgrader",
-    "version": "12.0.1.0.0",
+    "version": "12.0.1.0.1",
     "category": "Odoo Management",
     "author": "Sergio Corato",
     "license": "AGPL-3",
     "summary": "Migrate Odoo.",
     "website": "https://github.com/efatto/openupgrader",
     "depends": [
+        "auto_backup",
         "mail",
         "python_venv",
     ],
@@ -18,12 +19,14 @@
         "views/openupgrader_config_view.xml",
         "views/openupgrader_repo_view.xml",
         "views/openupgrader_version_view.xml",
+        "views/db_backup_view.xml",
     ],
     "installable": True,
     "external_dependencies": {
         "python": [
             "odoorpc",
-            "PyYAML",
+            "yaml",
+            "pysftp",
         ],
     },
 }

@@ -1,8 +1,8 @@
 import base64
 
 from odoo.modules import get_module_resource
-from odoo.tests.common import SavepointCase
 from odoo.release import version_info
+from odoo.tests.common import SavepointCase
 
 
 class Openupgrader(SavepointCase):
@@ -54,16 +54,16 @@ class Openupgrader(SavepointCase):
                 ("name", "=", cls.future_version),
             ]
         )
-        for version in [cls.from_version, cls.middle_version, cls.to_version]:
+        for version_name in [cls.from_version, cls.middle_version, cls.to_version]:
             openupgrader_config = cls.env["openupgrader.config"].search(
                 [
-                    ("odoo_version_id.name", "=", version),
+                    ("odoo_version_id.name", "=", version_name),
                 ]
             )
             if not openupgrader_config:
                 version_id = cls.version_obj.search(
                     [
-                        ("name", "=", version),
+                        ("name", "=", version_name),
                     ]
                 )
                 openupgrader_config = cls.env["openupgrader.config"].create(
@@ -91,17 +91,19 @@ class Openupgrader(SavepointCase):
             {
                 "from_version_id": cls.from_version_id.id,
                 "to_version_id": cls.to_version_id.id,
-                "openupgrade_repo": "git@github.com:efatto/OpenUpgrade.git",
-                "odoo_repo": "git@github.com:OCA/OCB.git",
+                "openupgrade_repo": "https://github.com/efatto/OpenUpgrade.git",
+                "pg_password_var": "$PGPASSWORD",  # PGPASSWORD=odoo
+                "pg_host": "$PGHOST",  # PGHOST=postgres
+                "pg_user": "$PGUSER",  # PGUSER=odoo
+                "db_name": "$PGDATABASE",  # PGDATABASE=odoo
             }
         )
-        cls.from_version_id.button_create_venv()
-        cls.middle_version_id.button_create_venv()
-        cls.to_version_id.button_create_venv()
+        for version in [cls.from_version_id, cls.middle_version_id, cls.to_version_id]:
+            version.button_create_venv()
 
     def test_openupgrader(self):
-        self.openupgrader_migration.button_restore_db()
-        self.assertEqual(self.openupgrader_migration.state, "db_restored")
+        self.openupgrader_migration.button_restore()
+        self.assertEqual(self.openupgrader_migration.state, "restored")
         self.assertEqual(
             self.openupgrader_migration.current_version_id,
             self.from_version_id,
@@ -111,7 +113,7 @@ class Openupgrader(SavepointCase):
             self.middle_version_id,
         )
         self.openupgrader_migration.button_update_current_version()
-        self.openupgrader_migration.button_ready_for_migration()
+        self.openupgrader_migration.button_prepare_for_migration()
         self.assertEqual(self.openupgrader_migration.state, "ready_for_migration")
         self.openupgrader_migration.button_do_migration()
         self.assertEqual(self.openupgrader_migration.state, "done")
@@ -124,7 +126,7 @@ class Openupgrader(SavepointCase):
             self.to_version_id,
         )
         self.openupgrader_migration.button_update_current_version()
-        self.openupgrader_migration.button_ready_for_migration()
+        self.openupgrader_migration.button_prepare_for_migration()
         self.assertEqual(self.openupgrader_migration.state, "ready_for_migration")
         self.openupgrader_migration.button_do_migration()
         self.assertEqual(self.openupgrader_migration.state, "done")

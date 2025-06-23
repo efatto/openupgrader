@@ -31,10 +31,74 @@
             <form string="OpenUpgrader migration">
                 <header>
                     <button name="button_draft" type="object" string="Set to draft" />
+                    <button
+                        name="button_restore_update"
+                        type="object"
+                        string="1&amp;2: restore and update"
+                        help="Restore and update db of current version before migration, alternative to use the two separated buttons"
+                    />
+                    <button
+                        name="button_restore"
+                        type="object"
+                        class="oe_highlight"
+                        attrs="{'invisible': [('state', '!=', 'created_venv')]}"
+                        string="1: restore"
+                        help="Restore db of current version before migration"
+                    />
+                    <button
+                        name="button_restore"
+                        type="object"
+                        attrs="{'invisible': [('state', '=', 'created_venv')]}"
+                        string="1: restore"
+                        help="Restore db of current version before migration"
+                    />
+                    <button
+                        name="button_update_current_version"
+                        type="object"
+                        class="oe_highlight"
+                        attrs="{'invisible': [('state', '!=', 'restored')]}"
+                        string="2: update"
+                        help="Update db of current version before migration"
+                    />
+                    <button
+                        name="button_update_current_version"
+                        type="object"
+                        attrs="{'invisible': [('state', '=', 'restored')]}"
+                        string="2: update"
+                        help="Update db of current version before migration"
+                    />
+                    <button
+                        name="button_prepare_for_migration"
+                        type="object"
+                        class="oe_highlight"
+                        attrs="{'invisible': ['|', ('state', 'not in', ['updated', 'done']), ('next_version_id', '=', False)]}"
+                        string="3: prepare migration"
+                        help="Do some useful stuff before migration"
+                    />
+                    <button
+                        name="button_prepare_for_migration"
+                        type="object"
+                        attrs="{'invisible': ['|', ('state', 'in', ['updated', 'done']), ('next_version_id', '=', False)]}"
+                        string="3: prepare migration"
+                        help="Do some useful stuff before migration"
+                    />
+                    <button
+                        name="button_do_migration"
+                        type="object"
+                        attrs="{'invisible': ['|', ('state', '=', 'ready_for_migration'), ('next_version_id', '=', False)]}"
+                        string="4: migrate"
+                    />
+                    <button
+                        name="button_do_migration"
+                        type="object"
+                        class="oe_highlight"
+                        attrs="{'invisible': ['|', ('state', '!=', 'ready_for_migration'), ('next_version_id', '=', False)]}"
+                        string="4: migrate"
+                    />
                     <field
                         name="state"
                         widget="statusbar"
-                        statusbar_visible="draft,created_venv,restoring_db,restore_failed,db_restored,ready_for_migration,migrating,failed,db_migrated,done"
+                        statusbar_visible="draft,created_venv,restoring,restore_failed,restored,ready_for_migration,migrating,failed,migrated,done"
                     />
                 </header>
                 <sheet string="OpenUpgrader migration">
@@ -44,80 +108,81 @@
                             <field name="to_version_id" />
                             <field name="current_version_id" />
                             <field name="next_version_id" />
-                            <field name="db_name" />
-                            <field name="db_user" />
-                            <field name="db_password" password="1" />
-                            <field name="pg_user" />
+                            <field name="migrate_filestore" />
+                            <field name="folder" />
                             <field name="openupgrade_repo" />
-                            <field
-                                name="odoo_repo"
-                                placeholder="https://github.com/OCB/OCB.git"
-                            />
                         </group>
                         <group>
                             <field name="db_port" />
                             <field name="xmlrpc_port" />
-                            <field name="folder" />
-                            <field name="odoo_migrated_state" />
-                            <button
-                                name="button_start_odoo"
-                                type="object"
-                                string="Start Odoo (from version)"
-                            />
-                            <button
-                                name="button_stop_odoo"
-                                type="object"
-                                string="Stop Odoo"
-                            />
-                        </group>
-                    </group>
-                    <group>
-                        <group>
-                            <field name="filestore" />
+                            <field name="db_name" />
+                            <field name="db_user" />
+                            <field name="db_password" password="1" />
+                            <field name="pg_host" />
+                            <field name="pg_options" />
+                            <field name="pg_user" />
+                            <field name="pg_password" password="1" />
+                            <field name="pg_password_var" />
                         </group>
                         <group>
-                            <button
-                                name="button_refresh_state"
-                                type="object"
-                                string="Refresh state"
-                            />
-                            <button
-                                name="button_restore_db_update"
-                                type="object"
-                                string="Prepare migration restoring db and updating"
-                            />
-                            <button
-                                name="button_restore_db"
-                                type="object"
-                                string="Prepare migration restoring db"
-                            />
-                            <button
-                                name="button_update_current_version"
-                                type="object"
-                                string="Prepare migration updating only"
-                            />
-                            <button
-                                name="button_ready_for_migration"
-                                type="object"
-                                string="Complete prepare of migration"
-                            />
-                            <button
-                                name="button_do_migration"
-                                type="object"
-                                string="Do migration"
-                            />
-<!--                            <button-->
-<!--                                name="button_done"-->
-<!--                                type="object"-->
-<!--                                states="db_migrated"-->
-<!--                                string="Complete migration"-->
-<!--                            />-->
+                            <group>
+                                <field name="odoo_migrated_state" readonly="True" />
+                            </group>
+                            <div
+                                class="alert alert-warning"
+                                aria-label="Warning"
+                                title="Warning"
+                                role="alert"
+                                attrs="{'invisible': [('odoo_migrated_state', '=', 'stopped')]}"
+                                style="margin-bottom:0;"
+                            >
+                                <p>
+                                    <i class="fa fa-info-circle" />
+                                    <span>Warning: Migrated Odoo is running!</span>
+                                </p>
+                            </div>
+                        </group>
+                        <group>
+                            <div>
+                                <button
+                                    name="button_backup_migration"
+                                    type="object"
+                                    string="Generate migration backup"
+                                />
+                            </div>
+                        </group>
+                        <group colspan="4" col="2">
+                            <group string="Utilities" />
+                            <group colspan="2" col="4">
+                                <button
+                                    name="button_refresh_state"
+                                    type="object"
+                                    string="Refresh state and log"
+                                />
+                                <button
+                                    name="button_clean_migration_error_log"
+                                    type="object"
+                                    string="Clean migration log"
+                                />
+                                <button
+                                    name="button_start_odoo"
+                                    type="object"
+                                    string="Start Odoo (current migrated version)"
+                                />
+                                <button
+                                    name="button_stop_odoo"
+                                    type="object"
+                                    string="Stop Odoo"
+                                />
+                            </group>
                         </group>
                     </group>
                     <group>
                         <field name="disabled_cron_ids" />
-                        <field name="repo_ids" />
-                        <field name="config_ids" />
+                    </group>
+                    <group>
+                        <field name="odoo_error_log" />
+                        <field name="migration_error_log" />
                     </group>
                 </sheet>
             </form>

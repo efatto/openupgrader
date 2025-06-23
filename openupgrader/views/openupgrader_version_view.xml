@@ -33,13 +33,21 @@
                         type="object"
                         string="Create virtualenv"
                     />
+                    <button
+                        name="button_recreate_venv"
+                        type="object"
+                        string="Re-create virtualenv"
+                        help="To recreate a clean virtualenv after removing some repos or libraries"
+                    />
                 </header>
                 <sheet string="Odoo Version">
                     <group>
                         <field name="name" />
+                        <field name="python_version" />
                     </group>
                     <group>
-                        <field name="python_version" />
+                        <field name="openupgrader_repo_ids" />
+                        <field name="openupgrader_config_ids" />
                     </group>
                 </sheet>
             </form>
