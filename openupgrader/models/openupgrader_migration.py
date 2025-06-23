@@ -434,8 +434,6 @@ class OpenupgraderMigration(models.Model):
         filestore_torestore_path = self.get_filestore_path(
             to_version_id.name, migration_folder=True
         )
-        if not os.path.isdir(filestore_torestore_path):
-            os.makedirs(filestore_torestore_path, exist_ok=True)
         from_folder = self.get_filestore_path(
             from_version_id.name, migration_folder=True
         )
