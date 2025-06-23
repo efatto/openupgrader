@@ -434,22 +434,23 @@ class OpenupgraderMigration(models.Model):
         filestore_torestore_path = self.get_filestore_path(
             to_version_id.name, migration_folder=True
         )
+        if os.path.isdir(filestore_torestore_path):
+            shutil.rmtree(filestore_torestore_path, ignore_errors=True)
         from_folder = self.get_filestore_path(
             from_version_id.name, migration_folder=True
         )
-        initial_from_folder = self.get_filestore_path(from_version_id.name)
+        initial_folder = self.get_filestore_path(from_version_id.name)
         if from_version_id == to_version_id:
             # When it's the first version, copy from initial folder to initial migration
             # folder
-            shutil.copytree(initial_from_folder, filestore_torestore_path)
+            shutil.copytree(initial_folder, filestore_torestore_path)
         else:
-            # When it's a following version, move the folder to the next version
-            if os.path.isdir(filestore_torestore_path):
-                shutil.rmtree(filestore_torestore_path, ignore_errors=True)
+            # When it's a following version:
             if not os.path.exists(from_folder):
                 # filestore has been removed, restore from initial folder
-                shutil.copytree(initial_from_folder, filestore_torestore_path)
+                shutil.copytree(initial_folder, filestore_torestore_path)
             else:
+                # filestore exists, so move the folder to the next version
                 os.rename(from_folder, filestore_torestore_path)
 
     def button_backup_migration(self):
