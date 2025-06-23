@@ -23,14 +23,6 @@
     ],
     "installable": True,
     "external_dependencies": {
-        "bin": [
-            "libcairo2-dev",
-            "libgirepository1.0-dev",
-            "liblzma-dev2",
-            "libzstd-dev",
-            "lzma",
-            "zstd",
-        ],
         "python": [
             "odoorpc",
             "PyYAML",
