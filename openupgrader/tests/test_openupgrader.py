@@ -52,16 +52,16 @@ class Openupgrader(SavepointCase):
                 ("name", "=", cls.future_version),
             ]
         )
-        for version in [cls.from_version, cls.middle_version, cls.to_version]:
+        for version_name in [cls.from_version, cls.middle_version, cls.to_version]:
             openupgrader_config = cls.env["openupgrader.config"].search(
                 [
-                    ("odoo_version_id.name", "=", version),
+                    ("odoo_version_id.name", "=", version_name),
                 ]
             )
             if not openupgrader_config:
                 version_id = cls.version_obj.search(
                     [
-                        ("name", "=", version),
+                        ("name", "=", version_name),
                     ]
                 )
                 openupgrader_config = cls.env["openupgrader.config"].create(
@@ -96,9 +96,8 @@ class Openupgrader(SavepointCase):
                 "db_name": "$PGDATABASE",  # PGDATABASE=odoo
             }
         )
-        cls.from_version_id.button_create_venv()
-        cls.middle_version_id.button_create_venv()
-        cls.to_version_id.button_create_venv()
+        for version in [cls.from_version_id, cls.middle_version_id, cls.to_version_id]:
+            version.button_create_venv()
 
     def test_openupgrader(self):
         self.openupgrader_migration.button_restore()

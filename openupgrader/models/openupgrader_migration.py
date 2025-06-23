@@ -320,51 +320,6 @@ class OpenupgraderMigration(models.Model):
         time.sleep(1)
         self._refresh_state()
 
-    # def _log_process(self, process, full_command):
-    #     output_queue = queue.Queue()
-    #
-    #     def reader_thread(pipe, output_queue):
-    #         try:
-    #             for l in pipe:
-    #                 output_queue.put(l)
-    #         finally:
-    #             output_queue.put(None)
-    #
-    #     stdout_thread = threading.Thread(
-    #         target=reader_thread,
-    #         args=(process.stdout, output_queue)
-    #     )
-    #     stderr_thread = threading.Thread(
-    #         target=reader_thread,
-    #         args=(process.stderr, output_queue)
-    #     )
-    #
-    #     stdout_thread.start()
-    #     stderr_thread.start()
-    #
-    #     while True:
-    #         # if self._stop_event.is_set():
-    #         #     process.terminate()
-    #         #     break
-    #
-    #         try:
-    #             line = output_queue.get(timeout=0.1)
-    #             if line is None:
-    #                 break
-    #             self.migration_error_log += line
-    #             logger.info(line)
-    #         except queue.Empty:
-    #             continue
-    #
-    #     stdout_thread.join()
-    #     stderr_thread.join()
-    #     return_code = process.wait()
-    #
-    #     if return_code != 0:
-    #         raise ValidationError(
-    #             return_code, full_command
-    #         )
-
     def _stop_pid(self, pid=False):
         if not pid:
             pid = self.odoo_pid
