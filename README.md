@@ -7,7 +7,7 @@
 
 <!-- /!\ do not modify above this line -->
 
-# Tools for Odoo
+# A tool to automate OpenUpgrade to upgrade Odoo in an easy way
 
 Modules for extend and fix use of Odoo
 

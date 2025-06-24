@@ -1,5 +1,5 @@
 # Do NOT update manually; changes here will be overwritten by Copier
-_commit: v1.31
+_commit: v1.32
 _src_path: https://github.com/OCA/oca-addons-repo-template.git
 ci: GitHub
 convert_readme_fragments_to_markdown: false
@@ -18,7 +18,7 @@ org_name: Sergio Corato
 org_slug: efatto
 rebel_module_groups: []
 repo_description: Modules to upgrade Odoo in-place
-repo_name: Tools to upgrade Odoo
+repo_name: A tool to automate OpenUpgrade to upgrade Odoo in an easy way
 repo_slug: openupgrader
 repo_website: https://github.com/efatto/openupgrader
 use_pyproject_toml: false
