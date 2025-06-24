@@ -15,7 +15,6 @@ class OpenUpgrader(SavepointCase):
         cls.from_version = ".".join(str(v) for v in version_info[:2])
         cls.middle_version = str(float(cls.from_version) + 1)
         cls.to_version = str(float(cls.middle_version) + 1)
-        cls.future_version = str(float(cls.to_version) + 1)
         versions = {
             "from_version": cls.from_version,
             "middle_version": cls.middle_version,
@@ -136,8 +135,4 @@ class OpenUpgrader(SavepointCase):
         self.assertEqual(
             openupgrader_migration.current_version_id,
             self.to_version_id,
-        )
-        self.assertEqual(
-            openupgrader_migration.next_version_id,
-            self.future_version_id,
         )

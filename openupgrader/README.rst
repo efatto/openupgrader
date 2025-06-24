@@ -21,7 +21,7 @@ OpenUpgrader
     :target: http://www.gnu.org/licenses/agpl-3.0-standalone.html
     :alt: License: AGPL-3
 .. |badge3| image:: https://img.shields.io/badge/github-efatto%2Fopenupgrader-lightgray.png?logo=github
-    :target: https://github.com/efatto/openupgrader/tree/15.0/openupgrader
+    :target: https://github.com/efatto/openupgrader/tree/16.0/openupgrader
     :alt: efatto/openupgrader
 
 |badge1| |badge2| |badge3|
@@ -40,49 +40,49 @@ Configuration
 
 The menu is in Configuration/Settings:
 
-.. image:: https://raw.githubusercontent.com/efatto/openupgrader/15.0/openupgrader/static/description/menu.png
+.. image:: https://raw.githubusercontent.com/efatto/openupgrader/16.0/openupgrader/static/description/menu.png
     :alt: Menu
 
 Which provides two rows: the OpenUpgrader Migration is used to manage the migration process:
 
-.. image:: https://raw.githubusercontent.com/efatto/openupgrader/15.0/openupgrader/static/description/migration.png
+.. image:: https://raw.githubusercontent.com/efatto/openupgrader/16.0/openupgrader/static/description/migration.png
     :alt: Migration
 
 The second row is the OpenUpgrader Configuration, which is used to configure specific parameters for every version of Odoo included in the process. So in a migration from 14.0 to 16.0, we need to create three configuration: 14.0, 15.0 and 16.0
 
-.. image:: https://raw.githubusercontent.com/efatto/openupgrader/15.0/openupgrader/static/description/configuration.png
+.. image:: https://raw.githubusercontent.com/efatto/openupgrader/16.0/openupgrader/static/description/configuration.png
     :alt: Configuration
 
 This configuration can be imported by a yml file (see the tests folder for an example, the file can be filled with many versions of the configuration settings):
 
-.. image:: https://raw.githubusercontent.com/efatto/openupgrader/15.0/openupgrader/static/description/import_yml.png
+.. image:: https://raw.githubusercontent.com/efatto/openupgrader/16.0/openupgrader/static/description/import_yml.png
     :alt: Import yml file
 
 Every configuration must have a virtualenv, created with `Create virtualenv` (or re-created cleaning entirely its folder with `Re-create virtualenv`):
 
-.. image:: https://raw.githubusercontent.com/efatto/openupgrader/15.0/openupgrader/static/description/create_recreate_venv.png
+.. image:: https://raw.githubusercontent.com/efatto/openupgrader/16.0/openupgrader/static/description/create_recreate_venv.png
     :alt: Create or re-create virtualenv
 
 The configuration can be filled with these values:
 
 * Pip Requirements: in this menu is possible to add some Odoo modules required for this version (in the form `<module_name><pip sign as ==, >=, >, etc><version>` and other normal pip modules:
 
-.. image:: https://raw.githubusercontent.com/efatto/openupgrader/15.0/openupgrader/static/description/pip_requirements.png
+.. image:: https://raw.githubusercontent.com/efatto/openupgrader/16.0/openupgrader/static/description/pip_requirements.png
     :alt: Pip Requirements
 
 * SQL commands: some command to be executed before of after the migration:
 
-.. image:: https://raw.githubusercontent.com/efatto/openupgrader/15.0/openupgrader/static/description/sql_commands.png
+.. image:: https://raw.githubusercontent.com/efatto/openupgrader/16.0/openupgrader/static/description/sql_commands.png
     :alt: SQL commands
 
 * Modules management: in this menu is possible to add module to be installed automatically, unistalled, or simply deleted:
 
-.. image:: https://raw.githubusercontent.com/efatto/openupgrader/15.0/openupgrader/static/description/modules_management.png
+.. image:: https://raw.githubusercontent.com/efatto/openupgrader/16.0/openupgrader/static/description/modules_management.png
     :alt: Modules management
 
 * Installed modules: this menu is auto-computed at the creation of the configuration:
 
-.. image:: https://raw.githubusercontent.com/efatto/openupgrader/15.0/openupgrader/static/description/installed_modules.png
+.. image:: https://raw.githubusercontent.com/efatto/openupgrader/16.0/openupgrader/static/description/installed_modules.png
     :alt: Installed modules
 
 The migration process is as follows:
@@ -116,7 +116,7 @@ Bug Tracker
 Bugs are tracked on `GitHub Issues <https://github.com/efatto/openupgrader/issues>`_.
 In case of trouble, please check there if your issue has already been reported.
 If you spotted it first, help us to smash it by providing a detailed and welcomed
-`feedback <https://github.com/efatto/openupgrader/issues/new?body=module:%20openupgrader%0Aversion:%2015.0%0A%0A**Steps%20to%20reproduce**%0A-%20...%0A%0A**Current%20behavior**%0A%0A**Expected%20behavior**>`_.
+`feedback <https://github.com/efatto/openupgrader/issues/new?body=module:%20openupgrader%0Aversion:%2016.0%0A%0A**Steps%20to%20reproduce**%0A-%20...%0A%0A**Current%20behavior**%0A%0A**Expected%20behavior**>`_.
 
 Do not contact contributors directly about support or help with technical issues.
 
@@ -136,6 +136,6 @@ Contributors
 Maintainers
 ~~~~~~~~~~~
 
-This module is part of the `efatto/openupgrader <https://github.com/efatto/openupgrader/tree/15.0/openupgrader>`_ project on GitHub.
+This module is part of the `efatto/openupgrader <https://github.com/efatto/openupgrader/tree/16.0/openupgrader>`_ project on GitHub.
 
 You are welcome to contribute.
