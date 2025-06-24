@@ -73,8 +73,6 @@ Notes:
 #. If there are errors in the log of the Odoo migration it is shown in the main view
 #. If the migration stops for some reasons, it can be corrected and retried with the `migrate` button, as normally in Odoo
 
-This module works with some extra Debian packages, so tests are not possible now in the OCA container. A working docker instance example, with other packages not needed for this module, is here: https://github.com/kenayagi/docker-odoo/blob/14.0/Dockerfile
-
 IMPROVEMENTS TODO: use queue_job to bypass limits of CPU times.
 
 Bug Tracker
