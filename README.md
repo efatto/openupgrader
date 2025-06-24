@@ -1,15 +1,39 @@
 
 <!-- /!\ Non OCA Context : Set here the badge of your runbot / runboat instance. -->
+<<<<<<< HEAD
+[![Pre-commit Status](https://github.com/efatto/openupgrader/actions/workflows/pre-commit.yml/badge.svg?branch=16.0)](https://github.com/efatto/openupgrader/actions/workflows/pre-commit.yml?query=branch%3A16.0)
+[![Build Status](https://github.com/efatto/openupgrader/actions/workflows/test.yml/badge.svg?branch=16.0)](https://github.com/efatto/openupgrader/actions/workflows/test.yml?query=branch%3A16.0)
+[![codecov](https://codecov.io/gh/efatto/openupgrader/branch/16.0/graph/badge.svg)](https://codecov.io/gh/efatto/openupgrader)
+=======
+<<<<<<< HEAD
+<<<<<<< HEAD
+<<<<<<< HEAD
+[![Pre-commit Status](https://github.com/efatto/openupgrader/actions/workflows/pre-commit.yml/badge.svg?branch=16.0)](https://github.com/efatto/openupgrader/actions/workflows/pre-commit.yml?query=branch%3A16.0)
+[![Build Status](https://github.com/efatto/openupgrader/actions/workflows/test.yml/badge.svg?branch=16.0)](https://github.com/efatto/openupgrader/actions/workflows/test.yml?query=branch%3A16.0)
+[![codecov](https://codecov.io/gh/efatto/openupgrader/branch/16.0/graph/badge.svg)](https://codecov.io/gh/efatto/openupgrader)
+=======
 [![Pre-commit Status](https://github.com/efatto/openupgrader/actions/workflows/pre-commit.yml/badge.svg?branch=15.0)](https://github.com/efatto/openupgrader/actions/workflows/pre-commit.yml?query=branch%3A15.0)
 [![Build Status](https://github.com/efatto/openupgrader/actions/workflows/test.yml/badge.svg?branch=15.0)](https://github.com/efatto/openupgrader/actions/workflows/test.yml?query=branch%3A15.0)
 [![codecov](https://codecov.io/gh/efatto/openupgrader/branch/15.0/graph/badge.svg)](https://codecov.io/gh/efatto/openupgrader)
+>>>>>>> c209e6f ([FIX] copier version)
+=======
+[![Pre-commit Status](https://github.com/efatto/openupgrader/actions/workflows/pre-commit.yml/badge.svg?branch=16.0)](https://github.com/efatto/openupgrader/actions/workflows/pre-commit.yml?query=branch%3A16.0)
+[![Build Status](https://github.com/efatto/openupgrader/actions/workflows/test.yml/badge.svg?branch=16.0)](https://github.com/efatto/openupgrader/actions/workflows/test.yml?query=branch%3A16.0)
+[![codecov](https://codecov.io/gh/efatto/openupgrader/branch/16.0/graph/badge.svg)](https://codecov.io/gh/efatto/openupgrader)
+>>>>>>> 5ffe736 ([UPD] copier)
+=======
+[![Pre-commit Status](https://github.com/efatto/openupgrader/actions/workflows/pre-commit.yml/badge.svg?branch=17.0)](https://github.com/efatto/openupgrader/actions/workflows/pre-commit.yml?query=branch%3A17.0)
+[![Build Status](https://github.com/efatto/openupgrader/actions/workflows/test.yml/badge.svg?branch=17.0)](https://github.com/efatto/openupgrader/actions/workflows/test.yml?query=branch%3A17.0)
+[![codecov](https://codecov.io/gh/efatto/openupgrader/branch/17.0/graph/badge.svg)](https://codecov.io/gh/efatto/openupgrader)
+>>>>>>> b9362ee ([IMP] port to v. 17)
+>>>>>>> ba1182e ([IMP] port to 16.0 aligning to 15.0)
 <!-- /!\ Non OCA Context : Set here the badge of your translation instance. -->
 
 <!-- /!\ do not modify above this line -->
 
 # A tool to automate OpenUpgrade to upgrade Odoo in an easy way
 
-Modules for extend and fix use of Odoo
+Modules to upgrade Odoo in-place
 
 <!-- /!\ do not modify below this line -->
 

@@ -13,7 +13,23 @@ github_enable_stale_action: false
 github_enforce_dev_status_compatibility: true
 include_wkhtmltopdf: false
 odoo_test_flavor: OCB
+<<<<<<< HEAD
+odoo_version: 16.0
+=======
+<<<<<<< HEAD
+<<<<<<< HEAD
+<<<<<<< HEAD
+odoo_version: 16.0
+=======
 odoo_version: 15.0
+>>>>>>> c209e6f ([FIX] copier version)
+=======
+odoo_version: 16.0
+>>>>>>> 5ffe736 ([UPD] copier)
+=======
+odoo_version: 17.0
+>>>>>>> 57a232e ([IMP] copier update)
+>>>>>>> ba1182e ([IMP] port to 16.0 aligning to 15.0)
 org_name: Sergio Corato
 org_slug: efatto
 rebel_module_groups: []

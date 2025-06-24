@@ -5,12 +5,51 @@ load-plugins=pylint_odoo
 score=n
 
 [ODOOLINT]
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+<<<<<<< HEAD
+<<<<<<< HEAD
+readme-template-url="https://github.com/OCA/maintainer-tools/blob/master/template/module/README.rst"
+manifest-required-authors=Sergio Corato
+manifest-required-keys=license
+manifest-deprecated-keys=description,active
+license-allowed=AGPL-3,GPL-2,GPL-2 or any later version,GPL-3,GPL-3 or any later version,LGPL-3
+<<<<<<< HEAD
+valid-odoo-versions=16.0
+=======
+=======
+>>>>>>> 5ffe736 ([UPD] copier)
 readme_template_url="https://github.com/OCA/maintainer-tools/blob/master/template/module/README.rst"
 manifest_required_authors=Sergio Corato
 manifest_required_keys=license
 manifest_deprecated_keys=description,active
 license_allowed=AGPL-3,GPL-2,GPL-2 or any later version,GPL-3,GPL-3 or any later version,LGPL-3
 valid_odoo_versions=15.0
+<<<<<<< HEAD
+>>>>>>> c209e6f ([FIX] copier version)
+=======
+=======
+=======
+>>>>>>> 7a4564b ([FIX] pre-commit)
+>>>>>>> ba1182e ([IMP] port to 16.0 aligning to 15.0)
+readme-template-url="https://github.com/OCA/maintainer-tools/blob/master/template/module/README.rst"
+manifest-required-authors=Sergio Corato
+manifest-required-keys=license
+manifest-deprecated-keys=description,active
+license-allowed=AGPL-3,GPL-2,GPL-2 or any later version,GPL-3,GPL-3 or any later version,LGPL-3
+valid-odoo-versions=16.0
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> 7992d99 ([UPD] copier)
+>>>>>>> 5ffe736 ([UPD] copier)
+=======
+>>>>>>> 7a4564b ([FIX] pre-commit)
+=======
+valid-odoo-versions=17.0
+>>>>>>> b9362ee ([IMP] port to v. 17)
+>>>>>>> ba1182e ([IMP] port to 16.0 aligning to 15.0)
 
 [MESSAGES CONTROL]
 disable=all
@@ -98,6 +137,24 @@ enable=anomalous-backslash-in-string,
     xml-attribute-translatable,
     xml-deprecated-qweb-directive,
     xml-deprecated-tree-attribute,
+<<<<<<< HEAD
+    external-request-timeout,
+=======
+<<<<<<< HEAD
+<<<<<<< HEAD
+<<<<<<< HEAD
+    external-request-timeout,
+=======
+>>>>>>> c209e6f ([FIX] copier version)
+=======
+=======
+    external-request-timeout,
+>>>>>>> 7992d99 ([UPD] copier)
+>>>>>>> 5ffe736 ([UPD] copier)
+=======
+    external-request-timeout,
+>>>>>>> 7a4564b ([FIX] pre-commit)
+>>>>>>> ba1182e ([IMP] port to 16.0 aligning to 15.0)
     # messages that do not cause the lint step to fail
     consider-merging-classes-inherited,
     create-user-wo-reset-password,

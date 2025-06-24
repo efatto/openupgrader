@@ -4,12 +4,38 @@ load-plugins=pylint_odoo
 score=n
 
 [ODOOLINT]
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 5ffe736 ([UPD] copier)
+>>>>>>> ba1182e ([IMP] port to 16.0 aligning to 15.0)
+readme-template-url="https://github.com/OCA/maintainer-tools/blob/master/template/module/README.rst"
+manifest-required-authors=Sergio Corato
+manifest-required-keys=license
+manifest-deprecated-keys=description,active
+license-allowed=AGPL-3,GPL-2,GPL-2 or any later version,GPL-3,GPL-3 or any later version,LGPL-3
+<<<<<<< HEAD
+valid-odoo-versions=16.0
+=======
+<<<<<<< HEAD
+valid-odoo-versions=16.0
+<<<<<<< HEAD
+=======
 readme_template_url="https://github.com/OCA/maintainer-tools/blob/master/template/module/README.rst"
 manifest_required_authors=Sergio Corato
 manifest_required_keys=license
 manifest_deprecated_keys=description,active
 license_allowed=AGPL-3,GPL-2,GPL-2 or any later version,GPL-3,GPL-3 or any later version,LGPL-3
 valid_odoo_versions=15.0
+>>>>>>> c209e6f ([FIX] copier version)
+=======
+>>>>>>> 5ffe736 ([UPD] copier)
+=======
+valid-odoo-versions=17.0
+>>>>>>> b9362ee ([IMP] port to v. 17)
+>>>>>>> ba1182e ([IMP] port to 16.0 aligning to 15.0)
 
 [MESSAGES CONTROL]
 disable=all
@@ -89,7 +115,22 @@ enable=anomalous-backslash-in-string,
     website-manifest-key-not-valid-uri,
     xml-attribute-translatable,
     xml-deprecated-qweb-directive,
+<<<<<<< HEAD
+    xml-deprecated-tree-attribute,
+    external-request-timeout
+=======
+<<<<<<< HEAD
+<<<<<<< HEAD
+    xml-deprecated-tree-attribute,
+    external-request-timeout
+=======
     xml-deprecated-tree-attribute
+>>>>>>> c209e6f ([FIX] copier version)
+=======
+    xml-deprecated-tree-attribute,
+    external-request-timeout
+>>>>>>> 5ffe736 ([UPD] copier)
+>>>>>>> ba1182e ([IMP] port to 16.0 aligning to 15.0)
 
 [REPORTS]
 msg-template={path}:{line}: [{msg_id}({symbol}), {obj}] {msg}

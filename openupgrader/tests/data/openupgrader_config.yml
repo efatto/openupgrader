@@ -1,5 +1,13 @@
 "18.0":
+<<<<<<< HEAD
+<<<<<<< HEAD
   - python_version: "3.10.12"
+=======
+  - python_version: "3.10.6"
+>>>>>>> 4a86fa2 ([FIX] config.yml)
+=======
+  - python_version: "3.10.12"
+>>>>>>> 089ce6c ([FIX] config.yml)
   - pip_requirements:
       - setuptools
       - git+https://github.com/OCA/openupgradelib.git@master#egg=openupgradelib
@@ -7,15 +15,31 @@
       - pysftp
       - PyYAML
   - odoo: https://github.com/OCA/OCB.git 18.0
+<<<<<<< HEAD
+<<<<<<< HEAD
   - odoo_pip_requirements:
       - module_change_auto_install
+=======
+>>>>>>> 4a86fa2 ([FIX] config.yml)
+=======
+  - odoo_pip_requirements:
+      - module_change_auto_install
+>>>>>>> 089ce6c ([FIX] config.yml)
   - sql_update_commands:
   - auto_install:
   - delete:
   - uninstall_after_migration_to_this_version:
   - uninstall_before_migration_to_next_version:
 "17.0":
+<<<<<<< HEAD
+<<<<<<< HEAD
   - python_version: "3.10.12"
+=======
+  - python_version: "3.10.6"
+>>>>>>> 4a86fa2 ([FIX] config.yml)
+=======
+  - python_version: "3.10.12"
+>>>>>>> 089ce6c ([FIX] config.yml)
   - pip_requirements:
       - setuptools
       - git+https://github.com/OCA/openupgradelib.git@master#egg=openupgradelib
@@ -23,8 +47,16 @@
       - pysftp
       - PyYAML
   - odoo: https://github.com/OCA/OCB.git 17.0
+<<<<<<< HEAD
+<<<<<<< HEAD
   - odoo_pip_requirements:
       - module_change_auto_install
+=======
+>>>>>>> 4a86fa2 ([FIX] config.yml)
+=======
+  - odoo_pip_requirements:
+      - module_change_auto_install
+>>>>>>> 089ce6c ([FIX] config.yml)
   - sql_update_commands:
   - auto_install:
   - delete:
