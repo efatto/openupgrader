@@ -403,7 +403,7 @@ class OpenupgraderMigration(models.Model):
             # When it's a following version:
             if os.path.isdir(from_folder):
                 # filestore exists, so move the folder to the next version
-                os.rename(from_folder, filestore_torestore_path)
+                shutil.copytree(from_folder, filestore_torestore_path)
             else:
                 # filestore has been removed, restore from initial folder
                 shutil.copytree(initial_folder, filestore_torestore_path)

@@ -97,7 +97,7 @@ class Openupgrader(SavepointCase):
             }
         )
         for version in [cls.from_version_id, cls.middle_version_id, cls.to_version_id]:
-            version.button_create_venv()
+            version.button_recreate_venv()
 
     def test_openupgrader(self):
         self.openupgrader_migration.button_stop_odoo()
