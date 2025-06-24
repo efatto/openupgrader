@@ -28,5 +28,18 @@
             "PyYAML",
             "pysftp",
         ],
+        "deb": [
+            "libbz2-dev",
+            "libcairo2-dev",
+            "libgirepository1.0-dev",
+            "liblzma-dev",
+            "libncurses5-dev",
+            "libreadline-dev",
+            "libsqlite3-dev",
+            "libzip-dev",
+            "libzstd-dev",
+            "lzma",
+            "zstd",
+        ],
     },
 }
