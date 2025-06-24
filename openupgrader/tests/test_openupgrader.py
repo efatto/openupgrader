@@ -93,7 +93,6 @@ class Openupgrader(SavepointCase):
                 "pg_password_var": "$PGPASSWORD",  # PGPASSWORD=odoo
                 "pg_host": "$PGHOST",  # PGHOST=postgres
                 "pg_user": "$PGUSER",  # PGUSER=odoo
-                "db_name": "$PGDATABASE",  # PGDATABASE=odoo
             }
         )
         for version in [cls.from_version_id, cls.middle_version_id, cls.to_version_id]:
