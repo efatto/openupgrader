@@ -3,7 +3,6 @@ import shutil
 import subprocess
 
 from odoo import api, fields, models
-
 from odoo.addons.python_venv.python_venv import _create_python_venv
 
 

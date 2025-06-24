@@ -11,14 +11,12 @@ from urllib.request import HTTPSHandler
 
 import odoorpc
 import psutil
-from odoorpc.rpc import CookieJar, HTTPCookieProcessor, build_opener
-
 from odoo import _, api, fields, models
+from odoo.addons.python_venv.python_venv import _get_env_for_subprocess
 from odoo.exceptions import UserError
 from odoo.modules import get_module_resource
 from odoo.tools import config
-
-from odoo.addons.python_venv.python_venv import _get_env_for_subprocess
+from odoorpc.rpc import CookieJar, HTTPCookieProcessor, build_opener
 
 logger = logging.getLogger(__name__)
 

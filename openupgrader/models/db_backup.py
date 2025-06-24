@@ -5,12 +5,11 @@ import shutil
 import tempfile
 from datetime import datetime
 
-from pysftp import ConnectionException
-
 from odoo import fields, models
 from odoo.sql_db import db_connect
 from odoo.tools import exec_pg_command
 from odoo.tools.osutil import zip_dir
+from pysftp import ConnectionException
 
 logger = logging.getLogger(__name__)
 
