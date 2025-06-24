@@ -95,13 +95,13 @@ class Openupgrader(SavepointCase):
                 "pg_password_var": "$PGPASSWORD",  # PGPASSWORD=odoo
                 "pg_host": "$PGHOST",  # PGHOST=postgres
                 "pg_user": "$PGUSER",  # PGUSER=odoo
-                "db_name": "$PGDATABASE",  # PGDATABASE=odoo
             }
         )
         for version in [cls.from_version_id, cls.middle_version_id, cls.to_version_id]:
-            version.button_create_venv()
+            version.button_recreate_venv()
 
     def test_openupgrader(self):
+        self.openupgrader_migration.button_stop_odoo()
         self.openupgrader_migration.button_restore()
         self.assertEqual(self.openupgrader_migration.state, "restored")
         self.assertEqual(
