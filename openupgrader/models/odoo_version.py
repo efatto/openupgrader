@@ -103,13 +103,11 @@ class OdooVersion(models.Model):
         self.ensure_one()
         openupgrader_migration_id = self.env["openupgrader.migration"].search([])
         openupgrader_migration_id.ensure_one()
-        version_name = self.name
-        if openupgrader_migration_id:
-            venv_folder = os.path.join(
-                openupgrader_migration_id.folder, f"openupgrade{version_name}"
-            )
-            if os.path.isdir(venv_folder):
-                shutil.rmtree(venv_folder, ignore_errors=True)
+        venv_folder = os.path.join(
+            openupgrader_migration_id.folder, f"openupgrade{self.name}"
+        )
+        if os.path.isdir(venv_folder):
+            shutil.rmtree(venv_folder, ignore_errors=True)
         self.button_create_venv()
 
     def button_create_venv(self):
@@ -142,8 +140,8 @@ class OdooVersion(models.Model):
                 subprocess.Popen(
                     [
                         f"git clone --single-branch "
-                        f"{openupgrader_migration_id.openupgrade_repo} -b {version_name} "
-                        "--depth 1 odoo "
+                        f"{openupgrader_migration_id.openupgrade_repo} "
+                        f"-b {version_name} --depth 1 odoo "
                     ],
                     cwd=venv_path,
                     env=subprocess_env,  # forse qui non serve
