@@ -52,7 +52,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Install pip extra libs
-        run: pip3 install scipy odoorpc pyyaml
+        run: pip3 install scipy odoorpc pyyaml pysftp
       - name: Install addons and dependencies
         run: oca_install_addons
       - name: Check licenses
