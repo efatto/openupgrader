@@ -197,9 +197,6 @@ class OdooVersion(models.Model):
                 subprocess.Popen(
                     "mkdir %s" % extra_path, cwd=venv_path, shell=True
                 ).wait()
-            migration_log_path = os.path.join(venv_path, "migration.log")
-            if os.path.isfile(migration_log_path):
-                os.remove(migration_log_path)
 
             for remote_repo in version_repos.remote_repo_ids.filtered(
                 lambda x: not x.is_odoo
