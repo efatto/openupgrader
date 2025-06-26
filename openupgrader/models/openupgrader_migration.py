@@ -1,3 +1,5 @@
+import io
+import re
 import logging
 import os
 import shutil
@@ -16,6 +18,7 @@ from odoo.addons.python_venv.python_venv import _get_env_for_subprocess
 from odoo.exceptions import UserError
 from odoo.modules import get_module_resource
 from odoo.tools import config
+from odoo.tools.safe_eval import safe_eval
 from odoorpc.rpc import CookieJar, HTTPCookieProcessor, build_opener
 
 logger = logging.getLogger(__name__)
@@ -298,16 +301,34 @@ class OpenupgraderMigration(models.Model):
             bash_command += "-u all --stop "
         subprocess_env = _get_env_for_subprocess(folder, version_id.python_version)
         logger.info(bash_command)
-        process = Popen(
-            bash_command,
-            cwd=folder,
-            stdout=PIPE,
-            # stderr=PIPE,
-            # text=True,
-            env=subprocess_env,
-            shell=True,
-        )
-        # self._log_process(process, bash_command)
+
+        filename = "test.log"
+        with io.open(filename, "wb") as writer, io.open(filename, "rb", 1) as reader:
+            process = Popen(
+                bash_command,
+                cwd=folder,
+                stdout=writer,
+                stderr=writer,
+                text=True,
+                env=subprocess_env,
+                shell=True,
+            )
+            while process.poll() is None:
+                out = reader.read().decode()
+                if "Some modules have inconsistent states" in out:
+                    # try to install missing module with pip on-the-fly
+                    match = re.search("\[.*\]", out)
+                    if match:
+                        try:
+                            modules = safe_eval(match[0])
+                        except Exception as e:
+                            logger.info(
+                                "Unable to list modules to install via pip on-the-fly")
+                    self.install_missing_modules(version_id, modules)
+                sys.stdout.write(out)
+                time.sleep(0.5)
+            # Read the remaining
+            sys.stdout.write(reader.read().decode())
         self.odoo_pid = process.pid
         if update:
             # only updating the process will end automatically
@@ -807,6 +828,26 @@ class OpenupgraderMigration(models.Model):
             time.sleep(10)
             success += 1
         return success
+
+    def install_missing_modules(self, version_id, module_names):
+        self.ensure_one()
+        version_name = version_id.name
+        for module_name in module_names:
+            venv_path = os.path.join(
+                self.folder, f"openupgrade{version_name}"
+            )
+            # try to install with pip
+            process = Popen(
+                [
+                    "bin/pip install "
+                    f"odoo{version_name.split('.')[0]}-addon-{module_name} "
+                ],
+                cwd=venv_path,
+                shell=True,
+            )
+            stdout, stderr = process.communicate()
+            if stderr:
+                logger.info(_("Module %s not found with pip installer." % module_name))
 
     def install_uninstall_module(self, module_name, install=True):
         odoo_client = self.odoo_connect()
