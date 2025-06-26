@@ -1,5 +1,7 @@
 import os
 import subprocess
+import shutil
+from distutils.dir_util import copy_tree
 
 
 def _get_env_for_subprocess(folder, py_version):
@@ -34,6 +36,13 @@ def _create_python_venv(venv_path, py_version):
         # do not recreate virtualenv as it regenerate file with bug in split()
     if not os.path.isdir(os.path.join(os.path.expanduser("~"), ".pyenv")):
         subprocess.Popen(["curl -fsSL https://pyenv.run | bash"], shell=True).wait()
+    # Copy some pip configuration files that could exist in local to the python venv
+    pypirc_path = os.path.join(os.path.expanduser("~"), ".pypirc")
+    if os.path.isfile(pypirc_path):
+        shutil.copy(pypirc_path, venv_path)
+    pipconf_path = os.path.join(os.path.expanduser("~"), ".pip", "pip.conf")
+    if os.path.isfile(pipconf_path):
+        copy_tree(pipconf_path, venv_path)
     subprocess.Popen(
         [f"pyenv install -s {py_version}"],
         cwd=venv_path,
