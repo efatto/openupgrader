@@ -296,7 +296,7 @@ class OpenupgraderMigration(models.Model):
             f"-d {self.env.cr.dbname}_migrate "
         )
         if version_name != "7.0":
-            data_dir = os.path.join(folder, "data_dir")
+            data_dir = os.path.join(self.folder, "data_dir")
             if not os.path.isdir(data_dir):
                 os.makedirs(data_dir)
             bash_command += f"--data-dir={data_dir} "
@@ -416,6 +416,7 @@ class OpenupgraderMigration(models.Model):
             ir_mail_server_ids.write({"active": active})
 
     def restore_filestore(self, from_version_id, to_version_id):
+        # restore filestore always from initial folder to default migration folder
         filestore_torestore_path = self.get_filestore_path(
             to_version_id.name, migration_folder=True
         )
@@ -434,26 +435,16 @@ class OpenupgraderMigration(models.Model):
                 % (initial_folder, filestore_torestore_path)
             )
             copy_tree(initial_folder, filestore_torestore_path)
-        else:
-            # When it's a following version:
-            if os.path.isdir(from_folder):
-                # filestore exists, so move the folder to the next version
-                logger.info(
-                    "Copy filestore from %s to %s folder."
-                    % (from_folder, filestore_torestore_path)
-                )
-                copy_tree(from_folder, filestore_torestore_path)
-            else:
-                # filestore has been removed, restore from initial folder
-                logger.info(
-                    "Copy filestore from %s to %s folder."
-                    % (initial_folder, filestore_torestore_path)
-                )
-                copy_tree(initial_folder, filestore_torestore_path)
-        logger.info(
-            "Filestore restored from version %s to version %s."
-            % (from_version_id.name, to_version_id.name)
-        )
+        # When it's a following version:
+        elif not os.path.isdir(from_folder):
+            # filestore has been removed, restore from initial folder
+            logger.info("Copy filestore from %s to %s folder." % (
+                initial_folder, filestore_torestore_path
+            ))
+            copy_tree(initial_folder, filestore_torestore_path)
+        logger.info("Filestore restored from version %s to version %s." % (
+            from_version_id.name, to_version_id.name
+        ))
 
     def button_backup_migration(self):
         if not self.current_version_id:
@@ -463,10 +454,9 @@ class OpenupgraderMigration(models.Model):
         self.current_version_id.db_backup_id.action_backup_migration()
 
     def get_filestore_path(self, version_name, migration_folder=False):
-        # get filestore path for a version
+        # get filestore migrated default path
         filestore_path = os.path.join(
             self.folder,
-            f"openupgrade{version_name}",
             "data_dir",
             "filestore",
             f"{self.env.cr.dbname}_migrate",
