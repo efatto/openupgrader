@@ -16,7 +16,7 @@ import odoorpc
 import psutil
 from odoo import _, api, fields, models
 from odoo.addons.python_venv.python_venv import _get_env_for_subprocess
-from odoo.exceptions import UserError
+from odoo.exceptions import UserError, ValidationError
 from odoo.modules import get_module_resource
 from odoo.tools import config
 from odoo.tools.safe_eval import safe_eval
@@ -162,13 +162,16 @@ class OpenupgraderMigration(models.Model):
                 port=self.xmlrpc_port,
                 opener=self._get_opener(verify_ssl=False),
             )
-            client.login(
-                db=f"{self.db_name}_migrate",
-                login=self.db_user,
-                password=self.db_password,
-            )
-            time.sleep(5)
-            return client
+            try:
+                client.login(
+                    db=f"{self.db_name}_migrate",
+                    login=self.db_user,
+                    password=self.db_password,
+                )
+                time.sleep(5)
+                return client
+            except Exception as e:
+                raise ValidationError("Connection to Odoo failed for %s!" % e)
         return None
 
     @staticmethod
@@ -304,7 +307,7 @@ class OpenupgraderMigration(models.Model):
         logger.info("Starting Odoo in virtualenv for migration with command %s" %
                     bash_command)
 
-        filename = "test.log"
+        filename = "odoo_migration.log"
         with io.open(filename, "wb") as writer, io.open(filename, "rb", 1) as reader:
             process = Popen(
                 bash_command,
@@ -315,27 +318,27 @@ class OpenupgraderMigration(models.Model):
                 env=subprocess_env,
                 shell=True,
             )
-            while process.poll() is None:
+            if update:  # if not updating, this part will recurse infinitely
+                while process.poll() is None:
+                    out = reader.read().decode()
+                    if out:
+                        if "Some modules have inconsistent states" in out:
+                            # try to install missing module with pip on-the-fly
+                            match = re.search("\[.*\]", out)
+                            if match:
+                                try:
+                                    modules = safe_eval(match[0])
+                                except Exception as e:
+                                    logger.info(
+                                        "Unable to list modules to install via pip on-the-fly")
+                            self.install_missing_modules(version_id, modules)
+                        logger.info(out)
+                # Read the remaining
                 out = reader.read().decode()
-                if out:
-                    if "Some modules have inconsistent states" in out:
-                        # try to install missing module with pip on-the-fly
-                        match = re.search("\[.*\]", out)
-                        if match:
-                            try:
-                                modules = safe_eval(match[0])
-                            except Exception as e:
-                                logger.info(
-                                    "Unable to list modules to install via pip on-the-fly")
-                        self.install_missing_modules(version_id, modules)
-                    logger.info(out)
-            # Read the remaining
-            out = reader.read().decode()
-            logger.info(out)
+                logger.info(out)
         self.odoo_pid = process.pid
         if update:
             # only updating the process will end automatically
-            process.wait()
             logger.info(
                 "Odoo migration instance v. %s should be updated and stopped." %
                 version_name)
