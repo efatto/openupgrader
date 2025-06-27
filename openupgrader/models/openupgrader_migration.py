@@ -287,6 +287,7 @@ class OpenupgraderMigration(models.Model):
             f"--db_user={self.pg_user} "
             f"--db_password={self.pg_password_var or self.pg_password or ''} "
             f"--db_port={self.db_port} "
+            f"--db_host={self.pg_host or ''} "
             f"--xmlrpc-port={self.xmlrpc_port} "
             f"--limit-time-cpu=16000 "
             f"--limit-time-real=32000 "
