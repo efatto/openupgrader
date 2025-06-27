@@ -557,10 +557,7 @@ class OpenupgraderMigration(models.Model):
             [("name", "=", str(float(self.current_version_id.name) + 1))]
         )
         base_module = self.env["ir.module.module"].search([("name", "=", "base")])
-        if (
-            self.current_version_id.name.split(".")[0]
-            == base_module.installed_version.split(".")[0]
-        ):
+        if self.from_version_id == self.current_version_id:
             # restore is needed only when we migrate the first version, then the db is
             # already present
             self.dump_database(self.current_version_id.name)
