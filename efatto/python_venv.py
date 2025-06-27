@@ -40,7 +40,7 @@ def _create_python_venv(venv_path, py_version):
     pypirc_path = os.path.join(os.path.expanduser("~"), ".pypirc")
     if os.path.isfile(pypirc_path):
         shutil.copy(pypirc_path, venv_path)
-    pipconf_path = os.path.join(os.path.expanduser("~"), ".pip", "pip.conf")
+    pipconf_path = os.path.join(os.path.expanduser("~"), ".pip")
     if os.path.isfile(pipconf_path):
         copy_tree(pipconf_path, venv_path)
     subprocess.Popen(
