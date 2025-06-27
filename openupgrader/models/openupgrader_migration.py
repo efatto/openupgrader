@@ -331,9 +331,10 @@ class OpenupgraderMigration(models.Model):
                                     "Unable to list modules to install via pip on-the-fly"
                                 )
                         self.install_missing_modules(version_id, modules)
-                    sys.stdout.write(out)
+                    logger.info(out)
             # Read the remaining
-            sys.stdout.write(reader.read().decode())
+            out = reader.read().decode()
+            logger.info(out)
         self.odoo_pid = process.pid
         if update:
             # only updating the process will end automatically
