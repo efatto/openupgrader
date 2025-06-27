@@ -572,6 +572,7 @@ class OpenupgraderMigration(models.Model):
         self.state = "updated"
 
     def button_prepare_for_migration(self):
+        self.disable_cron(True)
         if self.migrate_filestore:
             self.restore_filestore(
                 from_version_id=self.current_version_id,
@@ -586,16 +587,16 @@ class OpenupgraderMigration(models.Model):
         self.state = "ready_for_migration"
 
     def disable_cron(self, disable=False):
-        # disable cron on current running istance, to be re-enabled in the migrated one
+        # disable cron on migrated istance, to be re-enabled at the end of the migration
         if disable:
             ir_cron_ids = self.env["ir.cron"].search([])
-            if ir_cron_ids:
-                ir_cron_ids.write({"active": False})
-                self.disabled_cron_ids = ir_cron_ids
-        if not disable and self.disabled_cron_ids:
+            self.disabled_cron_ids = ir_cron_ids
+        else:
+            ir_cron_ids = self.disabled_cron_ids
+        if ir_cron_ids:
             sql = (
-                f"UPDATE ir_cron SET active = true WHERE id in "
-                f"{(_id for _id in self.disabled_cron_ids.ids)};"
+                f"UPDATE ir_cron SET active = {'false' if disable else 'true'} "
+                f"WHERE id in {tuple(ir_cron_ids.ids)};"
             )
             Popen(
                 [
@@ -619,7 +620,6 @@ class OpenupgraderMigration(models.Model):
         self.state = "draft"
 
     def button_do_migration(self):
-        self.disable_cron(True)
         self.start_odoo(self.next_version_id, update=True)
         self._action_done()
 
@@ -638,7 +638,7 @@ class OpenupgraderMigration(models.Model):
             _("Migration done from version %s to version %s")
             % (self.current_version_id.name, self.next_version_id.name)
         )
-        # self.disable_cron() # to be re-enabled manually after all is gone ok
+        self.disable_cron()
         self.current_version_id = self.next_version_id
         self.next_version_id = self.env["odoo.version"].search(
             [("name", "=", str(float(self.current_version_id.name) + 1))]
