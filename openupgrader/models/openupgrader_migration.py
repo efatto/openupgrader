@@ -173,7 +173,7 @@ class OpenupgraderMigration(models.Model):
                 time.sleep(5)
                 return client
             except Exception as e:
-                raise ValidationError(_("Connection to Odoo failed for %s!") % e)
+                raise ValidationError(_("Connection to Odoo failed for %s!") % str(e))
         return None
 
     @staticmethod
@@ -190,12 +190,10 @@ class OpenupgraderMigration(models.Model):
             else:
                 logger.info(
                     _(
-                        (
-                            "verify_ssl could not be established for this "
-                            "python version: %s"
-                        )
-                        % sys.version
+                        "verify_ssl could not be established for this "
+                        "python version: %s"
                     )
+                    % sys.version
                 )
         if sessions:
             handlers.append(HTTPCookieProcessor(CookieJar()))
@@ -841,7 +839,7 @@ class OpenupgraderMigration(models.Model):
         try:
             module_to_unistall_id.button_immediate_uninstall()
             module_to_unistall_id.unlink()
-            logger.info(_("Module %s uninstalled" % module_to_unistall_id.name))
+            logger.info(_("Module %s uninstalled") % module_to_unistall_id.name)
             success = 5
         except Exception as e:
             logger.info(
@@ -876,7 +874,7 @@ class OpenupgraderMigration(models.Model):
             )
             stdout, stderr = process.communicate()
             if stderr:
-                logger.info(_("Module %s not found with pip installer." % module_name))
+                logger.info(_("Module %s not found with pip installer.") % module_name)
 
     def install_uninstall_module(self, module_name, install=True):
         logger.info("Installing module %s in Odoo." % module_name)
@@ -896,4 +894,4 @@ class OpenupgraderMigration(models.Model):
                     while res < 5:
                         res = self.uninst(module, res)
         else:
-            logger.info(_("Module %s not found" % module_name))
+            logger.info(_("Module %s not found") % module_name)
