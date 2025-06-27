@@ -8,6 +8,7 @@ import ssl
 import sys
 import time
 from distutils.dir_util import copy_tree
+from pathlib import Path
 from subprocess import PIPE, Popen
 from urllib.request import HTTPSHandler
 
@@ -420,6 +421,7 @@ class OpenupgraderMigration(models.Model):
         )
         if os.path.isdir(filestore_torestore_path):
             shutil.rmtree(filestore_torestore_path, ignore_errors=True)
+        Path(filestore_torestore_path).mkdir(parents=True, exist_ok=True)
         from_folder = self.get_filestore_path(
             from_version_id.name, migration_folder=True
         )
@@ -708,6 +710,7 @@ class OpenupgraderMigration(models.Model):
     def sql_fixes(self, sql_commands):
         # do not change quote order as it will change the way the sql command is
         # interpreted!
+        logger.info("Doing custom sql commands.")
         for sql_command in sql_commands:
             Popen(
                 [
@@ -826,8 +829,8 @@ class OpenupgraderMigration(models.Model):
         )
         if modules_after:
             msg_modules_after = str([x.name for x in modules_after])
-        logger.info(_("Modules: %s" % msg_modules))
-        logger.info(_("Modules after: %s" % msg_modules_after))
+        logger.info("Modules present before the removal %s" % msg_modules)
+        logger.info("Modules present after the removal: %s" % msg_modules_after)
         self.button_stop_odoo()
 
     @staticmethod
