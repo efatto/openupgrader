@@ -232,7 +232,7 @@ class OpenupgraderMigration(models.Model):
             return folder
         return False
 
-    def start_odoo(self, version_id, update=False, extra_command=""):  # flake8 noqa C901
+    def start_odoo(self, version_id, update=False, extra_command=""):  # noqa C901
         """
         :param version_id: Odoo version_id to start (8.0, 9.0, 10.0, ...)
         :param update: if True odoo will be updated with -u all and stopped
@@ -313,7 +313,6 @@ class OpenupgraderMigration(models.Model):
                 cwd=folder,
                 stdout=writer,
                 stderr=writer,
-                text=True,
                 env=subprocess_env,
                 shell=True,
             )
