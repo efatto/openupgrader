@@ -112,7 +112,7 @@ class OpenupgraderMigration(models.Model):
     migrate_filestore = fields.Boolean(string="Migrate Filestore", default=True)
     openupgrade_repo = fields.Char(
         string="OpenUpgrade Repository",
-        default="git@github.com:efatto/OpenUpgrade.git",
+        default="https://github.com/OCA/OpenUpgrade.git",
     )
     odoo_migrated_state = fields.Selection(
         selection=[
@@ -559,7 +559,6 @@ class OpenupgraderMigration(models.Model):
         self.next_version_id = self.env["odoo.version"].search(
             [("name", "=", str(float(self.current_version_id.name) + 1))]
         )
-        base_module = self.env["ir.module.module"].search([("name", "=", "base")])
         if self.from_version_id == self.current_version_id:
             # restore is needed only when we migrate the first version, then the db is
             # already present
