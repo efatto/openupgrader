@@ -25,7 +25,6 @@
     "external_dependencies": {
         "python": [
             "odoorpc",
-            "PyYAML",
             "pysftp",
         ],
         "deb": [
