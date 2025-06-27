@@ -17,12 +17,7 @@ import psutil
 from odoorpc.rpc import CookieJar, HTTPCookieProcessor, build_opener
 
 from odoo import _, api, fields, models
-<<<<<<< HEAD
-from odoo.exceptions import UserError
-=======
-from odoo.addons.python_venv.python_venv import _get_env_for_subprocess
 from odoo.exceptions import UserError, ValidationError
->>>>>>> e76d896 ([IMP] log odoo migration instance only when updating to avoid endless execution)
 from odoo.modules import get_module_resource
 from odoo.tools import config
 from odoo.tools.safe_eval import safe_eval
@@ -178,7 +173,7 @@ class OpenupgraderMigration(models.Model):
                 time.sleep(5)
                 return client
             except Exception as e:
-                raise ValidationError("Connection to Odoo failed for %s!" % e)
+                raise ValidationError(_("Connection to Odoo failed for %s!") % e)
         return None
 
     @staticmethod
@@ -333,14 +328,15 @@ class OpenupgraderMigration(models.Model):
                     if out and out != " ":
                         if "Some modules have inconsistent states" in out:
                             # try to install missing module with pip on-the-fly
-                            match = re.search("\[.*\]", out)
+                            match = re.search(r"\[.*\]", out)
                             if match:
                                 try:
                                     modules = safe_eval(match[0])
-                                except Exception as e:
+                                except Exception:
                                     logger.info(
                                         "Unable to list modules to install via pip "
-                                        "on-the-fly")
+                                        "on-the-fly"
+                                    )
                             self.install_missing_modules(version_id, modules)
                             migration_errors.append(out)
                         logger.info(out)
@@ -353,8 +349,9 @@ class OpenupgraderMigration(models.Model):
         if update:
             # only updating the process will end automatically
             logger.info(
-                "Odoo migration instance v. %s should be updated and stopped." %
-                version_name)
+                "Odoo migration instance v. %s should be updated and stopped."
+                % version_name
+            )
             self.migration_error_log = "\n".join(migration_errors)
         if not update and not extra_command:
             time.sleep(1)
@@ -452,13 +449,15 @@ class OpenupgraderMigration(models.Model):
         # When it's a following version:
         elif not os.path.isdir(from_folder):
             # filestore has been removed, restore from initial folder
-            logger.info("Copy filestore from %s to %s folder." % (
-                initial_folder, filestore_torestore_path
-            ))
+            logger.info(
+                "Copy filestore from %s to %s folder."
+                % (initial_folder, filestore_torestore_path)
+            )
             copy_tree(initial_folder, filestore_torestore_path)
-        logger.info("Filestore restored from version %s to version %s." % (
-            from_version_id.name, to_version_id.name
-        ))
+        logger.info(
+            "Filestore restored from version %s to version %s."
+            % (from_version_id.name, to_version_id.name)
+        )
 
     def button_backup_migration(self):
         if not self.current_version_id:
