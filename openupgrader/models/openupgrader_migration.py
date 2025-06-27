@@ -322,7 +322,7 @@ class OpenupgraderMigration(models.Model):
             if update:  # if not updating, this part will recurse infinitely
                 while process.poll() is None:
                     out = reader.read().decode()
-                    if out:
+                    if out and out != " ":
                         if "Some modules have inconsistent states" in out:
                             # try to install missing module with pip on-the-fly
                             match = re.search("\[.*\]", out)
@@ -334,6 +334,7 @@ class OpenupgraderMigration(models.Model):
                                         "Unable to list modules to install via pip "
                                         "on-the-fly")
                             self.install_missing_modules(version_id, modules)
+                            migration_errors.append(out)
                         logger.info(out)
                         if "ERROR" in out:
                             migration_errors.append(out)
