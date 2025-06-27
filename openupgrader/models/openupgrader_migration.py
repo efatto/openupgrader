@@ -1,7 +1,7 @@
 import io
-import re
 import logging
 import os
+import re
 import shutil
 import signal
 import ssl
@@ -19,10 +19,9 @@ from odoo import _, api, fields, models
 from odoo.exceptions import UserError
 from odoo.modules import get_module_resource
 from odoo.tools import config
+from odoo.tools.safe_eval import safe_eval
 
 from odoo.addons.python_venv.python_venv import _get_env_for_subprocess
-from odoo.tools.safe_eval import safe_eval
-from odoorpc.rpc import CookieJar, HTTPCookieProcessor, build_opener
 
 logger = logging.getLogger(__name__)
 
@@ -233,7 +232,7 @@ class OpenupgraderMigration(models.Model):
             return folder
         return False
 
-    def start_odoo(self, version_id, update=False, extra_command=""):
+    def start_odoo(self, version_id, update=False, extra_command=""):  # flake8 noqa C901
         """
         :param version_id: Odoo version_id to start (8.0, 9.0, 10.0, ...)
         :param update: if True odoo will be updated with -u all and stopped
@@ -303,8 +302,9 @@ class OpenupgraderMigration(models.Model):
         if update:
             bash_command += "-u all --stop "
         subprocess_env = _get_env_for_subprocess(folder, version_id.python_version)
-        logger.info("Starting Odoo in virtualenv for migration with command %s" %
-                    bash_command)
+        logger.info(
+            "Starting Odoo in virtualenv for migration with command %s" % bash_command
+        )
 
         filename = "test.log"
         with io.open(filename, "wb") as writer, io.open(filename, "rb", 1) as reader:
@@ -322,13 +322,14 @@ class OpenupgraderMigration(models.Model):
                 if out:
                     if "Some modules have inconsistent states" in out:
                         # try to install missing module with pip on-the-fly
-                        match = re.search("\[.*\]", out)
+                        match = re.search(r"\[.*\]", out)
                         if match:
                             try:
                                 modules = safe_eval(match[0])
-                            except Exception as e:
+                            except Exception:
                                 logger.info(
-                                    "Unable to list modules to install via pip on-the-fly")
+                                    "Unable to list modules to install via pip on-the-fly"
+                                )
                         self.install_missing_modules(version_id, modules)
                     sys.stdout.write(out)
             # Read the remaining
@@ -338,8 +339,9 @@ class OpenupgraderMigration(models.Model):
             # only updating the process will end automatically
             process.wait()
             logger.info(
-                "Odoo migration instance v. %s should be updated and stopped." %
-                version_name)
+                "Odoo migration instance v. %s should be updated and stopped."
+                % version_name
+            )
         if not update and not extra_command:
             time.sleep(1)
             self.odoo_migrated_state = "running"
@@ -426,27 +428,31 @@ class OpenupgraderMigration(models.Model):
         if from_version_id == to_version_id:
             # When it's the first version, copy from initial folder to initial migration
             # folder
-            logger.info("Restoring filestore from %s to %s folder." % (
-                initial_folder, filestore_torestore_path
-            ))
+            logger.info(
+                "Restoring filestore from %s to %s folder."
+                % (initial_folder, filestore_torestore_path)
+            )
             copy_tree(initial_folder, filestore_torestore_path)
         else:
             # When it's a following version:
             if os.path.isdir(from_folder):
                 # filestore exists, so move the folder to the next version
-                logger.info("Copy filestore from %s to %s folder." % (
-                    from_folder, filestore_torestore_path
-                ))
+                logger.info(
+                    "Copy filestore from %s to %s folder."
+                    % (from_folder, filestore_torestore_path)
+                )
                 copy_tree(from_folder, filestore_torestore_path)
             else:
                 # filestore has been removed, restore from initial folder
-                logger.info("Copy filestore from %s to %s folder." % (
-                    initial_folder, filestore_torestore_path
-                ))
+                logger.info(
+                    "Copy filestore from %s to %s folder."
+                    % (initial_folder, filestore_torestore_path)
+                )
                 copy_tree(initial_folder, filestore_torestore_path)
-        logger.info("Filestore restored from version %s to version %s." % (
-            from_version_id.name, to_version_id.name
-        ))
+        logger.info(
+            "Filestore restored from version %s to version %s."
+            % (from_version_id.name, to_version_id.name)
+        )
 
     def button_backup_migration(self):
         if not self.current_version_id:
@@ -853,9 +859,7 @@ class OpenupgraderMigration(models.Model):
         self.ensure_one()
         version_name = version_id.name
         for module_name in module_names:
-            venv_path = os.path.join(
-                self.folder, f"openupgrade{version_name}"
-            )
+            venv_path = os.path.join(self.folder, f"openupgrade{version_name}")
             # try to install with pip
             process = Popen(
                 [
