@@ -316,6 +316,7 @@ class OpenupgraderMigration(models.Model):
         )
 
         filename = "odoo_migration.log"
+        migration_errors = []
         with io.open(filename, "wb") as writer, io.open(filename, "rb", 1) as reader:
             process = Popen(
                 bash_command,
@@ -337,9 +338,12 @@ class OpenupgraderMigration(models.Model):
                                     modules = safe_eval(match[0])
                                 except Exception as e:
                                     logger.info(
-                                        "Unable to list modules to install via pip on-the-fly")
+                                        "Unable to list modules to install via pip "
+                                        "on-the-fly")
                             self.install_missing_modules(version_id, modules)
                         logger.info(out)
+                        if "ERROR" in out:
+                            migration_errors.append(out)
                 # Read the remaining
                 out = reader.read().decode()
                 logger.info(out)
@@ -347,9 +351,9 @@ class OpenupgraderMigration(models.Model):
         if update:
             # only updating the process will end automatically
             logger.info(
-                "Odoo migration instance v. %s should be updated and stopped."
-                % version_name
-            )
+                "Odoo migration instance v. %s should be updated and stopped." %
+                version_name)
+            self.migration_error_log = "\n".join(migration_errors)
         if not update and not extra_command:
             time.sleep(1)
             self.odoo_migrated_state = "running"
