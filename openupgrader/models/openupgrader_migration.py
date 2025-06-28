@@ -788,12 +788,12 @@ class OpenupgraderMigration(models.Model):
     def uninstall_modules(
         self, version_id, before_migration=False, after_migration=False
     ):
+        self.start_odoo(version_id)
         if version_id.name == "12.0":
             self.remove_modules(version_id, "upgrade")
         openupgrader_config = self.env["openupgrader.config"].search(
             [("odoo_version_id.id", "=", version_id.id)]
         )
-        self.start_odoo(version_id)
         if after_migration:
             for module in openupgrader_config.module_to_uninstall_after_migration_ids:
                 self.install_uninstall_module(module.name, install=False)
@@ -817,7 +817,6 @@ class OpenupgraderMigration(models.Model):
             self.button_stop_odoo()
 
     def remove_modules(self, version_id, module_state=""):
-        self.start_odoo(version_id)
         if module_state == "upgrade":
             state = [
                 "to upgrade",
@@ -840,7 +839,6 @@ class OpenupgraderMigration(models.Model):
             msg_modules_after = str([x.name for x in modules_after])
         logger.info("Modules present before the removal %s" % msg_modules)
         logger.info("Modules present after the removal: %s" % msg_modules_after)
-        self.button_stop_odoo()
 
     @staticmethod
     def uninst(module_to_unistall_id, success):
