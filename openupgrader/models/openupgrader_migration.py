@@ -585,7 +585,7 @@ class OpenupgraderMigration(models.Model):
         self.state = "updated"
 
     def button_prepare_for_migration(self):
-        self.disable_cron(True)
+        self.set_cron_state_to(active=False)
         if self.migrate_filestore:
             self.restore_filestore(
                 from_version_id=self.current_version_id,
@@ -599,16 +599,17 @@ class OpenupgraderMigration(models.Model):
         self.delete_old_modules(self.current_version_id)
         self.state = "ready_for_migration"
 
-    def disable_cron(self, disable=False):
-        # disable cron on migrated istance, to be re-enabled at the end of the migration
-        if disable:
+    def set_cron_state_to(self, active):
+        if active:
+            # re-enable cron after the migration
+            ir_cron_ids = self.disabled_cron_ids
+        else:
+            # disable cron before migrating the instance
             ir_cron_ids = self.env["ir.cron"].search([])
             self.disabled_cron_ids = ir_cron_ids
-        else:
-            ir_cron_ids = self.disabled_cron_ids
         if ir_cron_ids:
             sql = (
-                f"UPDATE ir_cron SET active = {'false' if disable else 'true'} "
+                f"UPDATE ir_cron SET active = {'true' if active else 'false'} "
                 f"WHERE id in {tuple(ir_cron_ids.ids)};"
             )
             Popen(
@@ -640,8 +641,7 @@ class OpenupgraderMigration(models.Model):
         self.uninstall_modules(self.next_version_id, after_migration=True)
         self.auto_install_modules(self.next_version_id)
         self.sql_fixes(
-            self.current_version_id.openupgrader_config_ids
-            .sql_after_migration_command_ids
+            self.current_version_id.openupgrader_config_ids.sql_after_migration_command_ids
         )
         if self.next_version_id.name == "10.0":
             self.remove_modules(self.next_version_id, "upgrade")
@@ -652,7 +652,7 @@ class OpenupgraderMigration(models.Model):
             _("Migration done from version %s to version %s")
             % (self.current_version_id.name, self.next_version_id.name)
         )
-        self.disable_cron()
+        self.set_cron_state_to(active=True)
         self.current_version_id = self.next_version_id
         self.next_version_id = self.env["odoo.version"].search(
             [("name", "=", str(float(self.current_version_id.name) + 1))]
