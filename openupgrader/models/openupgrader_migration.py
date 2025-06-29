@@ -92,7 +92,6 @@ class OpenupgraderMigration(models.Model):
         help="Absolute path for migrated Odoo instance",
         required=True,
     )
-    # self.fixes = openupgrade_fixes.Fixes()
     from_version_id = fields.Many2one(
         comodel_name="odoo.version",
         string="From version",
