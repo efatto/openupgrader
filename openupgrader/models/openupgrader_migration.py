@@ -640,7 +640,8 @@ class OpenupgraderMigration(models.Model):
         self.uninstall_modules(self.next_version_id, after_migration=True)
         self.auto_install_modules(self.next_version_id)
         self.sql_fixes(
-            self.current_version_id.openupgrader_config_ids.sql_after_migration_command_ids
+            self.current_version_id.openupgrader_config_ids
+            .sql_after_migration_command_ids
         )
         if self.next_version_id.name == "10.0":
             self.remove_modules(self.next_version_id, "upgrade")
@@ -656,7 +657,7 @@ class OpenupgraderMigration(models.Model):
         self.next_version_id = self.env["odoo.version"].search(
             [("name", "=", str(float(self.current_version_id.name) + 1))]
         )
-        logger.info(_("Set next version to %s") % self.next_version_id)
+        logger.info(_("Set next version to %s") % self.next_version_id.name)
         self.state = "done"
 
     def button_refresh_state(self):
