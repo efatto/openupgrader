@@ -256,7 +256,7 @@ class OpenupgraderMigration(models.Model):
             self._start_odoo(version_id, update, extra_command)
             new_cr.commit()
 
-    def _start_odoo(self, version_id, update=False, extra_command=""):
+    def _start_odoo(self, version_id, update=False, extra_command=""):  # noqa C901
         version_name = version_id.name
         version_float = float(version_name)
         self.button_stop_odoo()
@@ -321,8 +321,9 @@ class OpenupgraderMigration(models.Model):
         if update:
             bash_command += "-u all --stop "
         subprocess_env = _get_env_for_subprocess(folder, version_id.python_version)
-        logger.info("Starting Odoo in virtualenv for migration with command %s" %
-                    bash_command)
+        logger.info(
+            "Starting Odoo in virtualenv for migration with command %s" % bash_command
+        )
 
         filename = "odoo_migration.log"
         migration_errors = []
@@ -341,14 +342,15 @@ class OpenupgraderMigration(models.Model):
                     if out and out != " ":
                         if "Some modules have inconsistent states" in out:
                             # try to install missing module with pip on-the-fly
-                            match = re.search("\[.*\]", out)
+                            match = re.search(r"\[.*\]", out)
                             if match:
                                 try:
                                     modules = safe_eval(match[0])
-                                except Exception as e:
+                                except Exception:
                                     logger.info(
                                         "Unable to list modules to install via pip "
-                                        "on-the-fly")
+                                        "on-the-fly"
+                                    )
                             self.install_missing_modules(version_id, modules)
                             migration_errors.append(out)
                         logger.info(out.strip())
@@ -361,8 +363,9 @@ class OpenupgraderMigration(models.Model):
         if update:
             # only updating the process will end automatically
             logger.info(
-                "Odoo migration instance v. %s should be updated and stopped." %
-                version_name)
+                "Odoo migration instance v. %s should be updated and stopped."
+                % version_name
+            )
             self.migration_error_log = "\n".join(migration_errors)
         if not update and not extra_command:
             time.sleep(1)
@@ -452,8 +455,7 @@ class OpenupgraderMigration(models.Model):
         )
         Popen([f"cp -r {initial_folder}/* {filestore_torestore_path}"], shell=True)
         logger.info(
-            "Filestore restored from original version %s."
-            % from_version_id.name
+            "Filestore restored from original version %s." % from_version_id.name
         )
 
     def button_backup_migration(self):
