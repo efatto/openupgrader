@@ -2,6 +2,7 @@ import base64
 import logging
 
 import yaml
+
 from odoo import _, fields, models
 from odoo.exceptions import UserError
 from odoo.release import version_info

@@ -84,4 +84,5 @@ repositories:
     pip_requirements:
       - git+https://github.com/OCA/openupgradelib.git@master#egg=openupgradelib
     remotes:
-      l10n-italy: https://github.com/OmniaSolutions/l10n-italy.git 7.0_fattura_pa_backport
+      l10n-italy:
+        https://github.com/OmniaSolutions/l10n-italy.git 7.0_fattura_pa_backport
