@@ -123,7 +123,6 @@ class Openupgrader(SavepointCase):
             self.openupgrader_migration.next_version_id,
             self.to_version_id,
         )
-        self.openupgrader_migration.button_update_current_version()
         self.openupgrader_migration.button_prepare_for_migration()
         self.assertEqual(self.openupgrader_migration.state, "ready_for_migration")
         self.openupgrader_migration.button_do_migration()

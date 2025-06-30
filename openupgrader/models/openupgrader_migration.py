@@ -608,13 +608,15 @@ class OpenupgraderMigration(models.Model):
         self.state = "updated"
 
     def button_prepare_for_migration(self):
-        self.set_cron_state_to(active=False)
-        if self.migrate_filestore:
-            self.restore_filestore(
-                from_version_id=self.current_version_id,
-                to_version_id=self.next_version_id,
-            )
-        self.disable_mail(disable=True)
+        if self.from_version_id == self.current_version_id:
+            # these actions are needed for the initial version only
+            self.set_cron_state_to(active=False)
+            if self.migrate_filestore:
+                self.restore_filestore(
+                    from_version_id=self.current_version_id,
+                    to_version_id=self.next_version_id,
+                )
+            self.disable_mail(disable=True)
         self.sql_fixes(
             self.current_version_id.openupgrader_config_ids.sql_before_migration_command_ids
         )
