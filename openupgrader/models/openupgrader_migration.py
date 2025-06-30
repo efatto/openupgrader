@@ -129,6 +129,7 @@ class OpenupgraderMigration(models.Model):
             ("restoring", "Restoring"),
             ("restore_failed", "Restore failed"),
             ("restored", "Restored"),
+            ("updating", "Updating"),
             ("updated", "Updated"),
             ("ready_for_migration", "Ready for migration"),
             ("migrating", "Migrating"),
@@ -225,6 +226,10 @@ class OpenupgraderMigration(models.Model):
             ).wait()
 
     def button_start_odoo(self):
+        if self.current_version_id != self.from_version_id:
+            self.state = "migrating"
+        else:
+            self.state = "updating"
         self.start_odoo(version_id=self.current_version_id)
 
     def check_venv(self, version_name):
@@ -250,11 +255,12 @@ class OpenupgraderMigration(models.Model):
 
     def _start_odoo_thread(self, version_id, update=False, extra_command=""):
         with api.Environment.manage():
+            # with odoo.registry(self.env.cr.dbname).cursor() as new_cr:
             new_cr = self.pool.cursor()
             self = self.with_env(self.env(cr=new_cr))
             version_id = version_id.with_env(self.env)
             self._start_odoo(version_id, update, extra_command)
-            new_cr.commit()
+            new_cr.close()
 
     def _start_odoo(self, version_id, update=False, extra_command=""):  # noqa C901
         version_name = version_id.name
@@ -327,7 +333,7 @@ class OpenupgraderMigration(models.Model):
 
         filename = "odoo_migration.log"
         migration_errors = []
-        with io.open(filename, "wb") as writer, io.open(filename, "rb", 1) as reader:
+        with io.open(filename, "wb") as writer, io.open(filename, "rb") as reader:
             process = Popen(
                 bash_command,
                 cwd=folder,
@@ -354,8 +360,25 @@ class OpenupgraderMigration(models.Model):
                             self.install_missing_modules(version_id, modules)
                             migration_errors.append(out)
                         logger.info(out.strip())
+                        if "CRITICAL" in out:
+                            if version_id == self.current_version_id:
+                                self.state = "restore_failed"
+                            elif version_id == self.next_version_id:
+                                self.state = "failed"
                         if "ERROR" in out:
                             migration_errors.append(out)
+                        if "WARNING" in out:
+                            migration_errors.append(out)
+                        if "Modules loaded" in out:
+                            if (
+                                version_id == self.current_version_id
+                                and self.state != "ready_for_migration"
+                            ):
+                                self.state = "restored"
+                            elif version_id == self.from_version_id:
+                                self.state = "updated"
+                            else:
+                                self.state = "migrated"
                 # Read the remaining
                 out = reader.read().decode()
                 logger.info(out)
@@ -670,45 +693,6 @@ class OpenupgraderMigration(models.Model):
         for odoo_pid in odoo_pids:
             if psutil.pid_exists(odoo_pid):
                 self.odoo_migrated_state = "running"
-        # TODO implementation: get running Odoo istance log to grep ERROR (or all docker
-        #  logs with postgres too?)
-        # for version_id in [self.current_version_id, self.next_version_id]:
-        #     migration_log_path = os.path.join(
-        #         os.path.join(self.folder, f"openupgrade{version_id.name}"),
-        #         "migration.log",
-        #     )
-        #     if os.path.isfile(migration_log_path):
-        #         with open(migration_log_path) as file:
-        #             contents = file.read()
-        #             if version_id == self.current_version_id:
-        #                 if self.state != "ready_for_migration":
-        #                     self.state = "restoring"
-        #                 if "CRITICAL" in contents:
-        #                     self.state = "restore_failed"
-        #                 elif (
-        #                     "Initiating shutdown" in contents
-        #                     and self.state != "ready_for_migration"
-        #                 ):
-        #                     self.state = "restored"
-        #             if version_id == self.next_version_id:
-        #                 if self.state != "ready_for_migration":
-        #                     self.state = "migrating"
-        #                 if "CRITICAL" in contents:
-        #                     self.state = "failed"
-        #                 elif (
-        #                     "Initiating shutdown" in contents
-        #                     and self.state != "ready_for_migration"
-        #                 ):
-        #                     self.state = "migrated"
-        #             if contents:
-        #                 if " ERROR " in contents:
-        #                     for x in contents.split(" ERROR "):
-        #                         # add the first 5 rows after the error to the log
-        #                         self.migration_error_log += "\n".join(x.split("\n")[:5])
-        #                 if " WARNING " in contents:
-        #                     for x in contents.split(" WARNING "):
-        #                         # add the first row after the warning to the log
-        #                         self.migration_error_log += "\n".join(x.split("\n")[:1])
 
     def sql_fixes(self, sql_commands):
         # do not change quote order as it will change the way the sql command is
