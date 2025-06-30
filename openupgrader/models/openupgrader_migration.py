@@ -241,29 +241,31 @@ class OpenupgraderMigration(models.Model):
         :param extra_command: command that will be passed after executable
         :return: null # todo return odoo client if not updating?
         """
-        if update:
-            if version_id != self.from_version_id:
-                self.state = "migrating"
-            else:
-                self.state = "updating"
+        if version_id != self.from_version_id:
+            self.state = "migrating"
+        else:
+            self.state = "updating"
+        if update and not config["test_enable"]:
             thread_odoo = threading.Thread(
                 target=self._start_odoo_thread, args=(version_id, update, extra_command)
             )
             thread_odoo.start()
         else:
-            self._start_odoo(version_id, update, extra_command)
+            state = self._start_odoo(version_id, update, extra_command)
+            if state and state == "migrated":
+                self._action_done()
 
     def _start_odoo_thread(self, version_id, update=False, extra_command=""):
+        state = False
         with api.Environment.manage():
             # with odoo.registry(self.env.cr.dbname).cursor() as new_cr:
             new_cr = self.pool.cursor()
             self = self.with_env(self.env(cr=new_cr))
             version_id = version_id.with_env(self.env)
             state = self._start_odoo(version_id, update, extra_command)
-            if state and state == "migrated":
-                self._action_done()
-                new_cr.commit()
             new_cr.close()
+        if state and state == "migrated":
+            self._action_done()
 
     def _start_odoo(self, version_id, update=False, extra_command=""):  # noqa C901
         state = False
