@@ -173,7 +173,7 @@ class OpenupgraderMigration(models.Model):
                 time.sleep(5)
                 return client
             except Exception as e:
-                raise ValidationError(_("Connection to Odoo failed for %s!") % str(e))
+                raise ValidationError("Connection to Odoo failed for %s!" % str(e))
         return None
 
     @staticmethod
