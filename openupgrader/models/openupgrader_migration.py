@@ -17,7 +17,7 @@ import psutil
 from odoorpc.rpc import CookieJar, HTTPCookieProcessor, build_opener
 
 from odoo import _, api, fields, models
-from odoo.exceptions import UserError, ValidationError
+from odoo.exceptions import UserError
 from odoo.modules import get_module_resource
 from odoo.tools import config
 from odoo.tools.safe_eval import safe_eval
@@ -865,7 +865,8 @@ class OpenupgraderMigration(models.Model):
     def install_uninstall_module(self, module_name, install=True):
         logger.info(
             f"{'Installing' if install else 'Uninstalling'} module %s in Odoo."
-            % module_name)
+            % module_name
+        )
         odoo_client = self.odoo_connect()
         module_obj = odoo_client.env["ir.module.module"]
         to_remove_modules = module_obj.search([("state", "=", "to remove")])
