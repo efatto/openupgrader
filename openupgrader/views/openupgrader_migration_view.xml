@@ -157,7 +157,7 @@
                                 <button
                                     name="button_refresh_odoo_migrated_state"
                                     type="object"
-                                    string="Refresh state and log"
+                                    string="Refresh migration state"
                                 />
                                 <button
                                     name="button_clean_migration_error_log"
