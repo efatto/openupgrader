@@ -337,8 +337,8 @@ class OpenupgraderMigration(models.Model):
             process = Popen(
                 bash_command,
                 cwd=folder,
-                stdout=writer if update else PIPE,
-                stderr=writer if update else PIPE,
+                stdout=writer,
+                stderr=writer,
                 env=subprocess_env,
                 shell=True,
             )
@@ -391,10 +391,10 @@ class OpenupgraderMigration(models.Model):
             )
             self.migration_error_log = "\n".join(migration_errors)
         if not update and not extra_command:
-            time.sleep(1)
+            time.sleep(5)
             self.odoo_migrated_state = "running"
             logger.info("Odoo migration instance v. %s is running." % version_name)
-        time.sleep(1)
+        time.sleep(2)
         self._refresh_state()
 
     def _stop_pid(self, pid=False):
