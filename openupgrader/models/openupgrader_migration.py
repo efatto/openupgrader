@@ -382,6 +382,8 @@ class OpenupgraderMigration(models.Model):
                 # Read the remaining
                 out = reader.read().decode()
                 logger.info(out)
+                if self.state == "migrated":
+                    self._action_done()
         self.odoo_pid = process.pid
         if update:
             # only updating the process will end automatically
@@ -396,7 +398,6 @@ class OpenupgraderMigration(models.Model):
             self.odoo_migrated_state = "running"
             logger.info("Odoo migration instance v. %s is running." % version_name)
         time.sleep(2)
-        self._refresh_state()
 
     def _stop_pid(self, pid=False):
         if not pid:
@@ -661,7 +662,6 @@ class OpenupgraderMigration(models.Model):
 
     def button_do_migration(self):
         self.start_odoo(self.next_version_id, update=True)
-        self._action_done()
 
     def _action_done(self):
         self.uninstall_modules(self.next_version_id, after_migration=True)
