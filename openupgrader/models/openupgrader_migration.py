@@ -657,7 +657,9 @@ class OpenupgraderMigration(models.Model):
                 os.remove(sql_file_path)
         self.current_version_id = False
         self.next_version_id = False
-        self._refresh_state()
+        self.odoo_error_log = False
+        self.migration_error_log = False
+        self._refresh_odoo_migrated_state()
         self.state = "draft"
 
     def button_do_migration(self):
@@ -686,11 +688,10 @@ class OpenupgraderMigration(models.Model):
         logger.info(_("Set next version to %s") % self.next_version_id.name)
         self.state = "done"
 
-    def button_refresh_state(self):
-        self._refresh_state()
+    def button_refresh_odoo_migrated_state(self):
+        self._refresh_odoo_migrated_state()
 
-    def _refresh_state(self):  # noqa C901
-        self.migration_error_log = " "
+    def _refresh_odoo_migrated_state(self):  # noqa C901
         self.odoo_migrated_state = "stopped"
         odoo_pids = self._get_odoo_pids()
         for odoo_pid in odoo_pids:
