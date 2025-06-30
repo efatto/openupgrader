@@ -173,7 +173,7 @@ class OpenupgraderMigration(models.Model):
                 time.sleep(5)
                 return client
             except Exception as e:
-                raise ValidationError("Connection to Odoo failed for %s!" % str(e))
+                logger.error("Connection to Odoo failed for %s!" % str(e))
         return None
 
     @staticmethod
@@ -863,7 +863,9 @@ class OpenupgraderMigration(models.Model):
                 logger.info(_("Module %s not found with pip installer.") % module_name)
 
     def install_uninstall_module(self, module_name, install=True):
-        logger.info("Installing module %s in Odoo." % module_name)
+        logger.info(
+            f"{'Installing' if install else 'Uninstalling'} module %s in Odoo."
+            % module_name)
         odoo_client = self.odoo_connect()
         module_obj = odoo_client.env["ir.module.module"]
         to_remove_modules = module_obj.search([("state", "=", "to remove")])
