@@ -393,7 +393,7 @@ class OpenupgraderMigration(models.Model):
                 "Odoo migration instance v. %s should be updated and stopped."
                 % version_name
             )
-            self.migration_error_log = "\n".join(migration_errors)
+            self.migration_error_log += "\n".join(migration_errors)
         if not update and not extra_command:
             time.sleep(5)
             # todo study a safer method to check if Odoo is running!
