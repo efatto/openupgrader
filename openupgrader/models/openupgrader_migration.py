@@ -17,7 +17,7 @@ import psutil
 from odoorpc.rpc import CookieJar, HTTPCookieProcessor, build_opener
 
 from odoo import _, api, fields, models
-from odoo.exceptions import UserError, ValidationError
+from odoo.exceptions import UserError
 from odoo.modules import get_module_resource
 from odoo.tools import config
 from odoo.tools.safe_eval import safe_eval
@@ -129,6 +129,7 @@ class OpenupgraderMigration(models.Model):
             ("restoring", "Restoring"),
             ("restore_failed", "Restore failed"),
             ("restored", "Restored"),
+            ("updating", "Updating"),
             ("updated", "Updated"),
             ("ready_for_migration", "Ready for migration"),
             ("migrating", "Migrating"),
@@ -172,7 +173,7 @@ class OpenupgraderMigration(models.Model):
                 time.sleep(5)
                 return client
             except Exception as e:
-                raise ValidationError(_("Connection to Odoo failed for %s!") % str(e))
+                logger.error("Connection to Odoo failed for %s!" % str(e))
         return None
 
     @staticmethod
@@ -225,6 +226,10 @@ class OpenupgraderMigration(models.Model):
             ).wait()
 
     def button_start_odoo(self):
+        if self.current_version_id != self.from_version_id:
+            self.state = "migrating"
+        else:
+            self.state = "updating"
         self.start_odoo(version_id=self.current_version_id)
 
     def check_venv(self, version_name):
@@ -254,7 +259,7 @@ class OpenupgraderMigration(models.Model):
             self = self.with_env(self.env(cr=new_cr))
             version_id = version_id.with_env(self.env)
             self._start_odoo(version_id, update, extra_command)
-            new_cr.commit()
+            new_cr.close()
 
     def _start_odoo(self, version_id, update=False, extra_command=""):  # noqa C901
         version_name = version_id.name
@@ -327,12 +332,12 @@ class OpenupgraderMigration(models.Model):
 
         filename = "odoo_migration.log"
         migration_errors = []
-        with io.open(filename, "wb") as writer, io.open(filename, "rb", 1) as reader:
+        with io.open(filename, "wb") as writer, io.open(filename, "rb") as reader:
             process = Popen(
                 bash_command,
                 cwd=folder,
-                stdout=writer if update else PIPE,
-                stderr=writer if update else PIPE,
+                stdout=writer,
+                stderr=writer,
                 env=subprocess_env,
                 shell=True,
             )
@@ -354,8 +359,25 @@ class OpenupgraderMigration(models.Model):
                             self.install_missing_modules(version_id, modules)
                             migration_errors.append(out)
                         logger.info(out.strip())
+                        if "CRITICAL" in out:
+                            if version_id == self.current_version_id:
+                                self.state = "restore_failed"
+                            elif version_id == self.next_version_id:
+                                self.state = "failed"
                         if "ERROR" in out:
                             migration_errors.append(out)
+                        if "WARNING" in out:
+                            migration_errors.append(out)
+                        if "Modules loaded" in out:
+                            if (
+                                version_id == self.current_version_id
+                                and self.state != "ready_for_migration"
+                            ):
+                                self.state = "restored"
+                            elif version_id == self.from_version_id:
+                                self.state = "updated"
+                            else:
+                                self.state = "migrated"
                 # Read the remaining
                 out = reader.read().decode()
                 logger.info(out)
@@ -368,10 +390,10 @@ class OpenupgraderMigration(models.Model):
             )
             self.migration_error_log = "\n".join(migration_errors)
         if not update and not extra_command:
-            time.sleep(1)
+            time.sleep(5)
             self.odoo_migrated_state = "running"
             logger.info("Odoo migration instance v. %s is running." % version_name)
-        time.sleep(1)
+        time.sleep(2)
         self._refresh_state()
 
     def _stop_pid(self, pid=False):
@@ -585,13 +607,15 @@ class OpenupgraderMigration(models.Model):
         self.state = "updated"
 
     def button_prepare_for_migration(self):
-        self.set_cron_state_to(active=False)
-        if self.migrate_filestore:
-            self.restore_filestore(
-                from_version_id=self.current_version_id,
-                to_version_id=self.next_version_id,
-            )
-        self.disable_mail(disable=True)
+        if self.from_version_id == self.current_version_id:
+            # these actions are needed for the initial version only
+            self.set_cron_state_to(active=False)
+            if self.migrate_filestore:
+                self.restore_filestore(
+                    from_version_id=self.current_version_id,
+                    to_version_id=self.next_version_id,
+                )
+            self.disable_mail(disable=True)
         self.sql_fixes(
             self.current_version_id.openupgrader_config_ids.sql_before_migration_command_ids
         )
@@ -670,45 +694,6 @@ class OpenupgraderMigration(models.Model):
         for odoo_pid in odoo_pids:
             if psutil.pid_exists(odoo_pid):
                 self.odoo_migrated_state = "running"
-        # TODO implementation: get running Odoo istance log to grep ERROR (or all docker
-        #  logs with postgres too?)
-        # for version_id in [self.current_version_id, self.next_version_id]:
-        #     migration_log_path = os.path.join(
-        #         os.path.join(self.folder, f"openupgrade{version_id.name}"),
-        #         "migration.log",
-        #     )
-        #     if os.path.isfile(migration_log_path):
-        #         with open(migration_log_path) as file:
-        #             contents = file.read()
-        #             if version_id == self.current_version_id:
-        #                 if self.state != "ready_for_migration":
-        #                     self.state = "restoring"
-        #                 if "CRITICAL" in contents:
-        #                     self.state = "restore_failed"
-        #                 elif (
-        #                     "Initiating shutdown" in contents
-        #                     and self.state != "ready_for_migration"
-        #                 ):
-        #                     self.state = "restored"
-        #             if version_id == self.next_version_id:
-        #                 if self.state != "ready_for_migration":
-        #                     self.state = "migrating"
-        #                 if "CRITICAL" in contents:
-        #                     self.state = "failed"
-        #                 elif (
-        #                     "Initiating shutdown" in contents
-        #                     and self.state != "ready_for_migration"
-        #                 ):
-        #                     self.state = "migrated"
-        #             if contents:
-        #                 if " ERROR " in contents:
-        #                     for x in contents.split(" ERROR "):
-        #                         # add the first 5 rows after the error to the log
-        #                         self.migration_error_log += "\n".join(x.split("\n")[:5])
-        #                 if " WARNING " in contents:
-        #                     for x in contents.split(" WARNING "):
-        #                         # add the first row after the warning to the log
-        #                         self.migration_error_log += "\n".join(x.split("\n")[:1])
 
     def sql_fixes(self, sql_commands):
         # do not change quote order as it will change the way the sql command is
@@ -877,7 +862,10 @@ class OpenupgraderMigration(models.Model):
                 logger.info(_("Module %s not found with pip installer.") % module_name)
 
     def install_uninstall_module(self, module_name, install=True):
-        logger.info("Installing module %s in Odoo." % module_name)
+        logger.info(
+            f"{'Installing' if install else 'Uninstalling'} module %s in Odoo."
+            % module_name
+        )
         odoo_client = self.odoo_connect()
         module_obj = odoo_client.env["ir.module.module"]
         to_remove_modules = module_obj.search([("state", "=", "to remove")])
