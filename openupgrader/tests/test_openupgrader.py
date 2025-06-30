@@ -1,4 +1,5 @@
 import base64
+import time
 
 from odoo.modules import get_module_resource
 from odoo.release import version_info
@@ -115,8 +116,9 @@ class Openupgrader(SavepointCase):
         self.assertEqual(self.openupgrader_migration.state, "ready_for_migration")
         self.openupgrader_migration.button_do_migration()
         # wait until migration is done with threading
-        while self.openupgrader_migration.odoo_migrated_state == "running":
+        while self.openupgrader_migration.state != "done":
             self.openupgrader_migration._refresh_odoo_migrated_state()
+            time.sleep(10)
         self.assertEqual(self.openupgrader_migration.state, "done")
         self.assertEqual(
             self.openupgrader_migration.current_version_id,
@@ -130,8 +132,9 @@ class Openupgrader(SavepointCase):
         self.assertEqual(self.openupgrader_migration.state, "ready_for_migration")
         self.openupgrader_migration.button_do_migration()
         # wait until migration is done with threading
-        while self.openupgrader_migration.odoo_migrated_state == "running":
+        while self.openupgrader_migration.state != "done":
             self.openupgrader_migration._refresh_odoo_migrated_state()
+            time.sleep(10)
         self.assertEqual(self.openupgrader_migration.state, "done")
         self.assertEqual(
             self.openupgrader_migration.current_version_id,
