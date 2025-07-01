@@ -362,12 +362,12 @@ class OpenupgraderMigration(models.Model):
                             if match:
                                 try:
                                     modules = safe_eval(match[0])
+                                    self.install_missing_modules(version_id, modules)
                                 except Exception:
                                     logger.info(
                                         "Unable to list modules to install via pip "
                                         "on-the-fly"
                                     )
-                            self.install_missing_modules(version_id, modules)
                             migration_errors.append(out)
                         logger.info(out.strip())
                         if "CRITICAL" in out:
