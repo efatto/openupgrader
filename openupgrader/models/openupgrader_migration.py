@@ -250,19 +250,24 @@ class OpenupgraderMigration(models.Model):
             )
             thread_odoo.start()
         else:
-            state = self._start_odoo(version_id, update, extra_command)
+            state, migration_errors = self._start_odoo(version_id, update, extra_command)
+            self.migration_error_log = (
+               self.migration_error_log or " "
+            ) + "\n".join(migration_errors)
             if state and state == "migrated":
                 self._action_done()
 
     def _start_odoo_thread(self, version_id, update=False, extra_command=""):
-        state = False
         with api.Environment.manage():
             # with odoo.registry(self.env.cr.dbname).cursor() as new_cr:
             new_cr = self.pool.cursor()
             self = self.with_env(self.env(cr=new_cr))
             version_id = version_id.with_env(self.env)
-            state = self._start_odoo(version_id, update, extra_command)
+            state, migration_errors = self._start_odoo(version_id, update, extra_command)
             new_cr.close()
+        self.migration_error_log = (
+            self.migration_error_log or " "
+        ) + "\n".join(migration_errors)
         if state and state == "migrated":
             self._action_done()
 
@@ -393,17 +398,13 @@ class OpenupgraderMigration(models.Model):
                 "Odoo migration instance v. %s should be updated and stopped."
                 % version_name
             )
-            # todo check when is correct to write to self using threading
-            self.migration_error_log = (
-                self.migration_error_log or " "
-            ) + "\n".join(migration_errors)
         if not update and not extra_command:
             time.sleep(5)
             # todo study a safer method to check if Odoo is running!
             self.odoo_migrated_state = "running"
             logger.info("Odoo migration instance v. %s is running." % version_name)
         time.sleep(2)
-        return state
+        return state, migration_errors
 
     def _stop_pid(self, pid=False):
         if pid:
