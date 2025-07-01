@@ -17,7 +17,7 @@ import psutil
 from odoorpc.rpc import CookieJar, HTTPCookieProcessor, build_opener
 
 from odoo import _, api, fields, models
-from odoo.exceptions import UserError
+from odoo.exceptions import UserError, ValidationError
 from odoo.modules import get_module_resource
 from odoo.tools import config
 from odoo.tools.safe_eval import safe_eval
@@ -665,6 +665,10 @@ class OpenupgraderMigration(models.Model):
         self.state = "draft"
 
     def button_do_migration(self):
+        self._refresh_odoo_migrated_state()
+        if self.state == "migrating":
+            raise ValidationError(_(
+                "Odoo is in migration, wait until it finishes or force it to stop."))
         self.start_odoo(self.next_version_id, update=True)
 
     def _action_done(self):
