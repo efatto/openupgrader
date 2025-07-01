@@ -394,7 +394,9 @@ class OpenupgraderMigration(models.Model):
                 % version_name
             )
             # todo check when is correct to write to self using threading
-            self.migration_error_log += "\n".join(migration_errors)
+            self.migration_error_log = (
+                self.migration_error_log or " "
+            ) + "\n".join(migration_errors)
         if not update and not extra_command:
             time.sleep(5)
             # todo study a safer method to check if Odoo is running!
@@ -661,7 +663,7 @@ class OpenupgraderMigration(models.Model):
         self.current_version_id = False
         self.next_version_id = False
         self.odoo_error_log = False
-        self.migration_error_log = False
+        self.migration_error_log = " "
         self.disabled_cron_ids = False
         self._refresh_odoo_migrated_state()
         self.state = "draft"
