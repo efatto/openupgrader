@@ -264,12 +264,12 @@ class OpenupgraderMigration(models.Model):
             self = self.with_env(self.env(cr=new_cr))
             version_id = version_id.with_env(self.env)
             state, migration_errors = self._start_odoo(version_id, update, extra_command)
+            self.migration_error_log = (
+               self.migration_error_log or " "
+            ) + "\n".join(migration_errors)
+            if state and state == "migrated":
+                self._action_done()
             new_cr.close()
-        self.migration_error_log = (
-            self.migration_error_log or " "
-        ) + "\n".join(migration_errors)
-        if state and state == "migrated":
-            self._action_done()
 
     def _start_odoo(self, version_id, update=False, extra_command=""):  # noqa C901
         state = False
