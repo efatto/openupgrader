@@ -545,11 +545,6 @@ msgid "Odoo is in local network"
 msgstr "Odoo è nella rete locale"
 
 #. module: openupgrader
-#: model:ir.model.fields,field_description:openupgrader.field_openupgrader_migration__odoo_pid
-msgid "Odoo migrated process PID"
-msgstr "PID processo Odoo migrato"
-
-#. module: openupgrader
 #: model:ir.model.fields,field_description:openupgrader.field_openupgrader_migration__odoo_migrated_state
 msgid "Odoo migrating instance state"
 msgstr "Stato dell'istanza Odoo in migrazione"

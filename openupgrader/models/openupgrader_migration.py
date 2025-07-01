@@ -74,7 +74,6 @@ class OpenupgraderMigration(models.Model):
         comodel_name="ir.cron",
         string="Disabled ir crons",
     )
-    odoo_pid = fields.Integer(string="Odoo migrated process PID")
     db_port = fields.Char(
         string="Database port",
         default=lambda self: config.get("db_port") != "False"
@@ -388,13 +387,13 @@ class OpenupgraderMigration(models.Model):
                 # Read the remaining
                 out = reader.read().decode()
                 logger.info(out)
-        self.odoo_pid = process.pid
         if update:
             # only updating the process will end automatically
             logger.info(
                 "Odoo migration instance v. %s should be updated and stopped."
                 % version_name
             )
+            # todo check when is correct to write to self using threading
             self.migration_error_log += "\n".join(migration_errors)
         if not update and not extra_command:
             time.sleep(5)
@@ -405,8 +404,6 @@ class OpenupgraderMigration(models.Model):
         return state
 
     def _stop_pid(self, pid=False):
-        if not pid:
-            pid = self.odoo_pid
         if pid:
             try:
                 os.kill(pid, signal.SIGTERM)
@@ -417,7 +414,6 @@ class OpenupgraderMigration(models.Model):
                     os.kill(pid, signal.SIGKILL)
                 except OSError:
                     pass
-        self.odoo_pid = False
         self.odoo_migrated_state = "stopped"
         logger.info("Odoo migration instances stopped.")
 
@@ -664,6 +660,7 @@ class OpenupgraderMigration(models.Model):
         self.next_version_id = False
         self.odoo_error_log = False
         self.migration_error_log = False
+        self.disabled_cron_ids = False
         self._refresh_odoo_migrated_state()
         self.state = "draft"
 
@@ -824,7 +821,7 @@ class OpenupgraderMigration(models.Model):
         )
         if modules_after:
             msg_modules_after = str([x.name for x in modules_after])
-        logger.info("Modules present before the removal %s" % msg_modules)
+        logger.info("Modules present before the removal: %s" % msg_modules)
         logger.info("Modules present after the removal: %s" % msg_modules_after)
 
     @staticmethod
