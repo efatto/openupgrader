@@ -159,6 +159,12 @@ msgid "Config file name"
 msgstr "Nome del file di configuazione"
 
 #. module: openupgrader
+#: code:addons/openupgrader/models/openupgrader_migration.py:0
+#, python-format
+msgid "Connection to Odoo failed for %s!"
+msgstr "Connessione ad Odoo fallita per %s!"
+
+#. module: openupgrader
 #: model_terms:ir.ui.view,arch_db:openupgrader.view_odoo_version_form
 msgid "Create virtualenv"
 msgstr "Crea virtualenv"
@@ -444,6 +450,12 @@ msgstr "Modulo %s non trovato"
 #. module: openupgrader
 #: code:addons/openupgrader/models/openupgrader_migration.py:0
 #, python-format
+msgid "Module %s not found with pip installer."
+msgstr "Modulo %s not trovato con l'installazione via pip."
+
+#. module: openupgrader
+#: code:addons/openupgrader/models/openupgrader_migration.py:0
+#, python-format
 msgid "Module %s not uninstalled for %s, trying %s/%s times."
 msgstr "Modulo %s non disinstallato per %s, riprovato %s/%s volte."
 
@@ -484,21 +496,9 @@ msgid "Module to uninstall before migration"
 msgstr "Modulo da disinstallare prima della migrazione"
 
 #. module: openupgrader
-#: code:addons/openupgrader/models/openupgrader_migration.py:0
-#, python-format
-msgid "Modules after: %s"
-msgstr "Moduli dopo: %s"
-
-#. module: openupgrader
 #: model:ir.model.fields,field_description:openupgrader.field_openupgrader_config__module_to_delete_after_migration_ids
 msgid "Modules to delete after migration"
 msgstr "Moduli da cancellare dopo la migrazione"
-
-#. module: openupgrader
-#: code:addons/openupgrader/models/openupgrader_migration.py:0
-#, python-format
-msgid "Modules: %s"
-msgstr "Moduli: %s"
 
 #. module: openupgrader
 #: model:ir.model.fields,field_description:openupgrader.field_openupgrader_migration__next_version_id
@@ -723,8 +723,8 @@ msgstr "Pronto per la migrazione"
 
 #. module: openupgrader
 #: model_terms:ir.ui.view,arch_db:openupgrader.view_openupgrader_migration_form
-msgid "Refresh state and log"
-msgstr "Aggiorna stato e log"
+msgid "Refresh migration state"
+msgstr "Aggiorna stato migrazione"
 
 #. module: openupgrader
 #: model:ir.model.fields,field_description:openupgrader.field_openupgrader_repo__remote_repo_ids
@@ -950,3 +950,9 @@ msgstr "Attenzione"
 #: model:ir.model.fields,field_description:openupgrader.field_openupgrader_migration__xmlrpc_port
 msgid "XmlRpc port"
 msgstr "Porta XmlRpc"
+
+#. module: openupgrader
+#: code:addons/openupgrader/models/openupgrader_migration.py:0
+#, python-format
+msgid "verify_ssl could not be established for this python version: %s"
+msgstr "verify_ssl non può essere stabilito per questa versione python: %s"

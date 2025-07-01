@@ -226,10 +226,6 @@ class OpenupgraderMigration(models.Model):
             ).wait()
 
     def button_start_odoo(self):
-        if self.current_version_id != self.from_version_id:
-            self.state = "migrating"
-        else:
-            self.state = "updating"
         self.start_odoo(version_id=self.current_version_id)
 
     def check_venv(self, version_name):
@@ -245,23 +241,34 @@ class OpenupgraderMigration(models.Model):
         :param extra_command: command that will be passed after executable
         :return: null # todo return odoo client if not updating?
         """
-        if update:
+        if version_id != self.from_version_id:
+            self.state = "migrating"
+        else:
+            self.state = "updating"
+        if update and not config["test_enable"]:
             thread_odoo = threading.Thread(
                 target=self._start_odoo_thread, args=(version_id, update, extra_command)
             )
             thread_odoo.start()
         else:
-            self._start_odoo(version_id, update, extra_command)
+            state = self._start_odoo(version_id, update, extra_command)
+            if state and state == "migrated":
+                self._action_done()
 
     def _start_odoo_thread(self, version_id, update=False, extra_command=""):
+        state = False
         with api.Environment.manage():
+            # with odoo.registry(self.env.cr.dbname).cursor() as new_cr:
             new_cr = self.pool.cursor()
             self = self.with_env(self.env(cr=new_cr))
             version_id = version_id.with_env(self.env)
-            self._start_odoo(version_id, update, extra_command)
+            state = self._start_odoo(version_id, update, extra_command)
             new_cr.close()
+        if state and state == "migrated":
+            self._action_done()
 
     def _start_odoo(self, version_id, update=False, extra_command=""):  # noqa C901
+        state = False
         version_name = version_id.name
         version_float = float(version_name)
         self.button_stop_odoo()
@@ -361,9 +368,9 @@ class OpenupgraderMigration(models.Model):
                         logger.info(out.strip())
                         if "CRITICAL" in out:
                             if version_id == self.current_version_id:
-                                self.state = "restore_failed"
+                                state = "restore_failed"
                             elif version_id == self.next_version_id:
-                                self.state = "failed"
+                                state = "failed"
                         if "ERROR" in out:
                             migration_errors.append(out)
                         if "WARNING" in out:
@@ -373,11 +380,11 @@ class OpenupgraderMigration(models.Model):
                                 version_id == self.current_version_id
                                 and self.state != "ready_for_migration"
                             ):
-                                self.state = "restored"
+                                state = "restored"
                             elif version_id == self.from_version_id:
-                                self.state = "updated"
+                                state = "updated"
                             else:
-                                self.state = "migrated"
+                                state = "migrated"
                 # Read the remaining
                 out = reader.read().decode()
                 logger.info(out)
@@ -388,13 +395,14 @@ class OpenupgraderMigration(models.Model):
                 "Odoo migration instance v. %s should be updated and stopped."
                 % version_name
             )
-            self.migration_error_log = "\n".join(migration_errors)
+            self.migration_error_log += "\n".join(migration_errors)
         if not update and not extra_command:
             time.sleep(5)
+            # todo study a safer method to check if Odoo is running!
             self.odoo_migrated_state = "running"
             logger.info("Odoo migration instance v. %s is running." % version_name)
         time.sleep(2)
-        self._refresh_state()
+        return state
 
     def _stop_pid(self, pid=False):
         if not pid:
@@ -654,12 +662,13 @@ class OpenupgraderMigration(models.Model):
                 os.remove(sql_file_path)
         self.current_version_id = False
         self.next_version_id = False
-        self._refresh_state()
+        self.odoo_error_log = False
+        self.migration_error_log = False
+        self._refresh_odoo_migrated_state()
         self.state = "draft"
 
     def button_do_migration(self):
         self.start_odoo(self.next_version_id, update=True)
-        self._action_done()
 
     def _action_done(self):
         self.uninstall_modules(self.next_version_id, after_migration=True)
@@ -684,11 +693,10 @@ class OpenupgraderMigration(models.Model):
         logger.info(_("Set next version to %s") % self.next_version_id.name)
         self.state = "done"
 
-    def button_refresh_state(self):
-        self._refresh_state()
+    def button_refresh_odoo_migrated_state(self):
+        self._refresh_odoo_migrated_state()
 
-    def _refresh_state(self):  # noqa C901
-        self.migration_error_log = " "
+    def _refresh_odoo_migrated_state(self):  # noqa C901
         self.odoo_migrated_state = "stopped"
         odoo_pids = self._get_odoo_pids()
         for odoo_pid in odoo_pids:

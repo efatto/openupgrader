@@ -85,14 +85,14 @@
                     <button
                         name="button_do_migration"
                         type="object"
-                        attrs="{'invisible': ['|', ('state', '=', 'ready_for_migration'), ('next_version_id', '=', False)]}"
+                        attrs="{'invisible': ['|', ('state', 'in', ['ready_for_migration', 'migrating']), ('next_version_id', '=', False)]}"
                         string="4: migrate"
                     />
                     <button
                         name="button_do_migration"
                         type="object"
                         class="oe_highlight"
-                        attrs="{'invisible': ['|', ('state', '!=', 'ready_for_migration'), ('next_version_id', '=', False)]}"
+                        attrs="{'invisible': ['|', ('state', 'not in', ['ready_for_migration', 'migrating']), ('next_version_id', '=', False)]}"
                         string="4: migrate"
                     />
                     <field
@@ -155,9 +155,9 @@
                             <group string="Utilities" />
                             <group colspan="2" col="4">
                                 <button
-                                    name="button_refresh_state"
+                                    name="button_refresh_odoo_migrated_state"
                                     type="object"
-                                    string="Refresh state and log"
+                                    string="Refresh migration state"
                                 />
                                 <button
                                     name="button_clean_migration_error_log"
