@@ -593,6 +593,10 @@ class OpenupgraderMigration(models.Model):
 
     def button_restore(self):
         self.ensure_one()
+        self._refresh_odoo_migrated_state()
+        if self.odoo_migrated_state == "running":
+            raise UserError(_("Odoo migrated instance is running! If you are sure to"
+                              "do this action, force it to stop."))
         self.migration_error_log = " "
         if not self.next_version_id:
             self.current_version_id = self.from_version_id
@@ -610,12 +614,20 @@ class OpenupgraderMigration(models.Model):
 
     def button_update_current_version(self):
         self.ensure_one()
+        self._refresh_odoo_migrated_state()
+        if self.odoo_migrated_state == "running":
+            raise UserError(_("Odoo migrated instance is running! If you are sure to"
+                              "do this action, force it to stop."))
         self.disable_mail(disable=True)
         # n.b. when updating, at the end odoo service is stopped automatically
         self.start_odoo(self.current_version_id, update=True)
         self.state = "updated"
 
     def button_prepare_for_migration(self):
+        self._refresh_odoo_migrated_state()
+        if self.odoo_migrated_state == "running":
+            raise UserError(_("Odoo migrated instance is running! If you are sure to"
+                              "do this action, force it to stop."))
         if self.from_version_id == self.current_version_id:
             # these actions are needed for the initial version only
             self.set_cron_state_to(active=False)
@@ -654,6 +666,10 @@ class OpenupgraderMigration(models.Model):
             )
 
     def button_draft(self):
+        self._refresh_odoo_migrated_state()
+        if self.odoo_migrated_state == "running":
+            raise UserError(_("Odoo migrated instance is running! If you are sure to"
+                              "do this action, force it to stop."))
         for version_id in [self.current_version_id, self.next_version_id]:
             sql_file_path = os.path.join(
                 self.folder,
@@ -671,9 +687,9 @@ class OpenupgraderMigration(models.Model):
 
     def button_do_migration(self):
         self._refresh_odoo_migrated_state()
-        if self.state == "migrating":
-            raise ValidationError(_(
-                "Odoo is in migration, wait until it finishes or force it to stop."))
+        if self.odoo_migrated_state == "running":
+            raise UserError(_("Odoo migrated instance is running! If you are sure to"
+                              "do this action, force it to stop."))
         self.start_odoo(self.next_version_id, update=True)
 
     def _action_done(self):

@@ -35,6 +35,7 @@
                         name="button_restore_update"
                         type="object"
                         string="1&amp;2: restore and update"
+                        confirm="This will reset current migration state: are you sure?"
                         help="Restore and update db of current version before migration, alternative to use the two separated buttons"
                     />
                     <button
@@ -43,6 +44,7 @@
                         class="oe_highlight"
                         attrs="{'invisible': [('state', '!=', 'created_venv')]}"
                         string="1: restore"
+                        confirm="This will reset current migration state: are you sure?"
                         help="Restore db of current version before migration"
                     />
                     <button
@@ -50,6 +52,7 @@
                         type="object"
                         attrs="{'invisible': [('state', '=', 'created_venv')]}"
                         string="1: restore"
+                        confirm="This will reset current migration state: are you sure?"
                         help="Restore db of current version before migration"
                     />
                     <button
@@ -85,14 +88,14 @@
                     <button
                         name="button_do_migration"
                         type="object"
-                        attrs="{'invisible': ['|', ('state', 'in', ['ready_for_migration', 'migrating']), ('next_version_id', '=', False)]}"
+                        attrs="{'invisible': ['|', ('state', '=', 'ready_for_migration'), ('next_version_id', '=', False)]}"
                         string="4: migrate"
                     />
                     <button
                         name="button_do_migration"
                         type="object"
                         class="oe_highlight"
-                        attrs="{'invisible': ['|', ('state', 'not in', ['ready_for_migration', 'migrating']), ('next_version_id', '=', False)]}"
+                        attrs="{'invisible': ['|', ('state', '!=', 'ready_for_migration'), ('next_version_id', '=', False)]}"
                         string="4: migrate"
                     />
                     <field
