@@ -479,7 +479,9 @@ class OpenupgraderMigration(models.Model):
             "Restoring filestore from %s to %s folder."
             % (initial_folder, filestore_torestore_path)
         )
-        Popen([f"cp -r {initial_folder}/* {filestore_torestore_path}"], shell=True)
+        Popen(
+            [f"cp -r * {filestore_torestore_path}"], cwd=initial_folder, shell=True
+        ).wait()
         logger.info(
             "Filestore restored from original version %s." % from_version_id.name
         )
