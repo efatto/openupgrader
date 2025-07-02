@@ -278,13 +278,14 @@ class OpenupgraderMigration(models.Model):
                 logger.info(
                     "Total migration log is: %s" % current_migration_log + migration_log)
                 self.migration_error_log = current_migration_log + migration_log
+                self.state = state
             except Exception:
                 logger.info(
                     "Unable to write log for the migration!")
             new_cr.commit()
             try:
                 if state and state == "migrated":
-                    migration._action_done()
+                    self._action_done()
             except Exception:
                 logger.info(
                     "Unable to do action_done for the migration!")
