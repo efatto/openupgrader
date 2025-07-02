@@ -281,6 +281,7 @@ class OpenupgraderMigration(models.Model):
                 logger.info(
                     "Unable to write log for the migration!")
             new_cr.close()
+
         # logger.info("action_done after new_cr.close() and outside api.Environment")
         # try:
         #     if state and state == "migrated":
