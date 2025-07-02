@@ -265,10 +265,13 @@ class OpenupgraderMigration(models.Model):
             self = self.with_env(self.env(cr=new_cr))
             version_id = version_id.with_env(self.env)
             state, migration_errors = self._start_odoo(version_id, update, extra_command)
-            migration = self.env["openupgrader.migration"].search([], limit=1)
+            new_cr.close()
+        with api.Environment.manage():
+            new_cr = self.pool.cursor()
+            self = self.with_env(self.env(cr=new_cr))
             try:
                 logger.info("Write before new_cr.close()")
-                current_migration_log = migration.migration_error_log
+                current_migration_log = self.migration_error_log
                 logger.info("Current migration log is: %s" % current_migration_log)
                 if not current_migration_log:
                     current_migration_log = ""
@@ -281,7 +284,6 @@ class OpenupgraderMigration(models.Model):
                 logger.info(
                     "Unable to write log for the migration!")
             new_cr.close()
-
         # logger.info("action_done after new_cr.close() and outside api.Environment")
         # try:
         #     if state and state == "migrated":
