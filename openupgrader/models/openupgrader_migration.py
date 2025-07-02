@@ -245,8 +245,6 @@ class OpenupgraderMigration(models.Model):
         else:
             self.state = "updating"
         if update and not config["test_enable"]:
-            self._cr.commit()
-            # self.flush()
             thread_odoo = threading.Thread(
                 target=self._start_odoo_thread, args=(version_id, update, extra_command)
             )
@@ -283,6 +281,7 @@ class OpenupgraderMigration(models.Model):
             except Exception:
                 logger.info(
                     "Unable to write log for the migration!")
+            new_cr.commit()
             new_cr.close()
         # logger.info("action_done after new_cr.close() and outside api.Environment")
         # try:
