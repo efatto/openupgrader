@@ -279,7 +279,7 @@ class OpenupgraderMigration(models.Model):
                 logger.info("New migration log is: %s" % migration_log)
                 logger.info(
                     "Total migration log is: %s" % current_migration_log + migration_log)
-                migration.migration_error_log = current_migration_log + migration_log
+                self.migration_error_log = current_migration_log + migration_log
             except Exception:
                 logger.info(
                     "Unable to write log for the migration!")
