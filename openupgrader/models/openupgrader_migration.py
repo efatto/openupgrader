@@ -282,14 +282,14 @@ class OpenupgraderMigration(models.Model):
                 logger.info(
                     "Unable to write log for the migration!")
             new_cr.commit()
+            try:
+                if state and state == "migrated":
+                    migration._action_done()
+            except Exception:
+                logger.info(
+                    "Unable to do action_done for the migration!")
+            new_cr.commit()
             new_cr.close()
-        # logger.info("action_done after new_cr.close() and outside api.Environment")
-        # try:
-        #     if state and state == "migrated":
-        #         migration._action_done()
-        # except Exception:
-        #     logger.info(
-        #         "Unable to do action_done for the migration!")
 
     def _start_odoo(self, version_id, update=False, extra_command=""):  # noqa C901
         state = False
