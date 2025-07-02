@@ -245,6 +245,8 @@ class OpenupgraderMigration(models.Model):
         else:
             self.state = "updating"
         if update and not config["test_enable"]:
+            self._cr.commit()
+            # self.flush()
             thread_odoo = threading.Thread(
                 target=self._start_odoo_thread, args=(version_id, update, extra_command)
             )
@@ -263,17 +265,29 @@ class OpenupgraderMigration(models.Model):
             self = self.with_env(self.env(cr=new_cr))
             version_id = version_id.with_env(self.env)
             state, migration_errors = self._start_odoo(version_id, update, extra_command)
+            migration = self.env["openupgrader.migration"].search([], limit=1)
             try:
-                migration = self.env["openupgrader.migration"].search([], limit=1)
-                migration.migration_error_log = (
-                   migration.migration_error_log or " "
-                ) + "\n".join(migration_errors)
-                if state and state == "migrated":
-                    migration._action_done()
+                logger.info("Write before new_cr.close()")
+                current_migration_log = migration.migration_error_log
+                logger.info("Current migration log is: %s" % current_migration_log)
+                if not current_migration_log:
+                    current_migration_log = ""
+                migration_log = "\n".join(migration_errors)
+                logger.info("New migration log is: %s" % migration_log)
+                logger.info(
+                    "Total migration log is: %s" % current_migration_log + migration_log)
+                migration.migration_error_log = current_migration_log + migration_log
             except Exception:
                 logger.info(
-                    "Unable to write log and to do action_done for the migration!")
+                    "Unable to write log for the migration!")
             new_cr.close()
+        # logger.info("action_done after new_cr.close() and outside api.Environment")
+        # try:
+        #     if state and state == "migrated":
+        #         migration._action_done()
+        # except Exception:
+        #     logger.info(
+        #         "Unable to do action_done for the migration!")
 
     def _start_odoo(self, version_id, update=False, extra_command=""):  # noqa C901
         state = False
