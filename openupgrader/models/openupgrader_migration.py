@@ -17,7 +17,7 @@ import psutil
 from odoorpc.rpc import CookieJar, HTTPCookieProcessor, build_opener
 
 from odoo import _, api, fields, models
-from odoo.exceptions import UserError, ValidationError
+from odoo.exceptions import UserError
 from odoo.modules import get_module_resource
 from odoo.tools import config
 from odoo.tools.safe_eval import safe_eval
@@ -250,10 +250,12 @@ class OpenupgraderMigration(models.Model):
             )
             thread_odoo.start()
         else:
-            state, migration_errors = self._start_odoo(version_id, update, extra_command)
-            self.migration_error_log = (
-               self.migration_error_log or " "
-            ) + "\n".join(migration_errors)
+            state, migration_errors = self._start_odoo(
+                version_id, update, extra_command
+            )
+            self.migration_error_log = (self.migration_error_log or " ") + "\n".join(
+                migration_errors
+            )
             if state and state == "migrated":
                 self._action_done()
 
@@ -262,7 +264,9 @@ class OpenupgraderMigration(models.Model):
             new_cr = self.pool.cursor()
             self = self.with_env(self.env(cr=new_cr))
             version_id = version_id.with_env(self.env)
-            state, migration_errors = self._start_odoo(version_id, update, extra_command)
+            state, migration_errors = self._start_odoo(
+                version_id, update, extra_command
+            )
             new_cr.close()
         with api.Environment.manage():
             new_cr = self.pool.cursor()
@@ -276,19 +280,18 @@ class OpenupgraderMigration(models.Model):
                 migration_log = "\n".join(migration_errors)
                 logger.info("New migration log is: %s" % migration_log)
                 logger.info(
-                    "Total migration log is: %s" % current_migration_log + migration_log)
+                    "Total migration log is: %s" % current_migration_log + migration_log
+                )
                 self.migration_error_log = current_migration_log + migration_log
                 self.state = state
             except Exception:
-                logger.info(
-                    "Unable to write log for the migration!")
+                logger.info("Unable to write log for the migration!")
             new_cr.commit()
             try:
                 if state and state == "migrated":
                     self._action_done()
             except Exception:
-                logger.info(
-                    "Unable to do action_done for the migration!")
+                logger.info("Unable to do action_done for the migration!")
             new_cr.commit()
             new_cr.close()
 
@@ -617,8 +620,12 @@ class OpenupgraderMigration(models.Model):
         self.ensure_one()
         self._refresh_odoo_migrated_state()
         if self.odoo_migrated_state == "running":
-            raise UserError(_("Odoo migrated instance is running! If you are sure to"
-                              "do this action, force it to stop."))
+            raise UserError(
+                _(
+                    "Odoo migrated instance is running! If you are sure to"
+                    "do this action, force it to stop."
+                )
+            )
         self.migration_error_log = " "
         if not self.next_version_id:
             self.current_version_id = self.from_version_id
@@ -638,8 +645,12 @@ class OpenupgraderMigration(models.Model):
         self.ensure_one()
         self._refresh_odoo_migrated_state()
         if self.odoo_migrated_state == "running":
-            raise UserError(_("Odoo migrated instance is running! If you are sure to"
-                              "do this action, force it to stop."))
+            raise UserError(
+                _(
+                    "Odoo migrated instance is running! If you are sure to"
+                    "do this action, force it to stop."
+                )
+            )
         self.disable_mail(disable=True)
         # n.b. when updating, at the end odoo service is stopped automatically
         self.start_odoo(self.current_version_id, update=True)
@@ -648,8 +659,12 @@ class OpenupgraderMigration(models.Model):
     def button_prepare_for_migration(self):
         self._refresh_odoo_migrated_state()
         if self.odoo_migrated_state == "running":
-            raise UserError(_("Odoo migrated instance is running! If you are sure to"
-                              "do this action, force it to stop."))
+            raise UserError(
+                _(
+                    "Odoo migrated instance is running! If you are sure to"
+                    "do this action, force it to stop."
+                )
+            )
         if self.from_version_id == self.current_version_id:
             # these actions are needed for the initial version only
             self.set_cron_state_to(active=False)
@@ -690,8 +705,12 @@ class OpenupgraderMigration(models.Model):
     def button_draft(self):
         self._refresh_odoo_migrated_state()
         if self.odoo_migrated_state == "running":
-            raise UserError(_("Odoo migrated instance is running! If you are sure to"
-                              "do this action, force it to stop."))
+            raise UserError(
+                _(
+                    "Odoo migrated instance is running! If you are sure to"
+                    "do this action, force it to stop."
+                )
+            )
         for version_id in [self.current_version_id, self.next_version_id]:
             sql_file_path = os.path.join(
                 self.folder,
@@ -710,8 +729,12 @@ class OpenupgraderMigration(models.Model):
     def button_do_migration(self):
         self._refresh_odoo_migrated_state()
         if self.odoo_migrated_state == "running":
-            raise UserError(_("Odoo migrated instance is running! If you are sure to"
-                              "do this action, force it to stop."))
+            raise UserError(
+                _(
+                    "Odoo migrated instance is running! If you are sure to"
+                    "do this action, force it to stop."
+                )
+            )
         self.start_odoo(self.next_version_id, update=True)
 
     def _action_done(self):
