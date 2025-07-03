@@ -813,7 +813,10 @@ class OpenupgraderMigration(models.Model):
             if module_obj.search(
                 [("name", "=", module_to_check), ("state", "=", "installed")]
             ):
-                odoo_client.env.install(module_to_install)
+                module_toinstall_id = module_obj.search(
+                    [("name", "=", module_to_install)])
+                if module_toinstall_id:
+                    module_obj.browse(module_toinstall_id).button_immediate_install()
         self.button_stop_odoo()
 
     def uninstall_modules(
@@ -928,7 +931,7 @@ class OpenupgraderMigration(models.Model):
             modules = module_obj.browse(module_ids)
             for module in modules:
                 if install:
-                    odoo_client.env.install(module_name)
+                    module.button_immediate_install()
                 elif module.state in ["installed", "to upgrade", "uninstallable"]:
                     res = 0
                     while res < 5:

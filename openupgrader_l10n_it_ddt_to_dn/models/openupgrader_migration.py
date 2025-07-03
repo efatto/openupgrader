@@ -1,5 +1,6 @@
 from odoo import models
-
+import logging
+logger = logging.getLogger(__name__)
 
 class OpenupgraderMigration(models.Model):
     _inherit = "openupgrader.migration"
@@ -21,6 +22,7 @@ class OpenupgraderMigration(models.Model):
                 ("state", "=", "installed"),
             ]
         ):
+            logger.info("Migrating from l10n_it_ddt to l10n_it_delivery_note")
             self.install_uninstall_module("l10n_it_delivery_note", install=True)
             self.button_stop_odoo()
             self.start_odoo(
