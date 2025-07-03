@@ -17,7 +17,7 @@ import psutil
 from odoorpc.rpc import CookieJar, HTTPCookieProcessor, build_opener
 
 from odoo import _, api, fields, models
-from odoo.exceptions import UserError
+from odoo.exceptions import UserError, ValidationError
 from odoo.modules import get_module_resource
 from odoo.tools import config
 from odoo.tools.safe_eval import safe_eval
@@ -74,7 +74,6 @@ class OpenupgraderMigration(models.Model):
         comodel_name="ir.cron",
         string="Disabled ir crons",
     )
-    odoo_pid = fields.Integer(string="Odoo migrated process PID")
     db_port = fields.Char(
         string="Database port",
         default=lambda self: config.get("db_port") != "False"
@@ -251,21 +250,47 @@ class OpenupgraderMigration(models.Model):
             )
             thread_odoo.start()
         else:
-            state = self._start_odoo(version_id, update, extra_command)
+            state, migration_errors = self._start_odoo(version_id, update, extra_command)
+            self.migration_error_log = (
+               self.migration_error_log or " "
+            ) + "\n".join(migration_errors)
             if state and state == "migrated":
                 self._action_done()
 
     def _start_odoo_thread(self, version_id, update=False, extra_command=""):
-        state = False
         with api.Environment.manage():
-            # with odoo.registry(self.env.cr.dbname).cursor() as new_cr:
             new_cr = self.pool.cursor()
             self = self.with_env(self.env(cr=new_cr))
             version_id = version_id.with_env(self.env)
-            state = self._start_odoo(version_id, update, extra_command)
+            state, migration_errors = self._start_odoo(version_id, update, extra_command)
             new_cr.close()
-        if state and state == "migrated":
-            self._action_done()
+        with api.Environment.manage():
+            new_cr = self.pool.cursor()
+            self = self.with_env(self.env(cr=new_cr))
+            try:
+                logger.info("Write before new_cr.close()")
+                current_migration_log = self.migration_error_log
+                logger.info("Current migration log is: %s" % current_migration_log)
+                if not current_migration_log:
+                    current_migration_log = ""
+                migration_log = "\n".join(migration_errors)
+                logger.info("New migration log is: %s" % migration_log)
+                logger.info(
+                    "Total migration log is: %s" % current_migration_log + migration_log)
+                self.migration_error_log = current_migration_log + migration_log
+                self.state = state
+            except Exception:
+                logger.info(
+                    "Unable to write log for the migration!")
+            new_cr.commit()
+            try:
+                if state and state == "migrated":
+                    self._action_done()
+            except Exception:
+                logger.info(
+                    "Unable to do action_done for the migration!")
+            new_cr.commit()
+            new_cr.close()
 
     def _start_odoo(self, version_id, update=False, extra_command=""):  # noqa C901
         state = False
@@ -317,8 +342,8 @@ class OpenupgraderMigration(models.Model):
             f"--db_port={self.db_port} "
             f"--db_host={self.pg_host or ''} "
             f"--xmlrpc-port={self.xmlrpc_port} "
-            f"--limit-time-cpu=16000 "
-            f"--limit-time-real=32000 "
+            f"--limit-time-cpu=43200 "
+            f"--limit-time-real=86400 "
             f"--limit-memory-soft=4147483648 "
             f"--limit-memory-hard=4679107584 "
             f"--{'longpolling' if version_float < 16 else 'gevent'}-port=8072 "
@@ -358,12 +383,13 @@ class OpenupgraderMigration(models.Model):
                             if match:
                                 try:
                                     modules = safe_eval(match[0])
+                                    migration_errors.append(modules)
+                                    # self.install_missing_modules(version_id, modules)
                                 except Exception:
                                     logger.info(
                                         "Unable to list modules to install via pip "
                                         "on-the-fly"
                                     )
-                            self.install_missing_modules(version_id, modules)
                             migration_errors.append(out)
                         logger.info(out.strip())
                         if "CRITICAL" in out:
@@ -388,25 +414,21 @@ class OpenupgraderMigration(models.Model):
                 # Read the remaining
                 out = reader.read().decode()
                 logger.info(out)
-        self.odoo_pid = process.pid
         if update:
             # only updating the process will end automatically
             logger.info(
                 "Odoo migration instance v. %s should be updated and stopped."
                 % version_name
             )
-            self.migration_error_log += "\n".join(migration_errors)
         if not update and not extra_command:
             time.sleep(5)
             # todo study a safer method to check if Odoo is running!
             self.odoo_migrated_state = "running"
             logger.info("Odoo migration instance v. %s is running." % version_name)
         time.sleep(2)
-        return state
+        return state, migration_errors
 
     def _stop_pid(self, pid=False):
-        if not pid:
-            pid = self.odoo_pid
         if pid:
             try:
                 os.kill(pid, signal.SIGTERM)
@@ -417,7 +439,6 @@ class OpenupgraderMigration(models.Model):
                     os.kill(pid, signal.SIGKILL)
                 except OSError:
                     pass
-        self.odoo_pid = False
         self.odoo_migrated_state = "stopped"
         logger.info("Odoo migration instances stopped.")
 
@@ -483,7 +504,9 @@ class OpenupgraderMigration(models.Model):
             "Restoring filestore from %s to %s folder."
             % (initial_folder, filestore_torestore_path)
         )
-        Popen([f"cp -r {initial_folder}/* {filestore_torestore_path}"], shell=True)
+        Popen(
+            [f"cp -r * {filestore_torestore_path}"], cwd=initial_folder, shell=True
+        ).wait()
         logger.info(
             "Filestore restored from original version %s." % from_version_id.name
         )
@@ -592,6 +615,10 @@ class OpenupgraderMigration(models.Model):
 
     def button_restore(self):
         self.ensure_one()
+        self._refresh_odoo_migrated_state()
+        if self.odoo_migrated_state == "running":
+            raise UserError(_("Odoo migrated instance is running! If you are sure to"
+                              "do this action, force it to stop."))
         self.migration_error_log = " "
         if not self.next_version_id:
             self.current_version_id = self.from_version_id
@@ -609,12 +636,20 @@ class OpenupgraderMigration(models.Model):
 
     def button_update_current_version(self):
         self.ensure_one()
+        self._refresh_odoo_migrated_state()
+        if self.odoo_migrated_state == "running":
+            raise UserError(_("Odoo migrated instance is running! If you are sure to"
+                              "do this action, force it to stop."))
         self.disable_mail(disable=True)
         # n.b. when updating, at the end odoo service is stopped automatically
         self.start_odoo(self.current_version_id, update=True)
         self.state = "updated"
 
     def button_prepare_for_migration(self):
+        self._refresh_odoo_migrated_state()
+        if self.odoo_migrated_state == "running":
+            raise UserError(_("Odoo migrated instance is running! If you are sure to"
+                              "do this action, force it to stop."))
         if self.from_version_id == self.current_version_id:
             # these actions are needed for the initial version only
             self.set_cron_state_to(active=False)
@@ -653,6 +688,10 @@ class OpenupgraderMigration(models.Model):
             )
 
     def button_draft(self):
+        self._refresh_odoo_migrated_state()
+        if self.odoo_migrated_state == "running":
+            raise UserError(_("Odoo migrated instance is running! If you are sure to"
+                              "do this action, force it to stop."))
         for version_id in [self.current_version_id, self.next_version_id]:
             sql_file_path = os.path.join(
                 self.folder,
@@ -663,11 +702,16 @@ class OpenupgraderMigration(models.Model):
         self.current_version_id = False
         self.next_version_id = False
         self.odoo_error_log = False
-        self.migration_error_log = False
+        self.migration_error_log = " "
+        self.disabled_cron_ids = False
         self._refresh_odoo_migrated_state()
         self.state = "draft"
 
     def button_do_migration(self):
+        self._refresh_odoo_migrated_state()
+        if self.odoo_migrated_state == "running":
+            raise UserError(_("Odoo migrated instance is running! If you are sure to"
+                              "do this action, force it to stop."))
         self.start_odoo(self.next_version_id, update=True)
 
     def _action_done(self):
@@ -824,7 +868,7 @@ class OpenupgraderMigration(models.Model):
         )
         if modules_after:
             msg_modules_after = str([x.name for x in modules_after])
-        logger.info("Modules present before the removal %s" % msg_modules)
+        logger.info("Modules present before the removal: %s" % msg_modules)
         logger.info("Modules present after the removal: %s" % msg_modules_after)
 
     @staticmethod
