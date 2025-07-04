@@ -142,6 +142,7 @@ class OpenupgraderMigration(models.Model):
     )
     odoo_error_log = fields.Text(string="Odoo error log")
     migration_error_log = fields.Text(string="Migration error log")
+    odoo_log_file = fields.Text(default="odoo.log")
 
     @api.model
     def _default_folder(self):
@@ -357,19 +358,25 @@ class OpenupgraderMigration(models.Model):
             bash_command += f"--data-dir={data_dir} "
         if update:
             bash_command += "-u all --stop "
+        else:
+            if not os.path.isfile(self.odoo_log_file):
+                file_writer = open(self.odoo_log_file, "w")
+                file_writer.write(f"Start Odoo v. {version_id.name} logs")
+                file_writer.close()
+            bash_command += f"--logfile={self.odoo_log_file} "
         subprocess_env = _get_env_for_subprocess(folder, version_id.python_version)
         logger.info(
             "Starting Odoo in virtualenv for migration with command %s" % bash_command
         )
 
-        filename = "odoo_migration.log"
+        filename = "odoo_upgrade.log"
         migration_errors = []
         with io.open(filename, "wb") as writer, io.open(filename, "rb") as reader:
             process = Popen(
                 bash_command,
                 cwd=folder,
-                stdout=writer,
-                stderr=writer,
+                stdout=writer if update else PIPE,
+                stderr=writer if update else PIPE,
                 env=subprocess_env,
                 shell=True,
             )
@@ -414,13 +421,15 @@ class OpenupgraderMigration(models.Model):
                 # Read the remaining
                 out = reader.read().decode()
                 logger.info(out)
-        if update:
             # only updating the process will end automatically
             logger.info(
                 "Odoo migration instance v. %s should be updated and stopped."
                 % version_name
             )
-        if not update and not extra_command:
+        if extra_command:
+            # extra command presumes Odoo will stop automatically like update - TODO check
+            process.wait()
+        elif not update:
             time.sleep(5)
             # todo study a safer method to check if Odoo is running!
             self.odoo_migrated_state = "running"
@@ -466,6 +475,13 @@ class OpenupgraderMigration(models.Model):
         pids = self._get_odoo_pids()
         for pid in pids:
             self._stop_pid(pid)
+        # read odoo log and put in logger
+        if os.path.isfile(self.odoo_log_file):
+            file_reader = open(self.odoo_log_file, 'r')
+            lines = file_reader.readlines()
+            for line in lines:
+                if line != " ":
+                    logger.info(line)
 
     def disable_mail(self, disable=False):
         state = "draft" if disable else "done"
