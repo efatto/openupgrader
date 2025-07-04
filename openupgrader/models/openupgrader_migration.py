@@ -333,10 +333,10 @@ class OpenupgraderMigration(models.Model):
             extra_addons_path += f",{os.path.join(folder, 'repos', remote_repo)}"
         bash_command = (
             f"{executable} "
-            f"-c {folder}/.odoorc "
             f"--addons-path={addons_path}"
             f"{extra_addons_path}"
             f" {extra_command} "
+            f"-c {folder}/.odoorc "
             f"--db_user={self.pg_user} "
             f"--db_password={self.pg_password_var or self.pg_password or ''} "
             f"--db_port={self.db_port} "
