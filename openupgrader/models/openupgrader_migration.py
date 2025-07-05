@@ -140,9 +140,10 @@ class OpenupgraderMigration(models.Model):
         readonly=True,
         default="draft",
     )
-    odoo_error_log = fields.Text(string="Odoo error log")
-    migration_error_log = fields.Text(string="Migration error log")
-    odoo_log_file = fields.Text(default="odoo.log")
+    odoo_error_log = fields.Text(string="Odoo errors in log")
+    migration_error_log = fields.Text(string="Migration errors in log")
+    odoo_update_log_file = fields.Text(default="odoo_update.log")
+    odoo_upgrade_log_file = fields.Text(default="odoo_upgrade.log")
 
     @api.model
     def _default_folder(self):
@@ -359,17 +360,17 @@ class OpenupgraderMigration(models.Model):
         if update:
             bash_command += "-u all --stop "
         else:
-            if not os.path.isfile(self.odoo_log_file):
-                file_writer = open(self.odoo_log_file, "w")
+            if not os.path.isfile(self.odoo_update_log_file):
+                file_writer = open(self.odoo_update_log_file, "w")
                 file_writer.write(f"Start Odoo v. {version_id.name} logs")
                 file_writer.close()
-            bash_command += f"--logfile={self.odoo_log_file} "
+            bash_command += f"--logfile={self.odoo_update_log_file} "
         subprocess_env = _get_env_for_subprocess(folder, version_id.python_version)
         logger.info(
             "Starting Odoo in virtualenv for migration with command %s" % bash_command
         )
 
-        filename = "odoo_upgrade.log"
+        filename = self.odoo_upgrade_log_file
         migration_errors = []
         with io.open(filename, "wb") as writer, io.open(filename, "rb") as reader:
             process = Popen(
@@ -476,8 +477,8 @@ class OpenupgraderMigration(models.Model):
         for pid in pids:
             self._stop_pid(pid)
         # read odoo log and put in logger
-        if os.path.isfile(self.odoo_log_file):
-            file_reader = open(self.odoo_log_file, 'r')
+        if os.path.isfile(self.odoo_update_log_file):
+            file_reader = open(self.odoo_update_log_file, 'r')
             lines = file_reader.readlines()
             for line in lines:
                 if line != " ":
