@@ -2,7 +2,7 @@
 <odoo>
     <menuitem
     action="analytic.action_analytic_account_form"
-    string="Analytic Accounts"
+    name="Analytic Accounts"
     id="account_analytic_account_list"
     parent="account.menu_finance_receivables"
     groups="analytic.group_analytic_accounting"
