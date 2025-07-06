@@ -577,39 +577,47 @@ class OpenupgraderMigration(models.Model):
 
     def restore_db(self):
         self.button_stop_odoo()
-        connection_string = (
-            f"postgresql://{self.pg_user}:"
-            f"{self.pg_password_var or self.pg_password or ''}@"
-            f"{self.pg_host or ''}:{self.db_port}/{self.env.cr.dbname}_migrate"
+        conn_vars= (
+            f"export PGPORT={self.db_port} && "
+            f"export PGHOST={self.pg_host or ''} && "
+            f"export PGUSER={self.pg_user or ''} && "
+            f"export PGPASSWORD={self.pg_password_var or self.pg_password or ''} "
         )
         process = Popen(
             [
-                f"dropdb --if-exists {connection_string}",
+                f"{conn_vars} && dropdb --if-exists {self.env.cr.dbname}_migrate",
             ],
             shell=True,
             stderr=PIPE,
             stdout=PIPE,
         )
-        error = process.stderr.readlines().decode()
-        errors = [e.lower() for e in error if "error" in e]
+        process.wait()
+        error = process.stderr.readlines()
+        errors = [e.decode().lower() for e in error if "error" in e.decode()]
         if errors:
             raise UserError("\n".join(e for e in errors))
         Popen(
             [
-                f"createdb {connection_string}",
+                f"{conn_vars} && createdb {self.env.cr.dbname}_migrate",
             ],
             shell=True,
         ).wait()
 
-        logger.info("Connection string to pg: %s" % connection_string)
+        logger.info(
+            "Restoring db from %(db)s to %(db)s_migrate."
+            % dict(
+                db=self.env.cr.dbname,
+            )
+        )
         Popen(
             [
-                f"pg_dump {self.pg_options or ''} -Fc -O {connection_string} "
-                f"| pg_restore {self.pg_options or ''} -d {connection_string} "
+                f"{conn_vars} && pg_dump {self.pg_options or ''} "
+                f"-Fc -O {self.env.cr.dbname} "
+                f"| {conn_vars} && pg_restore {self.pg_options or ''} "
+                f"-d {self.env.cr.dbname}_migrate "
             ],
             shell=True,
         ).wait()
-        os.unlink(dump_file_sql)
 
     def button_clean_migration_error_log(self):
         self.migration_error_log = " "
