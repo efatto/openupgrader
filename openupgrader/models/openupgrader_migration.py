@@ -611,10 +611,9 @@ class OpenupgraderMigration(models.Model):
         )
         Popen(
             [
-                f"{conn_vars} && pg_dump {self.pg_options or ''} "
-                f"-Fc -O {self.env.cr.dbname} "
-                f"| pg_restore {self.pg_options or ''} "
-                f"-d {self.env.cr.dbname}_migrate "
+                f"{conn_vars} "
+                f"&& pg_dump {self.pg_options or ''} -Fc -O {self.env.cr.dbname} "
+                f"| pg_restore {self.pg_options or ''} -d {self.env.cr.dbname}_migrate"
             ],
             shell=True,
         ).wait()
