@@ -613,7 +613,7 @@ class OpenupgraderMigration(models.Model):
             [
                 f"{conn_vars} && pg_dump {self.pg_options or ''} "
                 f"-Fc -O {self.env.cr.dbname} "
-                f"| {conn_vars} && pg_restore {self.pg_options or ''} "
+                f"| pg_restore {self.pg_options or ''} "
                 f"-d {self.env.cr.dbname}_migrate "
             ],
             shell=True,
