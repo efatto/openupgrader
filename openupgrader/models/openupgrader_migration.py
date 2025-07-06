@@ -575,49 +575,37 @@ class OpenupgraderMigration(models.Model):
         process.wait()
         logger.info("Database dumped for version %s" % version_name)
 
-    def restore(self):
+    def restore_db(self):
         self.button_stop_odoo()
-        process = Popen(
-            [
-                f"export PGPORT={self.db_port} && "
-                f"export PGHOST={self.pg_host or ''} && "
-                f"export PGUSER={self.pg_user or ''} && "
-                f"export PGPASSWORD={self.pg_password_var or self.pg_password or ''} "
-                f"&& dropdb --if-exists {self.env.cr.dbname}_migrate",
-            ],
-            shell=True,
-            stderr=PIPE,
-            stdout=PIPE,
-        )
-        error = process.stderr.readlines()
-        errors = [str(e).lower() for e in error if "error" in str(e)]
-        if errors:
-            raise UserError("\n".join(e for e in errors))
-        Popen(
-            [
-                f"export PGPORT={self.db_port} && "
-                f"export PGHOST={self.pg_host or ''} && "
-                f"export PGUSER={self.pg_user or ''} && "
-                f"export PGPASSWORD={self.pg_password_var or self.pg_password or ''} "
-                f"&& createdb {self.env.cr.dbname}_migrate",
-            ],
-            shell=True,
-        ).wait()
-        dump_file_sql = os.path.join(
-            self.folder, f"database.{self.current_version_id.name}.sql"
-        )
-        if not os.path.isfile(dump_file_sql):
-            raise UserError(_("Dump sql file %s not found!") % dump_file_sql)
         connection_string = (
             f"postgresql://{self.pg_user}:"
             f"{self.pg_password_var or self.pg_password or ''}@"
             f"{self.pg_host or ''}:{self.db_port}/{self.env.cr.dbname}_migrate"
         )
+        process = Popen(
+            [
+                f"dropdb --if-exists {connection_string}",
+            ],
+            shell=True,
+            stderr=PIPE,
+            stdout=PIPE,
+        )
+        error = process.stderr.readlines().decode()
+        errors = [e.lower() for e in error if "error" in e]
+        if errors:
+            raise UserError("\n".join(e for e in errors))
+        Popen(
+            [
+                f"createdb {connection_string}",
+            ],
+            shell=True,
+        ).wait()
+
         logger.info("Connection string to pg: %s" % connection_string)
         Popen(
             [
-                f"pg_restore {self.pg_options or ''} "
-                f"-d {connection_string} {dump_file_sql}"
+                f"pg_dump {self.pg_options or ''} -Fc -O {connection_string} "
+                f"| pg_restore {self.pg_options or ''} -d {connection_string} "
             ],
             shell=True,
         ).wait()
@@ -645,10 +633,10 @@ class OpenupgraderMigration(models.Model):
         if self.from_version_id == self.current_version_id:
             # restore is needed only when we migrate the first version, then the db is
             # already present
-            self.dump_database(self.current_version_id.name)
+            # self.dump_database(self.current_version_id.name)
             if self.migrate_filestore:
                 self.restore_filestore(self.current_version_id, self.current_version_id)
-            self.restore()
+            self.restore_db()
         self.state = "restored"
 
     def button_update_current_version(self):
@@ -741,7 +729,7 @@ class OpenupgraderMigration(models.Model):
             self.remove_modules(self.next_version_id, "upgrade")
             self.remove_modules(self.next_version_id)
             self.install_uninstall_module("l10n_it_intrastat")
-        self.dump_database(self.next_version_id.name)
+        # self.dump_database(self.next_version_id.name)
         logger.info(
             _("Migration done from version %s to version %s")
             % (self.current_version_id.name, self.next_version_id.name)

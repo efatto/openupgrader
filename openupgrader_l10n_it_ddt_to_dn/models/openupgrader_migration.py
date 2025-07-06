@@ -24,9 +24,9 @@ class OpenupgraderMigration(models.Model):
         ):
             logger.info("Migrating from l10n_it_ddt to l10n_it_delivery_note")
             self.install_uninstall_module("l10n_it_delivery_note", install=True)
-            self.button_stop_odoo()
             self.start_odoo(
                 version_id=self.from_version_id,
                 extra_command=f"migrate_l10n_it_ddt -d {self.env.cr.dbname}_migrate",
             )
+            # group_use_advanced_delivery_notes
         self.button_stop_odoo()
