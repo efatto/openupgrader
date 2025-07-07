@@ -1,5 +1,4 @@
-from odoo import _, models
-from odoo.exceptions import UserError
+from odoo import models
 
 
 class AccountMoveLine(models.Model):
@@ -7,13 +6,6 @@ class AccountMoveLine(models.Model):
 
     def _get_supplierinfo(self):
         super()._get_supplierinfo()
-        if not self.move_id.invoice_date:
-            raise UserError(
-                _(
-                    "Missing date invoice! It is required to check "
-                    "supplierinfo validity."
-                )
-            )
         supplierinfos = self.product_id.seller_ids.filtered(
             lambda seller: seller.name == self.move_id.supplier_partner_id
         )

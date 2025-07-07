@@ -23,7 +23,7 @@ msgstr "Riga fattura"
 #. module: account_invoice_supplierinfo_update_fix
 #: code:addons/account_invoice_supplierinfo_update_fix/models/account_invoice.py:12
 #, python-format
-msgid "Missing date invoice! It is required to check supplierinfo validity."
+msgid "Missing invoice date! It is required to check supplierinfo validity."
 msgstr "Data fattura mancante! È richiesta per verificare la validità dei prezzi dei fornitori."
 
 #. module: account_invoice_supplierinfo_update_fix
