@@ -2,20 +2,20 @@
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html).
 
 {
-    'name': 'Termini di pagamento per ricevute bancarie',
-    'version': '12.0.1.0.4',
-    'category': 'Localisation/Italy',
-    'description': 'Ri.ba. sbf data',
-    'author': 'Sergio Corato',
-    'website': 'https://github.com/efatto/efatto',
-    'license': 'AGPL-3',
-    'depends': [
-        'account_payment_term_extension',
-        'l10n_it_ricevute_bancarie',
-        'l10n_it_fiscal_payment_term',
+    "name": "Termini di pagamento per ricevute bancarie",
+    "version": "14.0.1.0.0",
+    "category": "Localisation/Italy",
+    "summary": "Ri.ba. sbf data",
+    "author": "Sergio Corato",
+    "website": "https://github.com/efatto/efatto",
+    "license": "AGPL-3",
+    "depends": [
+        "account_payment_term_extension",
+        "l10n_it_ricevute_bancarie",
+        "l10n_it_fiscal_payment_term",
     ],
-    'data': [
-        'data/payment_data.xml',
+    "data": [
+        "data/payment_data.xml",
     ],
-    'installable': True
+    "installable": True,
 }
