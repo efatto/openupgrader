@@ -484,6 +484,7 @@ class OpenupgraderMigration(models.Model):
             for line in lines:
                 if line != " ":
                     logger.info(line)
+        self._refresh_odoo_migrated_state()
 
     def disable_mail(self, disable=False):
         state = "draft" if disable else "done"
