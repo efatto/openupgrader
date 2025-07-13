@@ -246,6 +246,7 @@ class OpenupgraderMigration(models.Model):
             self.state = "migrating"
         else:
             self.state = "updating"
+        self.env.cr.commit()
         if update and not config["test_enable"]:
             thread_odoo = threading.Thread(
                 target=self._start_odoo_thread, args=(version_id, update, extra_command)
@@ -660,9 +661,8 @@ class OpenupgraderMigration(models.Model):
             raise UserError(_("Odoo migrated instance is running! If you are sure to"
                               "do this action, force it to stop."))
         self.disable_mail(disable=True)
-        # n.b. when updating, at the end odoo service is stopped automatically
+        # odoo service is stopped automatically at the end of update
         self.start_odoo(self.current_version_id, update=True)
-        self.state = "updated"
 
     def button_prepare_for_migration(self):
         self._refresh_odoo_migrated_state()
