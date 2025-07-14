@@ -156,7 +156,7 @@
                         </group>
                         <group colspan="4" col="2">
                             <group string="Utilities" />
-                            <group colspan="2" col="4">
+                            <group colspan="2" col="6">
                                 <button
                                     name="button_refresh_odoo_migrated_state"
                                     type="object"
@@ -180,7 +180,7 @@
                                 <button
                                     name="button_dump_current_database"
                                     type="object"
-                                    string="Dump current database"
+                                    string="Dump current migrating database"
                                 />
                                 <button
                                     name="button_restore_last_database"
