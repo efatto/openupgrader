@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+
+    <record id="view_openupgrader_migration_form" model="ir.ui.view">
+        <field name="name">openupgrader.migration.form</field>
+        <field name="model">openupgrader.migration</field>
+        <field name="inherit_id" ref="openupgrader.view_openupgrader_migration_form" />
+        <field name="arch" type="xml">
+            <button name="button_prepare_for_migration" position="after">
+                <button
+                    name="button_migrate_l10n_it_ddt_to_l10n_it_delivery_note"
+                    type="object"
+                    string="4.a: migrate ddt"
+                    attrs="{'invisible': [('current_version_id', '!=', '12.0')]}"
+                />
+            </button>
+        </field>
+    </record>
+
+</odoo>

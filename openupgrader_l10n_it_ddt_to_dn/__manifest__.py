@@ -9,7 +9,7 @@
     "summary": "Add method to migrate l10n_it_ddt to l10n_it_delivery_note",
     "website": "https://github.com/efatto/openupgrader",
     "depends": ["openupgrader"],
-    "data": [],
+    "data": ["views/openupgrader_migration_view.xml"],
     "installable": True,
     "auto_install": False,
 }
