@@ -682,7 +682,7 @@ class OpenupgraderMigration(models.Model):
         self.start_odoo(self.current_version_id, update=True)
 
     def button_prepare_for_migration(self):
-        # self._refresh_odoo_migrated_state()
+        self._refresh_odoo_migrated_state()
         if self.odoo_migrated_state == "running":
             raise UserError(_("Odoo migrated instance is running! If you are sure to"
                               "do this action, force it to stop."))
