@@ -437,6 +437,7 @@ class OpenupgraderMigration(models.Model):
             self.odoo_migrated_state = "running"
             logger.info("Odoo migration instance v. %s is running." % version_name)
         time.sleep(2)
+        self._refresh_odoo_migrated_state()
         return state, migration_errors
 
     def _stop_pid(self, pid=False):
@@ -701,8 +702,11 @@ class OpenupgraderMigration(models.Model):
             )
             Popen(
                 [
-                    f"psql -p {self.db_port} -d "
-                    f'{self.env.cr.dbname}_migrate -c "{sql}"'
+                    f"export PGPORT={self.db_port} && "
+                    f"export PGHOST={self.pg_host or ''} && "
+                    "export "
+                    f"PGPASSWORD={self.pg_password_var or self.pg_password or ''} && "
+                    f'psql -d {self.env.cr.dbname}_migrate -c "{sql}"'
                 ],
                 shell=True,
             )
@@ -744,7 +748,6 @@ class OpenupgraderMigration(models.Model):
             self.remove_modules(self.next_version_id, "upgrade")
             self.remove_modules(self.next_version_id)
             self.install_uninstall_module("l10n_it_intrastat")
-        # self.dump_database(self.next_version_id.name)
         logger.info(
             _("Migration done from version %s to version %s")
             % (self.current_version_id.name, self.next_version_id.name)
