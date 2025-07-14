@@ -177,6 +177,16 @@
                                     type="object"
                                     string="Stop Odoo"
                                 />
+                                <button
+                                    name="button_dump_current_database"
+                                    type="object"
+                                    string="Dump current database"
+                                />
+                                <button
+                                    name="button_restore_last_database"
+                                    type="object"
+                                    string="Restore last database dump"
+                                />
                             </group>
                         </group>
                     </group>

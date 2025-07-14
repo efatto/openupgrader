@@ -580,7 +580,7 @@ class OpenupgraderMigration(models.Model):
         process.wait()
         logger.info("Database dumped for version %s" % version_name)
 
-    def restore_db(self):
+    def restore_db(self, version_id=False):
         self.button_stop_odoo()
         conn_vars= (
             f"export PGPORT={self.db_port} && "
@@ -607,16 +607,21 @@ class OpenupgraderMigration(models.Model):
             ],
             shell=True,
         ).wait()
-        self.dump_database(self.from_version_id.name)
+        # Dump and restore db by sql file as it's the faster way to do it
+        if not version_id:
+            # this is not a restore done by hand from the user, so create a new dump
+            self.dump_database(self.from_version_id.name)
         dump_file_sql = os.path.join(
             self.folder, f"database.{self.current_version_id.name}.sql"
         )
         if not os.path.isfile(dump_file_sql):
             raise UserError(_("Dump sql file %s not found!") % dump_file_sql)
         logger.info(
-            "Restoring db from %(db)s to %(db)s_migrate."
+            "Restoring %(kind_db)s db %(from_db)s %(db)s_migrate."
             % dict(
                 db=self.env.cr.dbname,
+                from_db="" if version_id else f"from {self.env.cr.dbname} to",
+                kind_db="last dumped" if version_id else "original",
             )
         )
         Popen(
@@ -626,16 +631,24 @@ class OpenupgraderMigration(models.Model):
             ],
             shell=True,
         ).wait()
-        os.unlink(dump_file_sql)
+        if not version_id:
+            # this is not a restore done by hand from the user, so do not delete dump
+            os.unlink(dump_file_sql)
 
     def button_clean_migration_error_log(self):
         self.migration_error_log = " "
+
+    def button_dump_current_database(self):
+        self.dump_database(self.current_version_id.name)
+
+    def button_restore_last_database(self):
+        self.button_restore(force=True)
 
     def button_restore_update(self):
         self.button_restore()
         self.button_update_current_version()
 
-    def button_restore(self):
+    def button_restore(self, force=False):
         self.ensure_one()
         self._refresh_odoo_migrated_state()
         if self.odoo_migrated_state == "running":
@@ -648,12 +661,13 @@ class OpenupgraderMigration(models.Model):
             [("name", "=", str(float(self.current_version_id.name) + 1))]
         )
         if self.from_version_id == self.current_version_id:
-            # restore is needed only when we migrate the first version, then the db is
-            # already present
-            # self.dump_database(self.current_version_id.name)
+            # restore is needed only when we migrate the first version, after the db is
+            # already present in the postgresql cluster
             if self.migrate_filestore:
                 self.restore_filestore(self.current_version_id, self.current_version_id)
             self.restore_db()
+        if force:
+            self.restore_db(self.current_version_id)
         self.state = "restored"
 
     def button_update_current_version(self):
