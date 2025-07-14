@@ -488,6 +488,7 @@ class OpenupgraderMigration(models.Model):
         self._refresh_odoo_migrated_state()
 
     def disable_mail(self, disable=False):
+        # FIXME: DO VIA PSQL IN MIGRATED DB
         state = "draft" if disable else "done"
         active = False if disable else True
         fetchmail_server_ids = self.env["fetchmail.server"].search(
@@ -681,7 +682,7 @@ class OpenupgraderMigration(models.Model):
         self.start_odoo(self.current_version_id, update=True)
 
     def button_prepare_for_migration(self):
-        self._refresh_odoo_migrated_state()
+        # self._refresh_odoo_migrated_state()
         if self.odoo_migrated_state == "running":
             raise UserError(_("Odoo migrated instance is running! If you are sure to"
                               "do this action, force it to stop."))
@@ -693,7 +694,7 @@ class OpenupgraderMigration(models.Model):
                     from_version_id=self.current_version_id,
                     to_version_id=self.next_version_id,
                 )
-            self.disable_mail(disable=True)
+            # self.disable_mail(disable=True)
         self.sql_fixes(
             self.current_version_id.openupgrader_config_ids.sql_before_migration_command_ids
         )
