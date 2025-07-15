@@ -142,8 +142,20 @@ class OpenupgraderMigration(models.Model):
     )
     odoo_error_log = fields.Text(string="Odoo errors in log")
     migration_error_log = fields.Text(string="Migration errors in log")
-    odoo_update_log_file = fields.Text(default="odoo_update.log")
-    odoo_upgrade_log_file = fields.Text(default="odoo_upgrade.log")
+    odoo_update_log_file = fields.Text(
+        compute="_compute_log_folder",
+        store=True,
+    )
+    odoo_upgrade_log_file = fields.Text(
+        compute="_compute_log_folder",
+        store=True,
+    )
+
+    @api.depends("folder")
+    def _compute_log_folder(self):
+        for migration in self:
+            migration.odoo_update_log_file = Path(self.folder) / "odoo_update.log"
+            migration.odoo_upgrade_log_file = Path(self.folder) / "odoo_upgrade.log"
 
     @api.model
     def _default_folder(self):
