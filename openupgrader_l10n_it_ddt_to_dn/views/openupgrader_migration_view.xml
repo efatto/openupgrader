@@ -6,7 +6,7 @@
         <field name="model">openupgrader.migration</field>
         <field name="inherit_id" ref="openupgrader.view_openupgrader_migration_form" />
         <field name="arch" type="xml">
-            <button name="button_prepare_for_migration" position="after">
+            <button name="button_do_migration" position="before">
                 <button
                     name="button_migrate_l10n_it_ddt_to_l10n_it_delivery_note"
                     type="object"
