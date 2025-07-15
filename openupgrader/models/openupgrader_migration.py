@@ -432,12 +432,12 @@ class OpenupgraderMigration(models.Model):
             # extra command presumes Odoo will stop automatically like update - TODO check
             process.wait()
         elif not update:
-            time.sleep(5)
+            time.sleep(10)
             # todo study a safer method to check if Odoo is running!
             self.odoo_migrated_state = "running"
             logger.info("Odoo migration instance v. %s is running." % version_name)
         time.sleep(2)
-        self._refresh_odoo_migrated_state()
+        # self._refresh_odoo_migrated_state()
         return state, migration_errors
 
     def _stop_pid(self, pid=False):
@@ -633,7 +633,7 @@ class OpenupgraderMigration(models.Model):
             shell=True,
         ).wait()
         if not version_id:
-            # this is not a restore done by hand from the user, so do not delete dump
+            # this is not a restore done by hand from the user, so delete dump
             os.unlink(dump_file_sql)
 
     def button_clean_migration_error_log(self):
