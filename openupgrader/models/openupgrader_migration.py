@@ -641,13 +641,16 @@ class OpenupgraderMigration(models.Model):
         self.dump_database(self.current_version_id.name)
 
     def button_restore_last_database(self):
-        self.button_restore(force=True)
+        self._restore(force=True)
 
     def button_restore_update(self):
-        self.button_restore()
+        self._restore()
         self.button_update_current_version()
 
-    def button_restore(self, force=False):
+    def button_restore(self):
+        self._restore()
+
+    def _restore(self, force=False):
         self.ensure_one()
         self._refresh_odoo_migrated_state()
         if self.odoo_migrated_state == "running":
