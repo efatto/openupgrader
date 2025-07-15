@@ -578,6 +578,7 @@ class OpenupgraderMigration(models.Model):
         )
         process.wait()
         logger.info("Database dumped for version %s" % version_name)
+        return destination_path
 
     def restore_db(self, version_id=False):
         self.button_stop_odoo()
@@ -607,12 +608,11 @@ class OpenupgraderMigration(models.Model):
             shell=True,
         ).wait()
         # Dump and restore db by sql file as it's the faster way to do it
+        dump_file_sql = os.path.join(
+            self.folder, f"database.{self.current_version_id.name}.sql")
         if not version_id:
             # this is not a restore done by hand from the user, so create a new dump
-            self.dump_database(self.from_version_id.name)
-        dump_file_sql = os.path.join(
-            self.folder, f"database.{self.current_version_id.name}.sql"
-        )
+            dump_file_sql = self.dump_database(self.from_version_id.name)
         if not os.path.isfile(dump_file_sql):
             raise UserError(_("Dump sql file %s not found!") % dump_file_sql)
         logger.info(
