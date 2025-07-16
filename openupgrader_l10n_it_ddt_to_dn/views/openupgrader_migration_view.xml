@@ -10,7 +10,8 @@
                 <button
                     name="button_migrate_l10n_it_ddt_to_l10n_it_delivery_note"
                     type="object"
-                    string="4.a: migrate ddt"
+                    string="3.a: migrate ddt"
+                    attrs="{'invisible': ['|', ('state', 'in', ['updated', 'done']), ('next_version_id', '=', False)]}"
                 />
             </button>
         </field>

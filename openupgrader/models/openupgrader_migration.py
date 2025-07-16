@@ -443,7 +443,7 @@ class OpenupgraderMigration(models.Model):
         if extra_command:
             # extra command presumes Odoo will stop automatically like update - TODO check
             process.wait()
-        elif not update:
+        if not update:
             time.sleep(10)
             # todo study a safer method to check if Odoo is running!
             self.odoo_migrated_state = "running"
