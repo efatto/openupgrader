@@ -102,47 +102,46 @@ class Openupgrader(SavepointCase):
             version.button_recreate_venv()
 
     def test_openupgrader(self):
-        self.openupgrader_migration.button_stop_odoo()
-        self.openupgrader_migration.button_restore()
-        self.assertEqual(self.openupgrader_migration.state, "restored")
+        openupgrader_migration = self.openupgrader_migration
+        openupgrader_migration.button_stop_odoo()
+        openupgrader_migration.button_restore()
+        self.assertEqual(openupgrader_migration.state, "restored")
         self.assertEqual(
-            self.openupgrader_migration.current_version_id,
+            openupgrader_migration.current_version_id,
             self.from_version_id,
         )
         self.assertEqual(
-            self.openupgrader_migration.next_version_id,
+            openupgrader_migration.next_version_id,
             self.middle_version_id,
         )
-        self.openupgrader_migration.button_update_current_version()
-        self.openupgrader_migration.button_prepare_for_migration()
-        self.assertEqual(self.openupgrader_migration.state, "ready_for_migration")
-        self.openupgrader_migration.button_do_migration()
-        # wait until migration is done with threading
-        while self.openupgrader_migration.state != "done":
-            self.openupgrader_migration._refresh_odoo_migrated_state()
+        openupgrader_migration.button_update_current_version()
+        openupgrader_migration.button_prepare_for_migration()
+        self.assertEqual(openupgrader_migration.state, "ready_for_migration")
+        openupgrader_migration.button_do_migration()
+        # wait until migration is stopped with threading
+        while openupgrader_migration._get_odoo_migrated_state() == "running":
             time.sleep(10)
-        self.assertEqual(self.openupgrader_migration.state, "done")
+        self.assertEqual(openupgrader_migration.state, "done")
         self.assertEqual(
-            self.openupgrader_migration.current_version_id,
+            openupgrader_migration.current_version_id,
             self.middle_version_id,
         )
         self.assertEqual(
-            self.openupgrader_migration.next_version_id,
+            openupgrader_migration.next_version_id,
             self.to_version_id,
         )
-        self.openupgrader_migration.button_prepare_for_migration()
-        self.assertEqual(self.openupgrader_migration.state, "ready_for_migration")
-        self.openupgrader_migration.button_do_migration()
-        # wait until migration is done with threading
-        while self.openupgrader_migration.state != "done":
-            self.openupgrader_migration._refresh_odoo_migrated_state()
+        openupgrader_migration.button_prepare_for_migration()
+        self.assertEqual(openupgrader_migration.state, "ready_for_migration")
+        openupgrader_migration.button_do_migration()
+        # wait until migration is stopped with threading
+        while openupgrader_migration._get_odoo_migrated_state() == "running":
             time.sleep(10)
-        self.assertEqual(self.openupgrader_migration.state, "done")
+        self.assertEqual(openupgrader_migration.state, "done")
         self.assertEqual(
-            self.openupgrader_migration.current_version_id,
+            openupgrader_migration.current_version_id,
             self.to_version_id,
         )
         self.assertEqual(
-            self.openupgrader_migration.next_version_id,
+            openupgrader_migration.next_version_id,
             self.future_version_id,
         )

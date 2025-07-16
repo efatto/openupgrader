@@ -34,5 +34,8 @@ class OpenupgraderMigration(models.Model):
                 extra_command=f"migrate_l10n_it_ddt ",
             )
             # todo set group_use_advanced_delivery_notes?
+            # Uninstallation of the module l10n_it_ddt and children will be done in
+            # after migration logic on openupgrader migration.
+            # It could be done here too, if we would.
         # todo check in self.odoo_update_log_file
         #  there is "Execution completed successfully!" message
