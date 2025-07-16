@@ -457,7 +457,6 @@ class OpenupgraderMigration(models.Model):
             self.odoo_migrated_state = "running"
             logger.info("Odoo migration instance v. %s is running." % version_name)
         time.sleep(2)
-        # self._refresh_odoo_migrated_state()
         return state, migration_errors
 
     def _stop_pid(self, pid=False):
@@ -756,7 +755,6 @@ class OpenupgraderMigration(models.Model):
         self.odoo_error_log = False
         self.migration_error_log = " "
         self.disabled_cron_ids = False
-        # self._get_odoo_migrated_state()
         self.state = "draft"
 
     def button_do_migration(self):
