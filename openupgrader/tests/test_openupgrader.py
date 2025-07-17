@@ -3,14 +3,15 @@ import time
 
 from odoo.modules import get_module_resource
 from odoo.release import version_info
-from odoo.tests.common import SavepointCase
+from odoo.tests.common import SingleTransactionCase, Form
 
 
-class Openupgrader(SavepointCase):
+class Openupgrader(SingleTransactionCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
         cls.version_obj = cls.env["odoo.version"]
+        cls.migration_obj = cls.env["openupgrader.migration"]
         cls.from_version = ".".join(str(v) for v in version_info[:2])
         cls.middle_version = str(float(cls.from_version) + 1)
         cls.to_version = str(float(cls.middle_version) + 1)
@@ -88,18 +89,18 @@ class Openupgrader(SavepointCase):
                 file.close()
                 openupgrader_config.repos_file = repos_file
                 openupgrader_config.button_load_repos()
-        cls.openupgrader_migration = cls.env["openupgrader.migration"].create(
-            {
-                "from_version_id": cls.from_version_id.id,
-                "to_version_id": cls.to_version_id.id,
-                "openupgrade_repo": "https://github.com/efatto/OpenUpgrade.git",
-                "pg_password_var": "$PGPASSWORD",  # PGPASSWORD=odoo
-                "pg_host": "$PGHOST",  # PGHOST=postgres
-                "pg_user": "$PGUSER",  # PGUSER=odoo
-            }
-        )
+        cls.openupgrader_migration = cls.migration_obj.search([])
+        if not cls.openupgrader_migration:
+            migration_form = Form(cls.migration_obj)
+            migration_form.from_version_id = cls.from_version_id
+            migration_form.to_version_id = cls.to_version_id
+            migration_form.openupgrade_repo = "https://github.com/efatto/OpenUpgrade.git"
+            migration_form.pg_password_var = "$PGPASSWORD"  # PGPASSWORD=odoo
+            migration_form.pg_host = "$PGHOST"  # PGHOST=postgres
+            migration_form.pg_user = "$PGUSER"  # PGUSER=odoo
+            cls.openupgrader_migration = migration_form.save()
         for version in [cls.from_version_id, cls.middle_version_id, cls.to_version_id]:
-            version.button_recreate_venv()
+            version.button_create_venv()
 
     def test_openupgrader(self):
         openupgrader_migration = self.openupgrader_migration
