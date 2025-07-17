@@ -1,4 +1,3 @@
-import base64
 import time
 
 from odoo.modules import get_module_resource
@@ -88,19 +87,15 @@ class Openupgrader(SavepointCase):
             config_file_path = get_module_resource(
                 "openupgrader", "tests", "data", "openupgrader_config.yml"
             )
-            with open(config_file_path, "r") as file:
-                config_file = base64.b64encode(file.read())
-                file.close()
-                openupgrader_config.config_file = config_file
-                openupgrader_config.button_load_config()
             repos_file_path = get_module_resource(
                 "openupgrader", "tests", "data", "openupgrader_repos.yml"
             )
-            with open(repos_file_path, "r") as file:
-                repos_file = base64.b64encode(file.read())
-                file.close()
-                openupgrader_config.repos_file = repos_file
-                openupgrader_config.button_load_repos()
+            config_form = Form(openupgrader_config)
+            config_form.config_file = config_file_path
+            config_form.repos_file = repos_file_path
+            openupgrader_config = config_form.save()
+            openupgrader_config.button_load_config()
+            openupgrader_config.button_load_repos()
         for version in [cls.from_version_id, cls.middle_version_id, cls.to_version_id]:
             version.button_create_venv()
 
