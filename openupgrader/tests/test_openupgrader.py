@@ -99,6 +99,8 @@ class Openupgrader(SingleTransactionCase):
             migration_form.pg_host = "$PGHOST"  # PGHOST=postgres
             migration_form.pg_user = "$PGUSER"  # PGUSER=odoo
             cls.openupgrader_migration = migration_form.save()
+        else:
+            cls.openupgrader_migration.button_draft()
         for version in [cls.from_version_id, cls.middle_version_id, cls.to_version_id]:
             version.button_create_venv()
 
