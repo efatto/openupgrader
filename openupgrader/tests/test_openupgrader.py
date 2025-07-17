@@ -101,12 +101,16 @@ class Openupgrader(SavepointCase):
                 file.close()
                 openupgrader_config.repos_file = repos_file
                 openupgrader_config.button_load_repos()
-            cls.assertTrue(len(version_id.openupgrader_repo_ids) > 2)
         for version in [cls.from_version_id, cls.middle_version_id, cls.to_version_id]:
             version.button_create_venv()
 
     def test_openupgrader(self):
         openupgrader_migration = self.openupgrader_migration
+        for version in self.version_obj.search([]):
+            self.assertTrue(
+                expr=version.openupgrader_repo_ids,
+                msg="Repos in version %s missing" % version.name,
+            )
         openupgrader_migration.button_stop_odoo()
         openupgrader_migration.button_restore()
         self.assertEqual(openupgrader_migration.state, "restored")
