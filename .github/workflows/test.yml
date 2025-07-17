@@ -55,8 +55,6 @@ jobs:
         run: pip3 install scipy odoorpc pyyaml pysftp
       - name: Install addons and dependencies
         run: oca_install_addons
-      - name: Install module_change_auto_install
-        run: pip3 install odoo14-addon-module_change_auto_install
       - name: Check licenses
         run: manifestoo -d . check-licenses
       - name: Check development status
