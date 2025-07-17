@@ -3,10 +3,10 @@ import time
 
 from odoo.modules import get_module_resource
 from odoo.release import version_info
-from odoo.tests.common import Form, SingleTransactionCase
+from odoo.tests.common import Form, SavepointCase
 
 
-class Openupgrader(SingleTransactionCase):
+class Openupgrader(SavepointCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
@@ -102,7 +102,7 @@ class Openupgrader(SingleTransactionCase):
         else:
             cls.openupgrader_migration.button_draft()
         for version in [cls.from_version_id, cls.middle_version_id, cls.to_version_id]:
-            version.button_recreate_venv()
+            version.button_create_venv()
 
     def test_openupgrader(self):
         openupgrader_migration = self.openupgrader_migration
