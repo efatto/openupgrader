@@ -713,6 +713,12 @@ class OpenupgraderMigration(models.Model):
                     "do this action, force it to stop."
                 )
             )
+        if not self.current_version_id:
+            self.current_version_id = self.from_version_id
+        if not self.next_version_id:
+            self.next_version_id = self.env["odoo.version"].search(
+                [("name", "=", str(float(self.current_version_id.name) + 1))]
+            )
         if self.from_version_id == self.current_version_id:
             # these actions are needed for the initial version only
             self.set_cron_state_to(active=False)
