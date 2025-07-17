@@ -54,39 +54,6 @@ class Openupgrader(SavepointCase):
                 ("name", "=", cls.future_version),
             ]
         )
-        for version_name in [cls.from_version, cls.middle_version, cls.to_version]:
-            openupgrader_config = cls.env["openupgrader.config"].search(
-                [
-                    ("odoo_version_id.name", "=", version_name),
-                ]
-            )
-            if not openupgrader_config:
-                version_id = cls.version_obj.search(
-                    [
-                        ("name", "=", version_name),
-                    ]
-                )
-                openupgrader_config = cls.env["openupgrader.config"].create(
-                    {
-                        "odoo_version_id": version_id.id,
-                    }
-                )
-            config_file_path = get_module_resource(
-                "openupgrader", "tests", "data", "openupgrader_config.yml"
-            )
-            with open(config_file_path, "rb") as file:
-                config_file = base64.b64encode(file.read())
-                file.close()
-                openupgrader_config.config_file = config_file
-                openupgrader_config.button_load_config()
-            repos_file_path = get_module_resource(
-                "openupgrader", "tests", "data", "openupgrader_repos.yml"
-            )
-            with open(repos_file_path, "rb") as file:
-                repos_file = base64.b64encode(file.read())
-                file.close()
-                openupgrader_config.repos_file = repos_file
-                openupgrader_config.button_load_repos()
         cls.openupgrader_migration = cls.migration_obj.search([])
         if not cls.openupgrader_migration:
             migration_form = Form(cls.migration_obj)
@@ -101,6 +68,40 @@ class Openupgrader(SavepointCase):
             cls.openupgrader_migration = migration_form.save()
         else:
             cls.openupgrader_migration.button_draft()
+        for version_name in [cls.from_version, cls.middle_version, cls.to_version]:
+            openupgrader_config = cls.env["openupgrader.config"].search(
+                [
+                    ("odoo_version_id.name", "=", version_name),
+                ]
+            )
+            version_id = cls.version_obj.search(
+                [
+                    ("name", "=", version_name),
+                ]
+            )
+            if not openupgrader_config:
+                openupgrader_config = cls.env["openupgrader.config"].create(
+                    {
+                        "odoo_version_id": version_id.id,
+                    }
+                )
+            config_file_path = get_module_resource(
+                "openupgrader", "tests", "data", "openupgrader_config.yml"
+            )
+            with open(config_file_path, "r") as file:
+                config_file = base64.b64encode(file.read())
+                file.close()
+                openupgrader_config.config_file = config_file
+                openupgrader_config.button_load_config()
+            repos_file_path = get_module_resource(
+                "openupgrader", "tests", "data", "openupgrader_repos.yml"
+            )
+            with open(repos_file_path, "r") as file:
+                repos_file = base64.b64encode(file.read())
+                file.close()
+                openupgrader_config.repos_file = repos_file
+                openupgrader_config.button_load_repos()
+            cls.assertTrue(len(version_id.openupgrader_repo_ids) > 2)
         for version in [cls.from_version_id, cls.middle_version_id, cls.to_version_id]:
             version.button_create_venv()
 
