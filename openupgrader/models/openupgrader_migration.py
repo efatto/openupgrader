@@ -6,7 +6,6 @@ import shutil
 import signal
 import ssl
 import sys
-import threading
 import time
 from pathlib import Path
 from subprocess import PIPE, Popen
@@ -17,7 +16,7 @@ import psutil
 from odoorpc.rpc import CookieJar, HTTPCookieProcessor, build_opener
 
 from odoo import _, api, fields, models
-from odoo.exceptions import UserError, ValidationError
+from odoo.exceptions import UserError
 from odoo.modules import get_module_resource
 from odoo.tools import config
 from odoo.tools.safe_eval import safe_eval
@@ -267,11 +266,8 @@ class OpenupgraderMigration(models.Model):
         else:
             self.state = "updating"
         self.env.cr.commit()
-        if update and not config["test_enable"]:
-            thread_odoo = threading.Thread(
-                target=self._start_odoo_thread, args=(version_id, update, extra_command)
-            )
-            thread_odoo.start()
+        if update:
+            self._start_odoo_thread(version_id, update, extra_command)
         else:
             state, migration_errors = self._start_odoo(version_id, update, extra_command)
             self.migration_error_log = (
