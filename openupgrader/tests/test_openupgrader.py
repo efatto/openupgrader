@@ -3,7 +3,7 @@ import time
 
 from odoo.modules import get_module_resource
 from odoo.release import version_info
-from odoo.tests.common import SingleTransactionCase, Form
+from odoo.tests.common import Form, SingleTransactionCase
 
 
 class Openupgrader(SingleTransactionCase):
@@ -92,7 +92,9 @@ class Openupgrader(SingleTransactionCase):
             migration_form = Form(cls.migration_obj)
             migration_form.from_version_id = cls.from_version_id
             migration_form.to_version_id = cls.to_version_id
-            migration_form.openupgrade_repo = "https://github.com/efatto/OpenUpgrade.git"
+            migration_form.openupgrade_repo = (
+                "https://github.com/efatto/OpenUpgrade.git"
+            )
             migration_form.pg_password_var = "$PGPASSWORD"  # PGPASSWORD=odoo
             migration_form.pg_host = "$PGHOST"  # PGHOST=postgres
             migration_form.pg_user = "$PGUSER"  # PGUSER=odoo

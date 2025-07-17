@@ -265,7 +265,7 @@ class OpenupgraderMigration(models.Model):
             self.state = "migrating"
         else:
             self.state = "updating"
-        self.env.cr.commit()
+        # self.env.cr.commit()
         if update:
             self._start_odoo_thread(version_id, update, extra_command)
         else:
@@ -499,7 +499,7 @@ class OpenupgraderMigration(models.Model):
         # read odoo log and put in logger
         if os.path.isfile(self.odoo_update_log_file):
             logger.info("Show log for file %s" % self.odoo_update_log_file)
-            file_reader = open(self.odoo_update_log_file, 'r')
+            file_reader = open(self.odoo_update_log_file, "r")
             lines = file_reader.readlines()
             for line in lines:
                 if line != " ":
@@ -622,7 +622,8 @@ class OpenupgraderMigration(models.Model):
         ).wait()
         # Dump and restore db by sql file as it's the faster way to do it
         dump_file_sql = os.path.join(
-            self.folder, f"database.{self.current_version_id.name}.sql")
+            self.folder, f"database.{self.current_version_id.name}.sql"
+        )
         if not version_id:
             # this is not a restore done by hand from the user, so create a new dump
             dump_file_sql = self.dump_database(self.from_version_id.name)
@@ -691,7 +692,7 @@ class OpenupgraderMigration(models.Model):
 
     def button_update_current_version(self):
         self.ensure_one()
-        odoo_migrated_state  = self._get_odoo_migrated_state()
+        odoo_migrated_state = self._get_odoo_migrated_state()
         if odoo_migrated_state == "running":
             raise UserError(
                 _(
@@ -743,9 +744,7 @@ class OpenupgraderMigration(models.Model):
                 f"WHERE id in {tuple(ir_cron_ids.ids)};"
             )
             Popen(
-                [
-                    f'{conn_vars} && psql -d {self.env.cr.dbname}_migrate -c "{sql}"'
-                ],
+                [f'{conn_vars} && psql -d {self.env.cr.dbname}_migrate -c "{sql}"'],
                 shell=True,
             )
 
@@ -883,7 +882,8 @@ class OpenupgraderMigration(models.Model):
                 [("name", "=", module_to_check), ("state", "=", "installed")]
             ):
                 module_toinstall_id = module_obj.search(
-                    [("name", "=", module_to_install)])
+                    [("name", "=", module_to_install)]
+                )
                 if module_toinstall_id:
                     module_obj.browse(module_toinstall_id).button_immediate_install()
         self.button_stop_odoo()
