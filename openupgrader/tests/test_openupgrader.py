@@ -90,13 +90,12 @@ class Openupgrader(SavepointCase):
             repos_file_path = get_module_resource(
                 "openupgrader", "tests", "data", "openupgrader_repos.yml"
             )
-            with (
-                open(config_file_path, "r") as config_file,
-                open(repos_file_path, "r") as repos_file
-            ):
+            with open(config_file_path, "r") as config_file_reader, open(
+                repos_file_path, "r"
+            ) as repos_file_reader:
                 config_form = Form(openupgrader_config)
-                config_form.config_file = config_file
-                config_form.repos_file = open(repos_file_path, "r")
+                config_form.config_file = config_file_reader.read()
+                config_form.repos_file = repos_file_reader.read()
                 openupgrader_config = config_form.save()
             openupgrader_config.button_load_config()
             openupgrader_config.button_load_repos()
