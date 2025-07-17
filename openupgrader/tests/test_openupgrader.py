@@ -105,7 +105,9 @@ class Openupgrader(SavepointCase):
 
     def test_openupgrader(self):
         openupgrader_migration = self.openupgrader_migration
-        for version in self.version_obj.search([]):
+        for version in (
+            self.from_version_id | self.middle_version_id | self.to_version_id
+        ):
             self.assertTrue(
                 expr=version.openupgrader_repo_ids,
                 msg="Repos in version %s missing" % version.name,
