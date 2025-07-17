@@ -6,7 +6,6 @@ import shutil
 import signal
 import ssl
 import sys
-import threading
 import time
 from pathlib import Path
 from subprocess import PIPE, Popen
@@ -140,8 +139,22 @@ class OpenupgraderMigration(models.Model):
         readonly=True,
         default="draft",
     )
-    odoo_error_log = fields.Text(string="Odoo error log")
-    migration_error_log = fields.Text(string="Migration error log")
+    odoo_error_log = fields.Text(string="Odoo errors in log")
+    migration_error_log = fields.Text(string="Migration errors in log")
+    odoo_update_log_file = fields.Text(
+        compute="_compute_log_folder",
+        store=True,
+    )
+    odoo_upgrade_log_file = fields.Text(
+        compute="_compute_log_folder",
+        store=True,
+    )
+
+    @api.depends("folder")
+    def _compute_log_folder(self):
+        for migration in self:
+            migration.odoo_update_log_file = Path(self.folder) / "odoo_update.log"
+            migration.odoo_upgrade_log_file = Path(self.folder) / "odoo_upgrade.log"
 
     @api.model
     def _default_folder(self):
@@ -154,6 +167,14 @@ class OpenupgraderMigration(models.Model):
         if not os.path.isdir(folder):
             os.makedirs(folder)
         return folder
+
+    def _get_db_connection_variables(self):
+        return (
+            f"export PGPORT={self.db_port} && "
+            f"export PGHOST={self.pg_host or ''} && "
+            f"export PGUSER={self.pg_user or ''} && "
+            f"export PGPASSWORD={self.pg_password_var or self.pg_password or ''} "
+        )
 
     def odoo_connect(self):
         if self.db_name and self.db_password:
@@ -244,11 +265,9 @@ class OpenupgraderMigration(models.Model):
             self.state = "migrating"
         else:
             self.state = "updating"
-        if update and not config["test_enable"]:
-            thread_odoo = threading.Thread(
-                target=self._start_odoo_thread, args=(version_id, update, extra_command)
-            )
-            thread_odoo.start()
+        self.env.cr.commit()
+        if update:
+            self._start_odoo_thread(version_id, update, extra_command)
         else:
             state, migration_errors = self._start_odoo(
                 version_id, update, extra_command
@@ -336,10 +355,10 @@ class OpenupgraderMigration(models.Model):
             extra_addons_path += f",{os.path.join(folder, 'repos', remote_repo)}"
         bash_command = (
             f"{executable} "
-            f"-c {folder}/.odoorc "
             f"--addons-path={addons_path}"
             f"{extra_addons_path}"
             f" {extra_command} "
+            f"-c {folder}/.odoorc "
             f"--db_user={self.pg_user} "
             f"--db_password={self.pg_password_var or self.pg_password or ''} "
             f"--db_port={self.db_port} "
@@ -360,19 +379,25 @@ class OpenupgraderMigration(models.Model):
             bash_command += f"--data-dir={data_dir} "
         if update:
             bash_command += "-u all --stop "
+        else:
+            if not os.path.isfile(self.odoo_update_log_file):
+                file_writer = open(self.odoo_update_log_file, "w")
+                file_writer.write(f"Start Odoo v. {version_id.name} logs")
+                file_writer.close()
+            bash_command += f"--logfile={self.odoo_update_log_file} "
         subprocess_env = _get_env_for_subprocess(folder, version_id.python_version)
         logger.info(
             "Starting Odoo in virtualenv for migration with command %s" % bash_command
         )
 
-        filename = "odoo_migration.log"
+        filename = self.odoo_upgrade_log_file
         migration_errors = []
         with io.open(filename, "wb") as writer, io.open(filename, "rb") as reader:
             process = Popen(
                 bash_command,
                 cwd=folder,
-                stdout=writer,
-                stderr=writer,
+                stdout=writer if update else PIPE,
+                stderr=writer if update else PIPE,
                 env=subprocess_env,
                 shell=True,
             )
@@ -417,14 +442,16 @@ class OpenupgraderMigration(models.Model):
                 # Read the remaining
                 out = reader.read().decode()
                 logger.info(out)
-        if update:
             # only updating the process will end automatically
             logger.info(
                 "Odoo migration instance v. %s should be updated and stopped."
                 % version_name
             )
-        if not update and not extra_command:
-            time.sleep(5)
+        if extra_command:
+            # extra command presumes Odoo will stop automatically like update - TODO check
+            process.wait()
+        if not update:
+            time.sleep(10)
             # todo study a safer method to check if Odoo is running!
             self.odoo_migrated_state = "running"
             logger.info("Odoo migration instance v. %s is running." % version_name)
@@ -469,8 +496,17 @@ class OpenupgraderMigration(models.Model):
         pids = self._get_odoo_pids()
         for pid in pids:
             self._stop_pid(pid)
+        # read odoo log and put in logger
+        if os.path.isfile(self.odoo_update_log_file):
+            logger.info("Show log for file %s" % self.odoo_update_log_file)
+            file_reader = open(self.odoo_update_log_file, 'r')
+            lines = file_reader.readlines()
+            for line in lines:
+                if line != " ":
+                    logger.info(line)
 
     def disable_mail(self, disable=False):
+        # FIXME: DO VIA PSQL IN MIGRATED DB
         state = "draft" if disable else "done"
         active = False if disable else True
         fetchmail_server_ids = self.env["fetchmail.server"].search(
@@ -560,66 +596,77 @@ class OpenupgraderMigration(models.Model):
         )
         process.wait()
         logger.info("Database dumped for version %s" % version_name)
+        return destination_path
 
-    def restore(self):
+    def restore_db(self, version_id=False):
         self.button_stop_odoo()
+        conn_vars = self._get_db_connection_variables()
         process = Popen(
             [
-                f"export PGPORT={self.db_port} && "
-                f"export PGHOST={self.pg_host or ''} && "
-                f"export PGUSER={self.pg_user or ''} && "
-                f"export PGPASSWORD={self.pg_password_var or self.pg_password or ''} "
-                f"&& dropdb --if-exists {self.env.cr.dbname}_migrate",
+                f"{conn_vars} && dropdb --if-exists {self.env.cr.dbname}_migrate",
             ],
             shell=True,
             stderr=PIPE,
             stdout=PIPE,
         )
+        process.wait()
         error = process.stderr.readlines()
-        errors = [str(e).lower() for e in error if "error" in str(e)]
+        errors = [e.decode().lower() for e in error if "error" in e.decode()]
         if errors:
             raise UserError("\n".join(e for e in errors))
         Popen(
             [
-                f"export PGPORT={self.db_port} && "
-                f"export PGHOST={self.pg_host or ''} && "
-                f"export PGUSER={self.pg_user or ''} && "
-                f"export PGPASSWORD={self.pg_password_var or self.pg_password or ''} "
-                f"&& createdb {self.env.cr.dbname}_migrate",
+                f"{conn_vars} && createdb {self.env.cr.dbname}_migrate",
             ],
             shell=True,
         ).wait()
+        # Dump and restore db by sql file as it's the faster way to do it
         dump_file_sql = os.path.join(
-            self.folder, f"database.{self.current_version_id.name}.sql"
-        )
+            self.folder, f"database.{self.current_version_id.name}.sql")
+        if not version_id:
+            # this is not a restore done by hand from the user, so create a new dump
+            dump_file_sql = self.dump_database(self.from_version_id.name)
         if not os.path.isfile(dump_file_sql):
             raise UserError(_("Dump sql file %s not found!") % dump_file_sql)
-        connection_string = (
-            f"postgresql://{self.pg_user}:"
-            f"{self.pg_password_var or self.pg_password or ''}@"
-            f"{self.pg_host or ''}:{self.db_port}/{self.env.cr.dbname}_migrate"
+        logger.info(
+            "Restoring %(kind_db)s db %(from_db)s %(db)s_migrate."
+            % dict(
+                db=self.env.cr.dbname,
+                from_db="" if version_id else f"from {self.env.cr.dbname} to",
+                kind_db="last dumped" if version_id else "original",
+            )
         )
-        logger.info("Connection string to pg: %s" % connection_string)
         Popen(
             [
-                f"pg_restore {self.pg_options or ''} "
-                f"-d {connection_string} {dump_file_sql}"
+                f"{conn_vars} && pg_restore {self.pg_options or ''} "
+                f"-d {self.env.cr.dbname}_migrate {dump_file_sql}"
             ],
             shell=True,
         ).wait()
-        os.unlink(dump_file_sql)
+        if not version_id:
+            # this is not a restore done by hand from the user, so delete dump
+            os.unlink(dump_file_sql)
 
     def button_clean_migration_error_log(self):
         self.migration_error_log = " "
 
+    def button_dump_current_database(self):
+        self.dump_database(self.current_version_id.name)
+
+    def button_restore_last_database(self):
+        self._restore(force=True)
+
     def button_restore_update(self):
-        self.button_restore()
+        self._restore()
         self.button_update_current_version()
 
     def button_restore(self):
+        self._restore()
+
+    def _restore(self, force=False):
         self.ensure_one()
-        self._refresh_odoo_migrated_state()
-        if self.odoo_migrated_state == "running":
+        odoo_migrated_state = self._get_odoo_migrated_state()
+        if odoo_migrated_state == "running":
             raise UserError(
                 _(
                     "Odoo migrated instance is running! If you are sure to"
@@ -633,18 +680,19 @@ class OpenupgraderMigration(models.Model):
             [("name", "=", str(float(self.current_version_id.name) + 1))]
         )
         if self.from_version_id == self.current_version_id:
-            # restore is needed only when we migrate the first version, then the db is
-            # already present
-            self.dump_database(self.current_version_id.name)
+            # restore is needed only when we migrate the first version, after the db is
+            # already present in the postgresql cluster
             if self.migrate_filestore:
                 self.restore_filestore(self.current_version_id, self.current_version_id)
-            self.restore()
+            self.restore_db()
+        if force:
+            self.restore_db(self.current_version_id)
         self.state = "restored"
 
     def button_update_current_version(self):
         self.ensure_one()
-        self._refresh_odoo_migrated_state()
-        if self.odoo_migrated_state == "running":
+        odoo_migrated_state  = self._get_odoo_migrated_state()
+        if odoo_migrated_state == "running":
             raise UserError(
                 _(
                     "Odoo migrated instance is running! If you are sure to"
@@ -652,13 +700,12 @@ class OpenupgraderMigration(models.Model):
                 )
             )
         self.disable_mail(disable=True)
-        # n.b. when updating, at the end odoo service is stopped automatically
+        # odoo service is stopped automatically at the end of update
         self.start_odoo(self.current_version_id, update=True)
-        self.state = "updated"
 
     def button_prepare_for_migration(self):
-        self._refresh_odoo_migrated_state()
-        if self.odoo_migrated_state == "running":
+        odoo_migrated_state = self._get_odoo_migrated_state()
+        if odoo_migrated_state == "running":
             raise UserError(
                 _(
                     "Odoo migrated instance is running! If you are sure to"
@@ -673,7 +720,7 @@ class OpenupgraderMigration(models.Model):
                     from_version_id=self.current_version_id,
                     to_version_id=self.next_version_id,
                 )
-            self.disable_mail(disable=True)
+            # self.disable_mail(disable=True)
         self.sql_fixes(
             self.current_version_id.openupgrader_config_ids.sql_before_migration_command_ids
         )
@@ -682,6 +729,7 @@ class OpenupgraderMigration(models.Model):
         self.state = "ready_for_migration"
 
     def set_cron_state_to(self, active):
+        conn_vars = self._get_db_connection_variables()
         if active:
             # re-enable cron after the migration
             ir_cron_ids = self.disabled_cron_ids
@@ -696,15 +744,14 @@ class OpenupgraderMigration(models.Model):
             )
             Popen(
                 [
-                    f"psql -p {self.db_port} -d "
-                    f'{self.env.cr.dbname}_migrate -c "{sql}"'
+                    f'{conn_vars} && psql -d {self.env.cr.dbname}_migrate -c "{sql}"'
                 ],
                 shell=True,
             )
 
     def button_draft(self):
-        self._refresh_odoo_migrated_state()
-        if self.odoo_migrated_state == "running":
+        odoo_migrated_state = self._get_odoo_migrated_state()
+        if odoo_migrated_state == "running":
             raise UserError(
                 _(
                     "Odoo migrated instance is running! If you are sure to"
@@ -723,12 +770,11 @@ class OpenupgraderMigration(models.Model):
         self.odoo_error_log = False
         self.migration_error_log = " "
         self.disabled_cron_ids = False
-        self._refresh_odoo_migrated_state()
         self.state = "draft"
 
     def button_do_migration(self):
-        self._refresh_odoo_migrated_state()
-        if self.odoo_migrated_state == "running":
+        odoo_migrated_state = self._get_odoo_migrated_state()
+        if odoo_migrated_state == "running":
             raise UserError(
                 _(
                     "Odoo migrated instance is running! If you are sure to"
@@ -747,7 +793,6 @@ class OpenupgraderMigration(models.Model):
             self.remove_modules(self.next_version_id, "upgrade")
             self.remove_modules(self.next_version_id)
             self.install_uninstall_module("l10n_it_intrastat")
-        self.dump_database(self.next_version_id.name)
         logger.info(
             _("Migration done from version %s to version %s")
             % (self.current_version_id.name, self.next_version_id.name)
@@ -761,14 +806,15 @@ class OpenupgraderMigration(models.Model):
         self.state = "done"
 
     def button_refresh_odoo_migrated_state(self):
-        self._refresh_odoo_migrated_state()
+        self.odoo_migrated_state = self._get_odoo_migrated_state()
 
-    def _refresh_odoo_migrated_state(self):  # noqa C901
-        self.odoo_migrated_state = "stopped"
+    def _get_odoo_migrated_state(self):  # noqa C901
+        odoo_migrated_state = "stopped"
         odoo_pids = self._get_odoo_pids()
         for odoo_pid in odoo_pids:
             if psutil.pid_exists(odoo_pid):
-                self.odoo_migrated_state = "running"
+                odoo_migrated_state = "running"
+        return odoo_migrated_state
 
     def sql_fixes(self, sql_commands):
         # do not change quote order as it will change the way the sql command is
