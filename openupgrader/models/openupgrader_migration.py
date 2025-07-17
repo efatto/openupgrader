@@ -675,11 +675,12 @@ class OpenupgraderMigration(models.Model):
                 )
             )
         self.migration_error_log = " "
-        if not self.next_version_id:
+        if not self.current_version_id:
             self.current_version_id = self.from_version_id
-        self.next_version_id = self.env["odoo.version"].search(
-            [("name", "=", str(float(self.current_version_id.name) + 1))]
-        )
+        if not self.next_version_id:
+            self.next_version_id = self.env["odoo.version"].search(
+                [("name", "=", str(float(self.current_version_id.name) + 1))]
+            )
         if self.from_version_id == self.current_version_id:
             # restore is needed only when we migrate the first version, after the db is
             # already present in the postgresql cluster
@@ -712,12 +713,6 @@ class OpenupgraderMigration(models.Model):
                     "Odoo migrated instance is running! If you are sure to"
                     "do this action, force it to stop."
                 )
-            )
-        if not self.current_version_id:
-            self.current_version_id = self.from_version_id
-        if not self.next_version_id:
-            self.next_version_id = self.env["odoo.version"].search(
-                [("name", "=", str(float(self.current_version_id.name) + 1))]
             )
         if self.from_version_id == self.current_version_id:
             # these actions are needed for the initial version only
