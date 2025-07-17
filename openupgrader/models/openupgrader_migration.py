@@ -315,6 +315,9 @@ class OpenupgraderMigration(models.Model):
             new_cr.close()
 
     def _start_odoo(self, version_id, update=False, extra_command=""):  # noqa C901
+        logger.info(
+            f"Starting Odoo v. {version_id.name} update={update} "
+            f"commands={extra_command}")
         state = False
         version_name = version_id.name
         version_float = float(version_name)
@@ -346,6 +349,10 @@ class OpenupgraderMigration(models.Model):
         extra_addons_path = f",{folder}/repos/odoo/odoo/addons,{folder}/odoo"
         if 9 < version_float < 14:
             extra_addons_path = f",{folder}/odoo/odoo/addons"
+        if not version_id.openupgrader_repo_ids:
+            logger.info(
+                "Missing repositories in openupgrader config: have you missed to "
+                "append them?")
         for remote_repo in (
             version_id.openupgrader_repo_ids.mapped("remote_repo_ids")
             .filtered(lambda x: x.name != "odoo")
