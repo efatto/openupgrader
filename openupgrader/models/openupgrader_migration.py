@@ -265,18 +265,26 @@ class OpenupgraderMigration(models.Model):
             self.state = "migrating"
         else:
             self.state = "updating"
-        # self.env.cr.commit()
+        self.flush()
         if update:
-            self._start_odoo_thread(version_id, update, extra_command)
+            state, migration_errors = self._start_odoo_thread(
+                version_id, update, extra_command
+            )
         else:
             state, migration_errors = self._start_odoo(
                 version_id, update, extra_command
             )
+        try:
             self.migration_error_log = (self.migration_error_log or " ") + "\n".join(
                 migration_errors
             )
+        except Exception:
+            logger.info("Unable to write log for the migration!")
+        try:
             if state and state == "migrated":
                 self._action_done()
+        except Exception:
+            logger.info("Unable to do action_done for the migration!")
 
     def _start_odoo_thread(self, version_id, update=False, extra_command=""):
         with api.Environment.manage():
@@ -286,33 +294,12 @@ class OpenupgraderMigration(models.Model):
             state, migration_errors = self._start_odoo(
                 version_id, update, extra_command
             )
-            new_cr.close()
-        with api.Environment.manage():
-            new_cr = self.pool.cursor()
-            self = self.with_env(self.env(cr=new_cr))
-            try:
-                logger.info("Write before new_cr.close()")
-                current_migration_log = self.migration_error_log
-                logger.info("Current migration log is: %s" % current_migration_log)
-                if not current_migration_log:
-                    current_migration_log = ""
-                migration_log = "\n".join(migration_errors)
-                logger.info("New migration log is: %s" % migration_log)
-                logger.info(
-                    "Total migration log is: %s" % current_migration_log + migration_log
-                )
-                self.migration_error_log = current_migration_log + migration_log
-                self.state = state
-            except Exception:
-                logger.info("Unable to write log for the migration!")
-            new_cr.commit()
-            try:
-                if state and state == "migrated":
-                    self._action_done()
-            except Exception:
-                logger.info("Unable to do action_done for the migration!")
+            logger.info("Current migration log is: %s" % self.migration_error_log)
+            logger.info("Migration error log is: %s" % str(migration_errors))
+            self.flush()
             new_cr.commit()
             new_cr.close()
+        return state, migration_errors
 
     def _start_odoo(self, version_id, update=False, extra_command=""):  # noqa C901
         logger.info(
@@ -715,6 +702,7 @@ class OpenupgraderMigration(models.Model):
         self.start_odoo(self.current_version_id, update=True)
 
     def button_prepare_for_migration(self):
+        self.ensure_one()
         odoo_migrated_state = self._get_odoo_migrated_state()
         if odoo_migrated_state == "running":
             raise UserError(
