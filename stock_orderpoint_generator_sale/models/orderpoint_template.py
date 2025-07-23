@@ -301,6 +301,11 @@ class OrderpointTemplate(models.Model):
                         precision_digits=-1,
                         rounding_method="UP",
                     )
+                    # lot_to_reorder = ARROTONDA.ECCESSO.XCL(
+                    #   RADQ(
+                    #     2 * record.order_mngt_cost * qty_by_day * move_days
+                    #     / (0, 15 * product_id.standard_price)
+                    #   ); 1)
                     lot_to_reorder = float_round(
                         math.ceil(
                             (
