@@ -18,6 +18,7 @@
     "data": [
         "views/orderpoint_template_views.xml",
         "views/product.xml",
+        "views/res_country.xml",
     ],
     "installable": True,
     "auto_install": False,

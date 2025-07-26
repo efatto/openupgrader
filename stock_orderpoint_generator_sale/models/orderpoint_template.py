@@ -321,16 +321,16 @@ class OrderpointTemplate(models.Model):
                         precision_digits=-1,
                         rounding_method="UP",
                     )
-                    reord_coeff = (
+                    reorder_coeff = (
                         product_id.default_supplier_partner_id
                         | product_id.last_supplier_id
-                    ).country_id.reord_coeff or 4
-                    if lot_to_reorder < (max_qty / reord_coeff):
-                        lot_to_reorder = (max_qty / reord_coeff)  # todo ?
-                    elif lot_to_reorder == (max_qty / reord_coeff):
-                        lot_to_reorder = (max_qty / reord_coeff)  # todo ?
-                    else lot_to_reorder > (max_qty / reord_coeff):
-                        lot_to_reorder = (max_qty / reord_coeff)  # todo ?
+                    ).country_id.reorder_coeff or 4
+                    if lot_to_reorder < (max_qty / reorder_coeff):
+                        lot_to_reorder = (max_qty / reorder_coeff)  # todo ?
+                    elif lot_to_reorder > (max_qty / reorder_coeff):
+                        lot_to_reorder = (max_qty / reorder_coeff)  # todo ?
+                    else:
+                        lot_to_reorder = (max_qty / reorder_coeff)  # todo ?
                     max_qty = min_qty + lot_to_reorder
                     # end function
                     if record.auto_min_qty:
