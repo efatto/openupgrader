@@ -287,7 +287,8 @@ class OrderpointTemplate(models.Model):
                         move_days = (
                             record.auto_max_date_end - record.auto_max_date_start
                         ).days
-                    qty_by_day = stock_max_qty[product_id.id] / (move_days or 1)
+                    max_qty = stock_max_qty[product_id.id]
+                    qty_by_day = max_qty / (move_days or 1)
                     consumed_qty_by_lead_time = (
                         qty_by_day * (1 + (record.variation_percent / 100.0))
                     ) * (product_id.purchase_delay or 1)
@@ -320,6 +321,16 @@ class OrderpointTemplate(models.Model):
                         precision_digits=-1,
                         rounding_method="UP",
                     )
+                    reord_coeff = (
+                        product_id.default_supplier_partner_id
+                        | product_id.last_supplier_id
+                    ).country_id.reord_coeff or 4
+                    if lot_to_reorder < (max_qty / reord_coeff):
+                        lot_to_reorder = (max_qty / reord_coeff)  # todo ?
+                    elif lot_to_reorder == (max_qty / reord_coeff):
+                        lot_to_reorder = (max_qty / reord_coeff)  # todo ?
+                    else lot_to_reorder > (max_qty / reord_coeff):
+                        lot_to_reorder = (max_qty / reord_coeff)  # todo ?
                     max_qty = min_qty + lot_to_reorder
                     # end function
                     if record.auto_min_qty:
