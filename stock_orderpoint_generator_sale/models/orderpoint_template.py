@@ -329,16 +329,12 @@ class OrderpointTemplate(models.Model):
                         precision_digits=-1,
                         rounding_method="UP",
                     )
-                    reorder_coeff = (
-                        product_id.default_supplier_partner_id
-                        | product_id.last_supplier_id
-                    ).country_id.reorder_coeff or 4
+                    reorder_coeff = fields.first(
+                        product_id.seller_ids
+                    ).name.country_id.reorder_coeff
+                    # Set a maximum of orders by period
                     if lot_to_reorder < (max_qty / reorder_coeff):
-                        lot_to_reorder = (max_qty / reorder_coeff)  # todo ?
-                    elif lot_to_reorder > (max_qty / reorder_coeff):
-                        lot_to_reorder = (max_qty / reorder_coeff)  # todo ?
-                    else:
-                        lot_to_reorder = (max_qty / reorder_coeff)  # todo ?
+                        lot_to_reorder = (max_qty / reorder_coeff)
                     max_qty = min_qty + lot_to_reorder
                     # end function
                     if record.auto_min_qty:
