@@ -56,6 +56,14 @@ class OrderpointTemplate(models.Model):
     def create_orderpoints(self, products):
         """Override to create new orderpoints in draft optionally"""
         if self.is_new_orderpoint_draft:
+            # delete inactive instances
+            orderpoints = self.env["stock.warehouse.orderpoint"].with_context(
+                active_test=False
+            ).search([
+                ("orderpoint_tmpl_id", "=", self.id),
+                ("active", "=", False),
+            ])
+            orderpoints.unlink()
             # create new istances to put in a new o2m
             self.with_context(is_draft=True)._create_instances(products)
         else:
