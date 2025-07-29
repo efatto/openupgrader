@@ -331,7 +331,7 @@ class OrderpointTemplate(models.Model):
                     )
                     reorder_coeff = fields.first(
                         product_id.seller_ids
-                    ).name.country_id.reorder_coeff
+                    ).name.country_id.reorder_coeff or 4.0
                     # Set a maximum of orders by period
                     if lot_to_reorder < (max_qty / reorder_coeff):
                         lot_to_reorder = (max_qty / reorder_coeff)
