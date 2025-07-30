@@ -193,9 +193,9 @@ class OrderpointTemplate(models.Model):
                     [
                         (
                             "categ_id",
-                            "in",
+                            "child_of",
                             self.product_ctg_ids.ids,
-                        ),  # todo add children
+                        ),
                         ("orderpoint_generate_active", "=", True),
                         ("state", "not in", ["end", "obsolete"]),
                     ]
