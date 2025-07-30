@@ -1,13 +1,12 @@
-from odoo import models, api
+from odoo import api, models
 
 
 class StockPicking(models.Model):
-    _inherit = 'stock.picking'
+    _inherit = "stock.picking"
 
     @api.multi
     def action_assign(self):
-        for move in self.mapped('move_ids_without_package'):
-            if move.product_uom_qty == move.quantity_done and \
-                    move.state == 'confirmed':
-                move.write({'state': 'assigned'})
+        for move in self.mapped("move_ids_without_package"):
+            if move.product_uom_qty == move.quantity_done and move.state == "confirmed":
+                move.write({"state": "assigned"})
         return super().action_assign()
