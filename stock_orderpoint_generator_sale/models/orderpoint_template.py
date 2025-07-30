@@ -175,25 +175,32 @@ class OrderpointTemplate(models.Model):
         ]
         return res
 
+    def button_create_orderpoints(self):
+        for template in self:
+            template._create_orderpoints()
+
     def create_auto_orderpoints(self):
         for template in self:
-            if not template.auto_generate:
-                continue
-            if (
-                not template.auto_last_generation
-                or template.write_date > template.auto_last_generation
-            ):
-                template.auto_last_generation = fields.Datetime.now()
-                product_ids = template.auto_product_ids
-                if template.product_ctg_ids:
-                    product_ids = self.env["product.product"].search(
-                        [
-                            ("categ_id", "in", template.product_ctg_ids.ids),
-                            ("orderpoint_generate_active", "=", True),
-                            ("state", "not in", ["end", "obsolete"]),
-                        ]
-                    )
-                template.create_orderpoints(product_ids)
+            if template.auto_generate:
+                template._create_orderpoints()
+
+    def _create_orderpoints(self):
+        if not self.auto_last_generation or self.write_date > self.auto_last_generation:
+            self.auto_last_generation = fields.Datetime.now()
+            product_ids = self.auto_product_ids
+            if self.product_ctg_ids:
+                product_ids = self.env["product.product"].search(
+                    [
+                        (
+                            "categ_id",
+                            "in",
+                            self.product_ctg_ids.ids,
+                        ),  # todo add children
+                        ("orderpoint_generate_active", "=", True),
+                        ("state", "not in", ["end", "obsolete"]),
+                    ]
+                )
+            self.create_orderpoints(product_ids)
 
     def _create_instances(self, product_ids):  # noqa C901
         """Create instances of model using template inherited model and

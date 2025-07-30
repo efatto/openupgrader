@@ -162,9 +162,14 @@
                 </page>
             </xpath>
             <button name="create_auto_orderpoints" position="attributes">
-                <attribute name="attrs">{'invisible': False}</attribute>
+                <attribute name="attrs">{'invisible': True}</attribute>
             </button>
             <button name="create_auto_orderpoints" position="after">
+                <button
+          name="button_create_orderpoints"
+          type="object"
+          string="Create Orderpoints"
+        />
                 <button
           name="button_confirm_orderpoints"
           type="object"
