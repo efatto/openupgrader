@@ -10,6 +10,7 @@
     "on product stock or predicted arrival and manufacturing time.",
     "website": "https://github.com/efatto/efatto",
     "depends": [
+        "mrp_sale_info",
         "mrp_production_demo",
         "product_sellers_info",
         "sale_order_line_date",

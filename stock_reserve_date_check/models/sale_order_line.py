@@ -149,7 +149,30 @@ class SaleOrderLine(models.Model):
                         sum(bom_id.mapped("operation_ids.time_cycle_manual") or [0])
                         / 1440
                     )
-                if produce_delay:
+                # get current next available slot for this product in its workcenter
+                if bom_id.operation_ids:
+                    start_date = available_date
+                    for operation in bom_id.operation_ids:
+                        (
+                            op_start_dt,
+                            op_end_dt,
+                        ) = operation.workcenter_id._get_first_available_slot(
+                            self.commitment_date, operation.time_cycle_manual
+                        )
+                        op_start_date = op_start_dt.date()
+                        if op_start_date > start_date:
+                            start_date = op_start_date
+                    available_date = start_date
+                    available_text = _(
+                        "%s[BOM] [%s] [QTY: %s] [%s] plannable date %s.\n"
+                    ) % (
+                        vertical * level,
+                        product_id.default_code,
+                        qty,
+                        option,
+                        available_date.strftime("%d/%m/%Y"),
+                    )
+                elif produce_delay:
                     available_date += relativedelta(days=int(produce_delay))
                     available_text = _(
                         "%s[BOM] [%s] [QTY: %s] [%s] plannable date %s.\n"
