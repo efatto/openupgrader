@@ -57,12 +57,16 @@ class OrderpointTemplate(models.Model):
         """Override to create new orderpoints in draft optionally"""
         if self.is_new_orderpoint_draft:
             # delete inactive instances
-            orderpoints = self.env["stock.warehouse.orderpoint"].with_context(
-                active_test=False
-            ).search([
-                ("orderpoint_tmpl_id", "=", self.id),
-                ("active", "=", False),
-            ])
+            orderpoints = (
+                self.env["stock.warehouse.orderpoint"]
+                .with_context(active_test=False)
+                .search(
+                    [
+                        ("orderpoint_tmpl_id", "=", self.id),
+                        ("active", "=", False),
+                    ]
+                )
+            )
             orderpoints.unlink()
             # create new istances to put in a new o2m
             self.with_context(is_draft=True)._create_instances(products)
@@ -329,12 +333,15 @@ class OrderpointTemplate(models.Model):
                         precision_digits=-1,
                         rounding_method="UP",
                     )
-                    reorder_coeff = fields.first(
-                        product_id.seller_ids
-                    ).name.country_id.reorder_coeff or 4.0
+                    reorder_coeff = (
+                        fields.first(
+                            product_id.seller_ids
+                        ).name.country_id.reorder_coeff
+                        or 4.0
+                    )
                     # Set a maximum of orders by period
                     if lot_to_reorder < (max_qty / reorder_coeff):
-                        lot_to_reorder = (max_qty / reorder_coeff)
+                        lot_to_reorder = max_qty / reorder_coeff
                     max_qty = min_qty + lot_to_reorder
                     # end function
                     if record.auto_min_qty:

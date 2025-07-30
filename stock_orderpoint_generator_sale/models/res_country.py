@@ -5,6 +5,5 @@ class ResCountry(models.Model):
     _inherit = "res.country"
 
     reorder_coeff = fields.Float(
-        default=4,
-        help="This value will be used in automatic orderpoint generation."
+        default=4, help="This value will be used in automatic orderpoint generation."
     )
