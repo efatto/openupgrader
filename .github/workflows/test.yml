@@ -38,6 +38,7 @@ jobs:
           - container: ghcr.io/oca/oca-ci/py3.6-ocb14.0:latest
             name: test with OCB
             makepot: "false"
+            codename: "jammy"
     services:
       postgres:
         image: postgres:9.6
