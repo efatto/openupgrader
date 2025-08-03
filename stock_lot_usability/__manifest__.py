@@ -4,9 +4,7 @@
     "name": "Stock lot usability",
     "version": "14.0.1.0.0",
     "category": "other",
-    "summary": """
-    Stock lot qty in tree and removed groupby
-    """,
+    "summary": "Stock lot qty in tree and removed groupby",
     "author": "Sergio Corato",
     "website": "https://github.com/efatto/efatto",
     "license": "AGPL-3",
