@@ -3,9 +3,9 @@
 
 {
     'name': 'Stock move reserved qty in tree',
-    'version': '12.0.1.0.2',
+    'version': '14.0.1.0.0',
     'category': 'other',
-    'description': """
+    'summary': """
     Show stock move reserved quantity and date in tree view.
     """,
     'author': 'Sergio Corato',
