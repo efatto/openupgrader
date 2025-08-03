@@ -8,14 +8,14 @@ class StockMoveLine(models.Model):
     _inherit = "stock.move.line"
 
     date_expected = fields.Datetime(
-        string='Expected Date',
+        string="Expected Date",
         store=True,
-        related='move_id.date_expected',
+        related="move_id.date_expected",
         index=True,
     )
     production_id = fields.Many2one(
-        string='Production',
-        related='move_id.production_id',
+        string="Production",
+        related="move_id.production_id",
         store=True,
         index=True,
     )
