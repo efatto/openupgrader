@@ -1,13 +1,23 @@
 import os
 import shutil
 import subprocess
-from distutils.dir_util import copy_tree
+import configparser
 
 
 def _get_env_for_subprocess(folder, py_version):
     env_for_subprocess = os.environ.copy()
     env_for_subprocess["VIRTUAL_ENV"] = folder
     env_for_subprocess["PYTHONPATH"] = folder
+    # If there is a PIP_EXTRA_INDEX_URL in local env, put in the pyenv
+    pip_extra_index_url = os.environ.get("PIP_EXTRA_INDEX_URL")
+    if not pip_extra_index_url:
+        pip_conf_path = os.path.join(os.path.expanduser("~"), ".pip", "pip.conf")
+        if os.path.isfile(pip_conf_path):
+            config = configparser.ConfigParser()
+            config.read(pip_conf_path)
+            pip_extra_index_url = config.get('global', 'extra-index-url')
+    if pip_extra_index_url:
+        env_for_subprocess["PIP_EXTRA_INDEX_URL"] = pip_extra_index_url
     pyenv_path = os.path.join(os.path.expanduser("~"), ".pyenv")
     env_for_subprocess["PATH"] = ":".join(
         [
@@ -29,20 +39,13 @@ def _get_env_for_subprocess(folder, py_version):
 
 
 def _create_python_venv(venv_path, py_version):
-    # create virtualenv
     subprocess_env = _get_env_for_subprocess(venv_path, py_version)
     if not os.path.isdir(venv_path):
         subprocess.Popen([f"mkdir -p {venv_path}"], shell=True).wait()
-        # do not recreate virtualenv as it regenerate file with bug in split()
+        # do not recreate virtualenv as it regenerates file with bug in split()
     if not os.path.isdir(os.path.join(os.path.expanduser("~"), ".pyenv")):
         subprocess.Popen(["curl -fsSL https://pyenv.run | bash"], shell=True).wait()
     # Copy some pip configuration files that could exist in local to the python venv
-    pypirc_path = os.path.join(os.path.expanduser("~"), ".pypirc")
-    if os.path.isfile(pypirc_path):
-        shutil.copy(pypirc_path, venv_path)
-    pipconf_path = os.path.join(os.path.expanduser("~"), ".pip")
-    if os.path.isfile(pipconf_path):
-        copy_tree(pipconf_path, venv_path)
     subprocess.Popen(
         [f"pyenv install -s {py_version}"],
         cwd=venv_path,
