@@ -1,7 +1,6 @@
-import os
-import shutil
-import subprocess
 import configparser
+import os
+import subprocess
 
 
 def _get_env_for_subprocess(folder, py_version):
@@ -15,7 +14,7 @@ def _get_env_for_subprocess(folder, py_version):
         if os.path.isfile(pip_conf_path):
             config = configparser.ConfigParser()
             config.read(pip_conf_path)
-            pip_extra_index_url = config.get('global', 'extra-index-url')
+            pip_extra_index_url = config.get("global", "extra-index-url")
     if pip_extra_index_url:
         env_for_subprocess["PIP_EXTRA_INDEX_URL"] = pip_extra_index_url
     pyenv_path = os.path.join(os.path.expanduser("~"), ".pyenv")
