@@ -34,6 +34,13 @@ class Openupgrader(SavepointCase):
                         "python_version": "3.8.16",
                     }
                 )
+            if version_id.name == "14.0":
+                # add test modules to migrate
+                version_id.write({
+                    "module_installed_ids": [
+                        (0, 0, {"name": "l10n_it_account_stamp"})
+                    ]
+                })
         cls.from_version_id = cls.version_obj.search(
             [
                 ("name", "=", cls.from_version),
