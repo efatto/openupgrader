@@ -37,7 +37,17 @@ class OdooVersion(models.Model):
         compute="_compute_odoo_is_openupgrade",
         store=True,
     )
-    openupgrader_repo_ids = fields.One2many(
+    module_installed_ids = fields.Many2many(
+        comodel_name="module.name",
+        relation="installed_module_rel",
+        column1="config_id",
+        column2="installed_module_id",
+        string="Modules installed in current instance",
+        compute="_compute_module_installed_ids",
+        copy=False,
+        store=True,
+    )
+    openupgrader_repo_ids = fields.One2many(  # will be replaced by pip install
         comodel_name="openupgrader.repo",
         inverse_name="odoo_version_id",
         string="OpenUpgrader Repositories",
@@ -97,6 +107,29 @@ class OdooVersion(models.Model):
                 record.odoo_is_openupgrade = True
             else:
                 record.odoo_is_openupgrade = False
+
+    # todo get pip requirements from installed modules
+    @api.depends("name")
+    def _compute_module_installed_ids(self):
+        for record in self:
+            if record.name:
+                module_installed_ids = self.env["ir.module.module"].search(
+                    [
+                        ("state", "=", "installed"),
+                    ]
+                )
+                existing_module_names = (
+                    self.env["module.name"].search([]).mapped("name")
+                )
+                missing_module_names = [
+                    x for x in module_installed_ids.mapped("name")
+                    if x not in existing_module_names
+                ]
+                record.module_installed_ids = [
+                    (0, 0, {"name": name}) for name in missing_module_names
+                ]
+            else:
+                record.module_installed_ids = False
 
     def button_recreate_venv(self):
         # Remove folder and re-create a clean virtual environment
