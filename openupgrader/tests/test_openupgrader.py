@@ -34,13 +34,6 @@ class Openupgrader(SavepointCase):
                         "python_version": "3.8.16",
                     }
                 )
-            if version_id.name == "14.0":
-                # add test modules to migrate
-                version_id.write({
-                    "module_installed_ids": [
-                        (0, 0, {"name": "l10n_it_account_stamp"})
-                    ]
-                })
         cls.from_version_id = cls.version_obj.search(
             [
                 ("name", "=", cls.from_version),
@@ -119,6 +112,13 @@ class Openupgrader(SavepointCase):
                 expr=version.openupgrader_repo_ids,
                 msg="Repos in version %s missing" % version.name,
             )
+        # add test modules to migrate
+        openupgrader_migration.install_uninstall_module("l10n_it_account_stamp")
+        self.from_version_id._compute_module_installed_ids()
+        self.assertIn(
+            "l10n_it_account_stamp",
+            self.from_version_id.module_installed_ids.mapped("name"),
+        )
         openupgrader_migration.button_stop_odoo()
         openupgrader_migration.button_restore()
         self.assertEqual(openupgrader_migration.state, "restored")
