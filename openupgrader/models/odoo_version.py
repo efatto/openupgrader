@@ -122,7 +122,8 @@ class OdooVersion(models.Model):
                     self.env["module.name"].search([]).mapped("name")
                 )
                 missing_module_names = [
-                    x for x in module_installed_ids.mapped("name")
+                    x
+                    for x in module_installed_ids.mapped("name")
                     if x not in existing_module_names
                 ]
                 record.module_installed_ids = [
@@ -147,11 +148,10 @@ class OdooVersion(models.Model):
         self.ensure_one()
         openupgrader_migration_id = self.env["openupgrader.migration"].search([])
         openupgrader_migration_id.ensure_one()
-        version_name = self.name
         openupgrader_repo_obj = self.env["openupgrader.repo"]
         version_repos = openupgrader_repo_obj.search(
             [
-                ("odoo_version_id", "=", version_name),
+                ("odoo_version_id", "=", self.name),
             ]
         )
         version_repos.ensure_one()
@@ -160,7 +160,7 @@ class OdooVersion(models.Model):
         # install odoo Openupgrade repo, from v. 14.0 it contains only migration script
         if openupgrader_migration_id:
             venv_path = os.path.join(
-                openupgrader_migration_id.folder, f"openupgrade{version_name}"
+                openupgrader_migration_id.folder, f"openupgrade{self.name}"
             )
             subprocess_env = _create_python_venv(venv_path, self.python_version)
             openupgrade_path = os.path.join(venv_path, "odoo")
@@ -174,7 +174,7 @@ class OdooVersion(models.Model):
                     [
                         f"git clone --single-branch "
                         f"{openupgrader_migration_id.openupgrade_repo} "
-                        f"-b {version_name} --depth 1 odoo "
+                        f"-b {self.name} --depth 1 odoo "
                     ],
                     cwd=venv_path,
                     env=subprocess_env,  # forse qui non serve
@@ -196,7 +196,7 @@ class OdooVersion(models.Model):
                 if odoo_repo:
                     openupgrader_migration_id.install_repo(
                         odoo_repo,
-                        version_name,
+                        self.name,
                         odoo_path,
                     )
             commands = [
@@ -219,6 +219,15 @@ class OdooVersion(models.Model):
                     f"bin/pip install -r {odoo_path}/requirements.txt",
                 ]:
                     commands.append(c)
+            odoo_version_int = int(self.name.split(".")[0])
+            # todo exclude odoo core apps, anyway it's a non-blocking issue
+            commands += [
+                "bin/pip install odoo{version_name}-addon-{name}".format(
+                    name=name,
+                    version_name=odoo_version_int if odoo_version_int < 15 else "",
+                )
+                for name in self.module_installed_ids.mapped("name")
+            ]
             for command in commands:
                 subprocess.Popen(
                     command,
@@ -238,6 +247,6 @@ class OdooVersion(models.Model):
                 # do not reinstall odoo repo
                 openupgrader_migration_id.install_repo(
                     remote_repo,
-                    version_name,
+                    self.name,
                 )
             openupgrader_migration_id.state = "created_venv"
