@@ -118,16 +118,21 @@ class OdooVersion(models.Model):
                         ("state", "=", "installed"),
                     ]
                 )
-                existing_module_names = (
-                    self.env["module.name"].search([]).mapped("name")
-                )
+                module_ids = self.env["module.name"].search([])
                 missing_module_names = [
                     x
                     for x in module_installed_ids.mapped("name")
-                    if x not in existing_module_names
+                    if x not in module_ids.mapped("name")
                 ]
+                # add module to be created
                 record.module_installed_ids = [
                     (0, 0, {"name": name}) for name in missing_module_names
+                ]
+                # add existing module
+                record.module_installed_ids = [
+                    (4, module_id.id)
+                    for module_id in module_ids
+                    if module_id.name not in missing_module_names
                 ]
             else:
                 record.module_installed_ids = False
