@@ -494,12 +494,12 @@ class OpenupgraderMigration(models.Model):
             self._stop_pid(pid)
         # read odoo log and put in logger
         if os.path.isfile(self.odoo_update_log_file):
-            logger.info("Show log for file %s" % self.odoo_update_log_file)
+            logger.debug("Show log for file %s" % self.odoo_update_log_file)
             file_reader = open(self.odoo_update_log_file, "r")
             lines = file_reader.readlines()
             for line in lines:
                 if line != " ":
-                    logger.info(line)
+                    logger.debug(line)
 
     def disable_mail(self, disable=False):
         # FIXME: DO VIA PSQL IN MIGRATED DB
