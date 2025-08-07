@@ -103,6 +103,17 @@ class Openupgrader(SavepointCase):
         for version in [cls.from_version_id, cls.middle_version_id, cls.to_version_id]:
             version.button_create_venv()
 
+    @staticmethod
+    def _install_module(openupgrader_migration, module_name):
+        version_id = openupgrader_migration.from_version_id
+        openupgrader_migration.install_pip_modules(
+            version_id,
+            [module_name],
+        )
+        openupgrader_migration.start_odoo(version_id)
+        openupgrader_migration.install_uninstall_module(module_name)
+        openupgrader_migration.button_stop_odoo()
+
     def test_openupgrader(self):
         openupgrader_migration = self.openupgrader_migration
         for version in (
@@ -113,8 +124,12 @@ class Openupgrader(SavepointCase):
                 msg="Repos in version %s missing" % version.name,
             )
         # add test modules to migrate
-        openupgrader_migration.install_uninstall_module("l10n_it_account_stamp")
-        self.from_version_id._compute_module_installed_ids()
+        # install additional modules to test in migration instance
+        modules_to_install = ["l10n_it_account_stamp"]
+        self._install_module(openupgrader_migration, "l10n_it_account_stamp")
+        self.from_version_id.module_installed_ids = [
+            (0, 0, {"name": module}) for module in modules_to_install
+        ]
         self.assertIn(
             "l10n_it_account_stamp",
             self.from_version_id.module_installed_ids.mapped("name"),

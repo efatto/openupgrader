@@ -339,8 +339,8 @@ class OpenupgraderMigration(models.Model):
             extra_addons_path = f",{folder}/odoo/odoo/addons"
         if not version_id.openupgrader_repo_ids:
             logger.info(
-                "Missing repositories in openupgrader config: have you missed to "
-                "append them?"
+                "Missing repositories in openupgrader version %s: have you missed to "
+                "append them?" % version_name
             )
         for remote_repo in (
             version_id.openupgrader_repo_ids.mapped("remote_repo_ids")
@@ -987,8 +987,8 @@ class OpenupgraderMigration(models.Model):
         errors = [e.decode().lower() for e in error if "error" in e.decode()]
         if errors:
             logger.info(
-                _("Some modules not found with pip installer: %s") %
-                "\n".join(e for e in errors)
+                _("Some modules not found with pip installer: %s")
+                % "\n".join(e for e in errors)
             )
 
     def install_uninstall_module(self, module_name, install=True):
