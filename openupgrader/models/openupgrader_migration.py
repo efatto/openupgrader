@@ -408,7 +408,7 @@ class OpenupgraderMigration(models.Model):
                                 try:
                                     modules = safe_eval(match[0])
                                     migration_errors.append(modules)
-                                    # self.install_missing_modules(version_id, modules)
+                                    # self.install_pip_module(version_id, modules)
                                 except Exception:
                                     logger.info(
                                         "Unable to list modules to install via pip "
@@ -964,24 +964,25 @@ class OpenupgraderMigration(models.Model):
             success += 1
         return success
 
-    def install_missing_modules(self, version_id, module_names):
+    def install_pip_modules(self, version_id, module_names):
         logger.info("Installing missing modules %s with pip." % str(module_names))
         self.ensure_one()
-        version_name = version_id.name
-        for module_name in module_names:
-            venv_path = os.path.join(self.folder, f"openupgrade{version_name}")
-            # try to install with pip
-            process = Popen(
-                [
-                    "bin/pip install "
-                    f"odoo{version_name.split('.')[0]}-addon-{module_name} "
-                ],
-                cwd=venv_path,
-                shell=True,
-            )
-            stdout, stderr = process.communicate()
-            if stderr:
-                logger.info(_("Module %s not found with pip installer.") % module_name)
+        odoo_version_int = int(version_id.name.split(".")[0])
+        venv_path = os.path.join(self.folder, f"openupgrade{version_id.name}")
+        # try to install with pip
+        process = Popen(
+            [
+                "bin/pip install odoo{version_name}-addon-{name}".format(
+                name=name,
+                    version_name=odoo_version_int if odoo_version_int < 15 else "",
+                ) for name in module_names
+            ],
+            cwd=venv_path,
+            shell=True,
+        )
+        stdout, stderr = process.communicate()
+        if stderr:
+            logger.info(_("Some modules not found with pip installer: %s") % stderr.text)
 
     def install_uninstall_module(self, module_name, install=True):
         logger.info(
