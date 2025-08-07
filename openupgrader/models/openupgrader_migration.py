@@ -973,16 +973,23 @@ class OpenupgraderMigration(models.Model):
         process = Popen(
             [
                 "bin/pip install odoo{version_name}-addon-{name}".format(
-                name=name,
+                    name=name,
                     version_name=odoo_version_int if odoo_version_int < 15 else "",
-                ) for name in module_names
+                )
+                for name in module_names
             ],
             cwd=venv_path,
             shell=True,
+            stderr=PIPE,
+            stdout=PIPE,
         )
-        stdout, stderr = process.communicate()
-        if stderr:
-            logger.info(_("Some modules not found with pip installer: %s") % stderr.text)
+        error = process.stderr.readlines()
+        errors = [e.decode().lower() for e in error if "error" in e.decode()]
+        if errors:
+            logger.info(
+                _("Some modules not found with pip installer: %s") %
+                "\n".join(e for e in errors)
+            )
 
     def install_uninstall_module(self, module_name, install=True):
         logger.info(
