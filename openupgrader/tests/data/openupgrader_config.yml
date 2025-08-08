@@ -1,5 +1,5 @@
 "16.0":
-  - python_version: "3.8.16"
+  - python_version: "3.10.6"
   - pip_requirements:
       - setuptools<58.0.0
       - git+https://github.com/OCA/openupgradelib.git@master#egg=openupgradelib
