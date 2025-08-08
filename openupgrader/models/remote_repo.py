@@ -16,5 +16,6 @@ class RemoteRepo(models.Model):
         vals = []
         for record in self:
             vals.append(
-                tuple([record.id, "%s - %s" % (record.name, record.remote_branch)]))
+                tuple([record.id, "%s - %s" % (record.name, record.remote_branch)])
+            )
         return vals

@@ -91,19 +91,19 @@ class OpenupgraderMigration(models.Model):
         required=True,
     )
     from_version_id = fields.Many2one(
-        comodel_name="odoo.version",
+        comodel_name="openupgrader.config",
         string="From version",
     )
     to_version_id = fields.Many2one(
-        comodel_name="odoo.version",
+        comodel_name="openupgrader.config",
         string="To version",
     )
     current_version_id = fields.Many2one(
-        comodel_name="odoo.version",
+        comodel_name="openupgrader.config",
         string="Current migrated version",
     )
     next_version_id = fields.Many2one(
-        comodel_name="odoo.version",
+        comodel_name="openupgrader.config",
         string="Next version to be migrated",
     )
     migrate_filestore = fields.Boolean(string="Migrate Filestore", default=True)
@@ -674,7 +674,7 @@ class OpenupgraderMigration(models.Model):
         if not self.current_version_id:
             self.current_version_id = self.from_version_id
         if not self.next_version_id:
-            self.next_version_id = self.env["odoo.version"].search(
+            self.next_version_id = self.env["openupgrader.config"].search(
                 [("name", "=", str(float(self.current_version_id.name) + 1))]
             )
         if self.from_version_id == self.current_version_id:
@@ -720,9 +720,7 @@ class OpenupgraderMigration(models.Model):
                     to_version_id=self.next_version_id,
                 )
             # self.disable_mail(disable=True)
-        self.sql_fixes(
-            self.current_version_id.openupgrader_config_ids.sql_before_migration_command_ids
-        )
+        self.sql_fixes(self.current_version_id.sql_before_migration_command_ids)
         self.uninstall_modules(self.current_version_id, before_migration=True)
         self.delete_old_modules(self.current_version_id)
         self.state = "ready_for_migration"
@@ -783,9 +781,7 @@ class OpenupgraderMigration(models.Model):
     def _action_done(self):
         self.uninstall_modules(self.next_version_id, after_migration=True)
         self.auto_install_modules(self.next_version_id)
-        self.sql_fixes(
-            self.current_version_id.openupgrader_config_ids.sql_after_migration_command_ids
-        )
+        self.sql_fixes(self.current_version_id.sql_after_migration_command_ids)
         if self.next_version_id.name == "10.0":
             self.remove_modules(self.next_version_id, "upgrade")
             self.remove_modules(self.next_version_id)
@@ -796,7 +792,7 @@ class OpenupgraderMigration(models.Model):
         )
         self.set_cron_state_to(active=True)
         self.current_version_id = self.next_version_id
-        self.next_version_id = self.env["odoo.version"].search(
+        self.next_version_id = self.env["openupgrader.config"].search(
             [("name", "=", str(float(self.current_version_id.name) + 1))]
         )
         logger.info(_("Set next version to %s") % self.next_version_id.name)
@@ -870,10 +866,7 @@ class OpenupgraderMigration(models.Model):
         module_obj = odoo_client.env["ir.module.module"]
         if version_id.name == "12.0":
             self.remove_modules(version_id, "upgrade")
-        openupgrader_config = self.env["openupgrader.config"].search(
-            [("odoo_version_id.id", "=", version_id.id)]
-        )
-        for module in openupgrader_config.module_auto_install_ids:
+        for module in version_id.module_auto_install_ids:
             module_to_check = module.name
             module_to_install = module.module_to_install_name
             if module_obj.search(
@@ -892,26 +885,20 @@ class OpenupgraderMigration(models.Model):
         self.start_odoo(version_id)
         if version_id.name == "12.0":
             self.remove_modules(version_id, "upgrade")
-        openupgrader_config = self.env["openupgrader.config"].search(
-            [("odoo_version_id.id", "=", version_id.id)]
-        )
         if after_migration:
-            for module in openupgrader_config.module_to_uninstall_after_migration_ids:
+            for module in version_id.module_to_uninstall_after_migration_ids:
                 self.install_uninstall_module(module.name, install=False)
         if before_migration:
-            for module in openupgrader_config.module_to_uninstall_before_migration_ids:
+            for module in version_id.module_to_uninstall_before_migration_ids:
                 self.install_uninstall_module(module.name, install=False)
         self.button_stop_odoo()
 
     def delete_old_modules(self, version_id):
-        openupgrader_config = self.env["openupgrader.config"].search(
-            [("odoo_version_id.id", "=", version_id.id)]
-        )
-        if openupgrader_config.module_to_delete_after_migration_ids:
+        if version_id.module_to_delete_after_migration_ids:
             self.start_odoo(version_id)
             odoo_client = self.odoo_connect()
             module_obj = odoo_client.env["ir.module.module"]
-            for module in openupgrader_config.module_to_delete_after_migration_ids:
+            for module in version_id.module_to_delete_after_migration_ids:
                 module = module_obj.search([("name", "=", module)])
                 if module:
                     module.unlink()

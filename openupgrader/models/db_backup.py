@@ -19,9 +19,9 @@ class DbBackup(models.Model):
     _inherit = "db.backup"
 
     is_migration_backup = fields.Boolean(string="Is Migration Backup?")
-    odoo_version_id = fields.Many2one(
-        comodel_name="odoo.version",
-        string="Odoo version",
+    openupgrader_config_id = fields.Many2one(
+        comodel_name="openupgrader.config",
+        string="Openupgrader Config",
     )
 
     @staticmethod
@@ -47,7 +47,7 @@ class DbBackup(models.Model):
         successful = self.browse()
 
         # Start with local storage
-        version_name = self.odoo_version_id.name
+        version_name = self.openupgrader_config_id.name
         for rec in self.filtered(lambda r: r.method == "local"):
             filename = (
                 f"{self.env.cr.dbname}_migrate.{version_name}."
@@ -102,7 +102,7 @@ class DbBackup(models.Model):
         successful.cleanup()
 
     def dump_db_migration(self, db_name, stream, backup_format="zip"):
-        version_name = self.odoo_version_id.name
+        version_name = self.openupgrader_config_id.name
         cmd = ["pg_dump", "--no-owner"]
         cmd.append(db_name)
         openupgrader_migration_id = self.env["openupgrader.migration"].search([])

@@ -1,11 +1,11 @@
 "16.0":
   - python_version: "3.8.16"
   - pip_requirements:
-    - setuptools<58.0.0
-    - git+https://github.com/OCA/openupgradelib.git@master#egg=openupgradelib
-    - odoorpc
-    - pysftp
-    - PyYAML
+      - setuptools<58.0.0
+      - git+https://github.com/OCA/openupgradelib.git@master#egg=openupgradelib
+      - odoorpc
+      - pysftp
+      - PyYAML
   - odoo: https://github.com/OCA/OCB.git 16.0
   - sql_update_commands:
   - auto_install:
@@ -15,11 +15,11 @@
 "15.0":
   - python_version: "3.8.16"
   - pip_requirements:
-    - setuptools<58.0.0
-    - git+https://github.com/OCA/openupgradelib.git@master#egg=openupgradelib
-    - odoorpc
-    - pysftp
-    - PyYAML
+      - setuptools<58.0.0
+      - git+https://github.com/OCA/openupgradelib.git@master#egg=openupgradelib
+      - odoorpc
+      - pysftp
+      - PyYAML
   - odoo: https://github.com/OCA/OCB.git 15.0
   - sql_update_commands:
   - auto_install:
@@ -29,11 +29,11 @@
 "14.0":
   - python_version: "3.8.16"
   - pip_requirements:
-    - setuptools<58.0.0
-    - git+https://github.com/OCA/openupgradelib.git@master#egg=openupgradelib
-    - odoorpc
-    - pysftp
-    - PyYAML
+      - setuptools<58.0.0
+      - git+https://github.com/OCA/openupgradelib.git@master#egg=openupgradelib
+      - odoorpc
+      - pysftp
+      - PyYAML
   - odoo: https://github.com/OCA/OCB.git 14.0
   - sql_update_commands:
   - auto_install:
@@ -43,10 +43,10 @@
 "13.0":
   - python_version: "3.7.16"
   - pip_requirements:
-    - git+https://github.com/OCA/openupgradelib.git@master#egg=openupgradelib
-    - odoorpc
-    - pysftp
-    - PyYAML
+      - git+https://github.com/OCA/openupgradelib.git@master#egg=openupgradelib
+      - odoorpc
+      - pysftp
+      - PyYAML
   - sql_update_commands:
   - auto_install:
   - delete:
@@ -55,10 +55,10 @@
 "12.0":
   - python_version: "3.7.16"
   - pip_requirements:
-    - git+https://github.com/OCA/openupgradelib.git@master#egg=openupgradelib
-    - odoorpc
-    - pysftp
-    - PyYAML
+      - git+https://github.com/OCA/openupgradelib.git@master#egg=openupgradelib
+      - odoorpc
+      - pysftp
+      - PyYAML
   - sql_update_commands:
   - auto_install:
   - delete:
@@ -67,7 +67,7 @@
 "11.0":
   - python_version: "3.5"
   - pip_requirements:
-    - git+https://github.com/OCA/openupgradelib.git@master#egg=openupgradelib
+      - git+https://github.com/OCA/openupgradelib.git@master#egg=openupgradelib
   - sql_update_commands:
   - auto_install:
   - delete:
@@ -76,7 +76,7 @@
 "10.0":
   - python_version: "2.7"
   - pip_requirements:
-    - git+https://github.com/OCA/openupgradelib.git@master#egg=openupgradelib
+      - git+https://github.com/OCA/openupgradelib.git@master#egg=openupgradelib
   - sql_update_commands:
   - auto_install:
   - delete:
@@ -85,7 +85,7 @@
 "9.0":
   - python_version: "2.7"
   - pip_requirements:
-    - git+https://github.com/OCA/openupgradelib.git@master#egg=openupgradelib
+      - git+https://github.com/OCA/openupgradelib.git@master#egg=openupgradelib
   - sql_update_commands:
   - auto_install:
   - delete:
@@ -94,7 +94,7 @@
 "8.0":
   - python_version: "2.7"
   - pip_requirements:
-    - git+https://github.com/OCA/openupgradelib.git@master#egg=openupgradelib
+      - git+https://github.com/OCA/openupgradelib.git@master#egg=openupgradelib
   - sql_update_commands:
   - auto_install:
   - delete:
@@ -103,7 +103,7 @@
 "7.0":
   - python_version: "2.7"
   - pip_requirements:
-    - git+https://github.com/OCA/openupgradelib.git@master#egg=openupgradelib
+      - git+https://github.com/OCA/openupgradelib.git@master#egg=openupgradelib
   - sql_update_commands:
   - auto_install:
   - delete:

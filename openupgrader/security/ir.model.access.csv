@@ -3,7 +3,6 @@ access_auto_install_module,access_auto_install_module,model_auto_install_module,
 access_module_name,access_module_name,model_module_name,base.group_erp_manager,1,1,1,1
 access_pip_requirement,access_pip_requirement,model_pip_requirement,base.group_erp_manager,1,1,1,1
 access_sql_update_command,access_sql_update_command,model_sql_update_command,base.group_erp_manager,1,1,1,1
-access_odoo_version,access_odoo_version,model_odoo_version,base.group_erp_manager,1,1,1,1
 access_openupgrader_config,access_openupgrader_config,model_openupgrader_config,base.group_erp_manager,1,1,1,1
 access_remote_repo,access_remote_repo,model_remote_repo,base.group_erp_manager,1,1,1,1
 access_openupgrader_migration,access_openupgrader_migration,model_openupgrader_migration,base.group_erp_manager,1,1,1,1

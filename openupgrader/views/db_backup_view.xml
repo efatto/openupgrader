@@ -7,7 +7,7 @@
             <field name="backup_format" position="after">
                 <field name="is_migration_backup" />
                 <field
-                    name="odoo_version_id"
+                    name="openupgrader_config_id"
                     attrs="{'invisible': [('is_migration_backup', '=', False)]}"
                 />
             </field>
