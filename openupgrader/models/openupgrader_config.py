@@ -301,10 +301,21 @@ class OpenupgraderConfig(models.Model):
                     self.name,
                     odoo_path,
                 )
+            if self.name == "16.0":  # ugly and temp fix for mismatch with py3.10.6
+                commands = [
+                    "sed -i 's/gevent==21.8.0/gevent==22.10.2/g' "
+                    f"{odoo_path}/requirements.txt",
+                    "sed -i 's/greenlet==1.1.2/greenlet==2.0.2/g' "
+                    f"{odoo_path}/requirements.txt",
+                ]
+                for command in commands:
+                    subprocess.Popen(
+                        command,
+                        cwd=venv_path,
+                        env=subprocess_env,
+                        shell=True,
+                    )
             commands = [
-                'bin/pip install "setuptools<58.0.0"',
-            ]
-            commands += [
                 "bin/pip install '%s'" % name
                 for name in self.pip_requirement_ids.mapped("name")
             ]
