@@ -337,18 +337,6 @@ class OpenupgraderMigration(models.Model):
         extra_addons_path = f",{folder}/repos/odoo/odoo/addons,{folder}/odoo"
         if 9 < version_float < 14:
             extra_addons_path = f",{folder}/odoo/odoo/addons"
-        # if not version_id.odoo_repo_id:
-        #     logger.info(
-        #         "Missing odoo repo in openupgrader version %s: have you missed to "
-        #         "append them?" % version_name
-        #     )
-        # for remote_repo in (
-        #     version_id.openupgrader_repo_ids.mapped("remote_repo_ids")
-        #     .filtered(lambda x: x.name != "odoo")
-        #     .mapped("name")
-        # ):
-        #     # add to addons_path all repos
-        #     extra_addons_path += f",{os.path.join(folder, 'repos', remote_repo)}"
         bash_command = (
             f"{executable} "
             f"-c {folder}/.odoorc "
