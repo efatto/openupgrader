@@ -120,6 +120,56 @@ class OpenupgraderConfig(models.Model):
         string="Database Backup",
         domain=[("is_migration_backup", "=", True)],
     )
+    config_file = fields.Binary(
+        string="Config file (yml)",
+    )
+    config_file_name = fields.Char(
+        string="Config file name",
+    )
+    sql_after_migration_command_ids = fields.One2many(
+        comodel_name="sql.update.command",
+        inverse_name="openupgrade_after_config_id",
+        string="SQL after commands",
+        copy=False,
+    )
+    sql_before_migration_command_ids = fields.One2many(
+        comodel_name="sql.update.command",
+        inverse_name="openupgrade_before_config_id",
+        string="SQL before commands",
+        copy=False,
+    )
+    module_auto_install_ids = fields.One2many(
+        comodel_name="auto.install.module",
+        inverse_name="openupgrade_config_id",
+        string="Auto install modules",
+        help="List of modules to install if there is another module installed",
+        copy=False,
+    )
+    module_to_delete_after_migration_ids = fields.Many2many(
+        comodel_name="module.name",
+        relation="delete_module_rel",
+        column1="delete_current_module_id",
+        column2="delete_module_id",
+        string="Modules to delete after migration",
+        help="List of modules to delete",
+        copy=False,
+    )
+    module_to_uninstall_after_migration_ids = fields.Many2many(
+        comodel_name="module.name",
+        relation="uninstall_after_module_rel",
+        column1="uninstall_after_current_module_id",
+        column2="uninstall_after_module_id",
+        string="Module to uninstall after migration",
+        copy=False,
+    )
+    module_to_uninstall_before_migration_ids = fields.Many2many(
+        comodel_name="module.name",
+        relation="uninstall_before_module_rel",
+        column1="uninstall_before_current_module_id",
+        column2="uninstall_before_module_id",
+        string="Module to uninstall before migration",
+        copy=False,
+    )
 
     def _create_db_backup(self, folder):
         self.ensure_one()
@@ -288,57 +338,6 @@ class OpenupgraderConfig(models.Model):
                     shell=True,
                 ).wait()
             openupgrader_migration_id.state = "created_venv"
-
-    config_file = fields.Binary(
-        string="Config file (yml)",
-    )
-    config_file_name = fields.Char(
-        string="Config file name",
-    )
-    sql_after_migration_command_ids = fields.One2many(
-        comodel_name="sql.update.command",
-        inverse_name="openupgrade_after_config_id",
-        string="SQL after commands",
-        copy=False,
-    )
-    sql_before_migration_command_ids = fields.One2many(
-        comodel_name="sql.update.command",
-        inverse_name="openupgrade_before_config_id",
-        string="SQL before commands",
-        copy=False,
-    )
-    module_auto_install_ids = fields.One2many(
-        comodel_name="auto.install.module",
-        inverse_name="openupgrade_config_id",
-        string="Auto install modules",
-        help="List of modules to install if there is another module installed",
-        copy=False,
-    )
-    module_to_delete_after_migration_ids = fields.Many2many(
-        comodel_name="module.name",
-        relation="delete_module_rel",
-        column1="delete_current_module_id",
-        column2="delete_module_id",
-        string="Modules to delete after migration",
-        help="List of modules to delete",
-        copy=False,
-    )
-    module_to_uninstall_after_migration_ids = fields.Many2many(
-        comodel_name="module.name",
-        relation="uninstall_after_module_rel",
-        column1="uninstall_after_current_module_id",
-        column2="uninstall_after_module_id",
-        string="Module to uninstall after migration",
-        copy=False,
-    )
-    module_to_uninstall_before_migration_ids = fields.Many2many(
-        comodel_name="module.name",
-        relation="uninstall_before_module_rel",
-        column1="uninstall_before_current_module_id",
-        column2="uninstall_before_module_id",
-        string="Module to uninstall before migration",
-        copy=False,
-    )
 
     def button_load_config(self):
         version_name = self.name

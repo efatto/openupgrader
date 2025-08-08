@@ -35,9 +35,11 @@ class Openupgrader(SavepointCase):
                 ]
             )
             if not openupgrader_config:
-                config_form = Form(cls.env["openupgrader.config"])
-                config_form.name = version_name
-                openupgrader_config = config_form.save()
+                openupgrader_config = cls.env["openupgrader.config"].create(
+                    {
+                        "name": version_name,
+                    }
+                )
                 config_file_path = get_module_resource(
                     "openupgrader", "tests", "data", "openupgrader_config.yml"
                 )
