@@ -81,12 +81,6 @@ class OpenupgraderConfig(models.Model):
     config_file_name = fields.Char(
         string="Config file name",
     )
-    repos_file = fields.Binary(
-        string="Repos file (yml)",
-    )
-    repos_file_name = fields.Char(
-        string="Repos file name",
-    )
     sql_after_migration_command_ids = fields.One2many(
         comodel_name="sql.update.command",
         inverse_name="openupgrade_after_config_id",
@@ -140,97 +134,40 @@ class OpenupgraderConfig(models.Model):
         )
     ]
 
-    def button_load_repos(self):
-        op_repo_obj = self.env["openupgrader.repo"]
-        odoo_version_obj = self.env["odoo.version"]
-        version_name = self.odoo_version_id.name
-        remotes, pip_names, python_version = self.load_repos_file(version_name)
-        odoo_version_id = odoo_version_obj.search([("name", "=", version_name)])
-        if not odoo_version_id:
-            odoo_version_obj.create(
-                [
-                    {
-                        "name": version_name,
-                        "python_version": python_version,
-                    }
-                ]
-            )
-        else:
-            odoo_version_id.python_version = python_version
-        op_repo = op_repo_obj.search(
-            [
-                ("odoo_version_id", "=", odoo_version_id.id),
-            ]
-        )
-        if not op_repo:
-            op_repo = op_repo_obj.create(
-                [
-                    {
-                        "odoo_version_id": odoo_version_id.id,
-                    }
-                ]
-            )
-        remote_repo_names = op_repo.remote_repo_ids.mapped("name")
-        pip_requirements = op_repo.pip_requirement_ids.mapped("name")
-        for remote in remotes:
-            if remote not in remote_repo_names:
-                op_repo.write(
-                    {
-                        "remote_repo_ids": [
-                            (
-                                0,
-                                0,
-                                {
-                                    "name": remote,
-                                    "remote_url": remotes[remote].split(" ")[0],
-                                    "remote_branch": remotes[remote].split(" ")[1]
-                                    or version_name,
-                                    "is_odoo": remote == "odoo",
-                                },
-                            )
-                        ],
-                    }
-                )
-        for pip_name in pip_names:
-            if pip_name not in pip_requirements:
-                op_repo.write(
-                    {
-                        "pip_requirement_ids": [
-                            (
-                                0,
-                                0,
-                                {
-                                    "name": pip_name,
-                                },
-                            )
-                        ],
-                    }
-                )
-
-    def load_repos_file(self, version_name):
-        if not self.repos_file:
-            raise UserError(_("Missing repos file!"))
-        file_content = base64.decodebytes(self.repos_file)  # noqa
-        repos = {}
-        try:
-            repos = yaml.safe_load(file_content) or {}
-        except yaml.YAMLError as exc:
-            logger.info(exc)
-        remotes = {}
-        pip_names = []
-        python_version = False
-        for repo in repos.get("repositories"):
-            if repo.get("version") == version_name:
-                remotes = repo.get("remotes")
-                pip_names = repo.get("pip_requirements")
-                python_version = repo.get("python_version")
-        return remotes, pip_names, python_version
-
     def button_load_config(self):
         version_name = self.odoo_version_id.name
         recipes = self.load_config_file()
         recipe_data = recipes[version_name]
         for recipe in recipe_data:
+            if recipe.get("python_version"):
+                self.odoo_version_id.python_version = recipe.get("python_version")
+            if recipe.get("pip_requirements"):
+                pip_requirements = recipe.get("pip_requirements")
+                for pip_name in pip_requirements:
+                    pip_id = self.env["pip.requirement"].search([
+                        ("name", "=", pip_name)
+                    ])
+                    if not pip_id:
+                        pip_id = self.env["pip.requirement"].create({"name": pip_name})
+                    self.odoo_version_id.write({
+                        "pip_requirement_ids": [
+                            (4, pip_id.id)
+                        ],
+                    })
+            if recipe.get("odoo"):
+                odoo_id = self.env["remote.repo"].search([
+                    ("name", "=", "odoo"),
+                    ("remote_branch", "=",
+                     recipe.get("odoo").split(" ")[1] or version_name),
+                ])
+                if not odoo_id:
+                    odoo_id = self.env["remote.repo"].create({
+                        "name": "odoo",
+                        "remote_url": recipe.get("odoo").split(" ")[0],
+                        "remote_branch": recipe.get("odoo").split(" ")[1] or version_name,
+                        "is_odoo": True,
+                    })
+                self.odoo_version_id.odoo_repo_id = odoo_id
             if recipe.get("after_migration_to_this_version_sql_command"):
                 after_migration_to_this_version_sql_command = recipe.get(
                     "after_migration_to_this_version_sql_command"

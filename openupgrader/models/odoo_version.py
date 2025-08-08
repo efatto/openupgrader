@@ -47,11 +47,15 @@ class OdooVersion(models.Model):
         copy=False,
         store=True,
     )
-    openupgrader_repo_ids = fields.One2many(  # will be replaced by pip install
-        comodel_name="openupgrader.repo",
-        inverse_name="odoo_version_id",
-        string="OpenUpgrader Repositories",
-        copy=False,
+    odoo_repo_id = fields.Many2one(
+        comodel_name="remote.repo",
+        string="Odoo Repository",
+        domain=[("is_odoo", "=", True)],
+        required=True,
+    )
+    pip_requirement_ids = fields.Many2many(
+        comodel_name="pip.requirement",
+        string="Pip requirements",
     )
     openupgrader_config_ids = fields.One2many(
         comodel_name="openupgrader.config",
@@ -153,13 +157,6 @@ class OdooVersion(models.Model):
         self.ensure_one()
         openupgrader_migration_id = self.env["openupgrader.migration"].search([])
         openupgrader_migration_id.ensure_one()
-        openupgrader_repo_obj = self.env["openupgrader.repo"]
-        version_repos = openupgrader_repo_obj.search(
-            [
-                ("odoo_version_id", "=", self.name),
-            ]
-        )
-        version_repos.ensure_one()
         odoo_is_openupgrade = self.odoo_is_openupgrade
         # Odoo is OpenUpgrade until v. 13.0, from v. 14.0 Odoo is in ./<version/odoo
         # install odoo Openupgrade repo, from v. 14.0 it contains only migration script
@@ -196,20 +193,18 @@ class OdooVersion(models.Model):
                 ).wait()
 
             if not odoo_is_openupgrade:
-                # install odoo repo
-                odoo_repo = version_repos.remote_repo_ids.filtered("is_odoo")
-                if odoo_repo:
-                    openupgrader_migration_id.install_repo(
-                        odoo_repo,
-                        self.name,
-                        odoo_path,
+                # install odoo repo separately
+                openupgrader_migration_id.install_repo(
+                    self.odoo_repo_id,
+                    self.name,
+                    odoo_path,
                     )
             commands = [
                 'bin/pip install "setuptools<58.0.0"',
             ]
             commands += [
                 "bin/pip install '%s'" % name
-                for name in version_repos.pip_requirement_ids.mapped("name")
+                for name in self.pip_requirement_ids.mapped("name")
             ]
             if odoo_is_openupgrade:
                 for c in [
@@ -240,18 +235,4 @@ class OdooVersion(models.Model):
                     env=subprocess_env,
                     shell=True,
                 ).wait()
-            extra_path = os.path.join(venv_path, "repos")
-            if not os.path.isdir(extra_path):
-                subprocess.Popen(
-                    "mkdir %s" % extra_path, cwd=venv_path, shell=True
-                ).wait()
-
-            for remote_repo in version_repos.remote_repo_ids.filtered(
-                lambda x: not x.is_odoo
-            ):
-                # do not reinstall odoo repo
-                openupgrader_migration_id.install_repo(
-                    remote_repo,
-                    self.name,
-                )
             openupgrader_migration_id.state = "created_venv"

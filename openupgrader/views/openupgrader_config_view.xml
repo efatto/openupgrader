@@ -48,25 +48,6 @@
                     </div>
                     <group>
                         <group>
-                            <group name="repos_file" string="Repos File">
-                                <field
-                                    name="repos_file"
-                                    filename="repos_file_name"
-                                    nolabel="1"
-                                />
-                                <field name="repos_file_name" invisible="1" />
-                                <button
-                                    type="object"
-                                    name="button_load_repos"
-                                    attrs="{'invisible': ['|',
-                                    ('odoo_version_id', '=', False),
-                                    ('repos_file', '=', False),
-                                ]}"
-                                    string="Load repos"
-                                />
-                            </group>
-                        </group>
-                        <group>
                             <group name="config_file" string="Config File">
                                 <field
                                     name="config_file"

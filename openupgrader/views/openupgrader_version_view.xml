@@ -44,11 +44,10 @@
                     <group>
                         <field name="name" />
                         <field name="python_version" />
+                        <field name="odoo_repo_id" />
                     </group>
                     <group>
                         <field name="module_installed_ids" />
-                        <field name="openupgrader_repo_ids" />
-                        <field name="openupgrader_config_ids" />
                     </group>
                 </sheet>
             </form>

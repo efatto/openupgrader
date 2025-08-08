@@ -603,11 +603,6 @@ msgid "OpenUpgrader Migration"
 msgstr "Migrazione OpenUpgrader"
 
 #. module: openupgrader
-#: model:ir.model.fields,field_description:openupgrader.field_odoo_version__openupgrader_repo_ids
-msgid "OpenUpgrader Repositories"
-msgstr "Repositories OpenUpgrader"
-
-#. module: openupgrader
 #: model:ir.actions.act_window,name:openupgrader.action_openupgrader_repo
 #: model:ir.ui.menu,name:openupgrader.menu_openupgrader_repo
 #: model_terms:ir.ui.view,arch_db:openupgrader.view_openupgrader_repo_form

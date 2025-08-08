@@ -88,18 +88,11 @@ class Openupgrader(SavepointCase):
             config_file_path = get_module_resource(
                 "openupgrader", "tests", "data", "openupgrader_config.yml"
             )
-            repos_file_path = get_module_resource(
-                "openupgrader", "tests", "data", "openupgrader_repos.yml"
-            )
-            with open(config_file_path, "rb") as config_file_reader, open(
-                repos_file_path, "rb"
-            ) as repos_file_reader:
+            with open(config_file_path, "rb") as config_file_reader:
                 config_form = Form(openupgrader_config)
                 config_form.config_file = base64.b64encode(config_file_reader.read())
-                config_form.repos_file = base64.b64encode(repos_file_reader.read())
                 openupgrader_config = config_form.save()
             openupgrader_config.button_load_config()
-            openupgrader_config.button_load_repos()
         for version in [cls.from_version_id, cls.middle_version_id, cls.to_version_id]:
             version.button_create_venv()
 
@@ -116,13 +109,6 @@ class Openupgrader(SavepointCase):
 
     def test_openupgrader(self):
         openupgrader_migration = self.openupgrader_migration
-        for version in (
-            self.from_version_id | self.middle_version_id | self.to_version_id
-        ):
-            self.assertTrue(
-                expr=version.openupgrader_repo_ids,
-                msg="Repos in version %s missing" % version.name,
-            )
         # add test modules to migrate
         # install additional modules to test in migration instance
         modules_to_install = ["l10n_it_account_stamp"]
