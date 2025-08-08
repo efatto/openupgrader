@@ -37,33 +37,33 @@ class Openupgrader(SavepointCase):
             if not openupgrader_config:
                 config_form = Form(cls.env["openupgrader.config"])
                 config_form.name = version_name
+                openupgrader_config = config_form.save()
                 config_file_path = get_module_resource(
                     "openupgrader", "tests", "data", "openupgrader_config.yml"
                 )
                 with open(config_file_path, "rb") as config_file_reader:
-                    config_form.config_file = base64.b64encode(
+                    openupgrader_config.config_file = base64.b64encode(
                         config_file_reader.read()
                     )
-                    config_form.button_load_config()
-                openupgrader_config = config_form.save()
+                    openupgrader_config.button_load_config()
                 setattr(cls, f"{version_name}_id", openupgrader_config)
                 openupgrader_config.button_create_venv()
-        cls.from_version_id = cls.migration_obj.search(
+        cls.from_version_id = cls.config_obj.search(
             [
                 ("name", "=", cls.from_version),
             ]
         )
-        cls.middle_version_id = cls.migration_obj.search(
+        cls.middle_version_id = cls.config_obj.search(
             [
                 ("name", "=", cls.middle_version),
             ]
         )
-        cls.to_version_id = cls.migration_obj.search(
+        cls.to_version_id = cls.config_obj.search(
             [
                 ("name", "=", cls.to_version),
             ]
         )
-        cls.future_version_id = cls.migration_obj.search(
+        cls.future_version_id = cls.config_obj.search(
             [
                 ("name", "=", cls.future_version),
             ]
