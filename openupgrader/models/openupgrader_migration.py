@@ -275,16 +275,13 @@ class OpenupgraderMigration(models.Model):
                 version_id, update, extra_command
             )
         try:
-            self.migration_error_log = (self.migration_error_log or " ") + "\n".join(
-                migration_errors
-            )
-        except Exception:
-            logger.info("Unable to write log for the migration!")
-        try:
             if state and state == "migrated":
                 self._action_done()
         except Exception:
-            logger.info("Unable to do action_done for the migration!")
+            logger.info(
+                "Unable to do action_done for the migration or version %s!"
+                % version_id.name
+            )
 
     def _start_odoo_thread(self, version_id, update=False, extra_command=""):
         with api.Environment.manage():
@@ -945,26 +942,28 @@ class OpenupgraderMigration(models.Model):
         odoo_version_int = int(version_id.name.split(".")[0])
         venv_path = os.path.join(self.folder, f"openupgrade{version_id.name}")
         # try to install with pip
-        process = Popen(
-            [
-                "bin/pip install odoo{version_name}-addon-{name}".format(
-                    name=name,
-                    version_name=odoo_version_int if odoo_version_int < 15 else "",
-                )
-                for name in module_names
-            ],
-            cwd=venv_path,
-            shell=True,
-            stderr=PIPE,
-            stdout=PIPE,
-        )
-        error = process.stderr.readlines()
-        errors = [e.decode().lower() for e in error if "error" in e.decode()]
-        if errors:
-            logger.info(
-                _("Some modules not found with pip installer: %s")
-                % "\n".join(e for e in errors)
+        commands = [
+            "bin/pip install odoo{version_name}-addon-{name}".format(
+                name=name,
+                version_name=odoo_version_int if odoo_version_int < 15 else "",
             )
+            for name in module_names
+        ]
+        for command in commands:
+            process = Popen(
+                command,
+                cwd=venv_path,
+                shell=True,
+                stderr=PIPE,
+                stdout=PIPE,
+            )
+            error = process.stderr.readlines()
+            errors = [e.decode().lower() for e in error if "error" in e.decode()]
+            if errors:
+                logger.info(
+                    _("Some modules not found with pip installer: %s")
+                    % "\n".join(e for e in errors)
+                )
 
     def install_uninstall_module(self, module_name, install=True):
         logger.info(

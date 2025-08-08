@@ -10,8 +10,6 @@
     "website": "https://github.com/efatto/openupgrader",
     "depends": [
         "auto_backup",
-        "l10n_it_account_stamp",
-        "module_change_auto_install",
         "mail",
         "python_venv",
     ],
