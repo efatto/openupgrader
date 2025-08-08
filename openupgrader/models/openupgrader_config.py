@@ -322,13 +322,20 @@ class OpenupgraderConfig(models.Model):
                 ]:
                     commands.append(c)
             odoo_version_int = int(self.name.split(".")[0])
-            # todo exclude odoo core apps, anyway it's a non-blocking issue
+            # exclude odoo core modules
+            odoo_addons_path = os.path.join(
+                odoo_path,
+                "addons",
+            )
             commands += [
                 "bin/pip install odoo{version_name}-addon-{name}".format(
                     name=name,
                     version_name=odoo_version_int if odoo_version_int < 15 else "",
                 )
-                for name in self.module_installed_ids.mapped("name")
+                for name in self.module_installed_ids.filtered(
+                    lambda x: not os.path.isdir(os.path.join(odoo_addons_path, x.name))
+                    and not x.name == "base"
+                ).mapped("name")
             ]
             for command in commands:
                 subprocess.Popen(

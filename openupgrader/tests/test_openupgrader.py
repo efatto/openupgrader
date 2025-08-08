@@ -70,6 +70,8 @@ class Openupgrader(SavepointCase):
                 ("name", "=", cls.future_version),
             ]
         )
+        cls.openupgrader_migration.from_version_id = cls.from_version_id
+        cls.openupgrader_migration.to_version_id = cls.to_version_id
 
     @staticmethod
     def _install_module(openupgrader_migration, module_name):
@@ -84,6 +86,14 @@ class Openupgrader(SavepointCase):
 
     def test_openupgrader(self):
         openupgrader_migration = self.openupgrader_migration
+        self.assertEqual(
+            self.openupgrader_migration.to_version_id,
+            self.to_version_id,
+        )
+        self.assertEqual(
+            self.openupgrader_migration.from_version_id,
+            self.from_version_id,
+        )
         # add test modules to migrate
         # install additional modules to test in migration instance
         modules_to_install = ["l10n_it_account_stamp"]
