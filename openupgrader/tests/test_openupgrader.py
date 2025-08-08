@@ -96,12 +96,12 @@ class Openupgrader(SavepointCase):
         )
         # add test modules to migrate
         # install additional modules to test in migration instance
-        modules_to_install = ["module_change_auto_install", "l10n_it_account_stamp"]
-        for module in modules_to_install:
-            self._install_module(openupgrader_migration, module)
-        self.from_version_id.module_installed_ids = [
-            (0, 0, {"name": module}) for module in modules_to_install
-        ]
+        # modules_to_install = ["l10n_it_account_stamp", "module_change_auto_install"]
+        # for module in modules_to_install:
+        #     self._install_module(openupgrader_migration, module)
+        # self.from_version_id.module_installed_ids = [
+        #     (0, 0, {"name": module}) for module in modules_to_install
+        # ]
         self.assertIn(
             "l10n_it_account_stamp",
             self.from_version_id.module_installed_ids.mapped("name"),
