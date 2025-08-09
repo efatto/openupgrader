@@ -17,8 +17,6 @@
         "security/ir.model.access.csv",
         "views/openupgrader_migration_view.xml",
         "views/openupgrader_config_view.xml",
-        "views/openupgrader_repo_view.xml",
-        "views/openupgrader_version_view.xml",
         "views/db_backup_view.xml",
     ],
     "installable": True,

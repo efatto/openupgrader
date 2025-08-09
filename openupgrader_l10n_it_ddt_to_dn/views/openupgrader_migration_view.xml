@@ -4,7 +4,10 @@
     <record id="view_openupgrader_migration_form" model="ir.ui.view">
         <field name="name">openupgrader.migration.form</field>
         <field name="model">openupgrader.migration</field>
-        <field name="inherit_id" ref="openupgrader.view_openupgrader_migration_form" />
+        <field
+            name="inherit_id"
+            ref="openupgrader.view_openupgrader_migration_form"
+        />
         <field name="arch" type="xml">
             <button name="button_do_migration" position="before">
                 <button

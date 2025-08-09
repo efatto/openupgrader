@@ -5,7 +5,8 @@
         <field name="model">openupgrader.config</field>
         <field name="arch" type="xml">
             <search string="OpenUpgrader Configuration Search">
-                <field name="odoo_version_id" />
+                <field name="name" />
+                <field name="python_version" />
                 <field name="sql_after_migration_command_ids" />
                 <field name="sql_before_migration_command_ids" />
                 <field name="module_auto_install_ids" />
@@ -21,7 +22,8 @@
         <field name="model">openupgrader.config</field>
         <field name="arch" type="xml">
             <tree>
-                <field name="odoo_version_id" />
+                <field name="name" />
+                <field name="python_version" />
                 <field name="sql_after_migration_command_ids" />
                 <field name="sql_before_migration_command_ids" />
                 <field name="module_auto_install_ids" />
@@ -38,35 +40,31 @@
         <field name="arch" type="xml">
             <form string="OpenUpgrader Configuration">
                 <header>
+                    <button
+                        name="button_create_venv"
+                        type="object"
+                        string="Create or update virtualenv"
+                    />
+                    <button
+                        name="button_recreate_venv"
+                        type="object"
+                        string="Re-create virtualenv"
+                        help="To recreate a clean virtualenv after removing some repos or libraries"
+                    />
                 </header>
                 <sheet string="OpenUpgrader Configuration">
                     <div class="oe_title">
-                        <label for="odoo_version_id" string="Odoo Version" />
+                        <label for="name" string="Odoo Version" />
                         <h1>
-                            <field name="odoo_version_id" class="oe_inline" />
+                            <field name="name" class="oe_inline" />
                         </h1>
                     </div>
                     <group>
                         <group>
-                            <group name="repos_file" string="Repos File">
-                                <field
-                                    name="repos_file"
-                                    filename="repos_file_name"
-                                    nolabel="1"
-                                />
-                                <field name="repos_file_name" invisible="1" />
-                                <button
-                                    type="object"
-                                    name="button_load_repos"
-                                    attrs="{'invisible': ['|',
-                                    ('odoo_version_id', '=', False),
-                                    ('repos_file', '=', False),
-                                ]}"
-                                    string="Load repos"
-                                />
+                            <group>
+                                <field name="python_version" />
+                                <field name="odoo_repo_id" />
                             </group>
-                        </group>
-                        <group>
                             <group name="config_file" string="Config File">
                                 <field
                                     name="config_file"
@@ -77,9 +75,7 @@
                                 <button
                                     type="object"
                                     name="button_load_config"
-                                    attrs="{'invisible': ['|',
-                                    ('odoo_version_id', '=', False),
-                                    ('config_file', '=', False),
+                                    attrs="{'invisible': [('config_file', '=', False),
                                 ]}"
                                     string="Load recipe"
                                 />
@@ -87,6 +83,7 @@
                         </group>
                     </group>
                     <group>
+                        <field name="module_installed_ids" />
                         <field name="sql_after_migration_command_ids">
                             <tree editable="top">
                                 <field name="sequence" widget="handle" />

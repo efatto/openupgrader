@@ -30,7 +30,11 @@
         <field name="arch" type="xml">
             <form string="OpenUpgrader migration">
                 <header>
-                    <button name="button_draft" type="object" string="Set to draft" />
+                    <button
+                        name="button_draft"
+                        type="object"
+                        string="Set to draft"
+                    />
                     <button
                         name="button_restore_update"
                         type="object"
@@ -129,7 +133,10 @@
                         </group>
                         <group>
                             <group>
-                                <field name="odoo_migrated_state" readonly="True" />
+                                <field
+                                    name="odoo_migrated_state"
+                                    readonly="True"
+                                />
                             </group>
                             <div
                                 class="alert alert-warning"
@@ -141,7 +148,8 @@
                             >
                                 <p>
                                     <i class="fa fa-info-circle" />
-                                    <span>Warning: Migrated Odoo is running!</span>
+                                    <span
+                                    >Warning: Migrated Odoo is running!</span>
                                 </p>
                             </div>
                         </group>
@@ -213,7 +221,10 @@
         <field name="name">OpenUpgrader</field>
         <field name="sequence" eval="10" />
         <field name="parent_id" ref="base.menu_custom" />
-        <field name="groups_id" eval="[(6,0, [ref('base.group_erp_manager')])]" />
+        <field
+            name="groups_id"
+            eval="[(6,0, [ref('base.group_erp_manager')])]"
+        />
     </record>
 
     <record model="ir.ui.menu" id="menu_openupgrader_migration">

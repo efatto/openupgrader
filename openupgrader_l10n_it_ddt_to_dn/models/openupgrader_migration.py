@@ -1,9 +1,10 @@
-from odoo import models, _
 import logging
 
+from odoo import _, models
 from odoo.exceptions import UserError
 
 logger = logging.getLogger(__name__)
+
 
 class OpenupgraderMigration(models.Model):
     _inherit = "openupgrader.migration"
