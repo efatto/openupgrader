@@ -3,10 +3,10 @@ import time
 
 from odoo.modules import get_module_resource
 from odoo.release import version_info
-from odoo.tests.common import Form, SavepointCase
+from odoo.tests.common import Form, SingleTransactionCase
 
 
-class Openupgrader(SavepointCase):
+class Openupgrader(SingleTransactionCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
