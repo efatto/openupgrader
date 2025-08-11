@@ -16,6 +16,10 @@ class Openupgrader(SingleTransactionCase):
         cls.middle_version = str(float(cls.from_version) + 1)
         cls.to_version = str(float(cls.middle_version) + 1)
         cls.future_version = str(float(cls.to_version) + 1)
+        versions = {"from_version": cls.from_version, "middle_version": cls.middle_version, "to_version": cls.to_version}
+        cls.from_version_id = cls.config_obj
+        cls.middle_version_id = cls.config_obj
+        cls.to_version_id = cls.config_obj
         cls.openupgrader_migration = cls.migration_obj.search([])
         if not cls.openupgrader_migration:
             migration_form = Form(cls.migration_obj)
@@ -28,16 +32,16 @@ class Openupgrader(SingleTransactionCase):
             cls.openupgrader_migration = migration_form.save()
         else:
             cls.openupgrader_migration.button_draft()
-        for version_name in [cls.from_version, cls.middle_version, cls.to_version]:
+        for version in versions:
             openupgrader_config = cls.env["openupgrader.config"].search(
                 [
-                    ("name", "=", version_name),
+                    ("name", "=", versions[version]),
                 ]
             )
             if not openupgrader_config:
                 openupgrader_config = cls.env["openupgrader.config"].create(
                     {
-                        "name": version_name,
+                        "name": versions[version],
                     }
                 )
                 config_file_path = get_module_resource(
@@ -48,7 +52,7 @@ class Openupgrader(SingleTransactionCase):
                         config_file_reader.read()
                     )
                     openupgrader_config.button_load_config()
-                setattr(cls, f"{version_name}_id", openupgrader_config)
+                setattr(cls, f"{version}_id", openupgrader_config)
                 openupgrader_config.button_create_venv()
         cls.from_version_id = cls.config_obj.search(
             [
