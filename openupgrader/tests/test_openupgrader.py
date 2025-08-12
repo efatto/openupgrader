@@ -82,12 +82,14 @@ class Openupgrader(SingleTransactionCase):
         cls.openupgrader_migration.to_version_id = cls.to_version_id
 
     @staticmethod
-    def _install_module(openupgrader_migration, module_name):
-        version_id = openupgrader_migration.from_version_id
+    def _install_pip_module(openupgrader_migration, version_id, module_name):
         openupgrader_migration.install_pip_modules(
             version_id,
             [module_name],
         )
+
+    @staticmethod
+    def _install_odoo_module(openupgrader_migration, version_id, module_name):
         openupgrader_migration.start_odoo(version_id)
         openupgrader_migration.install_uninstall_module(module_name)
         openupgrader_migration.button_stop_odoo()
@@ -104,14 +106,20 @@ class Openupgrader(SingleTransactionCase):
         )
         # add test modules to migrate
         # install additional modules to test in migration instance
-        modules_to_install = ["l10n_it_account_stamp", "module_change_auto_install"]
+        modules_to_install = ["openupgrader", "module_change_auto_install"]
         for module in modules_to_install:
-            self._install_module(openupgrader_migration, module)
+            self._install_pip_module(
+                openupgrader_migration, openupgrader_migration.from_version_id, module
+            )
+        for module in modules_to_install:
+            self._install_odoo_module(
+                openupgrader_migration, openupgrader_migration.from_version_id, module
+            )
         self.from_version_id.module_installed_ids = [
             (0, 0, {"name": module}) for module in modules_to_install
         ]
         self.assertIn(
-            "l10n_it_account_stamp",
+            "module_change_auto_install",
             self.from_version_id.module_installed_ids.mapped("name"),
         )
         openupgrader_migration.button_stop_odoo()

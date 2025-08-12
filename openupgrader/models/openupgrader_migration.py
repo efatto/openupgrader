@@ -11,7 +11,6 @@ from pathlib import Path
 from subprocess import PIPE, Popen
 from urllib.request import HTTPSHandler
 
-import odoo
 import odoorpc
 import psutil
 from odoo import _, api, fields, models
