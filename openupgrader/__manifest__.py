@@ -24,6 +24,7 @@
         "python": [
             "odoorpc",
             "pysftp",
+            "PyYAML",
         ],
         "deb": [
             "libbz2-dev",

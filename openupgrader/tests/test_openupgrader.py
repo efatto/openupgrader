@@ -16,7 +16,11 @@ class Openupgrader(SingleTransactionCase):
         cls.middle_version = str(float(cls.from_version) + 1)
         cls.to_version = str(float(cls.middle_version) + 1)
         cls.future_version = str(float(cls.to_version) + 1)
-        versions = {"from_version": cls.from_version, "middle_version": cls.middle_version, "to_version": cls.to_version}
+        versions = {
+            "from_version": cls.from_version,
+            "middle_version": cls.middle_version,
+            "to_version": cls.to_version,
+        }
         cls.from_version_id = cls.config_obj
         cls.middle_version_id = cls.config_obj
         cls.to_version_id = cls.config_obj
@@ -33,13 +37,13 @@ class Openupgrader(SingleTransactionCase):
         else:
             cls.openupgrader_migration.button_draft()
         for version in versions:
-            openupgrader_config = cls.env["openupgrader.config"].search(
+            openupgrader_config = cls.config_obj.search(
                 [
                     ("name", "=", versions[version]),
                 ]
             )
             if not openupgrader_config:
-                openupgrader_config = cls.env["openupgrader.config"].create(
+                openupgrader_config = cls.config_obj.create(
                     {
                         "name": versions[version],
                     }
