@@ -37,13 +37,13 @@ class Openupgrader(SavepointCase):
         else:
             cls.openupgrader_migration.button_draft()
         for version in versions:
-            openupgrader_config = cls.env["openupgrader.config"].search(
+            openupgrader_config = cls.config_obj.search(
                 [
                     ("name", "=", versions[version]),
                 ]
             )
             if not openupgrader_config:
-                openupgrader_config = cls.env["openupgrader.config"].create(
+                openupgrader_config = cls.config_obj.create(
                     {
                         "name": versions[version],
                     }
