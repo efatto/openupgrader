@@ -25,7 +25,6 @@
             "odoorpc",
             "PyYAML",
             "pysftp",
-            "PyYAML",
         ],
         "deb": [
             "libbz2-dev",
