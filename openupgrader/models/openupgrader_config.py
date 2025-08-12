@@ -219,7 +219,7 @@ class OpenupgraderConfig(models.Model):
             if record.name:
                 module_installed_ids = self.env["ir.module.module"].search(
                     [
-                        ("state", "=", "installed"),
+                        ("state", "in", ["installed", "to upgrade"]),
                     ]
                 )
                 module_ids = self.env["module.name"].search([])
