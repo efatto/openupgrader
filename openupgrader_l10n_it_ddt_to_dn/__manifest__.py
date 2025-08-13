@@ -2,7 +2,7 @@
 # License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl).
 {
     "name": "OpenUpgrader extra method to migrate l10n_it_ddt",
-    "version": "12.0.1.0.0",
+    "version": "12.0.1.0.1",
     "category": "other",
     "author": "Sergio Corato",
     "license": "AGPL-3",
