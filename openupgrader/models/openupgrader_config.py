@@ -113,7 +113,17 @@ class OpenupgraderConfig(models.Model):
     )
     pip_requirement_ids = fields.Many2many(
         comodel_name="pip.requirement",
+        relation="pip_requirement_rel",
+        column1="config_id",
+        column2="pip_requirement_id",
         string="Pip requirements",
+    )
+    odoo_custom_pip_requirement_ids = fields.Many2many(
+        comodel_name="pip.requirement",
+        relation="odoo_pip_requirement_rel",
+        column1="config_id",
+        column2="odoo_pip_requirement_id",
+        string="Odoo Custom Pip requirements",
     )
     db_backup_id = fields.Many2one(
         comodel_name="db.backup",
@@ -302,13 +312,12 @@ class OpenupgraderConfig(models.Model):
                     odoo_path,
                 )
             if self.name == "16.0":  # ugly and temp fix for mismatch with py3.10.6
-                commands = [
+                for command in [
                     "sed -i 's/gevent==21.8.0/gevent==22.10.2/g' "
                     f"{odoo_path}/requirements.txt",
                     "sed -i 's/greenlet==1.1.2/greenlet==2.0.2/g' "
                     f"{odoo_path}/requirements.txt",
-                ]
-                for command in commands:
+                ]:
                     subprocess.Popen(
                         command,
                         cwd=venv_path,
@@ -348,6 +357,11 @@ class OpenupgraderConfig(models.Model):
                     and not x.name == "base"
                 ).mapped("name")
             ]
+            if self.odoo_custom_pip_requirement_ids:
+                commands += [
+                    "bin/pip install --upgrade '%s'" % name
+                    for name in self.odoo_custom_pip_requirement_ids.mapped("name")
+                ]
             for command in commands:
                 subprocess.Popen(
                     command,
@@ -365,6 +379,7 @@ class OpenupgraderConfig(models.Model):
             if recipe.get("python_version"):
                 self.python_version = recipe.get("python_version")
             if recipe.get("pip_requirements"):
+                self.pip_requirement_ids = False
                 pip_requirements = recipe.get("pip_requirements")
                 for pip_name in pip_requirements:
                     pip_id = self.env["pip.requirement"].search(
@@ -375,6 +390,20 @@ class OpenupgraderConfig(models.Model):
                     self.write(
                         {
                             "pip_requirement_ids": [(4, pip_id.id)],
+                        }
+                    )
+            if recipe.get("odoo_pip_custom_requirements"):
+                self.odoo_custom_pip_requirement_ids = False
+                odoo_pip_requirements = recipe.get("odoo_pip_custom_requirements")
+                for pip_name in odoo_pip_requirements:
+                    pip_id = self.env["pip.requirement"].search(
+                        [("name", "=", pip_name)]
+                    )
+                    if not pip_id:
+                        pip_id = self.env["pip.requirement"].create({"name": pip_name})
+                    self.write(
+                        {
+                            "odoo_custom_pip_requirement_ids": [(4, pip_id.id)],
                         }
                     )
             if recipe.get("odoo"):
@@ -400,6 +429,7 @@ class OpenupgraderConfig(models.Model):
                     )
                 self.odoo_repo_id = odoo_id
             if recipe.get("after_migration_to_this_version_sql_command"):
+                self.sql_after_migration_command_ids = False
                 after_migration_to_this_version_sql_command = recipe.get(
                     "after_migration_to_this_version_sql_command"
                 )
@@ -419,6 +449,7 @@ class OpenupgraderConfig(models.Model):
                     not in self.sql_after_migration_command_ids.mapped("name")
                 ]
             if recipe.get("before_migration_to_next_version_sql_command"):
+                self.sql_before_migration_command_ids = False
                 before_migration_to_next_version_sql_command = recipe.get(
                     "before_migration_to_next_version_sql_command"
                 )
@@ -438,6 +469,7 @@ class OpenupgraderConfig(models.Model):
                     not in self.sql_before_migration_command_ids.mapped("name")
                 ]
             if recipe.get("auto_install"):
+                self.module_auto_install_ids = False
                 auto_install = recipe.get("auto_install")
                 for i, module in enumerate(auto_install):
                     if all(
@@ -457,6 +489,7 @@ class OpenupgraderConfig(models.Model):
                             )
                         ]
             if recipe.get("delete"):
+                self.module_to_delete_after_migration_ids = False
                 delete = recipe.get("delete")
                 self.module_to_delete_after_migration_ids = [
                     (
@@ -471,6 +504,7 @@ class OpenupgraderConfig(models.Model):
                     not in self.module_to_delete_after_migration_ids.mapped("name")
                 ]
             if recipe.get("uninstall_after_migration_to_this_version"):
+                self.module_to_uninstall_after_migration_ids = False
                 uninstall_after = recipe.get(
                     "uninstall_after_migration_to_this_version"
                 )
@@ -487,6 +521,7 @@ class OpenupgraderConfig(models.Model):
                     not in self.module_to_uninstall_after_migration_ids.mapped("name")
                 ]
             if recipe.get("uninstall_before_migration_to_next_version"):
+                self.module_to_uninstall_before_migration_ids = False
                 uninstall_before = recipe.get(
                     "uninstall_before_migration_to_next_version"
                 )

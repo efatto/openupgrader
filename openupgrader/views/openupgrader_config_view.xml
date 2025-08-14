@@ -24,12 +24,6 @@
             <tree>
                 <field name="name" />
                 <field name="python_version" />
-                <field name="sql_after_migration_command_ids" />
-                <field name="sql_before_migration_command_ids" />
-                <field name="module_auto_install_ids" />
-                <field name="module_to_delete_after_migration_ids" />
-                <field name="module_to_uninstall_after_migration_ids" />
-                <field name="module_to_uninstall_before_migration_ids" />
             </tree>
         </field>
     </record>
@@ -83,7 +77,8 @@
                         </group>
                     </group>
                     <group>
-                        <field name="module_installed_ids" />
+                        <field name="pip_requirement_ids" />
+                        <field name="odoo_custom_pip_requirement_ids" />
                         <field name="sql_after_migration_command_ids">
                             <tree editable="top">
                                 <field name="sequence" widget="handle" />
@@ -116,6 +111,7 @@
                             name="module_to_uninstall_before_migration_ids"
                             widget="many2many_tags"
                         />
+                        <field name="module_installed_ids" />
                     </group>
                 </sheet>
             </form>
