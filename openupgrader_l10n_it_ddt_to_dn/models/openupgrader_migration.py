@@ -38,5 +38,7 @@ class OpenupgraderMigration(models.Model):
             # Uninstallation of the module l10n_it_ddt and children will be done in
             # after migration logic on openupgrader migration.
             # It could be done here too, if we would.
+        else:
+            logger.info("l10n_it_ddt is not installed")
         # todo check in self.odoo_update_log_file
         #  there is "Execution completed successfully!" message
