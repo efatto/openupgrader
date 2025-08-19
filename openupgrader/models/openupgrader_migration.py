@@ -943,7 +943,7 @@ class OpenupgraderMigration(models.Model):
         venv_path = os.path.join(self.folder, f"openupgrade{version_id.name}")
         # try to install with pip
         commands = [
-            "bin/pip install odoo{version_name}-addon-{name}".format(
+            "pip install odoo{version_name}-addon-{name}".format(
                 name=name,
                 version_name=odoo_version_int if odoo_version_int < 15 else "",
             )

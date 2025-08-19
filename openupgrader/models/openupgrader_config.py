@@ -325,20 +325,20 @@ class OpenupgraderConfig(models.Model):
                         shell=True,
                     )
             commands = [
-                "bin/pip install '%s'" % name
+                "pip install '%s'" % name
                 for name in self.pip_requirement_ids.mapped("name")
             ]
             if odoo_is_openupgrade:
                 for c in [
-                    f"cd {openupgrade_path} && {venv_path}/bin/pip install -e . ",
-                    f"bin/pip install -r {odoo_path}/requirements.txt",
+                    f"cd {openupgrade_path} && pip install -e . ",
+                    f"pip install -r {odoo_path}/requirements.txt",
                 ]:
                     commands.append(c)
             else:
                 for c in [
-                    f"cd {odoo_path} && {venv_path}/bin/pip install -e . ",
-                    f"bin/pip install -r {openupgrade_path}/requirements.txt",
-                    f"bin/pip install -r {odoo_path}/requirements.txt",
+                    f"cd {odoo_path} && pip install -e . ",
+                    f"pip install -r {openupgrade_path}/requirements.txt",
+                    f"pip install -r {odoo_path}/requirements.txt",
                 ]:
                     commands.append(c)
             odoo_version_int = int(self.name.split(".")[0])
@@ -348,7 +348,7 @@ class OpenupgraderConfig(models.Model):
                 "addons",
             )
             commands += [
-                "bin/pip install odoo{version_name}-addon-{name}".format(
+                "pip install odoo{version_name}-addon-{name}".format(
                     name=name,
                     version_name=odoo_version_int if odoo_version_int < 15 else "",
                 )
@@ -359,9 +359,7 @@ class OpenupgraderConfig(models.Model):
             ]
             if self.odoo_custom_pip_requirement_ids:
                 commands += [
-                    (
-                        "bin/pip install --upgrade " "odoo{version_name}-addon-{name}"
-                    ).format(
+                    ("pip install --upgrade odoo{version_name}-addon-{name}").format(
                         name=name,
                         version_name=odoo_version_int if odoo_version_int < 15 else "",
                     )
