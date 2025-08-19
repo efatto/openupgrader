@@ -360,8 +360,7 @@ class OpenupgraderConfig(models.Model):
             if self.odoo_custom_pip_requirement_ids:
                 commands += [
                     (
-                        "bin/pip install --upgrade "
-                        "odoo{version_name}-addon-{name}"
+                        "bin/pip install --upgrade " "odoo{version_name}-addon-{name}"
                     ).format(
                         name=name,
                         version_name=odoo_version_int if odoo_version_int < 15 else "",
@@ -377,7 +376,7 @@ class OpenupgraderConfig(models.Model):
                 ).wait()
             openupgrader_migration_id.state = "created_venv"
 
-    def button_load_config(self):
+    def button_load_config(self):  # noqa: C901
         version_name = self.name
         recipes = self.load_config_file()
         recipe_data = recipes[version_name]
