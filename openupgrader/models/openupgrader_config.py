@@ -330,13 +330,13 @@ class OpenupgraderConfig(models.Model):
             ]
             if odoo_is_openupgrade:
                 for c in [
-                    f"cd {openupgrade_path} && ../bin/pip install -e . ",
+                    f"cd {openupgrade_path} && {venv_path}/bin/pip install -e . ",
                     f"bin/pip install -r {odoo_path}/requirements.txt",
                 ]:
                     commands.append(c)
             else:
                 for c in [
-                    f"cd {odoo_path} && ../../bin/pip install -e . ",
+                    f"cd {odoo_path} && {venv_path}/bin/pip install -e . ",
                     f"bin/pip install -r {openupgrade_path}/requirements.txt",
                     f"bin/pip install -r {odoo_path}/requirements.txt",
                 ]:
