@@ -412,7 +412,16 @@ ul.auto-toc {
 <li>If there are errors in the log of the Odoo migration it is shown in the main view</li>
 <li>If the migration stops for some reasons, it can be corrected and retried with the <cite>migrate</cite> button, as normally in Odoo</li>
 </ol>
-<p>IMPROVEMENTS TODO: use queue_job to bypass limits of CPU times.</p>
+<p>POSSIBLE IMPROVEMENTS</p>
+<ol class="arabic simple">
+<li>Include migration for EE</li>
+</ol>
+<blockquote>
+<ul class="simple">
+<li>Download python method: curl -s <a class="reference external" href="https://upgrade.odoo.com/upgrade">https://upgrade.odoo.com/upgrade</a> &gt; odoo-upgrade.py</li>
+<li>Then migrate to the first available version (as the time of writing it is 16.0): python odoo-upgrade.py test –dump old.zip –target 16.0 –no-restore –contract MXXXXXXXX</li>
+</ul>
+</blockquote>
 </div>
 <div class="section" id="bug-tracker">
 <h1><a class="toc-backref" href="#toc-entry-2">Bug Tracker</a></h1>

@@ -37,4 +37,10 @@ Notes:
 #. If there are errors in the log of the Odoo migration it is shown in the main view
 #. If the migration stops for some reasons, it can be corrected and retried with the `migrate` button, as normally in Odoo
 
-IMPROVEMENTS TODO: use queue_job to bypass limits of CPU times.
+POSSIBLE IMPROVEMENTS
+
+#. Include migration for EE
+
+  * Download python method: curl -s https://upgrade.odoo.com/upgrade > odoo-upgrade.py
+  * Then migrate to the first available version (as the time of writing it is 16.0): python odoo-upgrade.py test --dump old.zip --target 16.0 --no-restore --contract MXXXXXXXX
+
