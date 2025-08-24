@@ -40,6 +40,7 @@ class AutoInstallModule(models.Model):
 class ModuleName(models.Model):
     _name = "module.name"
     _description = "Module name"
+    _order = "name"
 
     name = fields.Text(string="Module Technical Name")
 
