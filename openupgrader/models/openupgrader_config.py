@@ -325,7 +325,7 @@ class OpenupgraderConfig(models.Model):
                 # install odoo repo separately
                 openupgrader_migration_id.install_repo(
                     self.odoo_repo_id,
-                    self.name,
+                    self.odoo_repo_id.remote_branch or self.name,
                     odoo_path,
                 )
             if self.name == "16.0":  # ugly and temp fix for mismatch with py3.10.6
