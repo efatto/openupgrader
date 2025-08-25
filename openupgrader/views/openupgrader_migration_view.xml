@@ -154,7 +154,7 @@
                                 <button
                                     name="button_backup_migration"
                                     type="object"
-                                    string="Generate migration backup"
+                                    string="Generate final migration backup"
                                 />
                             </group>
                             <group string="Odoo migrating instance utilities">

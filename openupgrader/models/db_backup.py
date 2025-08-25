@@ -21,7 +21,7 @@ class DbBackup(models.Model):
     is_migration_backup = fields.Boolean(string="Is Migration Backup?")
     openupgrader_config_id = fields.Many2one(
         comodel_name="openupgrader.config",
-        string="Openupgrader Config",
+        string="OpenUpgrader Config",
     )
 
     @staticmethod

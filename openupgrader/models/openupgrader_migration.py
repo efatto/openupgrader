@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 
 class OpenupgraderMigration(models.Model):
     _name = "openupgrader.migration"
-    _description = "Openupgrader Migration"
+    _description = "OpenUpgrader Migration"
     _rec_name = "db_name"
 
     """
@@ -651,7 +651,7 @@ class OpenupgraderMigration(models.Model):
         if odoo_migrated_state == "running":
             raise UserError(
                 _(
-                    "Odoo migrated instance is running! If you are sure to"
+                    "Odoo migrated instance is running! If you are sure to "
                     "do this action, force it to stop."
                 )
             )
@@ -678,7 +678,7 @@ class OpenupgraderMigration(models.Model):
         if odoo_migrated_state == "running":
             raise UserError(
                 _(
-                    "Odoo migrated instance is running! If you are sure to"
+                    "Odoo migrated instance is running! If you are sure to "
                     "do this action, force it to stop."
                 )
             )
@@ -692,7 +692,7 @@ class OpenupgraderMigration(models.Model):
         if odoo_migrated_state == "running":
             raise UserError(
                 _(
-                    "Odoo migrated instance is running! If you are sure to"
+                    "Odoo migrated instance is running! If you are sure to "
                     "do this action, force it to stop."
                 )
             )
@@ -734,7 +734,7 @@ class OpenupgraderMigration(models.Model):
         if odoo_migrated_state == "running":
             raise UserError(
                 _(
-                    "Odoo migrated instance is running! If you are sure to"
+                    "Odoo migrated instance is running! If you are sure to "
                     "do this action, force it to stop."
                 )
             )
@@ -757,7 +757,7 @@ class OpenupgraderMigration(models.Model):
         if odoo_migrated_state == "running":
             raise UserError(
                 _(
-                    "Odoo migrated instance is running! If you are sure to"
+                    "Odoo migrated instance is running! If you are sure to "
                     "do this action, force it to stop."
                 )
             )

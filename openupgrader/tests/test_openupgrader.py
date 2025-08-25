@@ -6,7 +6,7 @@ from odoo.release import version_info
 from odoo.tests.common import Form, SavepointCase
 
 
-class Openupgrader(SavepointCase):
+class OpenUpgrader(SavepointCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()

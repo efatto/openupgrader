@@ -1,5 +1,5 @@
 ============
-Openupgrader
+OpenUpgrader
 ============
 
 .. 
@@ -61,10 +61,10 @@ Every configuration must have a virtualenv, created with `Create virtualenv` (or
 
 The configuration can be filled with these values:
 
-* Pip requirements: in this menu is possible to add some Odoo modules required for this version (in the form `<module_name><pip sign as ==, >=, >, etc><version>` and other normal pip modules:
+* Pip Requirements: in this menu is possible to add some Odoo modules required for this version (in the form `<module_name><pip sign as ==, >=, >, etc><version>` and other normal pip modules:
 
 .. image:: https://raw.githubusercontent.com/efatto/openupgrader/14.0/openupgrader/static/description/pip_requirements.png
-    :alt: Pip requirements
+    :alt: Pip Requirements
 
 * SQL commands: some command to be executed before of after the migration:
 

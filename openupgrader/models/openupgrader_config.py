@@ -77,7 +77,7 @@ class SqlUpdateCommand(models.Model):
 
 class OpenupgraderConfig(models.Model):
     _name = "openupgrader.config"
-    _description = "Openupgrader config"
+    _description = "OpenUpgrader config"
 
     name = fields.Selection(
         string="Odoo Version name",
@@ -96,6 +96,7 @@ class OpenupgraderConfig(models.Model):
             ("18.0", "18.0"),
         ],
         required=True,
+        translate=False,
     )
     openupgrader_migration_id = fields.Many2one(
         comodel_name="openupgrader.migration",
@@ -131,14 +132,14 @@ class OpenupgraderConfig(models.Model):
         relation="pip_requirement_rel",
         column1="config_id",
         column2="pip_requirement_id",
-        string="Pip requirements",
+        string="Pip Requirements",
     )
     odoo_custom_pip_requirement_ids = fields.Many2many(
         comodel_name="pip.requirement",
         relation="odoo_pip_requirement_rel",
         column1="config_id",
         column2="odoo_pip_requirement_id",
-        string="Odoo Custom Pip requirements",
+        string="Odoo Custom Pip Requirements",
     )
     db_backup_id = fields.Many2one(
         comodel_name="db.backup",

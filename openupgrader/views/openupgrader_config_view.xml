@@ -43,7 +43,7 @@
                         name="button_recreate_venv"
                         type="object"
                         string="Re-create virtualenv"
-                        help="To recreate a clean virtualenv after removing some repos or libraries"
+                        help="To recreate a clean virtualenv after removing some libraries"
                     />
                 </header>
                 <sheet string="OpenUpgrader Configuration">
@@ -133,7 +133,7 @@
                                     widget="many2many_tags"
                                 />
                             </group>
-                            <group string="Module do uninstall before migration">
+                            <group string="Modules to be uninstalled before migration">
                                 <field
                                     name="module_to_uninstall_before_migration_ids"
                                     widget="many2many_tags"
