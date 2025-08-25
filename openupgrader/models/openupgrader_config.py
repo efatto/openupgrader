@@ -236,7 +236,8 @@ class OpenupgraderConfig(models.Model):
     def _compute_module_installed_ids(self):
         for record in self:
             if (
-                record.name and record.openupgrader_migration_id.from_version_id
+                record.name
+                and record.openupgrader_migration_id.from_version_id
                 and record.name == record.openupgrader_migration_id.from_version_id.name
             ):
                 module_installed_ids = self.env["ir.module.module"].search(
