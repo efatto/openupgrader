@@ -82,31 +82,41 @@
                             <group string="Odoo Pip Requirements">
                                 <field name="odoo_custom_pip_requirement_ids">
                                     <tree>
-                                        <field name="name"/>
+                                        <field name="name" />
                                     </tree>
                                 </field>
                             </group>
                             <group string="Pip Requirements">
                                 <field name="pip_requirement_ids">
                                     <tree>
-                                        <field name="name"/>
+                                        <field name="name" />
                                     </tree>
                                 </field>
                             </group>
                         </page>
                         <page string="SQL Commands">
-                            <group string="Sql command to execute before migration">
+                            <group
+                                string="Sql command to execute before migration"
+                            >
                                 <field name="sql_before_migration_command_ids">
                                     <tree editable="top">
-                                        <field name="sequence" widget="handle" />
+                                        <field
+                                            name="sequence"
+                                            widget="handle"
+                                        />
                                         <field name="name" />
                                     </tree>
                                 </field>
                             </group>
-                            <group string="Sql command to execute after migration">
+                            <group
+                                string="Sql command to execute after migration"
+                            >
                                 <field name="sql_after_migration_command_ids">
                                     <tree editable="top">
-                                        <field name="sequence" widget="handle" />
+                                        <field
+                                            name="sequence"
+                                            widget="handle"
+                                        />
                                         <field name="name" />
                                     </tree>
                                 </field>
@@ -121,7 +131,10 @@
                             <group string="Auto-install modules">
                                 <field name="module_auto_install_ids">
                                     <tree editable="top">
-                                        <field name="sequence" widget="handle" />
+                                        <field
+                                            name="sequence"
+                                            widget="handle"
+                                        />
                                         <field name="name" />
                                         <field name="module_installed_name" />
                                         <field name="module_to_install_name" />
@@ -134,13 +147,17 @@
                                     widget="many2many_tags"
                                 />
                             </group>
-                            <group string="Module do uninstall before migration">
+                            <group
+                                string="Module do uninstall before migration"
+                            >
                                 <field
                                     name="module_to_uninstall_before_migration_ids"
                                     widget="many2many_tags"
                                 />
                             </group>
-                            <group string="Modules to uninstall after migration">
+                            <group
+                                string="Modules to uninstall after migration"
+                            >
                                 <field
                                     name="module_to_uninstall_after_migration_ids"
                                     widget="many2many_tags"

@@ -263,9 +263,7 @@ class OpenupgraderMigration(models.Model):
             self.state = "migrating"
         else:
             self.state = "updating"
-        state, migration_errors = self._start_odoo(
-            version_id, update, extra_command
-        )
+        state, migration_errors = self._start_odoo(version_id, update, extra_command)
         try:
             if state and state == "migrated":
                 self._action_done()
