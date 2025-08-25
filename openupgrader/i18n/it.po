@@ -466,16 +466,6 @@ msgid "Module %s uninstalled"
 msgstr "Modulo %s disinstallato"
 
 #. module: openupgrader
-#: model:ir.model.fields,field_description:openupgrader.field_auto_install_module__module_installed_id
-msgid "Module Installed (alternative of name)"
-msgstr "Modulo installato (alternativa del nome)"
-
-#. module: openupgrader
-#: model:ir.model.fields,field_description:openupgrader.field_auto_install_module__module_installed_name
-msgid "Module Installed Name"
-msgstr "Nome modulo installato"
-
-#. module: openupgrader
 #: model:ir.model.fields,field_description:openupgrader.field_module_name__name
 msgid "Module Technical Name"
 msgstr "Nome tecnico del modulo"

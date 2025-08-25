@@ -23,18 +23,10 @@ class AutoInstallModule(models.Model):
     openupgrade_config_id = fields.Many2one(
         comodel_name="openupgrader.config",
     )
-    module_installed_id = fields.Many2one(
-        comodel_name="ir.module.module",
-        string="Module Installed (alternative of name)",
-    )
-    module_installed_name = fields.Char(
-        related="module_installed_id.name", string="Module Installed Name"
-    )
     module_to_install_name = fields.Text(
         string="Technical Name of Module To Install",
         required=True,
     )
-    # todo if module_installed_id is set, compute name
 
 
 class ModuleName(models.Model):

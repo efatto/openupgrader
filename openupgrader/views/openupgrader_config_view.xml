@@ -123,7 +123,6 @@
                                     <tree editable="top">
                                         <field name="sequence" widget="handle" />
                                         <field name="name" />
-                                        <field name="module_installed_name" />
                                         <field name="module_to_install_name" />
                                     </tree>
                                 </field>
