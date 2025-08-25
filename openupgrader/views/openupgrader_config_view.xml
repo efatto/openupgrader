@@ -58,6 +58,7 @@
                             <group>
                                 <field name="python_version" />
                                 <field name="odoo_repo_id" />
+                                <field name="openupgrader_migration_id" />
                             </group>
                             <group name="config_file" string="Config File">
                                 <field

@@ -86,6 +86,11 @@ class OpenupgraderConfig(models.Model):
         ],
         required=True,
     )
+    openupgrader_migration_id = fields.Many2one(
+        comodel_name="openupgrader.migration",
+        string="Odoo Migration",
+        required=True,
+    )
     python_version = fields.Char(
         string="Python Version", required=True, default="3.7.16"
     )
@@ -224,10 +229,13 @@ class OpenupgraderConfig(models.Model):
                 record.odoo_is_openupgrade = False
 
     # todo get pip requirements from installed modules
-    @api.depends("name")
+    @api.depends("name", "openupgrader_migration_id.from_version_id")
     def _compute_module_installed_ids(self):
         for record in self:
-            if record.name:
+            if (
+                record.name and record.openupgrader_migration_id.from_version_id
+                and record.name == record.openupgrader_migration_id.from_version_id.name
+            ):
                 module_installed_ids = self.env["ir.module.module"].search(
                     [
                         ("state", "in", ["installed", "to upgrade"]),

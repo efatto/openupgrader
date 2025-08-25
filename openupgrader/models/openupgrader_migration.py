@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 class OpenupgraderMigration(models.Model):
     _name = "openupgrader.migration"
     _description = "Openupgrader Migration"
-    _rec_name = "from_version_id"
+    _rec_name = "db_name"
 
     """
     :param db_port: la porta del database su cui la funzione andra a
