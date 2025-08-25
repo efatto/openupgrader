@@ -107,10 +107,10 @@
                 <sheet string="OpenUpgrader migration">
                     <group>
                         <group>
-                            <field name="from_version_id" />
-                            <field name="to_version_id" />
-                            <field name="current_version_id" />
-                            <field name="next_version_id" />
+                            <field name="from_version_id" context="{'default_openupgrader_migration_id': active_id} "/>
+                            <field name="to_version_id" context="{'default_openupgrader_migration_id': active_id}" />
+                            <field name="current_version_id" context="{'default_openupgrader_migration_id': active_id}" />
+                            <field name="next_version_id" context="{'default_openupgrader_migration_id': active_id}" />
                             <field name="migrate_filestore" />
                             <field name="folder" />
                             <field name="openupgrade_repo" />
