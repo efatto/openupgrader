@@ -511,11 +511,10 @@ class OpenupgraderMigration(models.Model):
             "Restoring filestore from %s to %s folder."
             % (initial_folder, migrated_folder)
         )
-        Popen(
-            [f"cp -r * {migrated_folder}"], cwd=initial_folder, shell=True
-        ).wait()
+        Popen([f"cp -r * {migrated_folder}"], cwd=initial_folder, shell=True).wait()
         logger.info(
-            "Filestore restored from original version %s folder %s to %s." % (
+            "Filestore restored from original version %s folder %s to %s."
+            % (
                 from_version_id.name,
                 initial_folder,
                 migrated_folder,
@@ -543,11 +542,7 @@ class OpenupgraderMigration(models.Model):
         # get the filestore from running production instance of Odoo
         initial_path = os.path.join(
             "/",
-            *[
-                x
-                for x in config.filestore(self.env.cr.dbname).split("/")
-                if x != ""
-            ],
+            *[x for x in config.filestore(self.env.cr.dbname).split("/") if x != ""],
         )
         return initial_path
 
