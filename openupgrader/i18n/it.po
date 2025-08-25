@@ -289,8 +289,8 @@ msgstr "Dalla versione"
 
 #. module: openupgrader
 #: model_terms:ir.ui.view,arch_db:openupgrader.view_openupgrader_migration_form
-msgid "Generate migration backup"
-msgstr "Genera il backup della migrazione"
+msgid "Generate final migration backup"
+msgstr "Genera il backup finale della migrazione"
 
 #. module: openupgrader
 #: model:ir.model.fields,field_description:openupgrader.field_remote_repo__github_token
