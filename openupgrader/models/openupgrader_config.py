@@ -16,7 +16,7 @@ class AutoInstallModule(models.Model):
     _name = "auto.install.module"
     _description = "AutoInstall Module"
 
-    name = fields.Text(string="Technical Name of Installed Module")
+    name = fields.Text(string="Technical Name of Installed Module", required=True)
     sequence = fields.Integer(string="SQL Sequence")
     openupgrade_config_id = fields.Many2one(
         comodel_name="openupgrader.config",
@@ -32,7 +32,7 @@ class ModuleName(models.Model):
     _description = "Module name"
     _order = "name"
 
-    name = fields.Text(string="Module Technical Name")
+    name = fields.Text(string="Module Technical Name", required=True)
 
     _sql_constraints = [
         (
@@ -47,7 +47,7 @@ class PipRequirement(models.Model):
     _name = "pip.requirement"
     _description = "Pip requirement"
 
-    name = fields.Text(string="Pip requirement")
+    name = fields.Text(string="Pip requirement", required=True)
 
     _sql_constraints = [
         (
@@ -63,7 +63,7 @@ class SqlUpdateCommand(models.Model):
     _description = "SQL Update Command"
     _order = "sequence, id"
 
-    name = fields.Text(string="SQL Command")
+    name = fields.Text(string="SQL Command", required=True)
     sequence = fields.Integer(string="SQL Sequence")
     openupgrade_after_config_id = fields.Many2one(
         comodel_name="openupgrader.config",
