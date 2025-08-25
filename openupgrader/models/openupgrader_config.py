@@ -103,6 +103,7 @@ class OpenupgraderConfig(models.Model):
         compute="_compute_module_installed_ids",
         copy=False,
         store=True,
+        readonly=False,
     )
     odoo_repo_id = fields.Many2one(
         comodel_name="remote.repo",
