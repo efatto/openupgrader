@@ -107,12 +107,12 @@ class DbBackup(models.Model):
         cmd.append(db_name)
         openupgrader_migration_id = self.env["openupgrader.migration"].search([])
         openupgrader_migration_id.ensure_one()
-        filestore = openupgrader_migration_id.get_filestore_path(
-            version_name=version_name, migration_folder=True
-        )
+        migrated_filestore_folder = openupgrader_migration_id.get_filestore_path()
         with tempfile.TemporaryDirectory() as dump_dir:
-            if os.path.exists(filestore):
-                shutil.copytree(filestore, os.path.join(dump_dir, "filestore"))
+            if os.path.exists(migrated_filestore_folder):
+                shutil.copytree(
+                    migrated_filestore_folder, os.path.join(dump_dir, "filestore")
+                )
             with open(os.path.join(dump_dir, "manifest.json"), "w") as fh:
                 db = db_connect(db_name)
                 with db.cursor() as cr:

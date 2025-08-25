@@ -513,22 +513,24 @@ class OpenupgraderMigration(models.Model):
 
     def restore_filestore(self, from_version_id, to_version_id):
         # restore filestore always from initial folder to default migration folder
-        filestore_torestore_path = self.get_filestore_path(
-            to_version_id.name, migration_folder=True
-        )
-        if os.path.isdir(filestore_torestore_path):
-            shutil.rmtree(filestore_torestore_path, ignore_errors=True)
-        Path(filestore_torestore_path).mkdir(parents=True, exist_ok=True)
-        initial_folder = self.get_filestore_path(from_version_id.name)
+        migrated_folder = self.get_filestore_path()
+        if os.path.isdir(migrated_folder):
+            shutil.rmtree(migrated_folder, ignore_errors=True)
+        Path(migrated_folder).mkdir(parents=True, exist_ok=True)
+        initial_folder = self.get_filestore_initial_path()
         logger.info(
             "Restoring filestore from %s to %s folder."
-            % (initial_folder, filestore_torestore_path)
+            % (initial_folder, migrated_folder)
         )
         Popen(
-            [f"cp -r * {filestore_torestore_path}"], cwd=initial_folder, shell=True
+            [f"cp -r * {migrated_folder}"], cwd=initial_folder, shell=True
         ).wait()
         logger.info(
-            "Filestore restored from original version %s." % from_version_id.name
+            "Filestore restored from original version %s folder %s to %s." % (
+                from_version_id.name,
+                initial_folder,
+                migrated_folder,
+            )
         )
 
     def button_backup_migration(self):
@@ -538,27 +540,27 @@ class OpenupgraderMigration(models.Model):
             self.current_version_id._create_db_backup(folder=self.folder)
         self.current_version_id.db_backup_id.action_backup_migration()
 
-    def get_filestore_path(self, version_name, migration_folder=False):
-        # get filestore migrated default path
+    def get_filestore_path(self):
+        # get filestore migrated instance path
         filestore_path = os.path.join(
             self.folder,
             "data_dir",
             "filestore",
             f"{self.env.cr.dbname}_migrate",
         )
-        if version_name == self.from_version_id.name and not migration_folder:
-            # get the filestore from running production instance of Odoo if initial one
-            initial_path = os.path.join(
-                "/",
-                *[
-                    x
-                    for x in config.filestore(self.env.cr.dbname).split("/")
-                    if x != ""
-                ],
-            )
-            if os.path.exists(initial_path):
-                filestore_path = initial_path
         return filestore_path
+
+    def get_filestore_initial_path(self):
+        # get the filestore from running production instance of Odoo
+        initial_path = os.path.join(
+            "/",
+            *[
+                x
+                for x in config.filestore(self.env.cr.dbname).split("/")
+                if x != ""
+            ],
+        )
+        return initial_path
 
     def dump_database(self, version_name):
         logger.info("Dumping database for version %s" % version_name)
@@ -699,11 +701,6 @@ class OpenupgraderMigration(models.Model):
         if self.from_version_id == self.current_version_id:
             # these actions are needed for the initial version only
             self.set_cron_state_to(active=False)
-            if self.migrate_filestore:
-                self.restore_filestore(
-                    from_version_id=self.current_version_id,
-                    to_version_id=self.next_version_id,
-                )
             # self.disable_mail(disable=True)
         self.sql_fixes(self.current_version_id.sql_before_migration_command_ids)
         self.uninstall_modules(self.current_version_id, before_migration=True)
