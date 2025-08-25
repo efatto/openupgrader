@@ -246,27 +246,28 @@ class OpenupgraderConfig(models.Model):
                 and record.openupgrader_migration_id.from_version_id
                 and record.name == record.openupgrader_migration_id.from_version_id.name
             ):
-                module_installed_ids = self.env["ir.module.module"].search(
+                installed_modules = self.env["ir.module.module"].search(
                     [
                         ("state", "in", ["installed", "to upgrade"]),
                     ]
                 )
-                module_ids = self.env["module.name"].search([])
-                missing_module_names = [
-                    x
-                    for x in module_installed_ids.mapped("name")
-                    if x not in module_ids.mapped("name")
-                ]
-                # add module to be created
-                record.module_installed_ids = [
-                    (0, 0, {"name": name}) for name in missing_module_names
-                ]
-                # add existing module
-                record.module_installed_ids = [
-                    (4, module_id.id)
-                    for module_id in module_ids
-                    if module_id.name not in missing_module_names
-                ]
+                module_installed_ids = self.env["module.name"]
+                for module in installed_modules:
+                    module_names = module.mapped("name")
+                    if module.dependencies_id:
+                        module_names += module.dependencies_id.mapped("depend_id.name")
+                    for module_name in module_names:
+                        module_id = self.env["module.name"].search(
+                            [
+                                ("name", "=", module_name),
+                            ]
+                        )
+                        if not module_id:
+                            module_id = self.env["module.name"].create(
+                                {"name": module_name}
+                            )
+                        module_installed_ids |= module_id
+                record.module_installed_ids = module_installed_ids
             else:
                 record.module_installed_ids = False
 
