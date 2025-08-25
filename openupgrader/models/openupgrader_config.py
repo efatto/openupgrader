@@ -34,12 +34,28 @@ class ModuleName(models.Model):
 
     name = fields.Text(string="Module Technical Name")
 
+    _sql_constraints = [
+        (
+            "name_unique",
+            "unique(name)",
+            "This module already exists!",
+        ),
+    ]
+
 
 class PipRequirement(models.Model):
     _name = "pip.requirement"
     _description = "Pip requirement"
 
     name = fields.Text(string="Pip requirement")
+
+    _sql_constraints = [
+        (
+            "name_unique",
+            "unique(name)",
+            "This module already exists!",
+        ),
+    ]
 
 
 class SqlUpdateCommand(models.Model):
