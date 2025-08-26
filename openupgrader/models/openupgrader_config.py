@@ -496,9 +496,13 @@ class OpenupgraderConfig(models.Model):
                 self.module_auto_install_ids = False
                 auto_install = recipe.get("auto_install")
                 for i, module in enumerate(auto_install):
+                    module_name = module.split()[0]
+                    module_to_install_name = module.split()[1]
+                    if not module_name or not module_to_install_name:
+                        continue
                     if all(
-                        m.name != module.split()[0]
-                        and m.module_to_install_name != module.split()[1]
+                        m.name != module_name
+                        and m.module_to_install_name != module_to_install_name
                         for m in self.module_auto_install_ids
                     ):
                         self.module_auto_install_ids = [
@@ -506,9 +510,9 @@ class OpenupgraderConfig(models.Model):
                                 0,
                                 0,
                                 {
-                                    "name": module.split()[0],
+                                    "name": module_name,
                                     "sequence": i,
-                                    "module_to_install_name": module.split()[1],
+                                    "module_to_install_name": module_to_install_name,
                                 },
                             )
                         ]
