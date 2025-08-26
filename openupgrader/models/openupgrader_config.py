@@ -139,7 +139,8 @@ class OpenupgraderConfig(models.Model):
         relation="odoo_pip_requirement_rel",
         column1="config_id",
         column2="odoo_pip_requirement_id",
-        string="Odoo Custom Pip Requirements",
+        string="Odoo Pip Requirements",
+        help="Extra Odoo modules to be installed via pip",
     )
     db_backup_id = fields.Many2one(
         comodel_name="db.backup",
