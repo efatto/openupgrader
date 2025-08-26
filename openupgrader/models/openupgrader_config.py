@@ -22,6 +22,7 @@ class AutoInstallModule(models.Model):
     sequence = fields.Integer(string="SQL Sequence")
     openupgrade_config_id = fields.Many2one(
         comodel_name="openupgrader.config",
+        ondelete="cascade",
     )
     module_to_install_name = fields.Text(
         string="Technical Name of Module To Install",
@@ -519,52 +520,37 @@ class OpenupgraderConfig(models.Model):
             if recipe.get("delete"):
                 self.module_to_delete_after_migration_ids = False
                 delete = recipe.get("delete")
-                self.module_to_delete_after_migration_ids = [
-                    (
-                        0,
-                        0,
-                        {
-                            "name": module,
-                        },
-                    )
-                    for module in delete
-                    if module
-                    not in self.module_to_delete_after_migration_ids.mapped("name")
-                ]
+                for module in delete:
+                    module_id = self.env["module.name"].search([
+                        ("name", "=", module),
+                    ])
+                    if not module_id:
+                        module_id = self.env["module.name"].create({"name": module})
+                    self.module_to_delete_after_migration_ids |= module_id
             if recipe.get("uninstall_after_migration_to_this_version"):
                 self.module_to_uninstall_after_migration_ids = False
                 uninstall_after = recipe.get(
                     "uninstall_after_migration_to_this_version"
                 )
-                self.module_to_uninstall_after_migration_ids = [
-                    (
-                        0,
-                        0,
-                        {
-                            "name": module,
-                        },
-                    )
-                    for module in uninstall_after
-                    if module
-                    not in self.module_to_uninstall_after_migration_ids.mapped("name")
-                ]
+                for module in uninstall_after:
+                    module_id = self.env["module.name"].search([
+                        ("name", "=", module),
+                    ])
+                    if not module_id:
+                        module_id = self.env["module.name"].create({"name": module})
+                    self.module_to_uninstall_after_migration_ids |= module_id
             if recipe.get("uninstall_before_migration_to_next_version"):
                 self.module_to_uninstall_before_migration_ids = False
                 uninstall_before = recipe.get(
                     "uninstall_before_migration_to_next_version"
                 )
-                self.module_to_uninstall_before_migration_ids = [
-                    (
-                        0,
-                        0,
-                        {
-                            "name": module,
-                        },
-                    )
-                    for module in uninstall_before
-                    if module
-                    not in self.module_to_uninstall_before_migration_ids.mapped("name")
-                ]
+                for module in uninstall_before:
+                    module_id = self.env["module.name"].search([
+                        ("name", "=", module),
+                    ])
+                    if not module_id:
+                        module_id = self.env["module.name"].create({"name": module})
+                    self.module_to_uninstall_before_migration_ids |= module_id
 
     def load_config_file(self):
         if not self.config_file:
