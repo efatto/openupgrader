@@ -333,7 +333,8 @@ class OpenupgraderConfig(models.Model):
                     self.odoo_repo_id.remote_branch or self.name,
                     odoo_path,
                 )
-            if self.name == "16.0":  # ugly and temp fix for mismatch with py3.10.6
+            if self.name in ["16.0", "17.0", "18.0"]:
+                # ugly and temp fix for libraries mismatch with py3.10.x
                 for command in [
                     "sed -i 's/gevent==21.8.0/gevent==22.10.2/g' "
                     f"{odoo_path}/requirements.txt",
