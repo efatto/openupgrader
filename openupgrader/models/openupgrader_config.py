@@ -142,6 +142,8 @@ class OpenupgraderConfig(models.Model):
         column2="odoo_pip_requirement_id",
         string="Odoo Pip Requirements",
         help="Extra Odoo modules to be installed via pip",
+        ondelete="cascade",
+        copy=False,
     )
     db_backup_id = fields.Many2one(
         comodel_name="db.backup",
@@ -180,6 +182,7 @@ class OpenupgraderConfig(models.Model):
         column2="delete_module_id",
         string="Modules to delete after migration",
         help="List of modules to delete",
+        ondelete="cascade",
         copy=False,
     )
     module_to_uninstall_after_migration_ids = fields.Many2many(
@@ -188,6 +191,7 @@ class OpenupgraderConfig(models.Model):
         column1="uninstall_after_current_module_id",
         column2="uninstall_after_module_id",
         string="Module to uninstall after migration",
+        ondelete="cascade",
         copy=False,
     )
     module_to_uninstall_before_migration_ids = fields.Many2many(
@@ -196,6 +200,7 @@ class OpenupgraderConfig(models.Model):
         column1="uninstall_before_current_module_id",
         column2="uninstall_before_module_id",
         string="Module to uninstall before migration",
+        ondelete="cascade",
         copy=False,
     )
 
@@ -246,10 +251,7 @@ class OpenupgraderConfig(models.Model):
     @api.depends("name", "openupgrader_migration_id.from_version_id")
     def _compute_module_installed_ids(self):
         for record in self:
-            if (
-                record.name
-                and record.openupgrader_migration_id.from_version_id
-            ):
+            if record.name and record.openupgrader_migration_id.from_version_id:
                 installed_modules = self.env["ir.module.module"].search(
                     [
                         ("state", "in", ["installed", "to upgrade"]),
@@ -416,11 +418,8 @@ class OpenupgraderConfig(models.Model):
                     )
                     if not pip_id:
                         pip_id = self.env["pip.requirement"].create({"name": pip_name})
-                    self.write(
-                        {
-                            "pip_requirement_ids": [(4, pip_id.id)],
-                        }
-                    )
+                        pip_id.flush()
+                    self.pip_requirement_ids |= pip_id
             if recipe.get("odoo_pip_requirements"):
                 self.odoo_pip_requirement_ids = False
                 odoo_pip_requirements = recipe.get("odoo_pip_requirements")
@@ -430,11 +429,8 @@ class OpenupgraderConfig(models.Model):
                     )
                     if not pip_id:
                         pip_id = self.env["pip.requirement"].create({"name": pip_name})
-                    self.write(
-                        {
-                            "odoo_pip_requirement_ids": [(4, pip_id.id)],
-                        }
-                    )
+                        pip_id.flush()
+                    self.odoo_pip_requirement_ids |= pip_id
             if recipe.get("odoo"):
                 odoo_id = self.env["remote.repo"].search(
                     [
@@ -456,6 +452,7 @@ class OpenupgraderConfig(models.Model):
                             "is_odoo": True,
                         }
                     )
+                    odoo_id.flush()
                 self.odoo_repo_id = odoo_id
             if recipe.get("after_migration_to_this_version_sql_command"):
                 self.sql_after_migration_command_ids = False
@@ -521,11 +518,14 @@ class OpenupgraderConfig(models.Model):
                 self.module_to_delete_after_migration_ids = False
                 delete = recipe.get("delete")
                 for module in delete:
-                    module_id = self.env["module.name"].search([
-                        ("name", "=", module),
-                    ])
+                    module_id = self.env["module.name"].search(
+                        [
+                            ("name", "=", module),
+                        ]
+                    )
                     if not module_id:
                         module_id = self.env["module.name"].create({"name": module})
+                        module_id.flush()
                     self.module_to_delete_after_migration_ids |= module_id
             if recipe.get("uninstall_after_migration_to_this_version"):
                 self.module_to_uninstall_after_migration_ids = False
@@ -533,11 +533,14 @@ class OpenupgraderConfig(models.Model):
                     "uninstall_after_migration_to_this_version"
                 )
                 for module in uninstall_after:
-                    module_id = self.env["module.name"].search([
-                        ("name", "=", module),
-                    ])
+                    module_id = self.env["module.name"].search(
+                        [
+                            ("name", "=", module),
+                        ]
+                    )
                     if not module_id:
                         module_id = self.env["module.name"].create({"name": module})
+                        module_id.flush()
                     self.module_to_uninstall_after_migration_ids |= module_id
             if recipe.get("uninstall_before_migration_to_next_version"):
                 self.module_to_uninstall_before_migration_ids = False
@@ -545,11 +548,14 @@ class OpenupgraderConfig(models.Model):
                     "uninstall_before_migration_to_next_version"
                 )
                 for module in uninstall_before:
-                    module_id = self.env["module.name"].search([
-                        ("name", "=", module),
-                    ])
+                    module_id = self.env["module.name"].search(
+                        [
+                            ("name", "=", module),
+                        ]
+                    )
                     if not module_id:
                         module_id = self.env["module.name"].create({"name": module})
+                        module_id.flush()
                     self.module_to_uninstall_before_migration_ids |= module_id
 
     def load_config_file(self):
