@@ -267,7 +267,7 @@ class OpenupgraderConfig(models.Model):
                                 {"name": module_name}
                             )
                             # ensure data is committed to db to avoid duplication
-                            module_id.flush()
+                            self.env.cr.commit()  # noqa
                         module_installed_ids |= module_id
                 record.module_installed_ids = module_installed_ids
             else:
