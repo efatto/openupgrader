@@ -393,7 +393,8 @@ class OpenupgraderConfig(models.Model):
                     env=subprocess_env,
                     shell=True,
                 ).wait()
-            openupgrader_migration_id.state = "created_venv"
+            if openupgrader_migration_id.state == "draft":
+                openupgrader_migration_id.state = "created_venv"
 
     def button_load_config(self):
         version_name = self.name
