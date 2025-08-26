@@ -416,7 +416,7 @@ class OpenupgraderConfig(models.Model):
                     )
                     if not pip_id:
                         pip_id = self.env["pip.requirement"].create({"name": pip_name})
-                        pip_id.flush()
+                        self.env.cr.commit()
                     self.pip_requirement_ids |= pip_id
             if recipe.get("odoo_pip_requirements"):
                 self.odoo_pip_requirement_ids = False
@@ -427,7 +427,7 @@ class OpenupgraderConfig(models.Model):
                     )
                     if not pip_id:
                         pip_id = self.env["pip.requirement"].create({"name": pip_name})
-                        pip_id.flush()
+                        self.env.cr.commit()
                     self.odoo_pip_requirement_ids |= pip_id
             if recipe.get("odoo"):
                 odoo_id = self.env["remote.repo"].search(
@@ -450,7 +450,7 @@ class OpenupgraderConfig(models.Model):
                             "is_odoo": True,
                         }
                     )
-                    odoo_id.flush()
+                    self.env.cr.commit()
                 self.odoo_repo_id = odoo_id
             if recipe.get("after_migration_to_this_version_sql_command"):
                 self.sql_after_migration_command_ids = False
@@ -523,7 +523,7 @@ class OpenupgraderConfig(models.Model):
                     )
                     if not module_id:
                         module_id = self.env["module.name"].create({"name": module})
-                        module_id.flush()
+                        self.env.cr.commit()
                     self.module_to_delete_after_migration_ids |= module_id
             if recipe.get("uninstall_after_migration_to_this_version"):
                 self.module_to_uninstall_after_migration_ids = False
@@ -538,7 +538,7 @@ class OpenupgraderConfig(models.Model):
                     )
                     if not module_id:
                         module_id = self.env["module.name"].create({"name": module})
-                        module_id.flush()
+                        self.env.cr.commit()
                     self.module_to_uninstall_after_migration_ids |= module_id
             if recipe.get("uninstall_before_migration_to_next_version"):
                 self.module_to_uninstall_before_migration_ids = False
@@ -553,7 +553,7 @@ class OpenupgraderConfig(models.Model):
                     )
                     if not module_id:
                         module_id = self.env["module.name"].create({"name": module})
-                        module_id.flush()
+                        self.env.cr.commit()
                     self.module_to_uninstall_before_migration_ids |= module_id
 
     def load_config_file(self):
