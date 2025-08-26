@@ -266,6 +266,8 @@ class OpenupgraderConfig(models.Model):
                             module_id = self.env["module.name"].create(
                                 {"name": module_name}
                             )
+                            # ensure data is committed to db to avoid duplication
+                            module_id.flush()
                         module_installed_ids |= module_id
                 record.module_installed_ids = module_installed_ids
             else:
