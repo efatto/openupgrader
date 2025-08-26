@@ -131,12 +131,13 @@ class OpenupgraderConfig(models.Model):
         column2="pip_requirement_id",
         string="Pip requirements",
     )
-    odoo_custom_pip_requirement_ids = fields.Many2many(
+    odoo_pip_requirement_ids = fields.Many2many(
         comodel_name="pip.requirement",
         relation="odoo_pip_requirement_rel",
         column1="config_id",
         column2="odoo_pip_requirement_id",
-        string="Odoo Custom Pip requirements",
+        string="Odoo Pip requirements",
+        help="Extra Odoo modules to be installed via pip",
     )
     db_backup_id = fields.Many2one(
         comodel_name="db.backup",
@@ -375,7 +376,7 @@ class OpenupgraderConfig(models.Model):
                     and not x.name == "base"
                 ).mapped("name")
             ]
-            if self.odoo_custom_pip_requirement_ids:
+            if self.odoo_pip_requirement_ids:
                 commands += [
                     (
                         "bin/pip install --upgrade odoo{version_name}-addon-{name}"
@@ -383,7 +384,7 @@ class OpenupgraderConfig(models.Model):
                         name=name,
                         version_name=odoo_version_int if odoo_version_int < 15 else "",
                     )
-                    for name in self.odoo_custom_pip_requirement_ids.mapped("name")
+                    for name in self.odoo_pip_requirement_ids.mapped("name")
                 ]
             for command in commands:
                 subprocess.Popen(
@@ -415,9 +416,9 @@ class OpenupgraderConfig(models.Model):
                             "pip_requirement_ids": [(4, pip_id.id)],
                         }
                     )
-            if recipe.get("odoo_pip_custom_requirements"):
-                self.odoo_custom_pip_requirement_ids = False
-                odoo_pip_requirements = recipe.get("odoo_pip_custom_requirements")
+            if recipe.get("odoo_pip_requirements"):
+                self.odoo_pip_requirement_ids = False
+                odoo_pip_requirements = recipe.get("odoo_pip_requirements")
                 for pip_name in odoo_pip_requirements:
                     pip_id = self.env["pip.requirement"].search(
                         [("name", "=", pip_name)]
@@ -426,7 +427,7 @@ class OpenupgraderConfig(models.Model):
                         pip_id = self.env["pip.requirement"].create({"name": pip_name})
                     self.write(
                         {
-                            "odoo_custom_pip_requirement_ids": [(4, pip_id.id)],
+                            "odoo_pip_requirement_ids": [(4, pip_id.id)],
                         }
                     )
             if recipe.get("odoo"):

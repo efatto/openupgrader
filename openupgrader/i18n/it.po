@@ -496,6 +496,22 @@ msgid "Next version to be migrated"
 msgstr "Prossima versione da migrare"
 
 #. module: openupgrader
+#: model:ir.model.fields,field_description:openupgrader.field_openupgrader_config__odoo_pip_requirement_ids
+#: model_terms:ir.ui.view,arch_db:openupgrader.view_openupgrader_config_form
+msgid "Odoo Pip Requirements"
+msgstr "Moduli Odoo da installare via pip"
+
+#. module: openupgrader
+#: model:ir.model.fields,field_description:openupgrader.field_openupgrader_config__openupgrader_migration_id
+msgid "Odoo Migration"
+msgstr "Migrazione Odoo"
+
+#. module: openupgrader
+#: model:ir.model.fields,field_description:openupgrader.field_openupgrader_config__odoo_repo_id
+msgid "Odoo Repository"
+msgstr "Repository Odoo"
+
+#. module: openupgrader
 #: model:ir.model.fields,field_description:openupgrader.field_openupgrader_migration__address
 msgid "Odoo URL"
 msgstr "URL Odoo"
