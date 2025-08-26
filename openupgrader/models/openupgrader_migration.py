@@ -287,7 +287,6 @@ class OpenupgraderMigration(models.Model):
         with api.Environment.manage():
             new_cr = self.pool.cursor()
             self = self.with_env(self.env(cr=new_cr))
-            version_id = version_id.with_env(self.env)
             state, migration_errors = self._start_odoo(
                 version_id, update, extra_command
             )
