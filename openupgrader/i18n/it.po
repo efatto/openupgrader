@@ -518,7 +518,7 @@ msgid "Next version to be migrated"
 msgstr "Prossima versione da migrare"
 
 #. module: openupgrader
-#: model:ir.model.fields,field_description:openupgrader.field_openupgrader_config__odoo_custom_pip_requirement_ids
+#: model:ir.model.fields,field_description:openupgrader.field_openupgrader_config__odoo_pip_requirement_ids
 msgid "Odoo Custom Pip Requirements"
 msgstr "Moduli Odoo da installare via pip"
 

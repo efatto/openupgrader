@@ -80,7 +80,7 @@
                     <notebook>
                         <page string="Pip Requirements">
                             <group string="Odoo Pip Requirements">
-                                <field name="odoo_custom_pip_requirement_ids">
+                                <field name="odoo_pip_requirement_ids">
                                     <tree>
                                         <field name="name" />
                                     </tree>
