@@ -36,6 +36,10 @@ class OpenUpgrader(SavepointCase):
             cls.openupgrader_migration = migration_form.save()
         else:
             cls.openupgrader_migration.button_draft()
+        cls.odoo_pip_requirement = cls.env["pip.requirement"]
+        pip_form = Form(cls.odoo_pip_requirement)
+        pip_form.name = "module_change_auto_install"
+        pip_module_change_auto_install = pip_form.save()
         for version in versions:
             openupgrader_config = cls.config_obj.search(
                 [
@@ -49,6 +53,13 @@ class OpenUpgrader(SavepointCase):
                     cls.openupgrader_migration
                 )
                 openupgrader_config = openupgrader_config_form.save()
+                openupgrader_config.write(
+                    {
+                        "odoo_pip_requirement_ids": [
+                            (4, pip_module_change_auto_install.id)
+                        ]
+                    }
+                )
                 config_file_path = get_module_resource(
                     "openupgrader", "tests", "data", "openupgrader_config.yml"
                 )
