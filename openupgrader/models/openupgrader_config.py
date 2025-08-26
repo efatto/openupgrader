@@ -245,7 +245,6 @@ class OpenupgraderConfig(models.Model):
             if (
                 record.name
                 and record.openupgrader_migration_id.from_version_id
-                and record.name == record.openupgrader_migration_id.from_version_id.name
             ):
                 installed_modules = self.env["ir.module.module"].search(
                     [
