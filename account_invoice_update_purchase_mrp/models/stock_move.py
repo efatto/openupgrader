@@ -1,4 +1,4 @@
-from odoo import api, fields, models
+from odoo import fields, models
 
 
 class StockMove(models.Model):
@@ -13,7 +13,6 @@ class StockMove(models.Model):
             price = price * (1 - line.discount3 / 100.0)
         return price
 
-    @api.multi
     def _get_current_price_unit(self):
         self.ensure_one()
         PurchaseOrderLine = self.env["purchase.order.line"]
@@ -21,9 +20,10 @@ class StockMove(models.Model):
         date_price_unit = False
         origin_price_unit = False
         # search before datetime of move
-        # 0. is there a move originated from a purchase order, with or without invoice
-        # this cover also the case of a purchase invoice linked to a purchase order, as
-        # it creates a move
+        # 0. There is a move originated from a purchase order, with or without an
+        # invoice.
+        # This also covers the case of a purchase invoice linked to a purchase order, as
+        # it creates a move.
         lines = self.search(
             [
                 ("product_id", "=", self.product_id.id),
@@ -35,16 +35,16 @@ class StockMove(models.Model):
         if lines:
             last_line = lines[:1]
             invoice_lines = (
-                self.env["account.invoice.line"]
+                self.env["account.move.line"]
                 .search(
                     [
                         ("purchase_line_id", "=", last_line.purchase_line_id.id),
-                        ("invoice_id.type", "=", "in_invoice"),
-                        ("invoice_id.state", "not in", ["draft", "cancel"]),
+                        ("move_id.move_type", "=", "in_invoice"),
+                        ("move_id.state", "not in", ["draft", "cancel"]),
                         ("product_id", "=", self.product_id.id),
                     ]
                 )
-                .sorted(key=lambda l: l.invoice_id.date_invoice, reverse=True)
+                .sorted(key=lambda l: l.move_id.invoice_date, reverse=True)
             )
             if invoice_lines:
                 # get price from invoice if exists
@@ -53,9 +53,9 @@ class StockMove(models.Model):
                     invoice_line, invoice_line.price_unit
                 )
                 date_price_unit = fields.Datetime.to_datetime(
-                    invoice_line.invoice_id.date_invoice
+                    invoice_line.move_id.invoice_date
                 )
-                origin_price_unit = invoice_line.invoice_id.number
+                origin_price_unit = invoice_line.move_id.name
             else:
                 purchase_line = last_line.purchase_line_id
                 price_unit = self._get_price_with_discount(
@@ -67,15 +67,15 @@ class StockMove(models.Model):
 
         # 1. there is an invoice purchase line, linked or not to a purchase order
         invoice_lines = (
-            self.env["account.invoice.line"]
+            self.env["account.move.line"]
             .search(
                 [
-                    ("invoice_id.type", "=", "in_invoice"),
-                    ("invoice_id.state", "not in", ["draft", "cancel"]),
+                    ("move_id.move_type", "=", "in_invoice"),
+                    ("move_id.state", "not in", ["draft", "cancel"]),
                     ("product_id", "=", self.product_id.id),
                 ]
             )
-            .sorted(key=lambda l: l.invoice_id.date_invoice, reverse=True)
+            .sorted(key=lambda l: l.move_id.invoice_date, reverse=True)
         )
         if invoice_lines:
             # get price from invoice if exists
@@ -84,9 +84,9 @@ class StockMove(models.Model):
                 invoice_line, invoice_line.price_unit
             )
             date_price_unit = fields.Datetime.to_datetime(
-                invoice_line.invoice_id.date_invoice
+                invoice_line.move_id.invoice_date
             )
-            origin_price_unit = invoice_line.invoice_id.number
+            origin_price_unit = invoice_line.move_id.name
             return price_unit, date_price_unit, origin_price_unit
 
         # 2. else, is there a purchase order confirmed or done
@@ -98,7 +98,7 @@ class StockMove(models.Model):
             ]
         ).sorted(key=lambda l: l.order_id.date_order, reverse=True)
         if lines:
-            # Get most recent Purchase Order Line
+            # Get the most recent Purchase Order Line
             last_line = lines[:1]
             price_unit = self._get_price_with_discount(last_line, last_line.price_unit)
             date_price_unit = last_line.order_id.date_order
@@ -106,13 +106,11 @@ class StockMove(models.Model):
 
         return price_unit, date_price_unit, origin_price_unit
 
-    @api.multi
     def _is_correct_price(self):
         self.ensure_one()
         price_unit, date_price_unit, origin_price_unit = self._get_current_price_unit()
         return price_unit == -self.price_unit
 
-    @api.multi
     def _prepare_wizard_line(self):
         self.ensure_one()
         move_price_variation = False

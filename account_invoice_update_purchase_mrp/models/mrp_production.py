@@ -1,4 +1,4 @@
-from odoo import _, api, fields, models
+from odoo import _, fields, models
 
 
 class MrpProduction(models.Model):
@@ -6,7 +6,6 @@ class MrpProduction(models.Model):
 
     price_sync_ok = fields.Boolean(string="Prices Ok")
 
-    @api.multi
     def _get_update_lines(self):
         self.ensure_one()
         lines = []
@@ -19,7 +18,6 @@ class MrpProduction(models.Model):
             lines.append((0, 0, line._prepare_wizard_line()))
         return lines
 
-    @api.multi
     def check_raw_moves_price_unit(self):
         self.ensure_one()
         lines_for_update = self._get_update_lines()
@@ -44,3 +42,6 @@ class MrpProduction(models.Model):
             }
         else:
             self.write({"price_sync_ok": True})
+            return {
+                "type": "ir.actions.act_window_close",
+            }

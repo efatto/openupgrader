@@ -16,9 +16,12 @@
           attrs="{'invisible': ['|', ('price_sync_ok', '=', True), ('state', '!=', 'done')]}"
         />
             </xpath>
-            <field name="availability" position="after">
+            <xpath
+        expr="//page[@name='miscellaneous']//field[@name='origin']"
+        position="after"
+      >
                 <field name="price_sync_ok" />
-            </field>
+            </xpath>
         </field>
     </record>
 

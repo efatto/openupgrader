@@ -48,6 +48,7 @@ class AccountMoveLine(models.Model):
             )
 
     def update_purchase(self):
+        # todo convert price from currency?
         self.purchase_line_id.write(
             {
                 "price_unit": self.product_uom_id._compute_price(

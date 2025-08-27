@@ -1,4 +1,4 @@
-from odoo import api, fields, models
+from odoo import fields, models
 
 
 class MrpSyncPrice(models.TransientModel):
@@ -13,7 +13,6 @@ class MrpSyncPrice(models.TransientModel):
     )
     state = fields.Selection(related="mrp_id.state", readonly=True)
 
-    @api.multi
     def update_price_unit(self):
         self.ensure_one()
         for line in self.line_ids:
@@ -22,6 +21,5 @@ class MrpSyncPrice(models.TransientModel):
         # Mark the mo as checked
         self.mrp_id.write({"price_sync_ok": True})
 
-    @api.multi
     def set_price_unit_ok(self):
         self.mrp_id.write({"price_sync_ok": True})

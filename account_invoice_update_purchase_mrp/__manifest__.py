@@ -8,17 +8,14 @@
     "category": "Manufacturing",
     "author": "Sergio Corato",
     "website": "https://github.com/efatto/efatto",
-    "summary": "Currently cost of moves from production are set when production is "
-    "marked done. This moment is not always appropriate as, for "
-    "example, a product could be purchased without price and price "
-    "could be known after invoice receipt.\n"
-    "With this module, cost of moves are synchronized when necessary, "
-    "even later, checking stock availability of the products.",
+    "summary": "Update cost of stock moves done in production when necessary, from "
+    "purchase order, usually after having received related invoice.",
     "depends": [
         "account_invoice_update_purchase",
         "mrp_production_demo",
     ],
     "data": [
+        "security/ir.model.access.csv",
         "views/mrp.xml",
         "wizard/mrp_sync_price.xml",
     ],
