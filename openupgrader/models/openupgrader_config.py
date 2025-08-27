@@ -400,8 +400,7 @@ class OpenupgraderConfig(models.Model):
                         name=auto_install.module_to_install_name,
                         version_name=odoo_version_int if odoo_version_int < 15 else "",
                     )
-                    for auto_install
-                    in self.module_auto_install_ids
+                    for auto_install in self.module_auto_install_ids
                     if auto_install.name in self.module_installed_ids.mapped("name")
                 ]
             for command in commands:
