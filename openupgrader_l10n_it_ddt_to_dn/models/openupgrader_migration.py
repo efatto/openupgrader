@@ -13,9 +13,12 @@ class OpenupgraderMigration(models.Model):
         # this method is executed only if the module l10n_it_ddt is installed
         if self.from_version_id.name != "12.0":
             raise UserError(_("This method is only available for Odoo 12.0.x"))
+        dn_modules = ["l10n_it_delivery_note_base", "l10n_it_delivery_note"]
+        self.install_pip_modules(self.from_version_id, dn_modules)
         self.start_odoo(self.from_version_id)
         odoo_client = self.odoo_connect()
         module_obj = odoo_client.env["ir.module.module"]
+        module_obj.update_list()
         if module_obj.search(
             [
                 ("name", "=", "l10n_it_ddt"),
@@ -23,13 +26,16 @@ class OpenupgraderMigration(models.Model):
             ]
         ):
             logger.info("Migrating from l10n_it_ddt to l10n_it_delivery_note")
-            if module_obj.search(
-                [
-                    ("name", "=", "l10n_it_delivery_note"),
-                    ("state", "!=", "installed"),
-                ]
-            ):
-                self.install_uninstall_module("l10n_it_delivery_note", install=True)
+            for module in dn_modules:
+                if module_obj.search(
+                    [
+                        ("name", "=", module),
+                        ("state", "!=", "installed"),
+                    ]
+                ):
+                    self.install_uninstall_module(module, install=True)
+                self.from_version_id.module_installed_ids |= module
+                self.to_version_id.module_installed_ids |= module
             self.start_odoo(
                 version_id=self.from_version_id,
                 extra_command=f"migrate_l10n_it_ddt ",
