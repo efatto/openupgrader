@@ -392,6 +392,18 @@ class OpenupgraderConfig(models.Model):
                     )
                     for name in self.odoo_pip_requirement_ids.mapped("name")
                 ]
+            if self.module_auto_install_ids:
+                commands += [
+                    (
+                        "bin/pip install --upgrade odoo{version_name}-addon-{name}"
+                    ).format(
+                        name=auto_install.module_to_install_name,
+                        version_name=odoo_version_int if odoo_version_int < 15 else "",
+                    )
+                    for auto_install
+                    in self.module_auto_install_ids
+                    if auto_install.name in self.module_installed_ids.mapped("name")
+                ]
             for command in commands:
                 subprocess.Popen(
                     command,
