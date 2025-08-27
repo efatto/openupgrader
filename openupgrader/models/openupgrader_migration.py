@@ -21,7 +21,10 @@ from odoo.modules import get_module_resource
 from odoo.tools import config
 from odoo.tools.safe_eval import safe_eval
 
-from odoo.addons.python_venv.python_venv import _get_env_for_subprocess
+from odoo.addons.python_venv.python_venv import (
+    _create_python_venv,
+    _get_env_for_subprocess,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -928,13 +931,14 @@ class OpenupgraderMigration(models.Model):
         return success
 
     def install_pip_modules(self, version_id, module_names):
-        logger.info("Installing missing modules %s with pip." % str(module_names))
+        logger.info("Installing Odoo modules with pip: %s" % str(module_names))
         self.ensure_one()
         odoo_version_int = int(version_id.name.split(".")[0])
         venv_path = os.path.join(self.folder, f"openupgrade{version_id.name}")
-        # try to install with pip
+        subprocess_env = _create_python_venv(venv_path, version_id.python_version)
+        # try to install with pip and log error if it fails
         commands = [
-            "pip install odoo{version_name}-addon-{name}".format(
+            "pip install --upgrade odoo{version_name}-addon-{name}".format(
                 name=name,
                 version_name=odoo_version_int if odoo_version_int < 15 else "",
             )
@@ -944,6 +948,7 @@ class OpenupgraderMigration(models.Model):
             process = Popen(
                 command,
                 cwd=venv_path,
+                env=subprocess_env,
                 shell=True,
                 stderr=PIPE,
                 stdout=PIPE,

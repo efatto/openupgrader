@@ -280,7 +280,7 @@ class OpenupgraderConfig(models.Model):
                 record.module_installed_ids = False
 
     def button_recreate_venv(self):
-        # Remove folder and re-create a clean virtual environment
+        # Remove the folder and re-create a clean virtual environment
         self.ensure_one()
         openupgrader_migration_id = self.env["openupgrader.migration"].search([])
         openupgrader_migration_id.ensure_one()
@@ -368,41 +368,11 @@ class OpenupgraderConfig(models.Model):
                     f"pip install -r {odoo_path}/requirements.txt",
                 ]:
                     commands.append(c)
-            odoo_version_int = int(self.name.split(".")[0])
             # exclude odoo core modules
             odoo_addons_path = os.path.join(
                 odoo_path,
                 "addons",
             )
-            commands += [
-                "pip install --upgrade odoo{version_name}-addon-{name}".format(
-                    name=name,
-                    version_name=odoo_version_int if odoo_version_int < 15 else "",
-                )
-                for name in self.module_installed_ids.filtered(
-                    lambda x: not os.path.isdir(os.path.join(odoo_addons_path, x.name))
-                    and not x.name == "base"
-                ).mapped("name")
-            ]
-            if self.odoo_pip_requirement_ids:
-                commands += [
-                    ("pip install --upgrade odoo{version_name}-addon-{name}").format(
-                        name=name,
-                        version_name=odoo_version_int if odoo_version_int < 15 else "",
-                    )
-                    for name in self.odoo_pip_requirement_ids.mapped("name")
-                ]
-            if self.module_auto_install_ids:
-                commands += [
-                    (
-                        "bin/pip install --upgrade odoo{version_name}-addon-{name}"
-                    ).format(
-                        name=auto_install.module_to_install_name,
-                        version_name=odoo_version_int if odoo_version_int < 15 else "",
-                    )
-                    for auto_install in self.module_auto_install_ids
-                    if auto_install.name in self.module_installed_ids.mapped("name")
-                ]
             for command in commands:
                 subprocess.Popen(
                     command,
@@ -410,6 +380,26 @@ class OpenupgraderConfig(models.Model):
                     env=subprocess_env,
                     shell=True,
                 ).wait()
+            odoo_modules_to_install_via_pip = [
+                name
+                for name in self.module_installed_ids.filtered(
+                    lambda x: not os.path.isdir(os.path.join(odoo_addons_path, x.name))
+                    and not x.name == "base"
+                ).mapped("name")
+            ]
+            if self.odoo_pip_requirement_ids:
+                odoo_modules_to_install_via_pip += [
+                    name for name in self.odoo_pip_requirement_ids.mapped("name")
+                ]
+            if self.module_auto_install_ids:
+                odoo_modules_to_install_via_pip += [
+                    auto_install.module_to_install_name
+                    for auto_install in self.module_auto_install_ids
+                    if auto_install.name in self.module_installed_ids.mapped("name")
+                ]
+            openupgrader_migration_id.install_pip_modules(
+                self, odoo_modules_to_install_via_pip
+            )
             if openupgrader_migration_id.state == "draft":
                 openupgrader_migration_id.state = "created_venv"
 
