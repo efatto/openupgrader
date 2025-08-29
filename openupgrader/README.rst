@@ -17,23 +17,7 @@ OpenUpgrader
     :target: http://www.gnu.org/licenses/agpl-3.0-standalone.html
     :alt: License: AGPL-3
 .. |badge3| image:: https://img.shields.io/badge/github-efatto%2Fopenupgrader-lightgray.png?logo=github
-<<<<<<< HEAD
-    :target: https://github.com/efatto/openupgrader/tree/16.0/openupgrader
-=======
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-    :target: https://github.com/efatto/openupgrader/tree/16.0/openupgrader
-=======
-    :target: https://github.com/efatto/openupgrader/tree/15.0/openupgrader
->>>>>>> 7cce434 ([UPD] pre-commit)
-=======
-    :target: https://github.com/efatto/openupgrader/tree/16.0/openupgrader
->>>>>>> efa29d2 ([IMP] port to 16.0)
-=======
     :target: https://github.com/efatto/openupgrader/tree/17.0/openupgrader
->>>>>>> b9362ee ([IMP] port to v. 17)
->>>>>>> ba1182e ([IMP] port to 16.0 aligning to 15.0)
     :alt: efatto/openupgrader
 
 |badge1| |badge2| |badge3|
@@ -52,211 +36,49 @@ Configuration
 
 The menu is in Configuration/Settings:
 
-<<<<<<< HEAD
-.. image:: https://raw.githubusercontent.com/efatto/openupgrader/16.0/openupgrader/static/description/menu.png
-=======
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-.. image:: https://raw.githubusercontent.com/efatto/openupgrader/16.0/openupgrader/static/description/menu.png
-=======
-.. image:: https://raw.githubusercontent.com/efatto/openupgrader/15.0/openupgrader/static/description/menu.png
->>>>>>> 7cce434 ([UPD] pre-commit)
-=======
-.. image:: https://raw.githubusercontent.com/efatto/openupgrader/16.0/openupgrader/static/description/menu.png
->>>>>>> efa29d2 ([IMP] port to 16.0)
-=======
 .. image:: https://raw.githubusercontent.com/efatto/openupgrader/17.0/openupgrader/static/description/menu.png
->>>>>>> b9362ee ([IMP] port to v. 17)
->>>>>>> ba1182e ([IMP] port to 16.0 aligning to 15.0)
     :alt: Menu
 
 Which provides two rows: the OpenUpgrader Migration is used to manage the migration process:
 
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
->>>>>>> ba1182e ([IMP] port to 16.0 aligning to 15.0)
-.. image:: https://raw.githubusercontent.com/efatto/openupgrader/16.0/openupgrader/static/description/migration.png
+.. image:: https://raw.githubusercontent.com/efatto/openupgrader/17.0/openupgrader/static/description/migration.png
     :alt: Migration
-=======
-.. image:: https://raw.githubusercontent.com/efatto/openupgrader/15.0/openupgrader/static/description/main_view.png
-    :alt: Main view
->>>>>>> 7cce434 ([UPD] pre-commit)
-
-Every version of Odoo included in the process must have its version and its virtualenv:
-
-<<<<<<< HEAD
-.. image:: https://raw.githubusercontent.com/efatto/openupgrader/16.0/openupgrader/static/description/configuration.png
-=======
-.. image:: https://raw.githubusercontent.com/efatto/openupgrader/15.0/openupgrader/static/description/version.png
-    :alt: Version
-
-A virtualenv can be created with `Create virtualenv` or re-created cleaning entirely its folder with `Re-create virtualenv`.
-
-Every version needs a configuration of action to do during the migration process:
-=======
-=======
->>>>>>> efa29d2 ([IMP] port to 16.0)
-.. image:: https://raw.githubusercontent.com/efatto/openupgrader/15.0/openupgrader/static/description/migration.png
-=======
-.. image:: https://raw.githubusercontent.com/efatto/openupgrader/16.0/openupgrader/static/description/migration.png
->>>>>>> f11c0e8 ([FIX] pre-commit)
-    :alt: Migration
-=======
-.. image:: https://raw.githubusercontent.com/efatto/openupgrader/16.0/openupgrader/static/description/migration.png
-    :alt: Migration
-=======
-.. image:: https://raw.githubusercontent.com/efatto/openupgrader/17.0/openupgrader/static/description/main_view.png
-    :alt: Main view
->>>>>>> 621f5e6 ([IMP] port to v. 17)
->>>>>>> b9362ee ([IMP] port to v. 17)
 
 The second row is the OpenUpgrader Configuration, which is used to configure specific parameters for every version of Odoo included in the process. So in a migration from 14.0 to 16.0, we need to create three configuration: 14.0, 15.0 and 16.0
->>>>>>> efa42f7 ([FIX] pre-commit)
 
-<<<<<<< HEAD
-.. image:: https://raw.githubusercontent.com/efatto/openupgrader/16.0/openupgrader/static/description/configuration.png
-=======
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> 4078b90 ([IMP] port to 16.0)
-.. image:: https://raw.githubusercontent.com/efatto/openupgrader/16.0/openupgrader/static/description/version.png
-=======
-.. image:: https://raw.githubusercontent.com/efatto/openupgrader/17.0/openupgrader/static/description/version.png
->>>>>>> b9362ee ([IMP] port to v. 17)
-    :alt: Version
-
-A virtualenv can be created with `Create virtualenv` or re-created cleaning entirely its folder with `Re-create virtualenv`.
-
-Every version needs a configuration of action to do during the migration process:
-
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-.. image:: https://raw.githubusercontent.com/efatto/openupgrader/15.0/openupgrader/static/description/configuration.png
->>>>>>> 7cce434 ([UPD] pre-commit)
-=======
-=======
->>>>>>> f11c0e8 ([FIX] pre-commit)
-=======
->>>>>>> 4078b90 ([IMP] port to 16.0)
-.. image:: https://raw.githubusercontent.com/efatto/openupgrader/16.0/openupgrader/static/description/configuration.png
->>>>>>> efa29d2 ([IMP] port to 16.0)
-=======
 .. image:: https://raw.githubusercontent.com/efatto/openupgrader/17.0/openupgrader/static/description/configuration.png
->>>>>>> b9362ee ([IMP] port to v. 17)
->>>>>>> ba1182e ([IMP] port to 16.0 aligning to 15.0)
     :alt: Configuration
 
 This configuration can be imported by a yml file (see the tests folder for an example, the file can be filled with many versions of the configuration settings):
 
-<<<<<<< HEAD
-.. image:: https://raw.githubusercontent.com/efatto/openupgrader/16.0/openupgrader/static/description/import_yml.png
-=======
-<<<<<<< HEAD
-<<<<<<< HEAD
-.. image:: https://raw.githubusercontent.com/efatto/openupgrader/16.0/openupgrader/static/description/import_yml.png
-=======
-.. image:: https://raw.githubusercontent.com/efatto/openupgrader/15.0/openupgrader/static/description/import_yml.png
->>>>>>> efa42f7 ([FIX] pre-commit)
-=======
-.. image:: https://raw.githubusercontent.com/efatto/openupgrader/16.0/openupgrader/static/description/import_yml.png
->>>>>>> f11c0e8 ([FIX] pre-commit)
->>>>>>> ba1182e ([IMP] port to 16.0 aligning to 15.0)
+.. image:: https://raw.githubusercontent.com/efatto/openupgrader/17.0/openupgrader/static/description/import_yml.png
     :alt: Import yml file
 
 Every configuration must have a virtualenv, created with `Create virtualenv` (or re-created cleaning entirely its folder with `Re-create virtualenv`):
 
-<<<<<<< HEAD
-.. image:: https://raw.githubusercontent.com/efatto/openupgrader/16.0/openupgrader/static/description/create_recreate_venv.png
-=======
-<<<<<<< HEAD
-<<<<<<< HEAD
-.. image:: https://raw.githubusercontent.com/efatto/openupgrader/16.0/openupgrader/static/description/create_recreate_venv.png
-=======
-.. image:: https://raw.githubusercontent.com/efatto/openupgrader/15.0/openupgrader/static/description/create_recreate_venv.png
->>>>>>> efa42f7 ([FIX] pre-commit)
-=======
-.. image:: https://raw.githubusercontent.com/efatto/openupgrader/16.0/openupgrader/static/description/create_recreate_venv.png
->>>>>>> f11c0e8 ([FIX] pre-commit)
->>>>>>> ba1182e ([IMP] port to 16.0 aligning to 15.0)
+.. image:: https://raw.githubusercontent.com/efatto/openupgrader/17.0/openupgrader/static/description/create_recreate_venv.png
     :alt: Create or re-create virtualenv
 
 The configuration can be filled with these values:
 
 * Pip Requirements: in this menu is possible to add some Odoo modules required for this version (in the form `<module_name><pip sign as ==, >=, >, etc><version>` and other normal pip modules:
 
-<<<<<<< HEAD
-.. image:: https://raw.githubusercontent.com/efatto/openupgrader/16.0/openupgrader/static/description/pip_requirements.png
-=======
-<<<<<<< HEAD
-<<<<<<< HEAD
-.. image:: https://raw.githubusercontent.com/efatto/openupgrader/16.0/openupgrader/static/description/pip_requirements.png
-=======
-.. image:: https://raw.githubusercontent.com/efatto/openupgrader/15.0/openupgrader/static/description/pip_requirements.png
->>>>>>> efa42f7 ([FIX] pre-commit)
-=======
-.. image:: https://raw.githubusercontent.com/efatto/openupgrader/16.0/openupgrader/static/description/pip_requirements.png
->>>>>>> f11c0e8 ([FIX] pre-commit)
->>>>>>> ba1182e ([IMP] port to 16.0 aligning to 15.0)
+.. image:: https://raw.githubusercontent.com/efatto/openupgrader/17.0/openupgrader/static/description/pip_requirements.png
     :alt: Pip Requirements
 
 * SQL commands: some command to be executed before of after the migration:
 
-<<<<<<< HEAD
-.. image:: https://raw.githubusercontent.com/efatto/openupgrader/16.0/openupgrader/static/description/sql_commands.png
-=======
-<<<<<<< HEAD
-<<<<<<< HEAD
-.. image:: https://raw.githubusercontent.com/efatto/openupgrader/16.0/openupgrader/static/description/sql_commands.png
-=======
-.. image:: https://raw.githubusercontent.com/efatto/openupgrader/15.0/openupgrader/static/description/sql_commands.png
->>>>>>> efa42f7 ([FIX] pre-commit)
-=======
-.. image:: https://raw.githubusercontent.com/efatto/openupgrader/16.0/openupgrader/static/description/sql_commands.png
->>>>>>> f11c0e8 ([FIX] pre-commit)
->>>>>>> ba1182e ([IMP] port to 16.0 aligning to 15.0)
+.. image:: https://raw.githubusercontent.com/efatto/openupgrader/17.0/openupgrader/static/description/sql_commands.png
     :alt: SQL commands
 
 * Modules management: in this menu is possible to add module to be installed automatically, unistalled, or simply deleted:
 
-<<<<<<< HEAD
-.. image:: https://raw.githubusercontent.com/efatto/openupgrader/16.0/openupgrader/static/description/modules_management.png
-=======
-<<<<<<< HEAD
-<<<<<<< HEAD
-.. image:: https://raw.githubusercontent.com/efatto/openupgrader/16.0/openupgrader/static/description/modules_management.png
-=======
-.. image:: https://raw.githubusercontent.com/efatto/openupgrader/15.0/openupgrader/static/description/modules_management.png
->>>>>>> efa42f7 ([FIX] pre-commit)
-=======
-.. image:: https://raw.githubusercontent.com/efatto/openupgrader/16.0/openupgrader/static/description/modules_management.png
->>>>>>> f11c0e8 ([FIX] pre-commit)
->>>>>>> ba1182e ([IMP] port to 16.0 aligning to 15.0)
+.. image:: https://raw.githubusercontent.com/efatto/openupgrader/17.0/openupgrader/static/description/modules_management.png
     :alt: Modules management
 
 * Installed modules: this menu is auto-computed at the creation of the configuration:
 
-<<<<<<< HEAD
-.. image:: https://raw.githubusercontent.com/efatto/openupgrader/16.0/openupgrader/static/description/installed_modules.png
-=======
-<<<<<<< HEAD
-<<<<<<< HEAD
-.. image:: https://raw.githubusercontent.com/efatto/openupgrader/16.0/openupgrader/static/description/installed_modules.png
-=======
-.. image:: https://raw.githubusercontent.com/efatto/openupgrader/15.0/openupgrader/static/description/installed_modules.png
->>>>>>> efa42f7 ([FIX] pre-commit)
-=======
-.. image:: https://raw.githubusercontent.com/efatto/openupgrader/16.0/openupgrader/static/description/installed_modules.png
->>>>>>> f11c0e8 ([FIX] pre-commit)
->>>>>>> ba1182e ([IMP] port to 16.0 aligning to 15.0)
+.. image:: https://raw.githubusercontent.com/efatto/openupgrader/17.0/openupgrader/static/description/installed_modules.png
     :alt: Installed modules
 
 The migration process is as follows:
@@ -290,23 +112,7 @@ Bug Tracker
 Bugs are tracked on `GitHub Issues <https://github.com/efatto/openupgrader/issues>`_.
 In case of trouble, please check there if your issue has already been reported.
 If you spotted it first, help us to smash it by providing a detailed and welcomed
-<<<<<<< HEAD
-`feedback <https://github.com/efatto/openupgrader/issues/new?body=module:%20openupgrader%0Aversion:%2016.0%0A%0A**Steps%20to%20reproduce**%0A-%20...%0A%0A**Current%20behavior**%0A%0A**Expected%20behavior**>`_.
-=======
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-`feedback <https://github.com/efatto/openupgrader/issues/new?body=module:%20openupgrader%0Aversion:%2016.0%0A%0A**Steps%20to%20reproduce**%0A-%20...%0A%0A**Current%20behavior**%0A%0A**Expected%20behavior**>`_.
-=======
-`feedback <https://github.com/efatto/openupgrader/issues/new?body=module:%20openupgrader%0Aversion:%2015.0%0A%0A**Steps%20to%20reproduce**%0A-%20...%0A%0A**Current%20behavior**%0A%0A**Expected%20behavior**>`_.
->>>>>>> 7cce434 ([UPD] pre-commit)
-=======
-`feedback <https://github.com/efatto/openupgrader/issues/new?body=module:%20openupgrader%0Aversion:%2016.0%0A%0A**Steps%20to%20reproduce**%0A-%20...%0A%0A**Current%20behavior**%0A%0A**Expected%20behavior**>`_.
->>>>>>> efa29d2 ([IMP] port to 16.0)
-=======
 `feedback <https://github.com/efatto/openupgrader/issues/new?body=module:%20openupgrader%0Aversion:%2017.0%0A%0A**Steps%20to%20reproduce**%0A-%20...%0A%0A**Current%20behavior**%0A%0A**Expected%20behavior**>`_.
->>>>>>> b9362ee ([IMP] port to v. 17)
->>>>>>> ba1182e ([IMP] port to 16.0 aligning to 15.0)
 
 Do not contact contributors directly about support or help with technical issues.
 
@@ -326,22 +132,6 @@ Contributors
 Maintainers
 ~~~~~~~~~~~
 
-<<<<<<< HEAD
-This module is part of the `efatto/openupgrader <https://github.com/efatto/openupgrader/tree/16.0/openupgrader>`_ project on GitHub.
-=======
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-This module is part of the `efatto/openupgrader <https://github.com/efatto/openupgrader/tree/16.0/openupgrader>`_ project on GitHub.
-=======
-This module is part of the `efatto/openupgrader <https://github.com/efatto/openupgrader/tree/15.0/openupgrader>`_ project on GitHub.
->>>>>>> 7cce434 ([UPD] pre-commit)
-=======
-This module is part of the `efatto/openupgrader <https://github.com/efatto/openupgrader/tree/16.0/openupgrader>`_ project on GitHub.
->>>>>>> efa29d2 ([IMP] port to 16.0)
-=======
 This module is part of the `efatto/openupgrader <https://github.com/efatto/openupgrader/tree/17.0/openupgrader>`_ project on GitHub.
->>>>>>> b9362ee ([IMP] port to v. 17)
->>>>>>> ba1182e ([IMP] port to 16.0 aligning to 15.0)
 
 You are welcome to contribute.

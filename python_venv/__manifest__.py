@@ -2,17 +2,13 @@
 # License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl).
 {
     "name": "Python venv",
-<<<<<<< HEAD
-    "version": "16.0.1.0.1",
-=======
     "version": "17.0.1.0.0",
->>>>>>> ba1182e ([IMP] port to 16.0 aligning to 15.0)
     "category": "other",
     "author": "Sergio Corato",
     "license": "AGPL-3",
     "summary": "Add method to create custom Python virtualenv.",
     "website": "https://github.com/efatto/openupgrader",
-    "depends": [],
+    "depends": ["base"],
     "data": [],
     "installable": True,
     "auto_install": False,

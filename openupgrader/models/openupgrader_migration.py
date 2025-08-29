@@ -286,17 +286,7 @@ class OpenupgraderMigration(models.Model):
     def _start_odoo_thread(self, version_id, update=False, extra_command=""):
         new_cr = self.pool.cursor()
         self = self.with_env(self.env(cr=new_cr))
-<<<<<<< HEAD
-<<<<<<< HEAD
         state, migration_errors = self._start_odoo(version_id, update, extra_command)
-=======
-        state, migration_errors = self._start_odoo(
-            version_id, update, extra_command
-        )
->>>>>>> 3b6dedd ([FIX] remove api.Environment.manage())
-=======
-        state, migration_errors = self._start_odoo(version_id, update, extra_command)
->>>>>>> 931a32f ([FIX] pre-commit)
         logger.info("Current migration log is: %s" % self.migration_error_log)
         logger.info("Migration error log is: %s" % str(migration_errors))
         self.flush()
@@ -770,22 +760,8 @@ class OpenupgraderMigration(models.Model):
             self.remove_modules(self.next_version_id)
             self.install_uninstall_module("l10n_it_intrastat")
         logger.info(
-<<<<<<< HEAD
-<<<<<<< HEAD
             "Migration done from version %s to version %s"
             % (self.current_version_id.name, self.next_version_id.name)
-=======
-            _(
-                "Migration done from version %(current_version)s to version "
-                "%(next_version)s",
-                current_version=self.current_version_id.name,
-                next_version=self.next_version_id.name,
-            )
->>>>>>> 3bbf2be ([FIX] pre-commit)
-=======
-            "Migration done from version %s to version %s"
-            % (self.current_version_id.name, self.next_version_id.name)
->>>>>>> 6015e58 ([FIX] align 17.0 to 16.0)
         )
         self.set_cron_state_to(active=True)
         self.current_version_id = self.next_version_id
@@ -805,19 +781,11 @@ class OpenupgraderMigration(models.Model):
             if psutil.pid_exists(odoo_pid):
                 odoo_migrated_state = "running"
         return odoo_migrated_state
-<<<<<<< HEAD
-<<<<<<< HEAD
->>>>>>> 2f26dcd ([FIX] align to 14.0)
-=======
->>>>>>> 6015e58 ([FIX] align 17.0 to 16.0)
 
     def sql_fixes(self, sql_commands):
         # do not change quote order as it will change the way the sql command is
         # interpreted!
-<<<<<<< HEAD
-=======
         logger.info("Doing custom sql commands.")
->>>>>>> 6015e58 ([FIX] align 17.0 to 16.0)
         for sql_command in sql_commands:
             Popen(
                 [
@@ -938,10 +906,6 @@ class OpenupgraderMigration(models.Model):
         try:
             module_to_unistall_id.button_immediate_uninstall()
             module_to_unistall_id.unlink()
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> 6015e58 ([FIX] align 17.0 to 16.0)
             logger.info("Module %s uninstalled" % module_to_unistall_id.name)
             success = 5
         except Exception as e:
@@ -952,36 +916,6 @@ class OpenupgraderMigration(models.Model):
                     str(e).replace("\n", ""),
                     success + 1,
                     5,
-<<<<<<< HEAD
-=======
-            logger.info(
-                _(
-                    "Module %(module_name)s uninstalled",
-                    module_name=module_to_unistall_id.name,
-                )
-            )
-            success = 5
-        except Exception as e:
-            logger.info(
-                _(
-                    "Module %(module)s not uninstalled for %(exc_error)s, "
-<<<<<<< HEAD
-                    "trying %(number_tries)s/%(tot_tries)s times."(
-                        module=module_to_unistall_id.name,
-                        exc_error=str(e).replace("\n", ""),
-                        number_tries=success + 1,
-                        tot_tries=5,
-                    )
->>>>>>> 3bbf2be ([FIX] pre-commit)
-=======
-                    "trying %(number_tries)s/%(tot_tries)s times.",
-                    module=module_to_unistall_id.name,
-                    exc_error=str(e).replace("\n", ""),
-                    number_tries=success + 1,
-                    tot_tries=5,
->>>>>>> 5c268f4 ([FIX] translations)
-=======
->>>>>>> 6015e58 ([FIX] align 17.0 to 16.0)
                 )
             )
             time.sleep(10)
@@ -1041,8 +975,3 @@ class OpenupgraderMigration(models.Model):
                         res = self.uninst(module, res)
         else:
             logger.info("Module %s not found" % module_name)
-<<<<<<< HEAD
-=======
->>>>>>> 567c6cd ([FIX] pre-commit)
-=======
->>>>>>> 6015e58 ([FIX] align 17.0 to 16.0)

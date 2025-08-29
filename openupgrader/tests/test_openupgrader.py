@@ -3,7 +3,7 @@ import time
 
 from odoo.modules import get_module_resource
 from odoo.release import version_info
-from odoo.tests.common import SavepointCase, Form
+from odoo.tests.common import Form, SavepointCase
 
 
 class OpenUpgrader(SavepointCase):
@@ -117,7 +117,6 @@ class OpenUpgrader(SavepointCase):
         while openupgrader_migration._get_odoo_migrated_state() == "running":
             time.sleep(10)
         self.assertEqual(openupgrader_migration.state, "done")
-<<<<<<< HEAD
         self.assertEqual(
             openupgrader_migration.current_version_id,
             self.middle_version_id,
@@ -137,5 +136,3 @@ class OpenUpgrader(SavepointCase):
             openupgrader_migration.current_version_id,
             self.to_version_id,
         )
-=======
->>>>>>> ba1182e ([IMP] port to 16.0 aligning to 15.0)
