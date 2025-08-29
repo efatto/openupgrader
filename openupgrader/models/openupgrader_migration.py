@@ -109,7 +109,7 @@ class OpenupgraderMigration(models.Model):
         comodel_name="openupgrader.config",
         string="Next version to be migrated",
     )
-    migrate_filestore = fields.Boolean(string="Migrate Filestore", default=True)
+    migrate_filestore = fields.Boolean(default=True)
     openupgrade_repo = fields.Char(
         string="OpenUpgrade Repository",
         default="https://github.com/OCA/OpenUpgrade.git",
@@ -212,11 +212,8 @@ class OpenupgraderMigration(models.Model):
                 handlers.append(HTTPSHandler(context=context))
             else:
                 logger.info(
-                    _(
-                        "verify_ssl could not be established for this "
-                        "python version: %s"
-                    )
-                    % sys.version
+                    "verify_ssl could not be established for this "
+                    "python version: %s" % sys.version
                 )
         if sessions:
             handlers.append(HTTPCookieProcessor(CookieJar()))
@@ -451,7 +448,7 @@ class OpenupgraderMigration(models.Model):
                 try:
                     os.kill(pid, signal.SIGKILL)
                 except OSError:
-                    pass
+                    logger.info("Error %s in killing pid: %s " % (OSError, pid))
         self.odoo_migrated_state = "stopped"
         logger.info("Odoo migration instances stopped.")
 
@@ -766,7 +763,7 @@ class OpenupgraderMigration(models.Model):
             self.remove_modules(self.next_version_id)
             self.install_uninstall_module("l10n_it_intrastat")
         logger.info(
-            _("Migration done from version %s to version %s")
+            "Migration done from version %s to version %s"
             % (self.current_version_id.name, self.next_version_id.name)
         )
         self.set_cron_state_to(active=True)
@@ -774,7 +771,7 @@ class OpenupgraderMigration(models.Model):
         self.next_version_id = self.env["openupgrader.config"].search(
             [("name", "=", str(float(self.current_version_id.name) + 1))]
         )
-        logger.info(_("Set next version to %s") % self.next_version_id.name)
+        logger.info("Set next version to %s" % self.next_version_id.name)
         self.state = "done"
 
     def button_refresh_odoo_migrated_state(self):
@@ -912,18 +909,16 @@ class OpenupgraderMigration(models.Model):
         try:
             module_to_unistall_id.button_immediate_uninstall()
             module_to_unistall_id.unlink()
-            logger.info(_("Module %s uninstalled") % module_to_unistall_id.name)
+            logger.info("Module %s uninstalled" % module_to_unistall_id.name)
             success = 5
         except Exception as e:
             logger.info(
-                _(
-                    "Module %s not uninstalled for %s, trying %s/%s times."
-                    % (
-                        module_to_unistall_id.name,
-                        str(e).replace("\n", ""),
-                        success + 1,
-                        5,
-                    )
+                "Module %s not uninstalled for %s, trying %s/%s times."
+                % (
+                    module_to_unistall_id.name,
+                    str(e).replace("\n", ""),
+                    success + 1,
+                    5,
                 )
             )
             time.sleep(10)
@@ -957,7 +952,7 @@ class OpenupgraderMigration(models.Model):
             errors = [e.decode().lower() for e in error if "error" in e.decode()]
             if errors:
                 logger.info(
-                    _("Some modules not found with pip installer: %s")
+                    "Some modules not found with pip installer: %s"
                     % "\n".join(e for e in errors)
                 )
 
@@ -982,4 +977,4 @@ class OpenupgraderMigration(models.Model):
                     while res < 5:
                         res = self.uninst(module, res)
         else:
-            logger.info(_("Module %s not found") % module_name)
+            logger.info("Module %s not found" % module_name)

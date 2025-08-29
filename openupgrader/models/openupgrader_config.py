@@ -104,9 +104,7 @@ class OpenupgraderConfig(models.Model):
         string="Odoo Migration",
         required=True,
     )
-    python_version = fields.Char(
-        string="Python Version", required=True, default="3.7.16"
-    )
+    python_version = fields.Char(required=True, default="3.7.16")
     odoo_is_openupgrade = fields.Boolean(
         string="Odoo is Openupgrade",
         compute="_compute_odoo_is_openupgrade",
