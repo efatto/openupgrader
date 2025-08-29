@@ -12,6 +12,7 @@
         "stock",
     ],
     "data": [
+        "security/ir.model.access.csv",
         "wizard/update_stock_move_price.xml",
         "views/stock_picking.xml",
     ],
