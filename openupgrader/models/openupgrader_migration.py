@@ -546,13 +546,14 @@ class OpenupgraderMigration(models.Model):
         )
         return initial_path
 
-    def dump_database(self, version_name):
+    def dump_database(self, version_name, migrated=False):
         logger.info("Dumping migrated database for version %s" % version_name)
         destination_path = os.path.join(self.folder, f"database.{version_name}.sql")
         connection_string = (
             f"postgresql://{self.pg_user}:"
             f"{self.pg_password_var or self.pg_password or ''}@"
-            f"{self.pg_host or ''}:{self.db_port}/{self.env.cr.dbname}_migrate"
+            f"{self.pg_host or ''}:{self.db_port}/{self.env.cr.dbname}"
+            f"{'_migrate' if migrated else ''}"
         )
         process = Popen(
             [
@@ -619,7 +620,7 @@ class OpenupgraderMigration(models.Model):
         self.migration_error_log = " "
 
     def button_dump_current_database(self):
-        self.dump_database(self.current_version_id.name)
+        self.dump_database(self.current_version_id.name, migrated=True)
 
     def button_restore_last_database(self):
         self._restore(force=True)
