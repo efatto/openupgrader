@@ -977,5 +977,7 @@ class OpenupgraderMigration(models.Model):
                     res = 0
                     while res < 5:
                         res = self.uninst(module, res)
+            return modules
         else:
             logger.info("Module %s not found" % module_name)
+            return False
