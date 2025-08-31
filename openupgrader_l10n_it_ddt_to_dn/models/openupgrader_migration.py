@@ -14,7 +14,10 @@ class OpenupgraderMigration(models.Model):
         if self.from_version_id.name != "12.0":
             raise UserError(_("This method is only available for Odoo 12.0.x"))
         dn_modules = ["l10n_it_delivery_note_base", "l10n_it_delivery_note"]
-        self.install_pip_modules(self.from_version_id, dn_modules)
+        # ensure required odoo modules are installed via pip
+        self.install_pip_modules(
+            self.from_version_id,
+            self.from_version_id.odoo_pip_requirement_ids.mapped('name'))
         self.start_odoo(self.from_version_id)
         odoo_client = self.odoo_connect()
         module_obj = odoo_client.env["ir.module.module"]
@@ -34,8 +37,17 @@ class OpenupgraderMigration(models.Model):
                     ]
                 ):
                     self.install_uninstall_module(module, install=True)
-                self.from_version_id.module_installed_ids |= module
-                self.to_version_id.module_installed_ids |= module
+                    module_name_ids = self.env["module.name"].search(
+                        [("name", "=", module)])
+                    if not module_name_ids:
+                        module_name_ids = self.env["module.name"].create(
+                            {"name": module})
+                    self.from_version_id.write(
+                        {"module_installed_ids": [(4, module_name_ids[0].id)]}
+                    )
+                    self.to_version_id.write(
+                        {"module_installed_ids": [(4, module_name_ids[0].id)]}
+                    )
             self.start_odoo(
                 version_id=self.from_version_id,
                 extra_command=f"migrate_l10n_it_ddt ",
