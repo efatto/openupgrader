@@ -98,10 +98,15 @@ Il campo `Costo gestione ordine`: anch'esso usato nella formula di calcolo della
 .. image:: https://raw.githubusercontent.com/efatto/efatto/14.0/stock_orderpoint_generator_sale/static/description/costo_gestione_ordini.png
     :alt: Costo gestione ordine
 
-Il campo `Categoria prodotti`: filtra i prodotti su cui generare le regole di riordino. In questo modo è possibile creare diversi modelli per diverse categorie di prodotti. Nota: i prodotti vengono letti dalle categorie prodotti indicate senza tenere conto delle categorie figlie.
+Il campo `Categoria prodotti`: filtra i prodotti su cui generare le regole di riordino. In questo modo è possibile creare diversi modelli per diverse categorie di prodotti. Nota: i prodotti vengono letti dalle categorie prodotti indicate e nelle loro categorie figlie.
 
 .. image:: https://raw.githubusercontent.com/efatto/efatto/14.0/stock_orderpoint_generator_sale/static/description/categoria_prodotti.png
     :alt: Categoria prodotti
+
+Nella nazione è stato aggiunto un campo `Coefficiente di riordino`. Questo campo viene rilevato dal primo fornitore del prodotto e serve per impostare un massimo di ordini per periodo. Se non impostato viene presunto pari a 4.
+
+.. image:: https://raw.githubusercontent.com/efatto/efatto/14.0/stock_orderpoint_generator_sale/static/description/coefficiente_riordino.png
+    :alt: Coefficiente di riordino
 
 Informazioni sulle formule usate nel file di calcolo https://github.com/efatto/efatto/blob/14.0/stock_orderpoint_generator_sale/static/description/calculate-safety-stocks.ods
 
