@@ -17,7 +17,8 @@ class OpenupgraderMigration(models.Model):
         # ensure required odoo modules are installed via pip
         self.install_pip_modules(
             self.from_version_id,
-            self.from_version_id.odoo_pip_requirement_ids.mapped('name'))
+            self.from_version_id.odoo_pip_requirement_ids.mapped("name"),
+        )
         self.start_odoo(self.from_version_id)
         odoo_client = self.odoo_connect()
         module_obj = odoo_client.env["ir.module.module"]
@@ -38,10 +39,12 @@ class OpenupgraderMigration(models.Model):
                 ):
                     self.install_uninstall_module(module, install=True)
                     module_name_ids = self.env["module.name"].search(
-                        [("name", "=", module)])
+                        [("name", "=", module)]
+                    )
                     if not module_name_ids:
                         module_name_ids = self.env["module.name"].create(
-                            {"name": module})
+                            {"name": module}
+                        )
                     self.from_version_id.write(
                         {"module_installed_ids": [(4, module_name_ids[0].id)]}
                     )

@@ -348,20 +348,20 @@ class OpenupgraderConfig(models.Model):
                         shell=True,
                     )
             commands = [
-                "pip install '%s'" % name
+                "pip install --no-cache-dir '%s'" % name
                 for name in self.pip_requirement_ids.mapped("name")
             ]
             if odoo_is_openupgrade:
                 for c in [
                     f"cd {openupgrade_path} && pip install -e . ",
-                    f"pip install -r {odoo_path}/requirements.txt",
+                    f"pip install --no-cache-dir -r {odoo_path}/requirements.txt",
                 ]:
                     commands.append(c)
             else:
                 for c in [
                     f"cd {odoo_path} && pip install -e . ",
-                    f"pip install -r {openupgrade_path}/requirements.txt",
-                    f"pip install -r {odoo_path}/requirements.txt",
+                    f"pip install --no-cache-dir -r {openupgrade_path}/requirements.txt",
+                    f"pip install --no-cache-dir -r {odoo_path}/requirements.txt",
                 ]:
                     commands.append(c)
             # exclude odoo core modules
