@@ -4,7 +4,8 @@ from odoo import fields, models
 class StockMove(models.Model):
     _inherit = "stock.move"
 
-    def _get_price_with_discount(self, line, price):
+    @staticmethod
+    def _get_price_with_discount(line, price):
         if hasattr(line, "discount"):
             price = price * (1 - line.discount / 100.0)
         if hasattr(line, "discount2"):
