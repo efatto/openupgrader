@@ -33,14 +33,21 @@ class AccountMoveLine(models.Model):
     )
     def _compute_display_update_purchase_button(self):
         for line in self:
+            price_unit = line.price_unit
+            # convert price unit to purchase uom
+            if (
+                line.product_uom_id
+                and line.purchase_line_id.product_uom
+                and (line.product_uom_id != line.purchase_line_id.product_uom)
+            ):
+                price_unit = line.product_uom_id._compute_price(
+                    price_unit, line.purchase_line_id.product_uom
+                )
             line.display_update_purchase_button = (
                 not line.move_id.purchase_force_valid
                 and line.purchase_line_id
                 and (
-                    line.purchase_line_id.price_unit
-                    != line.product_uom_id._compute_price(
-                        line.price_unit, line.purchase_line_id.product_uom
-                    )
+                    line.purchase_line_id.price_unit != price_unit
                     or line.purchase_line_id.discount != line.discount
                     or line.purchase_line_id.discount2 != line.discount2
                     or line.purchase_line_id.discount3 != line.discount3
