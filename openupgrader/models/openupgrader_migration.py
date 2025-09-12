@@ -262,7 +262,7 @@ class OpenupgraderMigration(models.Model):
             self.state = "migrating"
         else:
             self.state = "updating"
-        self.flush()
+        self.flush_model()
         if update:
             state, migration_errors = self._start_odoo_thread(
                 version_id, update, extra_command
@@ -286,7 +286,7 @@ class OpenupgraderMigration(models.Model):
         state, migration_errors = self._start_odoo(version_id, update, extra_command)
         logger.info("Current migration log is: %s" % self.migration_error_log)
         logger.info("Migration error log is: %s" % str(migration_errors))
-        self.flush()
+        self.flush_model()
         new_cr.commit()
         new_cr.close()
         return state, migration_errors
