@@ -73,11 +73,6 @@ class OpenUpgrader(SavepointCase):
                 ("name", "=", cls.to_version),
             ]
         )
-        cls.future_version_id = cls.config_obj.search(
-            [
-                ("name", "=", cls.future_version),
-            ]
-        )
         cls.openupgrader_migration.from_version_id = cls.from_version_id
         cls.openupgrader_migration.to_version_id = cls.to_version_id
 
