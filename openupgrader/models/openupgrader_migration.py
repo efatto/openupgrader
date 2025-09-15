@@ -474,7 +474,7 @@ class OpenupgraderMigration(models.Model):
         for pid in pids:
             self._stop_pid(pid)
         # read odoo log and put in logger
-        if os.path.isfile(self.odoo_update_log_file):
+        if os.path.exists(self.odoo_update_log_file):
             logger.debug("Show log for file %s" % self.odoo_update_log_file)
             file_reader = open(self.odoo_update_log_file, "r")
             lines = file_reader.readlines()
