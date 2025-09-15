@@ -15,7 +15,8 @@ import odoorpc
 import psutil
 from odoorpc.rpc import CookieJar, HTTPCookieProcessor, build_opener
 
-from odoo import _, api, fields, models
+import odoo
+from odoo import _, api, fields, models, registry
 from odoo.exceptions import UserError
 from odoo.modules import get_module_resource
 from odoo.tools import config
@@ -263,7 +264,7 @@ class OpenupgraderMigration(models.Model):
         else:
             self.state = "updating"
         self.flush_model()
-        if update:
+        if update and not odoo.tools.config["test_enable"]:
             state, migration_errors = self._start_odoo_thread(
                 version_id, update, extra_command
             )
@@ -281,14 +282,18 @@ class OpenupgraderMigration(models.Model):
             )
 
     def _start_odoo_thread(self, version_id, update=False, extra_command=""):
-        new_cr = self.pool.cursor()
-        self = self.with_env(self.env(cr=new_cr))
-        state, migration_errors = self._start_odoo(version_id, update, extra_command)
-        logger.info("Current migration log is: %s" % self.migration_error_log)
-        logger.info("Migration error log is: %s" % str(migration_errors))
-        self.flush_model()
-        new_cr.commit()
-        new_cr.close()
+        self.ensure_one()
+        with registry(self.env.cr.dbname).cursor() as new_cr:
+            new_env = api.Environment(new_cr, self.env.uid, self.env.context)
+            self_env = self.with_env(new_env).browse(self.id)
+            state, migration_errors = self_env._start_odoo(
+                version_id, update, extra_command
+            )
+            logger.info("Current migration log is: %s" % self_env.migration_error_log)
+            logger.info("Migration error log is: %s" % str(migration_errors))
+            self_env.flush_model()
+            new_cr.commit()
+            new_cr.close()
         return state, migration_errors
 
     def _start_odoo(self, version_id, update=False, extra_command=""):  # noqa C901
