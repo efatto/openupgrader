@@ -829,7 +829,7 @@ class OpenupgraderMigration(models.Model):
                 shell=True,
             ).wait()
         Popen(
-            ["git pull --rebase"],
+            ["git reset --hard && git pull --rebase"],
             cwd=repo_path,
             shell=True,
         ).wait()
