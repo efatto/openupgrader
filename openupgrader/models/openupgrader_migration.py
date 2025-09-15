@@ -552,23 +552,25 @@ class OpenupgraderMigration(models.Model):
         return initial_path
 
     def dump_database(self, version_name, migrated=False):
-        logger.info("Dumping migrated database for version %s" % version_name)
-        destination_path = os.path.join(self.folder, f"database.{version_name}.sql")
-        connection_string = (
-            f"postgresql://{self.pg_user}:"
-            f"{self.pg_password_var or self.pg_password or ''}@"
-            f"{self.pg_host or ''}:{self.db_port}/{self.env.cr.dbname}"
-            f"{'_migrate' if migrated else ''}"
+        logger.info(
+            f"Dumping {'migrated' if migrated else 'original'} database for version "
+            f"{version_name}"
         )
+        destination_path = os.path.join(self.folder, f"database.{version_name}.sql")
+        conn_vars = self._get_db_connection_variables()
         process = Popen(
             [
-                f"pg_dump {self.pg_options or ''} -Fc -O {connection_string}"
+                f"{conn_vars} && pg_dump {self.pg_options or ''} -Fc -O "
+                f"{self.env.cr.dbname}{'_migrate' if migrated else ''} "
                 f"> {destination_path}"
             ],
             shell=True,
         )
         process.wait()
-        logger.info("Migrated atabase dumped for version %s" % version_name)
+        logger.info(
+            f"{'Migrated' if migrated else 'Original'} database dumped for version "
+            f"{version_name}"
+        )
         return destination_path
 
     def restore_db(self, version_id=False):
