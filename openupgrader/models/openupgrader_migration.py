@@ -218,12 +218,16 @@ class OpenupgraderMigration(models.Model):
         opener = build_opener(*handlers)
         return opener
 
-    @staticmethod
-    def _set_odoorc(folder):
+    def _set_odoorc(self, folder):
         odoorc_path = os.path.join(folder, ".odoorc")
         if not os.path.isfile(odoorc_path):
             odoorc_basic_path = get_module_resource("openupgrader", "data", ".odoorc")
             shutil.copyfile(odoorc_basic_path, odoorc_path)
+            if float(self.next_version_id.name) > 15:
+                Popen(
+                    f"sed -i 's/longpolling/gevent/g' {odoorc_path}",
+                    shell=True,
+                )
             # todo move disabled modules to configuration
             not_auto_install_list = [
                 "partner_autocomplete",
