@@ -1,18 +1,18 @@
 # Copyright 2018-2020 Sergio Corato <https://github.com/sergiocorato>
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html).
 {
-    'name': "Change DDT Number on done state",
-    'version': '12.0.1.0.0',
-    'category': 'other',
-    'description': "Allows ddt change number on done state.",
-    'author': "Sergio Corato",
-    'website': 'https://github.com/efatto/efatto',
-    'license': 'AGPL-3',
-    'depends': [
-        'l10n_it_ddt_force_number',
+    "name": "Change DDT Number on done state",
+    "version": "12.0.1.0.0",
+    "category": "other",
+    "description": "Allows ddt change number on done state.",
+    "author": "Sergio Corato",
+    "website": "https://github.com/efatto/efatto",
+    "license": "AGPL-3",
+    "depends": [
+        "l10n_it_ddt_force_number",
     ],
-    'data': [
-        'views/stock.xml',
+    "data": [
+        "views/stock.xml",
     ],
-    'installable': True,
+    "installable": True,
 }
