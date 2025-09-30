@@ -17,6 +17,7 @@ class AccountMove(models.Model):
             ("journal_id", "=", invoice.journal_id.id),
             ("date", ">", invoice.date),
             ("name", "<", invoice.name),
+            ("name", "!=", "/"),
         ]
         # check until last date of registration year date_range only
         registration_fy = self.env["account.fiscal.year"].search(
