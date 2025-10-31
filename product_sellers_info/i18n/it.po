@@ -25,7 +25,7 @@ msgstr "Allegati assegnati"
 #: model:ir.model.fields,field_description:product_sellers_info.field_product_product__custom_purchase_delay
 #: model:ir.model.fields,field_description:product_sellers_info.field_product_template__custom_purchase_delay
 msgid "Purchase Lead Time"
-msgstr "Tempo di attesa acquisto"
+msgstr "Tempo di risposta per consegne"
 
 #. module: product_sellers_info
 #: model:ir.model.fields,field_description:product_sellers_info.field_product_supplierinfo__display_name
@@ -79,7 +79,7 @@ msgstr ""
 #: model:ir.model.fields,field_description:product_sellers_info.field_product_product__purchase_delay
 #: model:ir.model.fields,field_description:product_sellers_info.field_product_template__purchase_delay
 msgid "Purchase Lead Time (computed)"
-msgstr "Tempo di attesa acquisto (calcolato)"
+msgstr "Tempo di risposta per consegne (calcolato)"
 
 #. module: product_sellers_info
 #: model:ir.model.fields,field_description:product_sellers_info.field_product_product__purchase_multiple_qty
