@@ -15,8 +15,7 @@ class SaleOrderCalendarStateReport(models.Model):
     calendar_state = fields.Selection(selection=_get_order_state, readonly=True)
     production_id = fields.Many2one("mrp.production", readonly=True)
     production_qty = fields.Float(readonly=True)
-    production_date_planned_start = fields.Many2one("mrp.workorder", readonly=True)
-    production_date_planned_end = fields.Many2one("mrp.workorder", readonly=True)
+    production_date_planned_start = fields.Date(readonly=True)
 
     def init(self):
         tools.drop_view_if_exists(self.env.cr, self._table)
@@ -28,8 +27,7 @@ class SaleOrderCalendarStateReport(models.Model):
                 so.calendar_state AS calendar_state,
                 so.production_id AS production_id,
                 mo.product_qty AS production_qty,
-                to_char(mo.date_planned_start, 'YYYY-MM-DD') AS production_date_planned_start,
-                to_char(mo.date_planned_end, 'YYYY-MM-DD') AS production_date_planned_end
+                to_char(mo.date_planned_start, 'YYYY-MM-DD') AS production_date_planned_start
             FROM sale_order so
                 LEFT JOIN mrp_production mo ON mo.id = so.production_id
             WHERE so.production_id is not null

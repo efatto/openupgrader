@@ -3,7 +3,7 @@
    :alt: Odoo Community Association
 
 ================================
-Sale Order Calendar State Rerpot
+Sale Order Calendar State Report
 ================================
 
 .. 

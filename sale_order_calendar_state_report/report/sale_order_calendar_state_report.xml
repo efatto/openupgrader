@@ -9,7 +9,6 @@
                 <field name="calendar_state" />
                 <field name="production_id" />
                 <field name="production_date_planned_start" />
-                <field name="production_date_planned_end" />
                 <field name="production_qty" sum="Total" />
             </tree>
         </field>
@@ -31,9 +30,8 @@
             <pivot>
                 <field name="production_id" type="row" />
                 <field name="production_date_planned_start" type="row" />
-                <field name="production_date_planned_end" type="row" />
+                <field name="calendar_state" type="row" />
                 <field name="production_qty" type="measure" />
-                <field name="calendar_state" type="measure" />
             </pivot>
         </field>
     </record>
@@ -47,8 +45,8 @@
 
     <menuitem
     id="menu_sale_order_calendar_state_report"
-    parent="mrp.menu_mrp_reporting"
+    parent="sale.menu_sale_report"
     action="action_sale_order_calendar_state_report"
-    name="Production Deviation"
+    name="Sale Order Calendar State"
   />
 </odoo>
