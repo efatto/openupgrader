@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <record id="view_sale_order_calendar_state_report_tree" model="ir.ui.view">
+        <field name="name">Sale order calendar state report tree</field>
+        <field name="model">sale.order.calendar.state.report</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="name" />
+                <field name="calendar_state" />
+                <field name="production_id" />
+                <field name="production_date_planned_start" />
+                <field name="production_date_planned_end" />
+                <field name="production_qty" sum="Total" />
+            </tree>
+        </field>
+    </record>
+    <record id="view_sale_order_calendar_state_report_search" model="ir.ui.view">
+        <field name="name">Search for Sale order calendar state report</field>
+        <field name="model">sale.order.calendar.state.report</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="calendar_state" />
+            </search>
+        </field>
+    </record>
+
+    <record id="view_sale_order_calendar_state_report_pivot" model="ir.ui.view">
+        <field name="name">Sale order calendar state report: Pivot</field>
+        <field name="model">sale.order.calendar.state.report</field>
+        <field name="arch" type="xml">
+            <pivot>
+                <field name="production_id" type="row" />
+                <field name="production_date_planned_start" type="row" />
+                <field name="production_date_planned_end" type="row" />
+                <field name="production_qty" type="measure" />
+                <field name="calendar_state" type="measure" />
+            </pivot>
+        </field>
+    </record>
+
+    <record id="action_sale_order_calendar_state_report" model="ir.actions.act_window">
+        <field name="name">Sale order calendar state Report</field>
+        <field name="res_model">sale.order.calendar.state.report</field>
+        <field name="view_mode">pivot,graph</field>
+        <field name="context">{}</field>
+    </record>
+
+    <menuitem
+    id="menu_sale_order_calendar_state_report"
+    parent="mrp.menu_mrp_reporting"
+    action="action_sale_order_calendar_state_report"
+    name="Production Deviation"
+  />
+</odoo>

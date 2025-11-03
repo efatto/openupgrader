@@ -1,0 +1,175 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* mrp_production_deviation
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 14.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-09-22 16:59+0000\n"
+"PO-Revision-Date: 2025-09-22 16:59+0000\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Plural-Forms: \n"
+
+#. module: mrp_production_deviation
+#: model:ir.model.fields,field_description:mrp_production_deviation.field_mrp_production_deviation_report__assigned_attachment_ids
+msgid "Assigned Attachments"
+msgstr "Allegati assegnati"
+
+#. module: mrp_production_deviation
+#: model:ir.model.fields,field_description:mrp_production_deviation.field_mrp_production_deviation_report__cost_deviation
+msgid "Cost Deviation"
+msgstr "Scostamento Costo"
+
+#. module: mrp_production_deviation
+#: model:ir.model.fields,field_description:mrp_production_deviation.field_mrp_production_deviation_report__cost_expected
+msgid "Cost Expected"
+msgstr "Costo Previsto"
+
+#. module: mrp_production_deviation
+#: model:ir.model.fields,field_description:mrp_production_deviation.field_mrp_production_deviation_report__cost_deviation_rw
+msgid "Cost Routing Deviation"
+msgstr "Scostamento Costo Routing"
+
+#. module: mrp_production_deviation
+#: model:ir.model.fields,field_description:mrp_production_deviation.field_mrp_production_deviation_report__cost_expected_rw
+msgid "Cost Routing Expected"
+msgstr "Costo Previsto Routing"
+
+#. module: mrp_production_deviation
+#: model:ir.model.fields,field_description:mrp_production_deviation.field_mrp_production_deviation_report__cost_current
+msgid "Current Cost"
+msgstr "Costo Attuale"
+
+#. module: mrp_production_deviation
+#: model_terms:ir.ui.view,arch_db:mrp_production_deviation.view_mrp_production_deviation_report_search
+msgid "Date"
+msgstr "Data"
+
+#. module: mrp_production_deviation
+#: model:ir.model.fields,field_description:mrp_production_deviation.field_mrp_production_deviation_report__display_name
+msgid "Display Name"
+msgstr "Nome da visualizzare"
+
+#. module: mrp_production_deviation
+#: model:ir.model.fields,field_description:mrp_production_deviation.field_mrp_production_deviation_report__duration_deviation
+msgid "Duration Deviation"
+msgstr "Scostamento Durata"
+
+#. module: mrp_production_deviation
+#: model:ir.model.fields,field_description:mrp_production_deviation.field_mrp_production_deviation_report__duration
+msgid "Duration Done"
+msgstr "Durata finale"
+
+#. module: mrp_production_deviation
+#: model:ir.model.fields,field_description:mrp_production_deviation.field_mrp_production_deviation_report__duration_deviation_rw
+msgid "Duration Routing Deviation"
+msgstr "Scostamento Durata Routing"
+
+#. module: mrp_production_deviation
+#: model:ir.model.fields,field_description:mrp_production_deviation.field_mrp_production_deviation_report__duration_expected
+msgid "Expected Duration"
+msgstr "Durata Prevista"
+
+#. module: mrp_production_deviation
+#: model:ir.model.fields,field_description:mrp_production_deviation.field_mrp_production_deviation_report__duration_expected_rw
+msgid "Expected Routing Duration"
+msgstr "Durata Prevista Routing"
+
+#. module: mrp_production_deviation
+#: model:ir.model.fields,field_description:mrp_production_deviation.field_mrp_production_deviation_report__cost
+msgid "Final Cost"
+msgstr "Costo Finale"
+
+#. module: mrp_production_deviation
+#: model:ir.model.fields,field_description:mrp_production_deviation.field_mrp_production_deviation_report__id
+msgid "ID"
+msgstr ""
+
+#. module: mrp_production_deviation
+#: model:ir.model.fields,field_description:mrp_production_deviation.field_mrp_production_deviation_report____last_update
+msgid "Last Modified on"
+msgstr "Data di ultima modifica"
+
+#. module: mrp_production_deviation
+#: model:ir.actions.act_window,name:mrp_production_deviation.action_mrp_production_current_cost_report_mo
+msgid "MRP Production Current Cost Report"
+msgstr "Report Costo Corrente"
+
+#. module: mrp_production_deviation
+#: model:ir.actions.act_window,name:mrp_production_deviation.action_mrp_production_deviation_report
+#: model:ir.actions.act_window,name:mrp_production_deviation.action_mrp_production_deviation_report_mo
+msgid "MRP Production Deviation Report"
+msgstr "Report Scostamenti"
+
+#. module: mrp_production_deviation
+#: model:ir.model.fields,field_description:mrp_production_deviation.field_mrp_production_deviation_report__date
+msgid "Planned Date"
+msgstr "Data pianificata"
+
+#. module: mrp_production_deviation
+#: model:ir.model.fields,field_description:mrp_production_deviation.field_mrp_production_deviation_report__product_id
+msgid "Product"
+msgstr "Prodotto"
+
+#. module: mrp_production_deviation
+#: model:ir.model.fields,field_description:mrp_production_deviation.field_mrp_production_deviation_report__production_id
+msgid "Production"
+msgstr "Produzione"
+
+#. module: mrp_production_deviation
+#: model:ir.ui.menu,name:mrp_production_deviation.menu_mrp_production_deviation_report
+msgid "Production Deviation"
+msgstr "Scostamenti Produzione"
+
+#. module: mrp_production_deviation
+#: model:ir.model,name:mrp_production_deviation.model_mrp_production_deviation_report
+msgid "Production Deviation Report"
+msgstr "Report Scostamenti Produzione"
+
+#. module: mrp_production_deviation
+#: model:ir.model.fields,field_description:mrp_production_deviation.field_mrp_production_deviation_report__quantity_deviation
+msgid "Qty Deviation"
+msgstr "Scostamento Qtà"
+
+#. module: mrp_production_deviation
+#: model:ir.model.fields,field_description:mrp_production_deviation.field_mrp_production_deviation_report__product_qty
+msgid "Qty Done"
+msgstr "Qtà Finale"
+
+#. module: mrp_production_deviation
+#: model:ir.model.fields,field_description:mrp_production_deviation.field_mrp_production_deviation_report__quantity_expected
+msgid "Qty Expected"
+msgstr "Qtà Prevista"
+
+#. module: mrp_production_deviation
+#: model:ir.model.fields,field_description:mrp_production_deviation.field_mrp_production_deviation_report__name
+msgid "Reference"
+msgstr "Riferimento"
+
+#. module: mrp_production_deviation
+#: model_terms:ir.ui.view,arch_db:mrp_production_deviation.view_mrp_production_deviation_report_tree
+msgid "Total"
+msgstr "Totale"
+
+#. module: mrp_production_deviation
+#: model:ir.model.fields,field_description:mrp_production_deviation.field_mrp_production_deviation_report__unit_cost
+msgid "Unit Cost"
+msgstr "Costo Unitario"
+
+#. module: mrp_production_deviation
+#: model:ir.model.fields,field_description:mrp_production_deviation.field_mrp_production_deviation_report__workorder_id
+msgid "Workorder"
+msgstr "Ordine di lavoro"
+
+#. module: mrp_production_deviation
+#: model_terms:ir.ui.view,arch_db:mrp_production_deviation.view_mrp_production_current_cost_report_pivot
+#: model_terms:ir.ui.view,arch_db:mrp_production_deviation.view_mrp_production_deviation_report_pivot
+#: model_terms:ir.ui.view,arch_db:mrp_production_deviation.view_mrp_production_deviation_report_search
+#: model_terms:ir.ui.view,arch_db:mrp_production_deviation.view_mrp_production_deviation_report_tree
+msgid "production deviation"
+msgstr "scostamento produzione"
