@@ -9,6 +9,8 @@
   - odoo: https://github.com/OCA/OCB.git 18.0
   - odoo_pip_requirements:
       - module_change_auto_install
+      - account_fiscal_year
+      - l10n_it_account
   - sql_update_commands:
   - auto_install:
   - delete:
@@ -25,8 +27,10 @@
   - odoo: https://github.com/OCA/OCB.git 17.0
   - odoo_pip_requirements:
       - module_change_auto_install
+      - account_fiscal_year
   - sql_update_commands:
   - auto_install:
+      - account l10n_it
   - delete:
   - uninstall_after_migration_to_this_version:
   - uninstall_before_migration_to_next_version:
@@ -41,9 +45,13 @@
   - odoo: https://github.com/OCA/OCB.git 16.0
   - odoo_pip_requirements:
       - module_change_auto_install
+      - openupgrader
+      - account_fiscal_year
+      - l10n_it_account
   - after_migration_to_this_version_sql_command:
   - before_migration_to_next_version_sql_command:
   - auto_install:
+      - account l10n_it
   - delete:
   - uninstall_after_migration_to_this_version:
   - uninstall_before_migration_to_next_version:

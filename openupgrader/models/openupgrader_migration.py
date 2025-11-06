@@ -407,6 +407,7 @@ class OpenupgraderMigration(models.Model):
                             migration_errors.append(out)
                         logger.info(out.strip())
                         if "CRITICAL" in out:
+                            migration_errors.append(out)
                             if version_id == self.current_version_id:
                                 state = "restore_failed"
                             elif version_id == self.next_version_id:
@@ -415,6 +416,13 @@ class OpenupgraderMigration(models.Model):
                             migration_errors.append(out)
                         if "WARNING" in out:
                             migration_errors.append(out)
+                        if "not installable" in out:
+                            # todo put with "CRITICAL"
+                            migration_errors.append(out)
+                            if version_id == self.current_version_id:
+                                state = "restore_failed"
+                            elif version_id == self.next_version_id:
+                                state = "failed"
                         if "Modules loaded" in out:
                             if (
                                 version_id == self.current_version_id
@@ -767,10 +775,10 @@ class OpenupgraderMigration(models.Model):
         self.uninstall_modules(self.next_version_id, after_migration=True)
         self.auto_install_modules(self.next_version_id)
         self.sql_fixes(self.current_version_id.sql_after_migration_command_ids)
-        if self.next_version_id.name == "10.0":
-            self.remove_modules(self.next_version_id, "upgrade")
-            self.remove_modules(self.next_version_id)
-            self.install_uninstall_module("l10n_it_intrastat")
+        # if self.next_version_id.name == "10.0":
+        #     self.remove_modules(self.next_version_id, "upgrade")
+        #     self.remove_modules(self.next_version_id)
+        #     self.install_uninstall_module("l10n_it_intrastat")
         logger.info(
             "Migration done from version %s to version %s"
             % (self.current_version_id.name, self.next_version_id.name)
@@ -850,7 +858,7 @@ class OpenupgraderMigration(models.Model):
         odoo_client = self.odoo_connect()
         module_obj = odoo_client.env["ir.module.module"]
         if version_id.name == "12.0":
-            self.remove_modules(version_id, "upgrade")
+            self.remove_modules("upgrade")
         for module in version_id.module_auto_install_ids:
             module_to_check = module.name
             module_to_install = module.module_to_install_name
@@ -869,7 +877,7 @@ class OpenupgraderMigration(models.Model):
     ):
         self.start_odoo(version_id)
         if version_id.name == "12.0":
-            self.remove_modules(version_id, "upgrade")
+            self.remove_modules("upgrade")
         if after_migration:
             for module in version_id.module_to_uninstall_after_migration_ids:
                 self.install_uninstall_module(module.name, install=False)
@@ -889,7 +897,24 @@ class OpenupgraderMigration(models.Model):
                     module.unlink()
             self.button_stop_odoo()
 
-    def remove_modules(self, version_id, module_state=""):
+    def list_modules_by_state(self):
+        odoo_client = self.odoo_connect()
+        module_obj = odoo_client.env["ir.module.module"]
+        modules = module_obj.search_read([], ["name", "state"])
+        for state in [
+            "to upgrade",
+            "to install",
+            "to remove",
+            "installed",
+            "uninstalled",
+        ]:
+            modules_string = " ".join(
+                [module["name"] for module in modules if module["state"] == state]
+            )
+            logger.info(f"List of modules {state}: {modules_string}")
+
+    def remove_modules(self, module_state=""):
+        self.list_modules_by_state()
         if module_state == "upgrade":
             state = [
                 "to upgrade",
@@ -981,6 +1006,10 @@ class OpenupgraderMigration(models.Model):
             for module in modules:
                 if install:
                     module.button_immediate_install()
+                    logger.info(
+                        f"Module {module.name} installed in Odoo v. "
+                        f"{odoo_client.version}."
+                    )
                 elif module.state in ["installed", "to upgrade", "uninstallable"]:
                     res = 0
                     while res < 5:

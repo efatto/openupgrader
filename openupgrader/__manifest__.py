@@ -12,6 +12,7 @@
         "auto_backup",
         "mail",
         "python_venv",
+        "l10n_it_account",
     ],
     "data": [
         "security/ir.model.access.csv",
