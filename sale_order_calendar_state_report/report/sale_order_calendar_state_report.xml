@@ -37,7 +37,7 @@
     </record>
 
     <record id="action_sale_order_calendar_state_report" model="ir.actions.act_window">
-        <field name="name">Sale order calendar state Report</field>
+        <field name="name">Sale Order Calendar State Report</field>
         <field name="res_model">sale.order.calendar.state.report</field>
         <field name="view_mode">pivot,graph</field>
         <field name="context">{}</field>

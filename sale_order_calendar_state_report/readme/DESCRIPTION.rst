@@ -1,1 +1,1 @@
-This module add statistic report for production deviation.
+This module add statistic report for sale order calendar state.
