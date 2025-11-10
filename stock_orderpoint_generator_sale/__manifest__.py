@@ -13,6 +13,7 @@
         "mrp",
         "product_sellers_info",
         "product_state",
+        "purchase_stock",
         "stock_orderpoint_generator",
     ],
     "data": [

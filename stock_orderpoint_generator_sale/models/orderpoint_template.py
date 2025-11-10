@@ -309,11 +309,27 @@ class OrderpointTemplate(models.Model):
                         ).days
                     max_qty = stock_max_qty[product_id.id]
                     qty_by_day = max_qty / (move_days or 1)
+                    purchase_delay = (
+                        product_id.purchase_delay
+                        if self.env.ref("purchase_stock.route_warehouse0_buy")
+                        in product_id.route_ids
+                        and product_id.purchase_delay
+                        else 0
+                    )
+                    produce_delay = (
+                        product_id.produce_delay
+                        if self.env.ref("mrp.route_warehouse0_manufacture")
+                        in product_id.route_ids
+                        and product_id.produce_delay
+                        else 0
+                    )
                     consumed_qty_by_lead_time = (
                         qty_by_day * (1 + (record.variation_percent / 100.0))
-                    ) * (product_id.purchase_delay or 1)
+                    ) * ((purchase_delay + produce_delay) or 1)
                     service_factor = norm.ppf(record.service_level)
-                    lead_time_factor = (product_id.purchase_delay or 1) ** (1 / 2)
+                    lead_time_factor = ((purchase_delay + produce_delay) or 1) ** (
+                        1 / 2
+                    )
                     security_stock = int(
                         math.ceil(qty_by_day * service_factor * lead_time_factor)
                     )
