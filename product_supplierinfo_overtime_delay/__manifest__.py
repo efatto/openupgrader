@@ -10,6 +10,7 @@
     "license": "AGPL-3",
     "depends": [
         "purchase_stock",
+        "stock_move_available_date_expected",
     ],
     "data": [
         "views/product_supplierinfo.xml",
