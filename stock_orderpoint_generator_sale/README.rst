@@ -108,6 +108,8 @@ Nella nazione è stato aggiunto un campo `Coefficiente di riordino`. Questo camp
 .. image:: https://raw.githubusercontent.com/efatto/efatto/14.0/stock_orderpoint_generator_sale/static/description/coefficiente_riordino.png
     :alt: Coefficiente di riordino
 
+Il calcolo del `consumo pezzi nei giorni di LEAD TIME` e del `fattore di lead time` dipende dal `Tempo di risposta per produzione` se il prodotto ha una rotta di produzione o dal `Tempo di risposta per consegne (calcolato)` se il prodotto ha una rotta di acquisto (se le ha entrambe i tempi vengono sommati attualmente).
+
 Informazioni sulle formule usate nel file di calcolo https://github.com/efatto/efatto/blob/14.0/stock_orderpoint_generator_sale/static/description/calculate-safety-stocks.ods
 
 Bug Tracker
