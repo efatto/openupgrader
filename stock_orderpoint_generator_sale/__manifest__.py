@@ -12,6 +12,7 @@
     "depends": [
         "mrp",
         "product_sellers_info",
+        "product_supplierinfo_overtime_delay",
         "product_state",
         "purchase_stock",
         "stock_orderpoint_generator",
