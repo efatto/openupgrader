@@ -375,6 +375,8 @@ class OrderpointTemplate(models.Model):
                                     "selected date range / move days period: %s) "
                                     "(Move days: %s, "
                                     "Qty by day: %s, "
+                                    "Purchase delay: %s, "
+                                    "Produce delay: %s, "
                                     "Consumed qty by lead time: %s, "
                                     "Service factor: %s, "
                                     "Lead time factor: %s, "
@@ -388,6 +390,8 @@ class OrderpointTemplate(models.Model):
                                     stock_max_qty[product_id.id],
                                     move_days,
                                     qty_by_day,
+                                    purchase_delay,
+                                    produce_delay,
                                     consumed_qty_by_lead_time,
                                     service_factor,
                                     lead_time_factor,
