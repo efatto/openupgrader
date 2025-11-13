@@ -396,9 +396,9 @@ class OrderpointTemplate(models.Model):
                                     move_days,
                                     qty_by_day,
                                     purchase_time_delay,
-                                    _("Not used")
+                                    _("(not used)")
                                     if purchase_overtime_delay > purchase_time_delay
-                                    else _("Used"),
+                                    else _("(used)"),
                                     purchase_overtime_delay,
                                     _("Not used")
                                     if purchase_overtime_delay <= purchase_time_delay

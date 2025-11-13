@@ -162,8 +162,8 @@ msgstr "Le nuove regole di riordino non sono confermate per default"
 #: code:addons/stock_orderpoint_generator_sale/models/orderpoint_template.py:0
 #: code:addons/stock_orderpoint_generator_sale/models/orderpoint_template.py:0
 #, python-format
-msgid "Not used"
-msgstr "Non utilizzato"
+msgid "(not used)"
+msgstr "(non utilizzato)"
 
 #. module: stock_orderpoint_generator_sale
 #: model:ir.model.fields,field_description:stock_orderpoint_generator_sale.field_stock_warehouse_orderpoint_template__order_mngt_cost
@@ -256,8 +256,8 @@ msgstr "Da abilitare manualmente"
 #: code:addons/stock_orderpoint_generator_sale/models/orderpoint_template.py:0
 #: code:addons/stock_orderpoint_generator_sale/models/orderpoint_template.py:0
 #, python-format
-msgid "Used"
-msgstr "Utilizzato"
+msgid "(used)"
+msgstr "(utilizzato)"
 
 #. module: stock_orderpoint_generator_sale
 #: model:ir.model.fields,help:stock_orderpoint_generator_sale.field_stock_warehouse_orderpoint_template__move_days
