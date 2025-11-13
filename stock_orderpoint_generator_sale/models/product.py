@@ -15,11 +15,12 @@ class ProductProduct(models.Model):
 
     def _get_purchase_delay(self, purchase_delay=0, overtime=False):
         if self.env.ref("purchase_stock.route_warehouse0_buy") in self.route_ids:
-            purchase_delay += self.purchase_delay
-            if overtime and self.seller_ids:
-                if self.seller_ids[0].overtime_purchase_delay:
+            if overtime:
+                if self.seller_ids and self.seller_ids[0].overtime_purchase_delay:
                     overtime_purchase_delay = self.seller_ids[0].overtime_purchase_delay
                     purchase_delay += overtime_purchase_delay
+            else:
+                purchase_delay += self.purchase_delay
         if (
             self.env.ref("mrp.route_warehouse0_manufacture") in self.route_ids
             and self.bom_ids
