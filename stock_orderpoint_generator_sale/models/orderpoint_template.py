@@ -380,7 +380,7 @@ class OrderpointTemplate(models.Model):
                                     "(Move days: %s, "
                                     "Qty by day: %s, "
                                     "Purchase delay: %s %s, "
-                                    "Purchase overtime delay: %s %s , "
+                                    "Purchase overtime delay: %s %s, "
                                     "Produce delay: %s, "
                                     "Consumed qty by lead time: %s, "
                                     "Service factor: %s, "
