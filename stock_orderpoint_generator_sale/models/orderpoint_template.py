@@ -309,7 +309,11 @@ class OrderpointTemplate(models.Model):
                         ).days
                     max_qty = stock_max_qty[product_id.id]
                     qty_by_day = max_qty / (move_days or 1)
-                    purchase_delay = product_id._get_purchase_delay()
+                    purchase_time_delay = product_id._get_purchase_delay()
+                    purchase_overtime_delay = product_id._get_purchase_delay(
+                        overtime=True
+                    )
+                    purchase_delay = max(purchase_overtime_delay, purchase_time_delay)
                     produce_delay = product_id._get_produce_delay()
                     consumed_qty_by_lead_time = (
                         qty_by_day * (1 + (record.variation_percent / 100.0))
@@ -375,7 +379,8 @@ class OrderpointTemplate(models.Model):
                                     "selected date range / move days period: %s) "
                                     "(Move days: %s, "
                                     "Qty by day: %s, "
-                                    "Purchase delay: %s, "
+                                    "Purchase delay: %s %s, "
+                                    "Purchase overtime delay: %s %s , "
                                     "Produce delay: %s, "
                                     "Consumed qty by lead time: %s, "
                                     "Service factor: %s, "
@@ -390,7 +395,14 @@ class OrderpointTemplate(models.Model):
                                     stock_max_qty[product_id.id],
                                     move_days,
                                     qty_by_day,
-                                    purchase_delay,
+                                    purchase_time_delay,
+                                    _("Not used")
+                                    if purchase_overtime_delay > purchase_time_delay
+                                    else _("Used"),
+                                    purchase_overtime_delay,
+                                    _("Not used")
+                                    if purchase_overtime_delay <= purchase_time_delay
+                                    else _("Used"),
                                     produce_delay,
                                     consumed_qty_by_lead_time,
                                     service_factor,

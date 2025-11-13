@@ -13,10 +13,10 @@ class ProductTemplate(models.Model):
 class ProductProduct(models.Model):
     _inherit = "product.product"
 
-    def _get_purchase_delay(self, purchase_delay=0):
+    def _get_purchase_delay(self, purchase_delay=0, overtime=False):
         if self.env.ref("purchase_stock.route_warehouse0_buy") in self.route_ids:
             purchase_delay += self.purchase_delay
-            if self.seller_ids:
+            if overtime and self.seller_ids:
                 if self.seller_ids[0].overtime_purchase_delay:
                     overtime_purchase_delay = self.seller_ids[0].overtime_purchase_delay
                     purchase_delay += overtime_purchase_delay
@@ -26,7 +26,9 @@ class ProductProduct(models.Model):
         ):
             bom_purchase_delay = max(
                 [
-                    p._get_purchase_delay(purchase_delay)
+                    p._get_purchase_delay(
+                        purchase_delay=purchase_delay, overtime=overtime
+                    )
                     for p in self.bom_ids.bom_line_ids.mapped("product_id")
                 ]
                 or [0]
