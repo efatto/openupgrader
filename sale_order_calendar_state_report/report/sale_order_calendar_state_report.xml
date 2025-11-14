@@ -9,7 +9,8 @@
                 <field name="calendar_state" />
                 <field name="production_id" />
                 <field name="production_date_planned_start" />
-                <field name="production_qty" sum="Total" />
+                <field name="production_qty" sum="Total Production Qty" />
+                <field name="amount_untaxed" sum="Total Amount Untaxed" />
             </tree>
         </field>
     </record>
@@ -39,15 +40,29 @@
         </field>
     </record>
 
+    <record id="view_sale_order_calendar_state_report_graph" model="ir.ui.view">
+        <field name="name">Sale order calendar state report: Graph</field>
+        <field name="model">sale.order.calendar.state.report</field>
+        <field name="arch" type="xml">
+            <graph>
+                <field name="production_id" />
+                <field name="calendar_state" />
+                <field name="production_date_planned_start" />
+                <field name="production_qty" type="measure" />
+            </graph>
+        </field>
+    </record>
+
     <record id="view_sale_order_calendar_state_report_pivot" model="ir.ui.view">
         <field name="name">Sale order calendar state report: Pivot</field>
         <field name="model">sale.order.calendar.state.report</field>
         <field name="arch" type="xml">
             <pivot>
                 <field name="production_id" type="row" />
-                <field name="production_date_planned_start" type="row" />
                 <field name="calendar_state" type="row" />
+                <field name="production_date_planned_start" type="col" />
                 <field name="production_qty" type="measure" />
+                <field name="amount_untaxed" type="measure" />
             </pivot>
         </field>
     </record>

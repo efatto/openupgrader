@@ -6,14 +6,19 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 14.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-11-07 17:41+0000\n"
-"PO-Revision-Date: 2025-11-07 17:41+0000\n"
+"POT-Creation-Date: 2025-11-14 16:44+0000\n"
+"PO-Revision-Date: 2025-11-14 16:44+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: \n"
 "Plural-Forms: \n"
+
+#. module: sale_order_calendar_state_report
+#: model:ir.model.fields,field_description:sale_order_calendar_state_report.field_sale_order_calendar_state_report__amount_untaxed
+msgid "Amount Untaxed"
+msgstr "Imponibile"
 
 #. module: sale_order_calendar_state_report
 #: model:ir.model.fields,field_description:sale_order_calendar_state_report.field_sale_order_calendar_state_report__assigned_attachment_ids
@@ -29,6 +34,16 @@ msgstr "Stato Calendario"
 #: model:ir.model.fields,field_description:sale_order_calendar_state_report.field_sale_order_calendar_state_report__display_name
 msgid "Display Name"
 msgstr "Nome visualizzato"
+
+#. module: sale_order_calendar_state_report
+#: model_terms:ir.ui.view,arch_db:sale_order_calendar_state_report.view_sale_order_calendar_state_report_search
+msgid "Group by Calendar State"
+msgstr "Raggruppa per Stato Calendario"
+
+#. module: sale_order_calendar_state_report
+#: model_terms:ir.ui.view,arch_db:sale_order_calendar_state_report.view_sale_order_calendar_state_report_search
+msgid "Group by Production Date Planned start"
+msgstr "Raggruppa per Data Pianificata Avvio Produzione"
 
 #. module: sale_order_calendar_state_report
 #: model:ir.model.fields,field_description:sale_order_calendar_state_report.field_sale_order_calendar_state_report__id
@@ -61,17 +76,27 @@ msgid "Production Qty"
 msgstr "Quantità Produzione"
 
 #. module: sale_order_calendar_state_report
+#: model_terms:ir.ui.view,arch_db:sale_order_calendar_state_report.view_sale_order_calendar_state_report_search
+msgid "Production date planned start: From Last Month"
+msgstr "Data pianificata avvio produzione: dal mese scorso"
+
+#. module: sale_order_calendar_state_report
 #: model:ir.ui.menu,name:sale_order_calendar_state_report.menu_sale_order_calendar_state_report
 msgid "Sale Order Calendar State"
 msgstr "Stato di Calendario Ordine"
 
 #. module: sale_order_calendar_state_report
-#: model:ir.model,name:sale_order_calendar_state_report.model_sale_order_calendar_state_report
 #: model:ir.actions.act_window,name:sale_order_calendar_state_report.action_sale_order_calendar_state_report
+#: model:ir.model,name:sale_order_calendar_state_report.model_sale_order_calendar_state_report
 msgid "Sale Order Calendar State Report"
 msgstr "Report Stato di Calendario Ordine"
 
 #. module: sale_order_calendar_state_report
 #: model_terms:ir.ui.view,arch_db:sale_order_calendar_state_report.view_sale_order_calendar_state_report_tree
-msgid "Total"
-msgstr "Totale"
+msgid "Total Amount Untaxed"
+msgstr "Totale Imponibile"
+
+#. module: sale_order_calendar_state_report
+#: model_terms:ir.ui.view,arch_db:sale_order_calendar_state_report.view_sale_order_calendar_state_report_tree
+msgid "Total Production Qty"
+msgstr "Totale Quantità Produzione"

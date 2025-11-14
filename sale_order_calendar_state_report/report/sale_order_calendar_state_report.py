@@ -12,6 +12,7 @@ class SaleOrderCalendarStateReport(models.Model):
         return order_state
 
     name = fields.Char("Order Name", readonly=True)
+    amount_untaxed = fields.Float(readonly=True)
     calendar_state = fields.Selection(selection=_get_order_state, readonly=True)
     production_id = fields.Many2one("mrp.production", readonly=True)
     production_qty = fields.Float(readonly=True)
@@ -24,6 +25,7 @@ class SaleOrderCalendarStateReport(models.Model):
             SELECT
                 so.id AS id,
                 so.name AS name,
+                so.amount_untaxed AS amount_untaxed,
                 so.calendar_state AS calendar_state,
                 so.production_id AS production_id,
                 mo.product_qty AS production_qty,
