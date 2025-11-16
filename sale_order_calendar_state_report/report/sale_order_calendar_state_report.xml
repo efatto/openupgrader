@@ -7,6 +7,7 @@
             <tree>
                 <field name="name" />
                 <field name="calendar_state" />
+                <field name="country_id" />
                 <field name="production_id" />
                 <field name="production_date_planned_start" />
                 <field name="production_qty" sum="Total Production Qty" />
@@ -47,6 +48,7 @@
             <graph>
                 <field name="production_id" />
                 <field name="calendar_state" />
+                <field name="country_id" />
                 <field name="production_date_planned_start" />
                 <field name="production_qty" type="measure" />
             </graph>
@@ -72,8 +74,7 @@
         <field name="res_model">sale.order.calendar.state.report</field>
         <field name="view_mode">graph,pivot</field>
         <field name="context">{"search_default_filter_production_date_planned_start": 1,
-                               "search_default_groupby_calendar_state": 1,
-                               "search_default_groupby_production_date_planned_start": 1}</field>
+                               "search_default_groupby_calendar_state": 1}</field>
     </record>
 
     <menuitem

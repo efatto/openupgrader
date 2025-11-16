@@ -15,6 +15,7 @@ class SaleOrderCalendarStateReport(models.Model):
     amount_untaxed = fields.Float(readonly=True)
     calendar_state = fields.Selection(selection=_get_order_state, readonly=True)
     production_id = fields.Many2one("mrp.production", readonly=True)
+    country_id = fields.Many2one("res.country", readonly=True)
     production_qty = fields.Float(readonly=True)
     production_date_planned_start = fields.Date(readonly=True)
 
@@ -24,6 +25,7 @@ class SaleOrderCalendarStateReport(models.Model):
             """CREATE OR REPLACE VIEW %s AS (
             SELECT
                 so.id AS id,
+                co.id AS country_id,
                 so.name AS name,
                 so.amount_untaxed AS amount_untaxed,
                 so.calendar_state AS calendar_state,
@@ -32,6 +34,8 @@ class SaleOrderCalendarStateReport(models.Model):
                 to_char(mo.date_planned_start, 'YYYY-MM-DD') AS production_date_planned_start
             FROM sale_order so
                 LEFT JOIN mrp_production mo ON mo.id = so.production_id
+                LEFT JOIN res_partner rp ON rp.id = so.partner_id
+                LEFT JOIN res_country co ON co.id = rp.country_id
             WHERE so.production_id is not null
         )
         """
