@@ -7,7 +7,7 @@ from odoo import fields, models
 class ProductTemplate(models.Model):
     _inherit = "product.template"
 
-    orderpoint_generate_active = fields.Boolean(default=True)
+    orderpoint_generate_active = fields.Boolean()
 
 
 class ProductProduct(models.Model):
