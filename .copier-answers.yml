@@ -21,6 +21,6 @@ repo_description: Modules for extend and fix use of Odoo
 repo_name: Tools for Odoo
 repo_slug: efatto
 repo_website: https://github.com/efatto/efatto
-use_pyproject_toml: false
+use_pyproject_toml: true
 use_ruff: false
 
