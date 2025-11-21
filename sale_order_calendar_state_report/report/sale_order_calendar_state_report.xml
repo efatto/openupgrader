@@ -10,6 +10,7 @@
                 <field name="country_id" />
                 <field name="production_id" />
                 <field name="production_date_planned_start" />
+                <field name="sale_order_max_commitment_date" />
                 <field name="production_qty" sum="Total Production Qty" />
                 <field name="amount_untaxed" sum="Total Amount Untaxed" />
             </tree>
@@ -33,6 +34,16 @@
           context="{'group_by': 'production_date_planned_start'}"
         />
                 <filter
+          name="filter_sale_order_max_commitment_date"
+          string="Sale order max commitment date: From Last Month"
+          domain="[('sale_order_max_commitment_date', '&gt;=', (context_today().replace(day=1) + relativedelta(months=-1)).strftime('%Y-%m-%d'))]"
+        />
+                <filter
+          string="Group by Sale order max commitment date"
+          name="groupby_sale_order_max_commitment_date"
+          context="{'group_by': 'sale_order_max_commitment_date'}"
+        />
+                <filter
           string="Group by Calendar State"
           name="groupby_calendar_state"
           context="{'group_by': 'calendar_state'}"
@@ -50,6 +61,7 @@
                 <field name="calendar_state" />
                 <field name="country_id" />
                 <field name="production_date_planned_start" />
+                <field name="sale_order_max_commitment_date" />
                 <field name="production_qty" type="measure" />
             </graph>
         </field>
@@ -62,7 +74,7 @@
             <pivot>
                 <field name="production_id" type="row" />
                 <field name="calendar_state" type="row" />
-                <field name="production_date_planned_start" type="col" />
+                <field name="sale_order_max_commitment_date" type="col" />
                 <field name="production_qty" type="measure" />
                 <field name="amount_untaxed" type="measure" />
             </pivot>
@@ -73,7 +85,10 @@
         <field name="name">Sale Order Calendar State Report</field>
         <field name="res_model">sale.order.calendar.state.report</field>
         <field name="view_mode">graph,pivot</field>
-        <field name="context">{"search_default_filter_production_date_planned_start": 1,
+        <field
+      name="context"
+    >{"search_default_filter_sale_order_max_commitment_date": 1,
+                               "search_default_groupby_sale_order_max_commitment_date": 1,
                                "search_default_groupby_calendar_state": 1}</field>
     </record>
 

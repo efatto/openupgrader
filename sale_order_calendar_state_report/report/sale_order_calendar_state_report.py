@@ -5,6 +5,7 @@ class SaleOrderCalendarStateReport(models.Model):
     _name = "sale.order.calendar.state.report"
     _auto = False
     _description = "Sale Order Calendar State Report"
+    _order = "sale_order_max_commitment_date asc, name asc"
 
     @api.model
     def _get_order_state(self):
@@ -18,6 +19,7 @@ class SaleOrderCalendarStateReport(models.Model):
     country_id = fields.Many2one("res.country", readonly=True)
     production_qty = fields.Float(readonly=True)
     production_date_planned_start = fields.Date(readonly=True)
+    sale_order_max_commitment_date = fields.Date(readonly=True)
 
     def init(self):
         tools.drop_view_if_exists(self.env.cr, self._table)
@@ -31,7 +33,8 @@ class SaleOrderCalendarStateReport(models.Model):
                 so.calendar_state AS calendar_state,
                 so.production_id AS production_id,
                 mo.product_qty AS production_qty,
-                to_char(mo.date_planned_start, 'YYYY-MM-DD') AS production_date_planned_start
+                to_char(mo.date_planned_start, 'YYYY-MM-DD') AS production_date_planned_start,
+                to_char(so.max_commitment_date, 'YYYY-MM-DD') AS sale_order_max_commitment_date
             FROM sale_order so
                 LEFT JOIN mrp_production mo ON mo.id = so.production_id
                 LEFT JOIN res_partner rp ON rp.id = so.partner_id
