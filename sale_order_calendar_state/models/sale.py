@@ -273,11 +273,14 @@ class SaleOrder(models.Model):
     @api.depends("order_line.commitment_date", "commitment_date", "date_order")
     def _compute_max_commitment_date(self):
         # todo check confirmation_date has been replaced by date_order, is it updated?
-        for order in self.filtered(
-            lambda x: x.commitment_date
-            or x.date_order
-            or any(x.mapped("order_line.commitment_date"))
-        ):
+        for order in self:
+            if (
+                not order.commitment_date
+                or not order.date_order
+                or not any(order.mapped("order_line.commitment_date"))
+            ):
+                # this should never happen
+                order.max_commitment_date = fields.Datetime.now()
             dates = []
             if order.commitment_date:
                 dates.extend([order.commitment_date])
