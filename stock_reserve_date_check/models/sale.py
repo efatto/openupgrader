@@ -8,7 +8,8 @@ class SaleOrder(models.Model):
     _inherit = "sale.order"
 
     enable_reserve_date_check = fields.Boolean(
-        help="Forbid reservation on not possible date", default=True, copy=False
+        help="Forbid reservation on not possible date",
+        copy=False,
     )
 
     def action_confirm(self):
