@@ -56,6 +56,11 @@ The migration process is as follows:
 #. Do the migration with the `Migrate` button
 #. Repeat the `Prepare migration` and `Migrate` methods for every successive version
 
+At the end of the process it is possible to create a backup for the migrated instance, and restore it in the usual way, with the button:
+
+.. image:: ../static/description/dump_migrated_instance.png
+    :alt: Dump migrated instance
+
 Notes:
 
 #. Every instance of the migrated Odoo with virtualenv and log of the migration process is saved in configured folder or ~/odoo_migration/<database>/
