@@ -1,1 +1,0 @@
-Questo modulo aggiunge un metodo per creare un virtualenv python, utile quando serve lanciare metodi che richiedono una versione di python diversa oppure delle librerie incompatibili con quelle necessarie al funzionamento di Odoo.

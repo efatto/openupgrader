@@ -82,13 +82,6 @@ class OpenUpgrader(SavepointCase):
         cls.openupgrader_migration.from_version_id = cls.from_version_id
         cls.openupgrader_migration.to_version_id = cls.to_version_id
 
-    @staticmethod
-    def _install_pip_module(openupgrader_migration, version_id, module_name):
-        openupgrader_migration.install_pip_modules(
-            version_id,
-            [module_name],
-        )
-
     def test_openupgrader(self):
         openupgrader_migration = self.openupgrader_migration
         self.assertEqual(

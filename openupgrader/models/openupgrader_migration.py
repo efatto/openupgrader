@@ -21,10 +21,7 @@ from odoo.modules import get_module_resource
 from odoo.tools import config
 from odoo.tools.safe_eval import safe_eval
 
-from odoo.addons.python_venv.python_venv import (
-    _create_python_venv,
-    _get_env_for_subprocess,
-)
+from .openupgrader_config import _get_env_for_subprocess
 
 logger = logging.getLogger(__name__)
 
@@ -365,7 +362,6 @@ class OpenupgraderMigration(models.Model):
                 file_writer.write(f"Start Odoo v. {version_id.name} logs")
                 file_writer.close()
             bash_command += f"--logfile={self.odoo_update_log_file} "
-        subprocess_env = _get_env_for_subprocess(folder, version_id.python_version)
         logger.info(
             "Starting Odoo in virtualenv for migration with command %s" % bash_command
         )
@@ -378,7 +374,7 @@ class OpenupgraderMigration(models.Model):
                 cwd=folder,
                 stdout=writer if update else PIPE,
                 stderr=writer if update else PIPE,
-                env=subprocess_env,
+                env=_get_env_for_subprocess(folder, version_id.python_version),
                 shell=True,
             )
             if update:  # if not updating, this part will recurse infinitely
@@ -931,10 +927,9 @@ class OpenupgraderMigration(models.Model):
         self.ensure_one()
         odoo_version_int = int(version_id.name.split(".")[0])
         venv_path = os.path.join(self.folder, f"openupgrade{version_id.name}")
-        subprocess_env = _create_python_venv(venv_path, version_id.python_version)
-        # try to install with pip and log error if it fails
+        # try to install Odoo addon and log error if it fails
         commands = [
-            "pip install --no-cache-dir --pre --upgrade odoo{version_name}-addon-{name}".format(
+            "uv add --prerelase=allow odoo{version_name}-addon-{name}".format(
                 name=name,
                 version_name=odoo_version_int if odoo_version_int < 15 else "",
             )
@@ -944,10 +939,10 @@ class OpenupgraderMigration(models.Model):
             process = Popen(
                 command,
                 cwd=venv_path,
-                env=subprocess_env,
                 shell=True,
                 stderr=PIPE,
                 stdout=PIPE,
+                env=_get_env_for_subprocess(venv_path, version_id.python_version),
             )
             error = process.stderr.readlines()
             errors = [e.decode().lower() for e in error if "error" in e.decode()]

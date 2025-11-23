@@ -1,4 +1,5 @@
 import base64
+import configparser
 import logging
 import os
 import shutil
@@ -9,9 +10,54 @@ import yaml
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
 
-from odoo.addons.python_venv.python_venv import _create_python_venv
-
 logger = logging.getLogger(__name__)
+
+
+def _get_env_for_subprocess(folder, py_version):
+    env_for_subprocess = os.environ.copy()
+    env_for_subprocess["VIRTUAL_ENV"] = folder
+    env_for_subprocess["PYTHONPATH"] = folder
+    # If there is a PIP_EXTRA_INDEX_URL in local env, put in the pyenv
+    pip_extra_index_url = os.environ.get("PIP_EXTRA_INDEX_URL")
+    if not pip_extra_index_url:
+        pip_conf_path = os.path.join(os.path.expanduser("~"), ".pip", "pip.conf")
+        if os.path.isfile(pip_conf_path):
+            config = configparser.ConfigParser()
+            config.read(pip_conf_path)
+            pip_extra_index_url = config.get("global", "extra-index-url")
+    if pip_extra_index_url:
+        env_for_subprocess["PIP_EXTRA_INDEX_URL"] = pip_extra_index_url
+    env_for_subprocess["PATH"] = ":".join(
+        [
+
+            os.path.join(folder, "bin"),
+            "/bin",
+            "/usr/bin",
+        ]
+    )
+    env_for_subprocess["PWD"] = folder
+    python_root = os.path.join(
+        folder, "lib", f"python{'.'.join(py_version.split('.')[:2])}"
+    )
+    if os.path.isdir(python_root):
+        env_for_subprocess["LIBRARY_ROOTS"] = python_root
+    return env_for_subprocess
+
+
+def init_pyproject_uv(project_path, py_version):
+    subprocess.Popen(
+        "curl -LsSf https://astral.sh/uv/install.sh | "
+        f"env UV_UNMANAGED_INSTALL={project_path} sh",
+        shell=True,
+        env=_get_env_for_subprocess(project_path, py_version),
+    ).wait()
+    if not os.path.isfile(os.path.join(project_path, "pyproject.toml")):
+        subprocess.Popen(
+            f"uv init --directory {project_path} --python {py_version} {project_path}",
+            shell=True,
+            cwd=project_path,
+            env=_get_env_for_subprocess(project_path, py_version),
+        ).wait()
 
 
 class AutoInstallModule(models.Model):
@@ -245,7 +291,7 @@ class OpenupgraderConfig(models.Model):
             else:
                 record.odoo_is_openupgrade = False
 
-    # todo get pip requirements from installed modules
+    # todo install requirements from installed modules
     @api.depends("name", "openupgrader_migration_id.from_version_id")
     def _compute_module_installed_ids(self):
         for record in self:
@@ -297,15 +343,15 @@ class OpenupgraderConfig(models.Model):
         # Odoo is OpenUpgrade until v. 13.0, from v. 14.0 Odoo is in ./<version/odoo
         # install odoo Openupgrade repo, from v. 14.0 it contains only migration script
         if openupgrader_migration_id:
-            venv_path = os.path.join(
+            project_path = os.path.join(
                 openupgrader_migration_id.folder, f"openupgrade{self.name}"
             )
-            subprocess_env = _create_python_venv(venv_path, self.python_version)
-            openupgrade_path = os.path.join(venv_path, "odoo")
+            init_pyproject_uv(project_path, self.python_version)
+            openupgrade_path = os.path.join(project_path, "odoo")
             odoo_path = (
                 openupgrade_path
                 if odoo_is_openupgrade
-                else (os.path.join(venv_path, "repos", "odoo"))
+                else (os.path.join(project_path, "repos", "odoo"))
             )
             if not os.path.isdir(openupgrade_path):
                 subprocess.Popen(
@@ -314,8 +360,7 @@ class OpenupgraderConfig(models.Model):
                         f"{openupgrader_migration_id.openupgrade_repo} "
                         f"-b {self.name} --depth 1 odoo "
                     ],
-                    cwd=venv_path,
-                    env=subprocess_env,  # forse qui non serve
+                    cwd=project_path,
                     shell=True,
                 ).wait()
             else:
@@ -324,7 +369,6 @@ class OpenupgraderConfig(models.Model):
                         "git pull --rebase",
                     ],
                     cwd=openupgrade_path,
-                    env=subprocess_env,  # forse qui non serve
                     shell=True,
                 ).wait()
 
@@ -335,35 +379,21 @@ class OpenupgraderConfig(models.Model):
                     self.odoo_repo_id.remote_branch or self.name,
                     odoo_path,
                 )
-            if self.name in ["16.0", "17.0", "18.0"]:
-                # ugly and temp fix for libraries mismatch with py3.10.x
-                for command in [
-                    "sed -i 's/gevent==21.8.0/gevent==22.10.2/g' "
-                    f"{odoo_path}/requirements.txt",
-                    "sed -i 's/greenlet==1.1.2/greenlet==2.0.2/g' "
-                    f"{odoo_path}/requirements.txt",
-                ]:
-                    subprocess.Popen(
-                        command,
-                        cwd=venv_path,
-                        env=subprocess_env,
-                        shell=True,
-                    )
             commands = [
-                "pip install --no-cache-dir '%s'" % name
+                "uv add '%s' --active" % name
                 for name in self.pip_requirement_ids.mapped("name")
             ]
             if odoo_is_openupgrade:
                 for c in [
-                    f"cd {openupgrade_path} && pip install -e . ",
-                    f"pip install --no-cache-dir -r {odoo_path}/requirements.txt",
+                    f"cd {openupgrade_path} && uv pip install . ",
+                    f"uv add --active -r {odoo_path}/requirements.txt",
                 ]:
                     commands.append(c)
             else:
                 for c in [
-                    f"cd {odoo_path} && pip install -e . ",
-                    f"pip install --no-cache-dir -r {openupgrade_path}/requirements.txt",
-                    f"pip install --no-cache-dir -r {odoo_path}/requirements.txt",
+                    f"cd {odoo_path} && uv pip install . ",
+                    f"uv add --active -r {openupgrade_path}/requirements.txt",
+                    f"uv add --active -r {odoo_path}/requirements.txt",
                 ]:
                     commands.append(c)
             # exclude odoo core modules
@@ -374,8 +404,7 @@ class OpenupgraderConfig(models.Model):
             for command in commands:
                 subprocess.Popen(
                     command,
-                    cwd=venv_path,
-                    env=subprocess_env,
+                    cwd=project_path,
                     shell=True,
                 ).wait()
             odoo_modules_to_install_via_pip = [

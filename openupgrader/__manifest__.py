@@ -11,7 +11,6 @@
     "depends": [
         "auto_backup",
         "mail",
-        "python_venv",
     ],
     "data": [
         "security/ir.model.access.csv",
