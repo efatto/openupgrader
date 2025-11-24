@@ -21,10 +21,7 @@ from odoo.modules import get_module_resource
 from odoo.tools import config
 from odoo.tools.safe_eval import safe_eval
 
-from odoo.addons.python_venv.python_venv import (
-    _create_python_venv,
-    _get_env_for_subprocess,
-)
+from .openupgrader_config import _get_env_for_subprocess
 
 logger = logging.getLogger(__name__)
 
@@ -250,7 +247,7 @@ class OpenupgraderMigration(models.Model):
 
     def check_venv(self, version_name):
         folder = os.path.join(self.folder, f"openupgrade{version_name}")
-        if os.path.isdir(os.path.join(folder, "bin")):
+        if os.path.isdir(os.path.join(folder, ".venv", "bin")):
             return folder
         return False
 
@@ -931,12 +928,16 @@ class OpenupgraderMigration(models.Model):
         self.ensure_one()
         odoo_version_int = int(version_id.name.split(".")[0])
         venv_path = os.path.join(self.folder, f"openupgrade{version_id.name}")
-        subprocess_env = _create_python_venv(venv_path, version_id.python_version)
+        subprocess_env = _get_env_for_subprocess(venv_path, version_id.python_version)
         # try to install with pip and log error if it fails
         commands = [
-            "pip install --no-cache-dir --pre --upgrade odoo{version_name}-addon-{name}".format(
-                name=name,
+            (
+                "uv pip install --python={python_path} --no-cache-dir "
+                "--pre --upgrade odoo{version_name}-addon-{name}"
+            ).format(
+                python_path=subprocess_env["PYTHONPATH"],
                 version_name=odoo_version_int if odoo_version_int < 15 else "",
+                name=name,
             )
             for name in module_names
         ]
@@ -944,7 +945,6 @@ class OpenupgraderMigration(models.Model):
             process = Popen(
                 command,
                 cwd=venv_path,
-                env=subprocess_env,
                 shell=True,
                 stderr=PIPE,
                 stdout=PIPE,
