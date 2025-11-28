@@ -37,7 +37,7 @@ def _get_env_for_subprocess(folder, py_version):
     return env_for_subprocess
 
 
-def _create_python_venv(venv_path, py_version):
+def _create_efatto(venv_path, py_version):
     subprocess_env = _get_env_for_subprocess(venv_path, py_version)
     if not os.path.isdir(venv_path):
         subprocess.Popen([f"mkdir -p {venv_path}"], shell=True).wait()
