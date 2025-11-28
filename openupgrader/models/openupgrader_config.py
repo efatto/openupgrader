@@ -4,6 +4,7 @@ import logging
 import os
 import shutil
 import subprocess
+from shutil import which
 
 import yaml
 
@@ -15,8 +16,9 @@ logger = logging.getLogger(__name__)
 
 def _get_env_for_subprocess(folder, py_version):
     env_for_subprocess = os.environ.copy()
-    env_for_subprocess["VIRTUAL_ENV"] = folder
-    env_for_subprocess["PYTHONPATH"] = folder
+    env_folder = os.path.join(folder, ".venv")
+    env_for_subprocess["VIRTUAL_ENV"] = env_folder
+    env_for_subprocess["PYTHONPATH"] = os.path.join(env_folder, "bin", "python")
     # If there is a PIP_EXTRA_INDEX_URL in local env, put in the pyenv
     pip_extra_index_url = os.environ.get("PIP_EXTRA_INDEX_URL")
     if not pip_extra_index_url:
@@ -29,35 +31,42 @@ def _get_env_for_subprocess(folder, py_version):
         env_for_subprocess["PIP_EXTRA_INDEX_URL"] = pip_extra_index_url
     env_for_subprocess["PATH"] = ":".join(
         [
-
-            os.path.join(folder, "bin"),
+            env_folder,
+            os.path.join(env_folder, "bin"),
             "/bin",
             "/usr/bin",
         ]
     )
-    env_for_subprocess["PWD"] = folder
+    env_for_subprocess["PWD"] = env_folder
     python_root = os.path.join(
-        folder, "lib", f"python{'.'.join(py_version.split('.')[:2])}"
+        env_folder, "lib", f"python{'.'.join(py_version.split('.')[:2])}"
     )
     if os.path.isdir(python_root):
         env_for_subprocess["LIBRARY_ROOTS"] = python_root
     return env_for_subprocess
 
 
-def init_pyproject_uv(project_path, py_version):
-    subprocess.Popen(
-        "curl -LsSf https://astral.sh/uv/install.sh | "
-        f"env UV_UNMANAGED_INSTALL={project_path} sh",
-        shell=True,
-        env=_get_env_for_subprocess(project_path, py_version),
-    ).wait()
-    if not os.path.isfile(os.path.join(project_path, "pyproject.toml")):
+def _create_python_venv(venv_path, py_version):
+    subprocess_env = _get_env_for_subprocess(venv_path, py_version)
+    # Copy some pip configuration files that could exist in local to the python venv
+    if not os.path.isdir(venv_path):
+        subprocess.Popen([f"mkdir -p {venv_path}"], shell=True).wait()
+    if which("uv") is None:
         subprocess.Popen(
-            f"uv init --directory {project_path} --python {py_version} {project_path}",
+            "curl -LsSf https://astral.sh/uv/install.sh | sh",
             shell=True,
-            cwd=project_path,
-            env=_get_env_for_subprocess(project_path, py_version),
         ).wait()
+    if not os.path.isfile(os.path.join(venv_path, "pyproject.toml")):
+        for command in [
+            f"uv init --directory {venv_path} --python {py_version}",
+            f"uv venv --python {py_version}",
+        ]:
+            subprocess.Popen(
+                command,
+                shell=True,
+                cwd=venv_path,
+            ).wait()
+    return subprocess_env
 
 
 class AutoInstallModule(models.Model):
@@ -360,7 +369,7 @@ class OpenupgraderConfig(models.Model):
                         f"{openupgrader_migration_id.openupgrade_repo} "
                         f"-b {self.name} --depth 1 odoo "
                     ],
-                    cwd=project_path,
+                    cwd=venv_path,
                     shell=True,
                 ).wait()
             else:
@@ -379,21 +388,39 @@ class OpenupgraderConfig(models.Model):
                     self.odoo_repo_id.remote_branch or self.name,
                     odoo_path,
                 )
+            if self.name in ["16.0", "17.0", "18.0"]:
+                # ugly and temp fix for libraries mismatch with py3.10.x
+                for command in [
+                    "sed -i 's/gevent==21.8.0/gevent==22.10.2/g' "
+                    f"{odoo_path}/requirements.txt",
+                    "sed -i 's/greenlet==1.1.2/greenlet==2.0.2/g' "
+                    f"{odoo_path}/requirements.txt",
+                ]:
+                    subprocess.Popen(
+                        command,
+                        cwd=venv_path,
+                        shell=True,
+                    )
             commands = [
-                "uv add '%s' --active" % name
+                f"uv pip install --python={subprocess_env['PYTHONPATH']} '%s'" % name
                 for name in self.pip_requirement_ids.mapped("name")
             ]
             if odoo_is_openupgrade:
                 for c in [
-                    f"cd {openupgrade_path} && uv pip install . ",
-                    f"uv add --active -r {odoo_path}/requirements.txt",
+                    f"cd {openupgrade_path} "
+                    f"&& uv pip install --python={subprocess_env['PYTHONPATH']} -e . ",
+                    f"uv pip install --python={subprocess_env['PYTHONPATH']} "
+                    f"--no-cache-dir -r {odoo_path}/requirements.txt",
                 ]:
                     commands.append(c)
             else:
                 for c in [
-                    f"cd {odoo_path} && uv pip install . ",
-                    f"uv add --active -r {openupgrade_path}/requirements.txt",
-                    f"uv add --active -r {odoo_path}/requirements.txt",
+                    f"cd {odoo_path} "
+                    f"&& uv pip install --python={subprocess_env['PYTHONPATH']} -e . ",
+                    f"uv pip install --python={subprocess_env['PYTHONPATH']} "
+                    f"--no-cache-dir -r {openupgrade_path}/requirements.txt",
+                    f"uv pip install --python={subprocess_env['PYTHONPATH']} "
+                    f"--no-cache-dir -r {odoo_path}/requirements.txt",
                 ]:
                     commands.append(c)
             # exclude odoo core modules
@@ -404,7 +431,7 @@ class OpenupgraderConfig(models.Model):
             for command in commands:
                 subprocess.Popen(
                     command,
-                    cwd=project_path,
+                    cwd=venv_path,
                     shell=True,
                 ).wait()
             odoo_modules_to_install_via_pip = [
