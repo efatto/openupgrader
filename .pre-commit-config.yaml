@@ -39,8 +39,12 @@ repos:
         entry: found a en.po file
         language: fail
         files: '[a-zA-Z0-9_]*/i18n/en\.po$'
+  - repo: https://github.com/sbidoul/whool
+    rev: v1.3
+    hooks:
+      - id: whool-init
   - repo: https://github.com/oca/maintainer-tools
-    rev: d5fab7ee87fceee858a3d01048c78a548974d935
+    rev: f9b919b9868143135a9c9cb03021089cabba8223
     hooks:
       # update the NOT INSTALLABLE ADDONS section above
       - id: oca-update-pre-commit-excluded-addons
@@ -54,6 +58,7 @@ repos:
           - --repo-name=openupgrader
           - --if-source-changed
           - --keep-source-digest
+      - id: oca-gen-external-dependencies
   - repo: https://github.com/OCA/odoo-pre-commit-hooks
     rev: v0.0.25
     hooks:
@@ -61,21 +66,6 @@ repos:
       - id: oca-checks-po
         args:
           - --disable=po-pretty-format
-  - repo: https://github.com/myint/autoflake
-    rev: v1.5.3
-    hooks:
-      - id: autoflake
-        args:
-          - --expand-star-imports
-          - --ignore-init-module-imports
-          - --in-place
-          - --remove-all-unused-imports
-          - --remove-duplicate-keys
-          - --remove-unused-variables
-  - repo: https://github.com/psf/black
-    rev: 22.3.0
-    hooks:
-      - id: black
   - repo: local
     hooks:
       - id: prettier
@@ -133,30 +123,12 @@ repos:
     hooks:
       - id: pyupgrade
         args: ["--keep-percent-format"]
-  - repo: https://github.com/PyCQA/isort
-    rev: 5.12.0
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.1.3
     hooks:
-      - id: isort
-        name: isort except __init__.py
-        args:
-          - --settings=.
-        exclude: /__init__\.py$
-  - repo: https://github.com/acsone/setuptools-odoo
-    rev: 3.1.8
-    hooks:
-      - id: setuptools-odoo-make-default
-      - id: setuptools-odoo-get-requirements
-        args:
-          - --output
-          - requirements.txt
-          - --header
-          - "# generated from manifests external_dependencies"
-  - repo: https://github.com/PyCQA/flake8
-    rev: 5.0.0
-    hooks:
-      - id: flake8
-        name: flake8
-        additional_dependencies: ["flake8-bugbear==20.1.4"]
+      - id: ruff
+        args: [--fix, --exit-non-zero-on-fix]
+      - id: ruff-format
   - repo: https://github.com/OCA/pylint-odoo
     rev: 7.0.2
     hooks:

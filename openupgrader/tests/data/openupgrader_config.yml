@@ -1,7 +1,7 @@
 "16.0":
   - python_version: "3.10.12"
   - pip_requirements:
-      - setuptools
+      - setuptools<70
       - git+https://github.com/OCA/openupgradelib.git@master#egg=openupgradelib
       - odoorpc
       - pysftp
@@ -18,7 +18,7 @@
 "15.0":
   - python_version: "3.8.16"
   - pip_requirements:
-      - setuptools
+      - setuptools<70
       - git+https://github.com/OCA/openupgradelib.git@master#egg=openupgradelib
       - odoorpc
       - pysftp
@@ -35,7 +35,7 @@
 "14.0":
   - python_version: "3.8.16"
   - pip_requirements:
-      - setuptools
+      - setuptools<70
       - git+https://github.com/OCA/openupgradelib.git@master#egg=openupgradelib
       - odoorpc
       - pysftp

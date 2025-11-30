@@ -7,7 +7,7 @@ import subprocess
 
 import yaml
 
-from odoo import _, api, fields, models
+from odoo import _, api, fields, models, release
 from odoo.exceptions import UserError, ValidationError
 
 logger = logging.getLogger(__name__)
@@ -27,7 +27,7 @@ def _get_env_for_subprocess(folder, py_version):
             config.read(pip_conf_path)
             pip_extra_index_url = config.get("global", "extra-index-url")
     if pip_extra_index_url:
-        env_for_subprocess["PIP_EXTRA_INDEX_URL"] = pip_extra_index_url
+        env_for_subprocess["UV_INDEX"] = pip_extra_index_url
     env_for_subprocess["PATH"] = ":".join(
         [
             env_folder,
@@ -58,10 +58,10 @@ def _create_python_venv(venv_path, py_version):
             shell=True,
         ).wait()
     if not os.path.isfile(uv_path):
-        raise ValidationError(_("uv is not installed, please install uv first!"))
+        raise ValidationError(_("uv is not installed, please install it first!"))
     if not os.path.isfile(os.path.join(venv_path, "pyproject.toml")):
         for command in [
-            f"uv init --directory {venv_path} ",
+            f"uv init --directory {venv_path} --python 'python=={py_version}'",
             f"uv venv --python {py_version}",
         ]:
             subprocess.Popen(
@@ -76,6 +76,7 @@ def _create_python_venv(venv_path, py_version):
 class AutoInstallModule(models.Model):
     _name = "auto.install.module"
     _description = "AutoInstall Module"
+    _order = "no_pip_found desc, name"
 
     name = fields.Text(string="Technical Name of Installed Module", required=True)
     sequence = fields.Integer(string="SQL Sequence")
@@ -87,14 +88,18 @@ class AutoInstallModule(models.Model):
         string="Technical Name of Module To Install",
         required=True,
     )
+    no_pip_found = fields.Boolean(string="No pip found for target version")
+    is_core_module = fields.Boolean(string="Is core module in target version")
 
 
 class ModuleName(models.Model):
     _name = "module.name"
     _description = "Module name"
-    _order = "name"
+    _order = "no_pip_found desc, name"
 
     name = fields.Text(string="Module Technical Name", required=True)
+    no_pip_found = fields.Boolean(string="No pip found for target version")
+    is_core_module = fields.Boolean(string="Is core module in target version")
 
     _sql_constraints = [
         (
@@ -108,8 +113,11 @@ class ModuleName(models.Model):
 class PipRequirement(models.Model):
     _name = "pip.requirement"
     _description = "Pip requirement"
+    _order = "no_pip_found desc, name"
 
     name = fields.Text(string="Pip requirement", required=True)
+    no_pip_found = fields.Boolean(string="No pip found for target version")
+    is_core_module = fields.Boolean(string="Is core module in target version")
 
     _sql_constraints = [
         (
@@ -154,6 +162,7 @@ class OpenupgraderConfig(models.Model):
             ("16.0", "16.0"),
             ("17.0", "17.0"),
             ("18.0", "18.0"),
+            ("19.0", "19.0"),
         ],
         required=True,
         translate=False,
@@ -174,7 +183,7 @@ class OpenupgraderConfig(models.Model):
         relation="installed_module_rel",
         column1="config_id",
         column2="installed_module_id",
-        string="Modules installed in current instance",
+        string="Modules to be installed",
         compute="_compute_module_installed_ids",
         copy=False,
         store=True,
@@ -261,6 +270,46 @@ class OpenupgraderConfig(models.Model):
         copy=False,
     )
 
+    def _set_modules_installability_via_pip(self, names):
+        # set module not installable in all the possible origins:
+        self.ensure_one()
+        self.module_installed_ids.no_pip_found = False
+        self.module_auto_install_ids.no_pip_found = False
+        self.pip_requirement_ids.no_pip_found = False
+        self.odoo_pip_requirement_ids.no_pip_found = False
+        if names:
+            self.module_installed_ids.filtered(
+                lambda x: x.name in names
+            ).no_pip_found = True
+            self.module_auto_install_ids.filtered(
+                lambda x: x.module_to_install_name in names
+            ).no_pip_found = True
+            self.pip_requirement_ids.filtered(
+                lambda x: x.name in names
+            ).no_pip_found = True
+            self.odoo_pip_requirement_ids.filtered(
+                lambda x: x.name in names
+            ).no_pip_found = True
+
+    def _set_core_modules(self, names):
+        self.ensure_one()
+        self.module_installed_ids.is_core_module = False
+        self.module_installed_ids.filtered(
+            lambda x: x.name in names
+        ).is_core_module = True
+        self.module_auto_install_ids.is_core_module = False
+        self.module_auto_install_ids.filtered(
+            lambda x: x.module_to_install_name in names
+        ).is_core_module = True
+        self.pip_requirement_ids.is_core_module = False
+        self.pip_requirement_ids.filtered(
+            lambda x: x.name in names
+        ).is_core_module = True
+        self.odoo_pip_requirement_ids.is_core_module = False
+        self.odoo_pip_requirement_ids.filtered(
+            lambda x: x.name in names
+        ).is_core_module = True
+
     def _create_db_backup(self, folder):
         self.ensure_one()
         if not self.db_backup_id:
@@ -304,11 +353,25 @@ class OpenupgraderConfig(models.Model):
             else:
                 record.odoo_is_openupgrade = False
 
-    # todo install requirements from installed modules
-    @api.depends("name", "openupgrader_migration_id.from_version_id")
+    def _search_create_module(self, module_name):
+        module_id = self.env["module.name"].search(
+            [
+                ("name", "=", module_name),
+            ]
+        )
+        if not module_id:
+            module_id = self.env["module.name"].create({"name": module_name})
+            # ensure data is committed to db to avoid duplication
+            module_id.flush()
+        return module_id
+
+    @api.depends(
+        "name", "module_auto_install_ids", "module_to_uninstall_before_migration_ids"
+    )
     def _compute_module_installed_ids(self):
         for record in self:
-            if record.name and record.openupgrader_migration_id.from_version_id:
+            if record.name:
+                # get current installed modules
                 installed_modules = self.env["ir.module.module"].search(
                     [
                         ("state", "in", ["installed", "to upgrade"]),
@@ -320,19 +383,42 @@ class OpenupgraderConfig(models.Model):
                     if module.dependencies_id:
                         module_names += module.dependencies_id.mapped("depend_id.name")
                     for module_name in module_names:
-                        module_id = self.env["module.name"].search(
-                            [
-                                ("name", "=", module_name),
-                            ]
-                        )
-                        if not module_id:
-                            module_id = self.env["module.name"].create(
-                                {"name": module_name}
-                            )
-                            # ensure data is committed to db to avoid duplication
-                            module_id.flush()
+                        module_id = self._search_create_module(module_name)
                         module_installed_ids |= module_id
-                record.module_installed_ids = module_installed_ids
+                if record.name == release.version:
+                    new_module_installed_ids = module_installed_ids
+                else:
+                    new_module_installed = []
+                    new_module_installed_ids = self.env["module.name"]
+                    # add new modules to install
+                    for module_auto_install in record.module_auto_install_ids:
+                        if module_auto_install.name in module_installed_ids.mapped(
+                            "name"
+                        ):
+                            new_module_installed.append(
+                                module_auto_install.module_to_install_name
+                            )
+                    # add current modules except modules to uninstall before migration
+                    for module in module_installed_ids.mapped("name"):
+                        if (
+                            module
+                            not in record.module_to_uninstall_before_migration_ids.mapped(  # noqa
+                                "name"
+                            )
+                        ):
+                            new_module_installed.append(module)
+                    # todo exclude modules uninstalled in the previous version
+                    for module_name in new_module_installed:
+                        module_id = self._search_create_module(module_name)
+                        new_module_installed_ids |= module_id
+                new_module_installed_ids -= (
+                    record.module_to_uninstall_after_migration_ids
+                )
+                new_module_installed_ids -= record.module_to_delete_after_migration_ids
+                new_module_installed_ids -= (
+                    record.module_to_uninstall_before_migration_ids
+                )
+                record.module_installed_ids = new_module_installed_ids
             else:
                 record.module_installed_ids = False
 
@@ -369,19 +455,15 @@ class OpenupgraderConfig(models.Model):
             if not os.path.isdir(openupgrade_path):
                 subprocess.Popen(
                     [
-                        f"git clone --single-branch "
-                        f"{openupgrader_migration_id.openupgrade_repo} "
-                        f"-b {self.name} --depth 1 odoo "
+                        f"git clone --single-branch --depth 1 -b {self.name} "
+                        f"{openupgrader_migration_id.openupgrade_repo} odoo"
                     ],
                     cwd=venv_path,
                     shell=True,
                 ).wait()
             else:
                 subprocess.Popen(
-                    [
-                        f"git fetch origin {self.name} "
-                        f"&& git reset --hard origin/{self.name}",
-                    ],
+                    ["git pull origin {self.name} --rebase"],
                     cwd=openupgrade_path,
                     shell=True,
                 ).wait()
@@ -393,42 +475,44 @@ class OpenupgraderConfig(models.Model):
                     self.odoo_repo_id.remote_branch or self.name,
                     odoo_path,
                 )
-            if float(self.name) >= 16:
-                # fix some libraries mismatch with py3.10.x
-                for command in [
-                    "sed -i 's/gevent==21.8.0/gevent==22.10.2/g' "
-                    f"{odoo_path}/requirements.txt",
-                    "sed -i 's/greenlet==1.1.2/greenlet==2.0.2/g' "
-                    f"{odoo_path}/requirements.txt",
-                ]:
-                    subprocess.Popen(
-                        command,
-                        cwd=venv_path,
-                        shell=True,
-                    )
-            if self.name == "14.0":
-                # ugly and temp fix for libraries mismatch with py3.8.x
-                subprocess.Popen(
-                    "sed -i 's/XlsxWriter==1.1.2/XlsxWriter==3.2.9/g' "
-                    f"{odoo_path}/requirements.txt",
-                    cwd=venv_path,
-                    shell=True,
+            uv_override_deps = []
+            if self.name in ["14.0", "15.0", "16.0"]:
+                uv_override_deps.append("XlsxWriter==3.2.9")
+            if self.name in ["16.0", "17.0"]:
+                uv_override_deps.extend(
+                    [
+                        "Werkzeug==2.0.2",
+                        "lxml==4.9.3",
+                        "gevent==22.10.2",
+                        "greenlet==2.0.2",
+                        "docutils==0.18.1",
+                    ]
                 )
+            if uv_override_deps:
+                if (
+                    "tool.uv"
+                    not in open(os.path.join(venv_path, "pyproject.toml")).read()
+                ):
+                    logger.info("Fixing libraries mismatch in Odoo requirements.txt")
+                    with open(os.path.join(venv_path, "pyproject.toml"), "a") as f:
+                        f.write("[tool.uv]\n")
+                        f.write(f"override-dependencies = {str(uv_override_deps)} ")
+                        f.close()
             commands = [
                 "uv pip install '%s'" % name
                 for name in self.pip_requirement_ids.mapped("name")
             ]
             if odoo_is_openupgrade:
                 for c in [
-                    f"cd {openupgrade_path} && uv pip install -e . ",
                     f"uv pip install -r {odoo_path}/requirements.txt",
+                    f"uv pip install -e {openupgrade_path}",
                 ]:
                     commands.append(c)
             else:
                 for c in [
-                    f"cd {odoo_path} && uv pip install -e . ",
                     f"uv pip install -r {openupgrade_path}/requirements.txt",
                     f"uv pip install -r {odoo_path}/requirements.txt",
+                    f"uv pip install -e {odoo_path}",
                 ]:
                     commands.append(c)
 
@@ -444,28 +528,31 @@ class OpenupgraderConfig(models.Model):
                     shell=True,
                     env=subprocess_env,
                 ).wait()
+
+            core_module_names = self.module_installed_ids.filtered(
+                lambda x: os.path.isdir(os.path.join(odoo_addons_path, x.name))
+                or x.name == "base"
+                or x.name.startswith("test_")
+            ).mapped("name")
             odoo_modules_to_install_via_pip = [
                 name
-                for name in self.module_installed_ids.filtered(
-                    lambda x: not os.path.isdir(os.path.join(odoo_addons_path, x.name))
-                    and not x.name == "base"
-                ).mapped("name")
+                for name in self.module_installed_ids.mapped("name")
+                if name not in core_module_names
             ]
             if self.odoo_pip_requirement_ids:
-                odoo_modules_to_install_via_pip += [
-                    name for name in self.odoo_pip_requirement_ids.mapped("name")
-                ]
+                odoo_modules_to_install_via_pip.extend(
+                    self.odoo_pip_requirement_ids.mapped("name")
+                )
             if self.module_auto_install_ids:
                 odoo_modules_to_install_via_pip += [
                     auto_install.module_to_install_name
                     for auto_install in self.module_auto_install_ids
                     if auto_install.name in self.module_installed_ids.mapped("name")
                 ]
+            self._set_core_modules(core_module_names)
             openupgrader_migration_id.install_pip_modules(
                 self, odoo_modules_to_install_via_pip
             )
-            if openupgrader_migration_id.state == "draft":
-                openupgrader_migration_id.state = "created_venv"
 
     def button_load_config(self):  # noqa: C901
         version_name = self.name
