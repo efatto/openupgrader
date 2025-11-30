@@ -403,7 +403,7 @@ class OpenupgraderConfig(models.Model):
                         cwd=venv_path,
                         shell=True,
                     )
-            if self.name == "14.0":
+            if self.name in ["14.0", "15.0", "16.0"]:
                 # ugly and temp fix for libraries mismatch with py3.8.x
                 subprocess.Popen(
                     "sed -i 's/XlsxWriter==1.1.2/XlsxWriter==3.2.9/g' "
