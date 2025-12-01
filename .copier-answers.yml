@@ -21,6 +21,6 @@ repo_description: Modules to upgrade Odoo in-place
 repo_name: A tool to automate OpenUpgrade to upgrade Odoo in an easy way
 repo_slug: openupgrader
 repo_website: https://github.com/efatto/openupgrader
-use_pyproject_toml: false
+use_pyproject_toml: true
 use_ruff: false
 
