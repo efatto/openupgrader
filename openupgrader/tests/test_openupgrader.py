@@ -1,9 +1,13 @@
 import base64
+import logging
 import time
+from subprocess import Popen
 
 from odoo.modules import get_module_resource
 from odoo.release import version_info
 from odoo.tests.common import Form, TransactionCase, tagged
+
+logger = logging.getLogger(__name__)
 
 
 @tagged("post_install", "-at_install")
@@ -77,6 +81,34 @@ class OpenUpgrader(TransactionCase):
         cls.openupgrader_migration.from_version_id = cls.from_config_id
         cls.openupgrader_migration.to_version_id = cls.to_config_id
 
+    def install_additional_modules_for_tests(self, config, modules):
+        # we cannot install modules on the current instance by policy, so we set them
+        # installed via psql and leave to the update process the real installation,
+        # then we add it to the 'installed modules' list in the configuration
+        conn_vars = self.openupgrader_migration._get_db_connection_variables()
+        for module in modules:
+            sql = (
+                f"UPDATE ir_module_module SET state='installed' WHERE name='{module}';"
+            )
+            logger.info(sql)
+            Popen(
+                [f'{conn_vars} && psql -d {self.env.cr.dbname}_migrate -c "{sql}"'],
+                shell=True,
+            )
+            module_id = self.env["module.name"].search(
+                [
+                    ("name", "=", module),
+                ],
+                limit=1,
+            )
+            if not module_id:
+                module_id = self.env["module.name"].create({"name": module})
+            config.write(
+                {
+                    "module_installed_ids": [(4, module_id.id)],
+                }
+            )
+
     def test_openupgrader(self):
         openupgrader_migration = self.openupgrader_migration
         openupgrader_migration.button_clean_logs()
@@ -98,6 +130,17 @@ class OpenUpgrader(TransactionCase):
         self.assertEqual(
             openupgrader_migration.next_version_id,
             self.middle_config_id,
+        )
+        self.install_additional_modules_for_tests(
+            self.from_config_id,
+            [
+                # "l10n_it_account",
+                # "l10n_it",
+                "account",
+                "account_fiscal_year",
+                # "account_tax_balance",
+                # "date_range",
+            ],
         )
         openupgrader_migration.button_update_current_version()
         openupgrader_migration.button_update_current_version()

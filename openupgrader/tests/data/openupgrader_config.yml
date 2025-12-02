@@ -8,6 +8,10 @@
       - PyYAML
   - odoo: https://github.com/OCA/OCB.git 18.0
   - odoo_pip_requirements:
+      - account_fiscal_year
+      - account_tax_balance
+      - date_range
+      - l10n_it_account
       - module_change_auto_install
   - sql_update_commands:
   - auto_install:
@@ -40,6 +44,10 @@
       - PyYAML
   - odoo: https://github.com/OCA/OCB.git 16.0
   - odoo_pip_requirements:
+      - account_fiscal_year
+      - account_tax_balance
+      - date_range
+      - l10n_it_account
       - module_change_auto_install
   - after_migration_to_this_version_sql_command:
   - before_migration_to_next_version_sql_command:
