@@ -9,6 +9,7 @@
   - odoo: https://github.com/OCA/OCB.git 16.0
   - odoo_pip_requirements:
       - module_change_auto_install
+      - l10n_it_account
   - after_migration_to_this_version_sql_command:
   - before_migration_to_next_version_sql_command:
   - auto_install:
@@ -43,6 +44,7 @@
   - odoo: https://github.com/OCA/OCB.git 14.0
   - odoo_pip_requirements:
       - module_change_auto_install
+      - l10n_it_account
   - after_migration_to_this_version_sql_command:
   - before_migration_to_next_version_sql_command:
   - auto_install:
