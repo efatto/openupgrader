@@ -939,7 +939,7 @@ class OpenupgraderMigration(models.Model):
         subprocess_env = _get_env_for_subprocess(venv_path, version_id.python_version)
         # try to install with pip and log error if it fails
         commands = [
-            ("uv pip install odoo{version_name}-addon-{name}").format(
+            "uv pip install --pre odoo{version_name}-addon-{name}".format(
                 version_name=odoo_version_int if odoo_version_int < 15 else "",
                 name=name,
             )
