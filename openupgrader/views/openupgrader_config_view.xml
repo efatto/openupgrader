@@ -50,31 +50,25 @@
                     <div class="oe_title">
                         <label for="name" string="Odoo Version" />
                         <h1>
-                            <field name="name" class="oe_inline" />
+                            <field name="name" />
                         </h1>
                     </div>
                     <group>
                         <group>
-                            <group>
-                                <field name="python_version" />
-                                <field name="odoo_repo_id" />
-                                <field name="openupgrader_migration_id" />
-                            </group>
-                            <group name="config_file" string="Config File">
-                                <field
-                                    name="config_file"
-                                    filename="config_file_name"
-                                    nolabel="1"
-                                />
-                                <field name="config_file_name" invisible="1" />
-                                <button
-                                    type="object"
-                                    name="button_load_config"
-                                    attrs="{'invisible': [('config_file', '=', False),
-                                ]}"
-                                    string="Load recipe"
-                                />
-                            </group>
+                            <field name="openupgrader_migration_id" />
+                            <field name="config_file" filename="config_file_name" />
+                            <field name="config_file_name" invisible="1" />
+                            <button
+                                type="object"
+                                name="button_load_config"
+                                attrs="{'invisible': [('config_file', '=', False),
+                            ]}"
+                                string="Load recipe"
+                            />
+                        </group>
+                        <group>
+                            <field name="python_version" />
+                            <field name="odoo_repo_id" />
                         </group>
                     </group>
                     <notebook>
