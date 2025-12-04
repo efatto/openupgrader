@@ -171,23 +171,28 @@ class OpenupgraderMigration(models.Model):
 
     def button_get_migration_errors(self):
         self.ensure_one()
-        self.migration_error_log = " "
-        with open(self.odoo_update_log_file, "r") as f:
-            for r in f.readlines():
-                if r and r != "" and "ERROR" in r:
-                    error_text = r.split("ERROR")[1]
-                    if error_text and error_text not in self.migration_error_log:
-                        self.migration_error_log += error_text
+        if os.path.isfile(self.odoo_update_log_file):
+            self.migration_error_log = " "
+            with open(self.odoo_update_log_file, "r") as f:
+                for r in f.readlines():
+                    if r and r != "" and "ERROR" in r:
+                        error_text = r.split("ERROR")[1]
+                        if error_text and error_text not in self.migration_error_log:
+                            self.migration_error_log += error_text
 
     def button_get_migration_warnings(self):
         self.ensure_one()
-        self.migration_warning_log = " "
-        with open(self.odoo_update_log_file, "r") as f:
-            for r in f.readlines():
-                if r and r != "" and "WARNING" in r:
-                    warning_text = r.split("WARNING")[1]
-                    if warning_text and warning_text not in self.migration_warning_log:
-                        self.migration_warning_log += warning_text
+        if os.path.isfile(self.odoo_update_log_file):
+            self.migration_warning_log = " "
+            with open(self.odoo_update_log_file, "r") as f:
+                for r in f.readlines():
+                    if r and r != "" and "WARNING" in r:
+                        warning_text = r.split("WARNING")[1]
+                        if (
+                            warning_text
+                            and warning_text not in self.migration_warning_log
+                        ):
+                            self.migration_warning_log += warning_text
 
     def odoo_connect(self):
         if self.db_name and self.db_password:
@@ -644,8 +649,11 @@ class OpenupgraderMigration(models.Model):
             # this is not a restore done by hand from the user, so delete dump
             os.unlink(dump_file_sql)
 
-    def button_clean_migration_error_log(self):
+    def button_clean_migration_log(self):
         self.migration_error_log = " "
+        self.migration_warning_log = " "
+        if os.path.isfile(self.odoo_update_log_file):
+            os.unlink(self.odoo_update_log_file)
 
     def button_dump_current_database(self):
         self.dump_database(self.current_version_id.name, migrated=True)
