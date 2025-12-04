@@ -31,17 +31,8 @@ class OpenupgraderMigration(models.Model):
     _description = "OpenUpgrader Migration"
     _rec_name = "db_name"
 
-    """
-    :param db_port: la porta del database su cui la funzione andra a
-    cancellare e ripristinare il database da migrare
-    xmlrpc_port: la porta su cui è accessibile il servizio - viene
-    impostata come 80 + i due numeri finali della porta del db
-    n.b. non deve essere in uso da altre istanze
-    in mancanza va con il postgres di default nella porta indicata
-    """
-
     db_name = fields.Char(
-        string="Database name", default=lambda self: self.env.cr.dbname
+        string="Database name", readonly=True, default=lambda self: self.env.cr.dbname
     )
     db_user = fields.Char(string="Odoo user", default="admin")
     db_password = fields.Char(string="Odoo password", default="admin")
