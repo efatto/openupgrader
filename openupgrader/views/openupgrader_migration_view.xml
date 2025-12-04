@@ -109,6 +109,10 @@
                     />
                 </header>
                 <sheet string="OpenUpgrader migration">
+                    Migration for
+                    <h1>
+                        <field name="db_name" />
+                    </h1>
                     <group>
                         <group>
                             <field
