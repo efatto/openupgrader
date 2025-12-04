@@ -200,14 +200,25 @@
                     <notebook>
                         <page string="Logs">
                             <button
+                                name="button_get_migration_errors"
+                                type="object"
+                                string="Get errors in migration log"
+                            />
+                            <p />
+                            <field name="migration_error_log" nolabel="1" />
+                            <button
+                                name="button_get_migration_warnings"
+                                type="object"
+                                string="Get warnings in migration log"
+                            />
+                            <p />
+                            <field name="migration_warning_log" nolabel="1" />
+                            <field name="odoo_error_log" />
+                            <button
                                 name="button_clean_migration_error_log"
                                 type="object"
                                 string="Clean migration log"
                             />
-                            <group>
-                                <field name="odoo_error_log" />
-                                <field name="migration_error_log" />
-                            </group>
                         </page>
                         <page string="Crons">
                             <group>

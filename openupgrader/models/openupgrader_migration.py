@@ -141,6 +141,7 @@ class OpenupgraderMigration(models.Model):
         default="draft",
     )
     odoo_error_log = fields.Text(string="Odoo errors in log")
+    migration_warning_log = fields.Text(string="Migration warnings in log")
     migration_error_log = fields.Text(string="Migration errors in log")
     odoo_update_log_file = fields.Text(
         compute="_compute_log_folder",
@@ -176,6 +177,26 @@ class OpenupgraderMigration(models.Model):
             f"export PGUSER={self.pg_user or ''} && "
             f"export PGPASSWORD={self.pg_password_var or self.pg_password or ''} "
         )
+
+    def button_get_migration_errors(self):
+        self.ensure_one()
+        self.migration_error_log = " "
+        with open(self.odoo_update_log_file, "r") as f:
+            for r in f.readlines():
+                if r and r != "" and "ERROR" in r:
+                    error_text = r.split("ERROR")[1]
+                    if error_text and error_text not in self.migration_error_log:
+                        self.migration_error_log += error_text
+
+    def button_get_migration_warnings(self):
+        self.ensure_one()
+        self.migration_warning_log = " "
+        with open(self.odoo_update_log_file, "r") as f:
+            for r in f.readlines():
+                if r and r != "" and "WARNING" in r:
+                    warning_text = r.split("WARNING")[1]
+                    if warning_text and warning_text not in self.migration_warning_log:
+                        self.migration_warning_log += warning_text
 
     def odoo_connect(self):
         if self.db_name and self.db_password:
