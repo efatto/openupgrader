@@ -4,7 +4,7 @@
         <field name="name">openupgrader.migration.search</field>
         <field name="model">openupgrader.migration</field>
         <field name="arch" type="xml">
-            <search string="OpenUpgrader migration Search">
+            <search string="OpenUpgrader Migration Search">
                 <field name="db_name" />
                 <field name="from_version_id" />
                 <field name="to_version_id" />
@@ -28,7 +28,7 @@
         <field name="name">openupgrader.migration.form</field>
         <field name="model">openupgrader.migration</field>
         <field name="arch" type="xml">
-            <form string="OpenUpgrader migration">
+            <form string="OpenUpgrader Migration">
                 <header>
                     <button name="button_draft" type="object" string="Set to draft" />
                     <button
@@ -104,7 +104,7 @@
                         statusbar_visible="draft,created_venv,restoring,restore_failed,restored,ready_for_migration,migrating,failed,migrated,done"
                     />
                 </header>
-                <sheet string="OpenUpgrader migration">
+                <sheet string="OpenUpgrader Migration">
                     Migration for
                     <h1>
                         <field name="db_name" />
@@ -236,7 +236,7 @@
     </record>
 
     <record id="action_openupgrader_migration" model="ir.actions.act_window">
-        <field name="name">OpenUpgrader migration</field>
+        <field name="name">OpenUpgrader Migration</field>
         <field name="type">ir.actions.act_window</field>
         <field name="res_model">openupgrader.migration</field>
         <field name="view_mode">tree,form</field>
