@@ -223,7 +223,7 @@
                             <field name="migration_warning_log" nolabel="1" />
                             <field name="odoo_error_log" />
                             <button
-                                name="button_clean_migration_error_log"
+                                name="button_clean_migration_log"
                                 type="object"
                                 string="Clean migration log"
                             />
