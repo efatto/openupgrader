@@ -204,20 +204,15 @@
                     <notebook>
                         <page string="Logs">
                             <button
-                                name="button_get_migration_errors"
+                                name="button_get_logs"
                                 type="object"
-                                string="Get errors in migration log"
+                                string="Get errors and warnings in log"
                             />
                             <p />
                             <field name="migration_error_log" nolabel="1" />
-                            <button
-                                name="button_get_migration_warnings"
-                                type="object"
-                                string="Get warnings in migration log"
-                            />
-                            <p />
                             <field name="migration_warning_log" nolabel="1" />
-                            <field name="odoo_error_log" />
+                            <field name="update_error_log" nolabel="1" />
+                            <field name="update_warning_log" nolabel="1" />
                             <button
                                 name="button_clean_migration_log"
                                 type="object"
