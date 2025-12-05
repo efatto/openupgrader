@@ -279,6 +279,7 @@ class OpenupgraderConfig(models.Model):
     def button_recreate_venv(self):
         # Remove the folder and re-create a clean virtual environment
         self.ensure_one()
+        self._compute_module_installed_ids()
         openupgrader_migration_id = self.env["openupgrader.migration"].search([])
         openupgrader_migration_id.ensure_one()
         venv_folder = os.path.join(
@@ -290,6 +291,7 @@ class OpenupgraderConfig(models.Model):
 
     def button_create_venv(self):
         self.ensure_one()
+        self._compute_module_installed_ids()
         openupgrader_migration_id = self.env["openupgrader.migration"].search([])
         openupgrader_migration_id.ensure_one()
         odoo_is_openupgrade = self.odoo_is_openupgrade
@@ -400,6 +402,7 @@ class OpenupgraderConfig(models.Model):
                 openupgrader_migration_id.state = "created_venv"
 
     def button_load_config(self):
+        self._compute_module_installed_ids()
         version_name = self.name
         recipes = self.load_config_file()
         recipe_data = recipes[version_name]
@@ -562,6 +565,7 @@ class OpenupgraderConfig(models.Model):
     def load_config_file(self):
         if not self.config_file:
             raise UserError(_("Missing configuration file!"))
+        self._compute_module_installed_ids()
         file_content = base64.decodebytes(self.config_file)  # noqa
         repos = {}
         try:
