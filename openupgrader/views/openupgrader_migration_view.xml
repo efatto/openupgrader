@@ -36,13 +36,6 @@
                         string="Set to draft"
                     />
                     <button
-                        name="button_restore_update"
-                        type="object"
-                        string="1&amp;2: restore and update"
-                        confirm="This will reset current migration state: are you sure?"
-                        help="Restore and update db of current version before migration, alternative to use the two separated buttons"
-                    />
-                    <button
                         name="button_restore"
                         type="object"
                         class="oe_highlight"

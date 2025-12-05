@@ -647,10 +647,6 @@ class OpenupgraderMigration(models.Model):
     def button_restore_last_database(self):
         self._restore(force=True)
 
-    def button_restore_update(self):
-        self._restore()
-        self.button_update_current_version()
-
     def button_restore(self):
         self._restore()
 
