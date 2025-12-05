@@ -129,7 +129,8 @@ class OpenupgraderMigration(models.Model):
         readonly=True,
         default="draft",
     )
-    odoo_error_log = fields.Text(string="Odoo errors in log")
+    update_error_log = fields.Text(string="Update errors in log")
+    update_warning_log = fields.Text(string="Update warnings in log")
     migration_warning_log = fields.Text(string="Migration warnings in log")
     migration_error_log = fields.Text(string="Migration errors in log")
     odoo_update_log_file = fields.Text(
@@ -167,30 +168,31 @@ class OpenupgraderMigration(models.Model):
             f"export PGPASSWORD={self.pg_password_var or self.pg_password or ''} "
         )
 
-    def button_get_migration_errors(self):
+    def button_get_logs(self):
         self.ensure_one()
-        if os.path.isfile(self.odoo_update_log_file):
-            self.migration_error_log = " "
-            with open(self.odoo_update_log_file, "r") as f:
+        self.migration_error_log, self.migration_warning_log = self._get_migration_logs(
+            self.odoo_upgrade_log_file
+        )
+        self.update_error_log, self.update_warning_log = self._get_migration_logs(
+            self.odoo_update_log_file
+        )
+
+    @staticmethod
+    def _get_migration_logs(log_file):
+        error_log = " "
+        warning_log = " "
+        if os.path.isfile(log_file):
+            with open(log_file, "r") as f:
                 for r in f.readlines():
                     if r and r != "" and "ERROR" in r:
                         error_text = r.split("ERROR")[1]
-                        if error_text and error_text not in self.migration_error_log:
-                            self.migration_error_log += error_text
-
-    def button_get_migration_warnings(self):
-        self.ensure_one()
-        if os.path.isfile(self.odoo_update_log_file):
-            self.migration_warning_log = " "
-            with open(self.odoo_update_log_file, "r") as f:
-                for r in f.readlines():
+                        if error_text and error_text not in error_log:
+                            error_log += error_text
                     if r and r != "" and "WARNING" in r:
                         warning_text = r.split("WARNING")[1]
-                        if (
-                            warning_text
-                            and warning_text not in self.migration_warning_log
-                        ):
-                            self.migration_warning_log += warning_text
+                        if warning_text and warning_text not in warning_log:
+                            warning_log += warning_text
+        return error_log, warning_log
 
     def odoo_connect(self):
         if self.db_name and self.db_password:
