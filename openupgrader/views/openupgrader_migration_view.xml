@@ -30,6 +30,7 @@
         <field name="arch" type="xml">
             <form string="OpenUpgrader Migration">
                 <header>
+                    <field name="is_migration_done" invisible="1" />
                     <button name="button_draft" type="object" string="Set to draft" />
                     <button
                         name="button_restore_update"
@@ -42,17 +43,8 @@
                         name="button_restore"
                         type="object"
                         class="oe_highlight"
-                        attrs="{'invisible': [('state', '!=', 'created_venv')]}"
+                        attrs="{'invisible': [('state', '!=', 'draft')]}"
                         string="1: restore"
-                        confirm="This will reset current migration state: are you sure?"
-                        help="Restore db of current version before migration"
-                    />
-                    <button
-                        name="button_restore"
-                        type="object"
-                        attrs="{'invisible': [('state', '=', 'created_venv')]}"
-                        string="1: restore"
-                        confirm="This will reset current migration state: are you sure?"
                         help="Restore db of current version before migration"
                     />
                     <button
@@ -60,48 +52,42 @@
                         type="object"
                         class="oe_highlight"
                         attrs="{'invisible': [('state', '!=', 'restored')]}"
-                        string="2: update"
+                        string="2: update (click until this disappears)"
                         help="Update db of current version before migration"
                     />
                     <button
                         name="button_update_current_version"
                         type="object"
-                        attrs="{'invisible': [('state', '=', 'restored')]}"
-                        string="2: update"
+                        attrs="{'invisible': [('state', 'in', ['draft', 'restored', 'ready_for_migration'])]}"
+                        string="2: update (if the process has failed)"
                         help="Update db of current version before migration"
                     />
                     <button
                         name="button_prepare_for_migration"
                         type="object"
                         class="oe_highlight"
-                        attrs="{'invisible': ['|', ('state', 'not in', ['updated', 'done']), ('next_version_id', '=', False)]}"
+                        attrs="{'invisible': ['|', '|', ('state', 'not in', ['updated', 'migrated']), ('next_version_id', '=', False), ('is_migration_done', '=', True)]}"
                         string="3: prepare migration"
                         help="Do some useful stuff before migration"
                     />
                     <button
                         name="button_prepare_for_migration"
                         type="object"
-                        attrs="{'invisible': ['|', ('state', 'in', ['updated', 'done']), ('next_version_id', '=', False)]}"
+                        attrs="{'invisible': ['|', '|', ('state', 'in', ['updated', 'migrated', 'restored', 'ready_for_migration']), ('next_version_id', '=', False), ('is_migration_done', '=', True)]}"
                         string="3: prepare migration"
                         help="Do some useful stuff before migration"
-                    />
-                    <button
-                        name="button_do_migration"
-                        type="object"
-                        attrs="{'invisible': ['|', ('state', '=', 'ready_for_migration'), ('next_version_id', '=', False)]}"
-                        string="4: migrate"
                     />
                     <button
                         name="button_do_migration"
                         type="object"
                         class="oe_highlight"
                         attrs="{'invisible': ['|', ('state', '!=', 'ready_for_migration'), ('next_version_id', '=', False)]}"
-                        string="4: migrate"
+                        string="4: migrate (re-click until this disappears)"
                     />
                     <field
                         name="state"
                         widget="statusbar"
-                        statusbar_visible="draft,created_venv,restoring,restore_failed,restored,ready_for_migration,migrating,failed,migrated,done"
+                        statusbar_visible="draft,restore_failed,restored,ready_for_migration,failed,migrated,done"
                     />
                 </header>
                 <sheet string="OpenUpgrader Migration">
@@ -214,7 +200,7 @@
                             <field name="update_error_log" nolabel="1" />
                             <field name="update_warning_log" nolabel="1" />
                             <button
-                                name="button_clean_migration_log"
+                                name="button_clean_logs"
                                 type="object"
                                 string="Clean migration log"
                             />

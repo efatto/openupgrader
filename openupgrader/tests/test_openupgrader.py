@@ -58,7 +58,7 @@ class OpenUpgrader(TransactionCase):
                     )
                     openupgrader_config.button_load_config()
                 setattr(cls, f"{version}_id", openupgrader_config)
-                openupgrader_config.button_create_venv()
+                openupgrader_config.button_recreate_venv()
         cls.from_version_id = cls.config_obj.search(
             [
                 ("name", "=", cls.from_version),
@@ -79,6 +79,7 @@ class OpenUpgrader(TransactionCase):
 
     def test_openupgrader(self):
         openupgrader_migration = self.openupgrader_migration
+        openupgrader_migration.button_clean_logs()
         self.assertEqual(
             self.openupgrader_migration.to_version_id,
             self.to_version_id,
@@ -99,13 +100,15 @@ class OpenUpgrader(TransactionCase):
             self.middle_version_id,
         )
         openupgrader_migration.button_update_current_version()
+        openupgrader_migration.button_update_current_version()
         openupgrader_migration.button_prepare_for_migration()
         self.assertEqual(openupgrader_migration.state, "ready_for_migration")
         openupgrader_migration.button_do_migration()
         # wait until migration is stopped with threading
         while openupgrader_migration._get_odoo_migrated_state() == "running":
             time.sleep(10)
-        self.assertEqual(openupgrader_migration.state, "done")
+        openupgrader_migration.button_do_migration()
+        self.assertEqual(openupgrader_migration.state, "migrated")
         self.assertEqual(
             openupgrader_migration.current_version_id,
             self.middle_version_id,
@@ -120,6 +123,7 @@ class OpenUpgrader(TransactionCase):
         # wait until migration is stopped with threading
         while openupgrader_migration._get_odoo_migrated_state() == "running":
             time.sleep(10)
+        openupgrader_migration.button_do_migration()
         self.assertEqual(openupgrader_migration.state, "done")
         self.assertEqual(
             openupgrader_migration.current_version_id,

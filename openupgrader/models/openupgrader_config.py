@@ -463,8 +463,6 @@ class OpenupgraderConfig(models.Model):
             openupgrader_migration_id.install_pip_modules(
                 self, odoo_modules_to_install_via_pip
             )
-            if openupgrader_migration_id.state == "draft":
-                openupgrader_migration_id.state = "created_venv"
 
     def button_load_config(self):  # noqa: C901
         self._compute_module_installed_ids()
