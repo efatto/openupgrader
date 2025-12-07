@@ -650,10 +650,6 @@ class OpenupgraderMigration(models.Model):
     def button_restore_last_database(self):
         self._restore(force=True)
 
-    def button_restore_update(self):
-        self._restore()
-        self.button_update_current_version()
-
     def button_restore(self):
         for version_id in self.env["openupgrader.config"].search([]):
             folder = self.check_venv(version_id.name)
