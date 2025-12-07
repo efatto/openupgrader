@@ -3,9 +3,10 @@ import time
 
 from odoo.modules import get_module_resource
 from odoo.release import version_info
-from odoo.tests.common import Form, SingleTransactionCase
+from odoo.tests.common import Form, SingleTransactionCase, tagged
 
 
+@tagged("post_install", "-at_install")
 class Openupgrader(SingleTransactionCase):
     @classmethod
     def setUpClass(cls):
@@ -43,11 +44,12 @@ class Openupgrader(SingleTransactionCase):
                 ]
             )
             if not openupgrader_config:
-                openupgrader_config = cls.config_obj.create(
-                    {
-                        "name": versions[version],
-                    }
+                openupgrader_config_form = Form(cls.config_obj)
+                openupgrader_config_form.name = versions[version]
+                openupgrader_config_form.openupgrader_migration_id = (
+                    cls.openupgrader_migration
                 )
+                openupgrader_config = openupgrader_config_form.save()
                 config_file_path = get_module_resource(
                     "openupgrader", "tests", "data", "openupgrader_config.yml"
                 )
@@ -80,19 +82,6 @@ class Openupgrader(SingleTransactionCase):
         )
         cls.openupgrader_migration.from_version_id = cls.from_version_id
         cls.openupgrader_migration.to_version_id = cls.to_version_id
-
-    @staticmethod
-    def _install_pip_module(openupgrader_migration, version_id, module_name):
-        openupgrader_migration.install_pip_modules(
-            version_id,
-            [module_name],
-        )
-
-    @staticmethod
-    def _install_odoo_module(openupgrader_migration, version_id, module_name):
-        openupgrader_migration.start_odoo(version_id)
-        openupgrader_migration.install_uninstall_module(module_name)
-        openupgrader_migration.button_stop_odoo()
 
     def test_openupgrader(self):
         openupgrader_migration = self.openupgrader_migration
