@@ -145,6 +145,20 @@ class OpenupgraderMigration(models.Model):
         version_id = self.next_version_id if migrate else self.current_version_id
         return Path(self.folder) / f"openupgrade{version_id.name}" / f"{log_name}.log"
 
+    @staticmethod
+    def show_message_odoo_running():
+        return {
+            "type": "ir.actions.client",
+            "tag": "display_notification",
+            "name": "OpenUpgrader Message",
+            "params": {
+                "title": _("Odoo Migration is running!"),
+                "message": _("If you want to do this action anyway, force the stop."),
+                "type": "info",
+                "sticky": True,
+            },
+        }
+
     @api.model
     def _default_folder(self):
         """Default to ``odoo_migration`` folder inside current home folder."""
@@ -648,12 +662,7 @@ class OpenupgraderMigration(models.Model):
         self.ensure_one()
         self.button_refresh_odoo_migrated_state()
         if self.odoo_migrated_state == "running":
-            raise UserError(
-                _(
-                    "Odoo migrated instance is running! If you are sure to "
-                    "do this action, force it to stop."
-                )
-            )
+            self.show_message_odoo_running()
         self.migration_error_log = " "
         if not self.current_version_id:
             self.current_version_id = self.from_version_id
@@ -732,12 +741,7 @@ class OpenupgraderMigration(models.Model):
     def button_draft(self):
         self.button_refresh_odoo_migrated_state()
         if self.odoo_migrated_state == "running":
-            raise UserError(
-                _(
-                    "Odoo migrated instance is running! If you are sure to "
-                    "do this action, force it to stop."
-                )
-            )
+            self.show_message_odoo_running()
         for version_id in [self.current_version_id, self.next_version_id]:
             sql_file_path = os.path.join(
                 self.folder,
@@ -754,12 +758,7 @@ class OpenupgraderMigration(models.Model):
     def button_do_migration(self):
         self.button_refresh_odoo_migrated_state()
         if self.odoo_migrated_state == "running":
-            raise UserError(
-                _(
-                    "Odoo migrated instance is running! If you are sure to "
-                    "do this action, force it to stop."
-                )
-            )
+            self.show_message_odoo_running()
         if self.state == "migrated":
             logger.info(
                 "Migration done from version %s to version %s"
