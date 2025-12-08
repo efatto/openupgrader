@@ -276,7 +276,6 @@ class OpenupgraderMigration(models.Model):
         :param extra_command: command that will be passed after executable
         :return: null
         """
-        self.flush()
         if update:
             self._start_odoo_thread(version_id, update, migrate, extra_command)
         else:
