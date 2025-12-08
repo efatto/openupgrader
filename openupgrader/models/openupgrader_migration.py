@@ -688,12 +688,7 @@ class OpenupgraderMigration(models.Model):
         self.ensure_one()
         self.button_refresh_odoo_migrated_state()
         if self.odoo_migrated_state == "running":
-            raise UserError(
-                _(
-                    "Odoo migrated instance is running! If you are sure to "
-                    "do this action, force it to stop."
-                )
-            )
+            self.show_message_odoo_running()
         if self.state == "updated":
             return {
                 "type": "ir.actions.client",
@@ -708,12 +703,7 @@ class OpenupgraderMigration(models.Model):
         self.button_refresh_odoo_migrated_state()
         # do pre upgrade stuff
         if self.odoo_migrated_state == "running":
-            raise UserError(
-                _(
-                    "Odoo migrated instance is running! If you are sure to "
-                    "do this action, force it to stop."
-                )
-            )
+            self.show_message_odoo_running()
         if self.from_version_id == self.current_version_id:
             # these actions are needed for the initial version only
             self.set_cron_state_to(active=False)
