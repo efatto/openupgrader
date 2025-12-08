@@ -16,7 +16,6 @@ class Openupgrader(SingleTransactionCase):
         cls.from_version = ".".join(str(v) for v in version_info[:2])
         cls.middle_version = str(float(cls.from_version) + 1)
         cls.to_version = str(float(cls.middle_version) + 1)
-        cls.future_version = str(float(cls.to_version) + 1)
         versions = {
             "from_version": cls.from_version,
             "middle_version": cls.middle_version,
@@ -80,7 +79,6 @@ class Openupgrader(SingleTransactionCase):
 
     def test_openupgrader(self):
         openupgrader_migration = self.openupgrader_migration
-        openupgrader_migration.button_clean_logs()
         self.assertEqual(
             self.openupgrader_migration.to_version_id,
             self.to_version_id,

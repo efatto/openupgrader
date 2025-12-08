@@ -76,7 +76,7 @@ class SqlUpdateCommand(models.Model):
 
 class OpenupgraderConfig(models.Model):
     _name = "openupgrader.config"
-    _description = "Openupgrader config"
+    _description = "OpenUpgrader config"
 
     name = fields.Selection(
         string="Odoo Version name",
@@ -95,15 +95,14 @@ class OpenupgraderConfig(models.Model):
             ("18.0", "18.0"),
         ],
         required=True,
+        translate=False,
     )
     openupgrader_migration_id = fields.Many2one(
         comodel_name="openupgrader.migration",
         string="Odoo Migration",
         required=True,
     )
-    python_version = fields.Char(
-        string="Python Version", required=True, default="3.7.16"
-    )
+    python_version = fields.Char(required=True, default="3.7.16")
     odoo_is_openupgrade = fields.Boolean(
         string="Odoo is Openupgrade",
         compute="_compute_odoo_is_openupgrade",
@@ -130,14 +129,14 @@ class OpenupgraderConfig(models.Model):
         relation="pip_requirement_rel",
         column1="config_id",
         column2="pip_requirement_id",
-        string="Pip requirements",
+        string="Pip Requirements",
     )
     odoo_pip_requirement_ids = fields.Many2many(
         comodel_name="pip.requirement",
         relation="odoo_pip_requirement_rel",
         column1="config_id",
         column2="odoo_pip_requirement_id",
-        string="Odoo Pip requirements",
+        string="Odoo Pip Requirements",
         help="Extra Odoo modules to be installed via pip",
         ondelete="cascade",
         copy=False,
@@ -244,7 +243,7 @@ class OpenupgraderConfig(models.Model):
             else:
                 record.odoo_is_openupgrade = False
 
-    # todo get pip requirements from installed modules
+    # todo install requirements from installed modules
     @api.depends("name", "openupgrader_migration_id.from_version_id")
     def _compute_module_installed_ids(self):
         for record in self:
@@ -316,16 +315,15 @@ class OpenupgraderConfig(models.Model):
                         f"-b {self.name} --depth 1 odoo "
                     ],
                     cwd=venv_path,
-                    env=subprocess_env,  # forse qui non serve
                     shell=True,
                 ).wait()
             else:
                 subprocess.Popen(
                     [
-                        "git pull --rebase",
+                        f"git fetch origin {self.name} "
+                        f"&& git reset --hard origin/{self.name}",
                     ],
                     cwd=openupgrade_path,
-                    env=subprocess_env,  # forse qui non serve
                     shell=True,
                 ).wait()
 
@@ -336,7 +334,8 @@ class OpenupgraderConfig(models.Model):
                     self.odoo_repo_id.remote_branch or self.name,
                     odoo_path,
                 )
-            if self.name == "16.0":  # ugly and temp fix for mismatch with py3.10.6
+            if float(self.name) >= 16:
+                # fix some libraries mismatch with py3.10.x
                 for command in [
                     "sed -i 's/gevent==21.8.0/gevent==22.10.2/g' "
                     f"{odoo_path}/requirements.txt",
@@ -346,26 +345,34 @@ class OpenupgraderConfig(models.Model):
                     subprocess.Popen(
                         command,
                         cwd=venv_path,
-                        env=subprocess_env,
                         shell=True,
                     )
+            if self.name in ["14.0", "15.0", "16.0"]:
+                # ugly and temp fix for libraries mismatch with py3.8.x
+                subprocess.Popen(
+                    "sed -i 's/XlsxWriter==1.1.2/XlsxWriter==3.2.9/g' "
+                    f"{odoo_path}/requirements.txt",
+                    cwd=venv_path,
+                    shell=True,
+                )
             commands = [
                 "pip install --no-cache-dir '%s'" % name
                 for name in self.pip_requirement_ids.mapped("name")
             ]
             if odoo_is_openupgrade:
                 for c in [
-                    f"cd {openupgrade_path} && pip install -e . ",
                     f"pip install --no-cache-dir -r {odoo_path}/requirements.txt",
+                    f"cd {openupgrade_path} && pip install -e . ",
                 ]:
                     commands.append(c)
             else:
                 for c in [
-                    f"cd {odoo_path} && pip install -e . ",
                     f"pip install --no-cache-dir -r {openupgrade_path}/requirements.txt",
                     f"pip install --no-cache-dir -r {odoo_path}/requirements.txt",
+                    f"cd {odoo_path} && pip install -e . ",
                 ]:
                     commands.append(c)
+
             # exclude odoo core modules
             odoo_addons_path = os.path.join(
                 odoo_path,
@@ -375,8 +382,8 @@ class OpenupgraderConfig(models.Model):
                 subprocess.Popen(
                     command,
                     cwd=venv_path,
-                    env=subprocess_env,
                     shell=True,
+                    env=subprocess_env,
                 ).wait()
             odoo_modules_to_install_via_pip = [
                 name
@@ -399,7 +406,7 @@ class OpenupgraderConfig(models.Model):
                 self, odoo_modules_to_install_via_pip
             )
 
-    def button_load_config(self):
+    def button_load_config(self):  # noqa: C901
         self._compute_module_installed_ids()
         version_name = self.name
         recipes = self.load_config_file()

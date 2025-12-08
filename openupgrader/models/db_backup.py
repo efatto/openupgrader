@@ -5,11 +5,12 @@ import shutil
 import tempfile
 from datetime import datetime
 
+from pysftp import ConnectionException
+
 from odoo import fields, models
 from odoo.sql_db import db_connect
 from odoo.tools import exec_pg_command
 from odoo.tools.osutil import zip_dir
-from pysftp import ConnectionException
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +21,7 @@ class DbBackup(models.Model):
     is_migration_backup = fields.Boolean(string="Is Migration Backup?")
     openupgrader_config_id = fields.Many2one(
         comodel_name="openupgrader.config",
-        string="Openupgrader Config",
+        string="OpenUpgrader Config",
     )
 
     @staticmethod
@@ -57,7 +58,9 @@ class DbBackup(models.Model):
                 try:
                     os.makedirs(rec.folder)
                 except OSError:
-                    pass
+                    logger.info(
+                        "Error %s in creating folder: %s " % (OSError, rec.folder)
+                    )
                 with open(os.path.join(rec.folder, filename), "wb") as destiny:
                     # Always generate new backup
                     rec.dump_db_migration(
@@ -88,8 +91,10 @@ class DbBackup(models.Model):
                             try:
                                 remote.makedirs(rec.folder)
                             except ConnectionException:
-                                pass
-
+                                logger.info(
+                                    "Error %s in creating folder: %s "
+                                    % (ConnectionException, rec.folder)
+                                )
                             # Copy cached backup to remote server
                             with remote.open(
                                 os.path.join(rec.folder, filename), "wb"

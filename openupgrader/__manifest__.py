@@ -1,12 +1,12 @@
 # Copyright 2024 Sergio Corato <https://github.com/sergiocorato>
 # License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl).
 {
-    "name": "Openupgrader",
-    "version": "12.0.1.0.6",
+    "name": "OpenUpgrader",
+    "version": "12.0.1.0.7",
     "category": "Odoo Management",
     "author": "Sergio Corato",
     "license": "AGPL-3",
-    "summary": "Migrate Odoo.",
+    "summary": "Migrate Odoo automating OpenUpgrade.",
     "website": "https://github.com/efatto/openupgrader",
     "depends": [
         "auto_backup",
