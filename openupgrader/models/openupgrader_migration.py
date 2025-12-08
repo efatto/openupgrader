@@ -795,31 +795,35 @@ class OpenupgraderMigration(models.Model):
 
         # get the state of the migration from log upgrade (or update?) file
         # todo put in a cron job?
+        current_state = self.state
+        new_state = self.state
         if self.next_version_id:
             odoo_migrate_log = self._get_log_path(
                 self.folder, self.next_version_id.name, migrate=True
-            )
-            odoo_log = self._get_log_path(
-                self.folder, self.next_version_id.name,
             )
             if os.path.isfile(odoo_migrate_log):
                 with open(odoo_migrate_log, "r") as f:
                     for log_line in f.readlines():
                         if "CRITICAL" in log_line:
-                            self.state = "failed"
+                            new_state = "failed"
                             break
                         if "Modules loaded" in log_line:
-                            self.state = "migrated"
+                            new_state = "migrated"
                             break
-            elif os.path.isfile(odoo_log):
+        if self.current_version_id and current_state == new_state:
+            odoo_log = self._get_log_path(
+                self.folder, self.current_version_id.name,
+            )
+            if os.path.isfile(odoo_log):
                 with open(odoo_log, "r") as f:
                     for log_line in f.readlines():
                         if "CRITICAL" in log_line:
-                            self.state = "restore_failed"
+                            new_state = "restore_failed"
                             break
                         if "Modules loaded" in log_line:
-                            self.state = "updated"
+                            new_state = "updated"
                             break
+        self.state = new_state
         return odoo_migrated_state
 
     def sql_fixes(self, sql_commands):
