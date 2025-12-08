@@ -444,12 +444,12 @@ class OpenupgraderMigration(models.Model):
             try:
                 os.kill(pid, signal.SIGTERM)
                 time.sleep(5)
-            except OSError:
+            except OSError as _e:
                 time.sleep(10)
                 try:
                     os.kill(pid, signal.SIGKILL)
-                except OSError:
-                    logger.info("Error %s in killing pid: %s " % (OSError, pid))
+                except OSError as e:
+                    logger.info("Error %s in killing pid: %s " % (e, pid))
         self.odoo_migrated_state = "stopped"
         logger.info("Odoo migration instance stopped.")
 
