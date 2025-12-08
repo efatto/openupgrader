@@ -140,10 +140,10 @@ class OpenupgraderMigration(models.Model):
         for record in self:
             record.is_migration_done = record.current_version_id == record.to_version_id
 
-    def _get_log_path(self, migrate=False):
+    @staticmethod
+    def _get_log_path(folder, version_name, migrate=False):
         log_name = "migrate" if migrate else "update"
-        version_id = self.next_version_id if migrate else self.current_version_id
-        return Path(self.folder) / f"openupgrade{version_id.name}" / f"{log_name}.log"
+        return Path(folder) / f"openupgrade{version_name}" / f"{log_name}.log"
 
     @staticmethod
     def show_message_odoo_running():
@@ -182,10 +182,10 @@ class OpenupgraderMigration(models.Model):
     def button_get_logs(self):
         self.ensure_one()
         self.migration_error_log, self.migration_warning_log = self._get_migration_logs(
-            self._get_log_path(migrate=True)
+            self._get_log_path(self.folder, self.next_version_id.name, migrate=True)
         )
         self.update_error_log, self.update_warning_log = self._get_migration_logs(
-            self._get_log_path()
+            self._get_log_path(self.folder, self.current_version_id.name)
         )
 
     @staticmethod
@@ -371,14 +371,18 @@ class OpenupgraderMigration(models.Model):
             if not os.path.isdir(data_dir):
                 os.makedirs(data_dir)
             bash_command += f"--data-dir={data_dir} "
+        if migrate:
+            odoo_log = self._get_log_path(self.folder, version_name, migrate=True)
+        else:
+            odoo_log = self._get_log_path(self.folder, version_name)
         if update:
             bash_command += "-u all --stop "
         else:
-            if not os.path.isfile(self._get_log_path()):
-                file_writer = open(self._get_log_path(), "w")
+            if not os.path.isfile(odoo_log):
+                file_writer = open(odoo_log, "w")
                 file_writer.write(f"Start Odoo v. {version_id.name} logs")
                 file_writer.close()
-            bash_command += f"--logfile={self._get_log_path()} "
+            bash_command += f"--logfile={odoo_log} "
         logger.info(
             "Starting Odoo in virtualenv to %s version %s with command %s"
             % (
@@ -387,11 +391,7 @@ class OpenupgraderMigration(models.Model):
                 bash_command,
             )
         )
-        if migrate:
-            odoo_log = self._get_log_path(migrate=True)
-        else:
-            # todo check if writing on the same file is safe
-            odoo_log = self._get_log_path()
+
         with io.open(odoo_log, "wb") as writer, io.open(odoo_log, "rb") as reader:
             process = Popen(
                 bash_command,
@@ -476,13 +476,15 @@ class OpenupgraderMigration(models.Model):
         for pid in pids:
             self._stop_pid(pid)
         # read odoo log and put in logger
-        if os.path.isfile(self._get_log_path()):
-            logger.debug("Show log for file %s" % self._get_log_path())
-            file_reader = open(self._get_log_path(), "r")
-            lines = file_reader.readlines()
-            for line in lines:
-                if line != " ":
-                    logger.debug(line)
+        if self.current_version_id:
+            odoo_log = self._get_log_path(self.folder, self.current_version_id.name)
+            if os.path.isfile(odoo_log):
+                logger.debug("Show log for file %s" % odoo_log)
+                file_reader = open(odoo_log, "r")
+                lines = file_reader.readlines()
+                for line in lines:
+                    if line != " ":
+                        logger.debug(line)
 
     def disable_mail(self, disable=False):
         # FIXME: DO VIA PSQL IN MIGRATED DB
@@ -802,24 +804,32 @@ class OpenupgraderMigration(models.Model):
 
         # get the state of the migration from log upgrade (or update?) file
         # todo put in a cron job?
-        if os.path.isfile(self._get_log_path(migrate=True)):
-            with open(self._get_log_path(migrate=True), "r") as f:
-                for log_line in f.readlines():
-                    if "CRITICAL" in log_line:
-                        self.state = "failed"
-                        break
-                    if "Modules loaded" in log_line:
-                        self.state = "migrated"
-                        break
-        elif os.path.isfile(self._get_log_path()):
-            with open(self._get_log_path(), "r") as f:
-                for log_line in f.readlines():
-                    if "CRITICAL" in log_line:
-                        self.state = "restore_failed"
-                        break
-                    if "Modules loaded" in log_line:
-                        self.state = "updated"
-                        break
+        if self.next_version_id:
+            odoo_migrate_log = self._get_log_path(
+                self.folder, self.next_version_id.name, migrate=True
+            )
+            odoo_log = self._get_log_path(
+                self.folder,
+                self.next_version_id.name,
+            )
+            if os.path.isfile(odoo_migrate_log):
+                with open(odoo_migrate_log, "r") as f:
+                    for log_line in f.readlines():
+                        if "CRITICAL" in log_line:
+                            self.state = "failed"
+                            break
+                        if "Modules loaded" in log_line:
+                            self.state = "migrated"
+                            break
+            elif os.path.isfile(odoo_log):
+                with open(odoo_log, "r") as f:
+                    for log_line in f.readlines():
+                        if "CRITICAL" in log_line:
+                            self.state = "restore_failed"
+                            break
+                        if "Modules loaded" in log_line:
+                            self.state = "updated"
+                            break
         return odoo_migrated_state
 
     def sql_fixes(self, sql_commands):
