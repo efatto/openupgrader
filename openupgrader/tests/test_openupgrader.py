@@ -21,9 +21,9 @@ class OpenUpgrader(TransactionCase):
             "middle_version": cls.middle_version,
             "to_version": cls.to_version,
         }
-        cls.from_version_id = cls.config_obj
-        cls.middle_version_id = cls.config_obj
-        cls.to_version_id = cls.config_obj
+        cls.from_config_id = cls.config_obj
+        cls.middle_config_id = cls.config_obj
+        cls.to_config_id = cls.config_obj
         cls.openupgrader_migration = cls.migration_obj.search([])
         if not cls.openupgrader_migration:
             migration_form = Form(cls.migration_obj)
@@ -59,45 +59,45 @@ class OpenUpgrader(TransactionCase):
                     openupgrader_config.button_load_config()
                 setattr(cls, f"{version}_id", openupgrader_config)
                 openupgrader_config.button_recreate_venv()
-        cls.from_version_id = cls.config_obj.search(
+        cls.from_config_id = cls.config_obj.search(
             [
                 ("name", "=", cls.from_version),
             ]
         )
-        cls.middle_version_id = cls.config_obj.search(
+        cls.middle_config_id = cls.config_obj.search(
             [
                 ("name", "=", cls.middle_version),
             ]
         )
-        cls.to_version_id = cls.config_obj.search(
+        cls.to_config_id = cls.config_obj.search(
             [
                 ("name", "=", cls.to_version),
             ]
         )
-        cls.openupgrader_migration.from_version_id = cls.from_version_id
-        cls.openupgrader_migration.to_version_id = cls.to_version_id
+        cls.openupgrader_migration.from_version_id = cls.from_config_id
+        cls.openupgrader_migration.to_version_id = cls.to_config_id
 
     def test_openupgrader(self):
         openupgrader_migration = self.openupgrader_migration
         openupgrader_migration.button_clean_logs()
         self.assertEqual(
             self.openupgrader_migration.to_version_id,
-            self.to_version_id,
+            self.to_config_id,
         )
         self.assertEqual(
             self.openupgrader_migration.from_version_id,
-            self.from_version_id,
+            self.from_config_id,
         )
         openupgrader_migration.button_stop_odoo()
         openupgrader_migration.button_restore()
         self.assertEqual(openupgrader_migration.state, "restored")
         self.assertEqual(
             openupgrader_migration.current_version_id,
-            self.from_version_id,
+            self.from_config_id,
         )
         self.assertEqual(
             openupgrader_migration.next_version_id,
-            self.middle_version_id,
+            self.middle_config_id,
         )
         openupgrader_migration.button_update_current_version()
         openupgrader_migration.button_update_current_version()
@@ -111,11 +111,11 @@ class OpenUpgrader(TransactionCase):
         self.assertEqual(openupgrader_migration.state, "migrated")
         self.assertEqual(
             openupgrader_migration.current_version_id,
-            self.middle_version_id,
+            self.middle_config_id,
         )
         self.assertEqual(
             openupgrader_migration.next_version_id,
-            self.to_version_id,
+            self.to_config_id,
         )
         openupgrader_migration.button_prepare_for_migration()
         self.assertEqual(openupgrader_migration.state, "ready_for_migration")
@@ -127,5 +127,5 @@ class OpenUpgrader(TransactionCase):
         self.assertEqual(openupgrader_migration.state, "done")
         self.assertEqual(
             openupgrader_migration.current_version_id,
-            self.to_version_id,
+            self.to_config_id,
         )
