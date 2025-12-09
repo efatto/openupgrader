@@ -58,9 +58,7 @@ class DbBackup(models.Model):
                 try:
                     os.makedirs(rec.folder)
                 except OSError as e:
-                    logger.info(
-                        "Error %s in creating folder: %s " % (e, rec.folder)
-                    )
+                    logger.info("Error %s in creating folder: %s " % (e, rec.folder))
                 with open(os.path.join(rec.folder, filename), "wb") as destiny:
                     # Always generate new backup
                     rec.dump_db_migration(
