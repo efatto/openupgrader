@@ -61,7 +61,7 @@ def _create_python_venv(venv_path, py_version):
         raise ValidationError(_("uv is not installed, please install it first!"))
     if not os.path.isfile(os.path.join(venv_path, "pyproject.toml")):
         for command in [
-            f"uv init --directory {venv_path} ",
+            f"uv init --directory {venv_path} --python 'python=={py_version}'",
             f"uv venv --python {py_version}",
         ]:
             subprocess.Popen(
@@ -392,27 +392,19 @@ class OpenupgraderConfig(models.Model):
                     self.odoo_repo_id.remote_branch or self.name,
                     odoo_path,
                 )
-            if float(self.name) >= 16:
-                # fix some libraries mismatch with py3.10.x
-                for command in [
-                    "sed -i 's/gevent==21.8.0/gevent==22.10.2/g' "
-                    f"{odoo_path}/requirements.txt",
-                    "sed -i 's/greenlet==1.1.2/greenlet==2.0.2/g' "
-                    f"{odoo_path}/requirements.txt",
-                ]:
-                    subprocess.Popen(
-                        command,
-                        cwd=venv_path,
-                        shell=True,
-                    )
+            uv_override_deps = []
             if self.name in ["14.0", "15.0", "16.0"]:
-                # ugly and temp fix for libraries mismatch with py3.8.x
-                subprocess.Popen(
-                    "sed -i 's/XlsxWriter==1.1.2/XlsxWriter==3.2.9/g' "
-                    f"{odoo_path}/requirements.txt",
-                    cwd=venv_path,
-                    shell=True,
+                uv_override_deps.append("XlsxWriter==3.2.9")
+            if self.name in ["16.0", "17.0", "18.0"]:
+                uv_override_deps.extend(
+                    ["lxml==4.9.3", "gevent==22.10.2", "greenlet==2.0.2"]
                 )
+            if uv_override_deps:
+                logger.info("Fixing libraries mismatch in Odoo requirements.txt")
+                with open(os.path.join(odoo_path, "pyproject.toml"), "a") as f:
+                    f.write("[tool.uv]\n")
+                    f.write(f"override-dependencies = {str(uv_override_deps)} ")
+                    f.close()
             commands = [
                 "uv pip install '%s'" % name
                 for name in self.pip_requirement_ids.mapped("name")
@@ -443,6 +435,7 @@ class OpenupgraderConfig(models.Model):
                     shell=True,
                     env=subprocess_env,
                 ).wait()
+
             odoo_modules_to_install_via_pip = [
                 name
                 for name in self.module_installed_ids.filtered(
