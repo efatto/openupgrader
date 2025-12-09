@@ -377,12 +377,11 @@ class OpenupgraderMigration(models.Model):
             odoo_log = self._get_log_path(self.folder, version_name)
         if update:
             bash_command += "-u all --stop "
-        else:
-            if not os.path.isfile(odoo_log):
-                file_writer = open(odoo_log, "w")
-                file_writer.write(f"Start Odoo v. {version_id.name} logs")
-                file_writer.close()
-            bash_command += f"--logfile={odoo_log} "
+        if not os.path.isfile(odoo_log):
+            file_writer = open(odoo_log, "w")
+            file_writer.write(f"Start Odoo v. {version_id.name} logs")
+            file_writer.close()
+        bash_command += f"--logfile={odoo_log} "
         logger.info(
             "Starting Odoo in virtualenv to %s version %s with command %s"
             % (
@@ -476,15 +475,15 @@ class OpenupgraderMigration(models.Model):
         for pid in pids:
             self._stop_pid(pid)
         # read odoo log and put in logger
-        if self.current_version_id:
-            odoo_log = self._get_log_path(self.folder, self.current_version_id.name)
-            if os.path.isfile(odoo_log):
-                logger.debug("Show log for file %s" % odoo_log)
-                file_reader = open(odoo_log, "r")
-                lines = file_reader.readlines()
-                for line in lines:
-                    if line != " ":
-                        logger.debug(line)
+        # if self.current_version_id:
+        #     odoo_log = self._get_log_path(self.folder, self.current_version_id.name)
+        #     if os.path.isfile(odoo_log):
+        #         logger.debug("Show log for file %s" % odoo_log)
+        #         file_reader = open(odoo_log, "r")
+        #         lines = file_reader.readlines()
+        #         for line in lines:
+        #             if line != " ":
+        #                 logger.debug(line)
 
     def disable_mail(self, disable=False):
         # FIXME: DO VIA PSQL IN MIGRATED DB
@@ -786,17 +785,22 @@ class OpenupgraderMigration(models.Model):
         self.odoo_migrated_state = self._get_odoo_migrated_state()
 
     def _get_odoo_migrated_state(self):  # noqa C901
+        # todo put in a cron job?
         odoo_migrated_state = "stopped"
         odoo_pids = self._get_odoo_pids()
         for odoo_pid in odoo_pids:
             if psutil.pid_exists(odoo_pid):
                 odoo_migrated_state = "running"
-
-        # get the state of the migration from log upgrade (or update?) file
-        # todo put in a cron job?
+        if odoo_migrated_state == "running":
+            # don't do anything if migration is running
+            return odoo_migrated_state
+        # if self.state == "ready_for_migration":
+        #     # set migration in ongoing (possible improvement)
+        #     # self.state = "migrating"
         current_state = self.state
         new_state = self.state
         if self.next_version_id:
+            # get the state of the migration from log upgrade
             odoo_migrate_log = self._get_log_path(
                 self.folder, self.next_version_id.name, migrate=True
             )
@@ -809,7 +813,12 @@ class OpenupgraderMigration(models.Model):
                         if "Modules loaded" in log_line:
                             new_state = "migrated"
                             break
-        if self.current_version_id and current_state == new_state:
+        if (
+            self.current_version_id
+            and current_state == new_state
+            and (new_state not in ["failed", "migrated", "ready_for_migration"])
+        ):
+            # get the state of the migration from log update
             odoo_log = self._get_log_path(
                 self.folder,
                 self.current_version_id.name,
