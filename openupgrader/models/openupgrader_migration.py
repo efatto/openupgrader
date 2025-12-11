@@ -65,6 +65,14 @@ class OpenupgraderMigration(models.Model):
         comodel_name="ir.cron",
         string="Disabled ir crons",
     )
+    disabled_ir_mail_server_ids = fields.Many2many(
+        comodel_name="ir.mail_server",
+        string="Disabled mail servers",
+    )
+    disabled_fetchmail_server_ids = fields.Many2many(
+        comodel_name="fetchmail.server",
+        string="Disabled fechmail servers",
+    )
     db_port = fields.Char(
         string="Database port",
         default=lambda self: config.get("db_port") != "False"
@@ -476,41 +484,6 @@ class OpenupgraderMigration(models.Model):
         pids = self._get_odoo_pids()
         for pid in pids:
             self._stop_pid(pid)
-        # read odoo log and put in logger
-        # if self.current_version_id:
-        #     odoo_log = self._get_log_path(self.folder, self.current_version_id.name)
-        #     if os.path.isfile(odoo_log):
-        #         logger.debug("Show log for file %s" % odoo_log)
-        #         file_reader = open(odoo_log, "r")
-        #         lines = file_reader.readlines()
-        #         for line in lines:
-        #             if line != " ":
-        #                 logger.debug(line)
-
-    def disable_mail(self, disable=False):
-        # FIXME: DO VIA PSQL IN MIGRATED DB
-        state = "draft" if disable else "done"
-        active = False if disable else True
-        fetchmail_server_ids = self.env["fetchmail.server"].search(
-            [
-                ("state", "=", state),
-            ]
-        )
-        if fetchmail_server_ids:
-            fetchmail_server_ids.write({"state": state})
-        ir_mail_server_ids = (
-            self.env["ir.mail_server"]
-            .with_context(
-                active_test=False,
-            )
-            .search(
-                [
-                    ("active", "=", active),
-                ]
-            )
-        )
-        if ir_mail_server_ids:
-            ir_mail_server_ids.write({"active": active})
 
     def restore_filestore(self, from_version_id, to_version_id):
         # restore filestore always from initial folder to default migration folder
@@ -693,7 +666,7 @@ class OpenupgraderMigration(models.Model):
                 "type": "ir.actions.client",
                 "tag": "reload",
             }
-        self.disable_mail(disable=True)
+        self.set_mail_server_and_cron_state_to(active=False)
         # odoo service is stopped automatically at the end of the update process
         return self.start_odoo(self.current_version_id, update=True)
 
@@ -705,26 +678,49 @@ class OpenupgraderMigration(models.Model):
             self.show_message_odoo_running()
         if self.from_version_id == self.current_version_id:
             # these actions are needed for the initial version only
-            self.set_cron_state_to(active=False)
-            # self.disable_mail(disable=True)
+            self.set_mail_server_and_cron_state_to(active=False)
         self.sql_fixes(self.current_version_id.sql_before_migration_command_ids)
         self.uninstall_modules(self.current_version_id, before_migration=True)
         self.delete_old_modules(self.current_version_id)
         self.state = "ready_for_migration"
 
-    def set_cron_state_to(self, active):
+    def set_mail_server_and_cron_state_to(self, active):
         conn_vars = self._get_db_connection_variables()
         if active:
             # re-enable cron after the migration
             ir_cron_ids = self.disabled_cron_ids
+            ir_mail_server_ids = self.disabled_ir_mail_server_ids
+            fetchmail_server_ids = self.disabled_fetchmail_server_ids
         else:
             # disable cron before migrating the instance
             ir_cron_ids = self.env["ir.cron"].search([])
             self.disabled_cron_ids = ir_cron_ids
+            ir_mail_server_ids = self.env["ir.mail_server"].search([])
+            fetchmail_server_ids = self.env["fetchmail.server"].search(
+                [("state", "=", "done")]
+            )
         if ir_cron_ids:
             sql = (
                 f"UPDATE ir_cron SET active = {'true' if active else 'false'} "
                 f"WHERE id in {tuple(ir_cron_ids.ids)};"
+            )
+            Popen(
+                [f'{conn_vars} && psql -d {self.env.cr.dbname}_migrate -c "{sql}"'],
+                shell=True,
+            )
+        if ir_mail_server_ids:
+            sql = (
+                f"UPDATE ir_mail_server SET active = {'true' if active else 'false'} "
+                f"WHERE id in {tuple(ir_mail_server_ids.ids)};"
+            )
+            Popen(
+                [f'{conn_vars} && psql -d {self.env.cr.dbname}_migrate -c "{sql}"'],
+                shell=True,
+            )
+        if fetchmail_server_ids:
+            sql = (
+                f"UPDATE fetchmail_server SET state = {'done' if active else 'draft'} "
+                f"WHERE id in {tuple(fetchmail_server_ids.ids)};"
             )
             Popen(
                 [f'{conn_vars} && psql -d {self.env.cr.dbname}_migrate -c "{sql}"'],
@@ -771,7 +767,7 @@ class OpenupgraderMigration(models.Model):
                 [("name", "=", str(float(self.current_version_id.name) + 1))]
             )
             if self.is_migration_done:
-                self.set_cron_state_to(active=True)
+                self.set_macron_state_to(active=True)
                 logger.info(
                     "Migration completed from version %s to version %s"
                     % (self.from_version_id.name, self.to_version_id.name)
@@ -854,10 +850,13 @@ class OpenupgraderMigration(models.Model):
                 shell=True,
             ).wait()
 
-    def post_migration(self, version_id):
+    def post_migration(self):
+        pass
         # re-enable mail servers and clean db
-        self.disable_mail(disable=False)
-        # self.database_cleanup(version_id)
+        # This method is not used, do by hand after migration confirmation
+        # self.set_mail_server_and_cron_state_to(active=False)
+        # this method has not been ported from the initial version
+        # self.database_cleanup()
 
     def install_repo(self, remote_repo, version_name, repo_path=None):
         if repo_path is None:
