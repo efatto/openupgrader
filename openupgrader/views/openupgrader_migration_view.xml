@@ -198,9 +198,11 @@
                                 string="Clean migration log"
                             />
                         </page>
-                        <page string="Crons">
+                        <page string="Cron and mail servers">
                             <group>
                                 <field name="disabled_cron_ids" />
+                                <field name="disabled_ir_mail_server_ids" />
+                                <field name="disabled_fetchmail_server_ids" />
                             </group>
                         </page>
                     </notebook>
