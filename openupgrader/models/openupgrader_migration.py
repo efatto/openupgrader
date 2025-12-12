@@ -696,9 +696,11 @@ class OpenupgraderMigration(models.Model):
             ir_cron_ids = self.env["ir.cron"].search([])
             self.disabled_cron_ids = ir_cron_ids
             ir_mail_server_ids = self.env["ir.mail_server"].search([])
+            self.disabled_ir_mail_server_ids = ir_mail_server_ids
             fetchmail_server_ids = self.env["fetchmail.server"].search(
                 [("state", "=", "done")]
             )
+            self.disabled_fetchmail_server_ids = fetchmail_server_ids
         if ir_cron_ids:
             sql = (
                 f"UPDATE ir_cron SET active = {'true' if active else 'false'} "
