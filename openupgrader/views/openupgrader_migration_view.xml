@@ -51,7 +51,7 @@
                     <button
                         name="button_update_current_version"
                         type="object"
-                        attrs="{'invisible': [('state', 'in', ['draft', 'restored', 'ready_for_migration'])]}"
+                        attrs="{'invisible': [('state', 'in', ['draft', 'restored', 'updated', 'ready_for_migration'])]}"
                         string="2: update (if the process has failed)"
                         help="Update db of current version before migration"
                     />
