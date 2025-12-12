@@ -765,7 +765,6 @@ class OpenupgraderMigration(models.Model):
                 [("name", "=", str(float(self.current_version_id.name) + 1))]
             )
             if self.is_migration_done:
-                self.set_macron_state_to(active=True)
                 logger.info(
                     "Migration completed from version %s to version %s"
                     % (self.from_version_id.name, self.to_version_id.name)
