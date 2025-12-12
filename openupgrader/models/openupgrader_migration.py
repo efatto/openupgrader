@@ -717,8 +717,8 @@ class OpenupgraderMigration(models.Model):
             )
         if fetchmail_server_ids:
             sql = (
-                f"UPDATE fetchmail_server SET state = {'done' if active else 'draft'} "
-                f"WHERE id in {tuple(fetchmail_server_ids.ids)};"
+                f"UPDATE fetchmail_server SET state = '{'done' if active else 'draft'}'"
+                f" WHERE id in {tuple(fetchmail_server_ids.ids)};"
             )
             Popen(
                 [f'{conn_vars} && psql -d {self.env.cr.dbname}_migrate -c "{sql}"'],
