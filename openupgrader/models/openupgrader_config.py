@@ -397,7 +397,12 @@ class OpenupgraderConfig(models.Model):
                 uv_override_deps.append("XlsxWriter==3.2.9")
             if self.name in ["16.0", "17.0", "18.0"]:
                 uv_override_deps.extend(
-                    ["lxml==4.9.3", "gevent==22.10.2", "greenlet==2.0.2"]
+                    [
+                        "Werkzeug==2.0.2",
+                        "lxml==4.9.3",
+                        "gevent==22.10.2",
+                        "greenlet==2.0.2",
+                    ]
                 )
             if uv_override_deps:
                 logger.info("Fixing libraries mismatch in Odoo requirements.txt")
