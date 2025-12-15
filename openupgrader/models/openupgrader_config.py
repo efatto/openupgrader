@@ -7,7 +7,7 @@ import subprocess
 
 import yaml
 
-from odoo import _, api, fields, models
+from odoo import _, api, fields, models, release
 from odoo.exceptions import UserError, ValidationError
 
 logger = logging.getLogger(__name__)
@@ -301,11 +301,25 @@ class OpenupgraderConfig(models.Model):
             else:
                 record.odoo_is_openupgrade = False
 
-    # todo install requirements from installed modules
-    @api.depends("name", "openupgrader_migration_id.from_version_id")
+    def _search_create_module(self, module_name):
+        module_id = self.env["module.name"].search(
+            [
+                ("name", "=", module_name),
+            ]
+        )
+        if not module_id:
+            module_id = self.env["module.name"].create({"name": module_name})
+            # ensure data is committed to db to avoid duplication
+            module_id.flush()
+        return module_id
+
+    @api.depends(
+        "name", "module_auto_install_ids", "module_to_uninstall_before_migration_ids"
+    )
     def _compute_module_installed_ids(self):
         for record in self:
-            if record.name and record.openupgrader_migration_id.from_version_id:
+            if record.name:
+                # get current installed modules
                 installed_modules = self.env["ir.module.module"].search(
                     [
                         ("state", "in", ["installed", "to upgrade"]),
@@ -317,26 +331,41 @@ class OpenupgraderConfig(models.Model):
                     if module.dependencies_id:
                         module_names += module.dependencies_id.mapped("depend_id.name")
                     for module_name in module_names:
-                        module_id = self.env["module.name"].search(
-                            [
-                                ("name", "=", module_name),
-                            ]
-                        )
-                        if not module_id:
-                            module_id = self.env["module.name"].create(
-                                {"name": module_name}
-                            )
-                            # ensure data is committed to db to avoid duplication
-                            module_id.flush_model()
+                        module_id = self._search_create_module(module_name)
                         module_installed_ids |= module_id
-                record.module_installed_ids = module_installed_ids
+                if record.name == release.version:
+                    new_module_installed_ids = module_installed_ids
+                else:
+                    new_module_installed = []
+                    new_module_installed_ids = self.env["module.name"]
+                    # add new modules to install
+                    for module_auto_install in record.module_auto_install_ids:
+                        if module_auto_install.name in module_installed_ids.mapped(
+                            "name"
+                        ):
+                            new_module_installed.append(
+                                module_auto_install.module_to_install_name
+                            )
+                    # add current modules except modules to uninstall before migration
+                    for module in module_installed_ids.mapped("name"):
+                        if (
+                            module
+                            not in record.module_to_uninstall_before_migration_ids.mapped(
+                                "name"
+                            )
+                        ):
+                            new_module_installed.append(module)
+                    # todo exclude modules uninstalled in the previous version
+                    for module_name in new_module_installed:
+                        module_id = self._search_create_module(module_name)
+                        new_module_installed_ids |= module_id
+                record.module_installed_ids = new_module_installed_ids
             else:
                 record.module_installed_ids = False
 
     def button_recreate_venv(self):
         # Remove the folder and re-create a clean virtual environment
         self.ensure_one()
-        self._compute_module_installed_ids()
         openupgrader_migration_id = self.env["openupgrader.migration"].search([])
         openupgrader_migration_id.ensure_one()
         venv_folder = os.path.join(
@@ -348,7 +377,6 @@ class OpenupgraderConfig(models.Model):
 
     def button_create_venv(self):
         self.ensure_one()
-        self._compute_module_installed_ids()
         openupgrader_migration_id = self.env["openupgrader.migration"].search([])
         openupgrader_migration_id.ensure_one()
         odoo_is_openupgrade = self.odoo_is_openupgrade
@@ -463,7 +491,6 @@ class OpenupgraderConfig(models.Model):
             )
 
     def button_load_config(self):  # noqa: C901
-        self._compute_module_installed_ids()
         version_name = self.name
         recipes = self.load_config_file()
         recipe_data = recipes[version_name]
@@ -626,7 +653,6 @@ class OpenupgraderConfig(models.Model):
     def load_config_file(self):
         if not self.config_file:
             raise UserError(_("Missing configuration file!"))
-        self._compute_module_installed_ids()
         file_content = base64.decodebytes(self.config_file)  # noqa
         repos = {}
         try:
