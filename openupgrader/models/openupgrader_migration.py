@@ -16,7 +16,7 @@ import psutil
 from odoo import _, api, fields, models
 from odoo.addons.python_venv.python_venv import (_create_python_venv,
                                                  _get_env_for_subprocess)
-from odoo.exceptions import UserError
+from odoo.exceptions import UserError, ValidationError
 from odoo.modules import get_module_resource
 from odoo.tools import config
 from odoo.tools.safe_eval import safe_eval
@@ -981,14 +981,14 @@ class OpenupgraderMigration(models.Model):
         venv_path = os.path.join(self.folder, f"openupgrade{version_id.name}")
         subprocess_env = _get_env_for_subprocess(venv_path, version_id.python_version)
         # try to install with pip and log error if it fails
-        commands = [
-            "pip install --no-cache-dir --pre --upgrade odoo{version_name}-addon-{name}".format(
-                version_name=odoo_version_int if odoo_version_int < 15 else "",
-                name=name,
-            )
-            for name in module_names
-        ]
-        for command in commands:
+        for name in module_names:
+            command = (
+                "pip install --no-cache-dir --pre --upgrade "
+                "odoo{version_name}-addon-{name}").format(
+                    version_name=odoo_version_int if odoo_version_int < 15 else "",
+                    name=name,
+                )
+            logger.info("Installing Odoo module with command: %s" % command)
             process = Popen(
                 command,
                 cwd=venv_path,
@@ -997,13 +997,17 @@ class OpenupgraderMigration(models.Model):
                 stdout=PIPE,
                 env=subprocess_env,
             )
-            error = process.stderr.readlines()
-            errors = [e.decode().lower() for e in error if "error" in e.decode()]
-            if errors:
-                logger.info(
-                    "Some modules not found with pip installer: %s"
-                    % "\n".join(e for e in errors)
+            log_lines = process.stderr.readlines()
+            log_texts = [log_line.decode().lower() for log_line in log_lines]
+            if any("No matching distribution" in log_text for log_text in log_texts):
+                raise ValidationError(
+                    _("Module %s not found with pip installer: %s")
+                    % (name, "\n".join(log_text for log_text in log_texts))
                 )
+            logger.info(
+                "Odoo module %s installed successfully with pip: %s"
+                % (name, "\n".join(log_text for log_text in log_texts))
+            )
 
     def install_uninstall_module(self, module_name, install=True):
         logger.info(
