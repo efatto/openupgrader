@@ -27,7 +27,7 @@ def _get_env_for_subprocess(folder, py_version):
             config.read(pip_conf_path)
             pip_extra_index_url = config.get("global", "extra-index-url")
     if pip_extra_index_url:
-        env_for_subprocess["PIP_EXTRA_INDEX_URL"] = pip_extra_index_url
+        env_for_subprocess["UV_INDEX"] = pip_extra_index_url
     env_for_subprocess["PATH"] = ":".join(
         [
             env_folder,
@@ -76,6 +76,7 @@ def _create_python_venv(venv_path, py_version):
 class AutoInstallModule(models.Model):
     _name = "auto.install.module"
     _description = "AutoInstall Module"
+    _order = "no_pip_found desc, name"
 
     name = fields.Text(string="Technical Name of Installed Module", required=True)
     sequence = fields.Integer(string="SQL Sequence")
@@ -87,14 +88,18 @@ class AutoInstallModule(models.Model):
         string="Technical Name of Module To Install",
         required=True,
     )
+    no_pip_found = fields.Boolean()
+    is_core_module = fields.Boolean()
 
 
 class ModuleName(models.Model):
     _name = "module.name"
     _description = "Module name"
-    _order = "name"
+    _order = "no_pip_found desc, name"
 
     name = fields.Text(string="Module Technical Name", required=True)
+    no_pip_found = fields.Boolean()
+    is_core_module = fields.Boolean()
 
     _sql_constraints = [
         (
@@ -108,8 +113,11 @@ class ModuleName(models.Model):
 class PipRequirement(models.Model):
     _name = "pip.requirement"
     _description = "Pip requirement"
+    _order = "no_pip_found desc, name"
 
     name = fields.Text(string="Pip requirement", required=True)
+    no_pip_found = fields.Boolean()
+    is_core_module = fields.Boolean()
 
     _sql_constraints = [
         (
@@ -258,6 +266,46 @@ class OpenupgraderConfig(models.Model):
         copy=False,
     )
 
+    def _set_modules_installability_via_pip(self, names):
+        # set module not installable in all the possible origins:
+        self.ensure_one()
+        self.module_installed_ids.no_pip_found = False
+        self.module_auto_install_ids.no_pip_found = False
+        self.pip_requirement_ids.no_pip_found = False
+        self.odoo_pip_requirement_ids.no_pip_found = False
+        if names:
+            self.module_installed_ids.filtered(
+                lambda x: x.name in names
+            ).no_pip_found = True
+            self.module_auto_install_ids.filtered(
+                lambda x: x.module_to_install_name in names
+            ).no_pip_found = True
+            self.pip_requirement_ids.filtered(
+                lambda x: x.name in names
+            ).no_pip_found = True
+            self.odoo_pip_requirement_ids.filtered(
+                lambda x: x.name in names
+            ).no_pip_found = True
+
+    def _set_core_modules(self, names):
+        self.ensure_one()
+        self.module_installed_ids.is_core_module = False
+        self.module_installed_ids.filtered(
+            lambda x: x.name in names
+        ).is_core_module = True
+        self.module_auto_install_ids.is_core_module = False
+        self.module_auto_install_ids.filtered(
+            lambda x: x.module_to_install_name in names
+        ).is_core_module = True
+        self.pip_requirement_ids.is_core_module = False
+        self.pip_requirement_ids.filtered(
+            lambda x: x.name in names
+        ).is_core_module = True
+        self.odoo_pip_requirement_ids.is_core_module = False
+        self.odoo_pip_requirement_ids.filtered(
+            lambda x: x.name in names
+        ).is_core_module = True
+
     def _create_db_backup(self, folder):
         self.ensure_one()
         if not self.db_backup_id:
@@ -310,7 +358,7 @@ class OpenupgraderConfig(models.Model):
         if not module_id:
             module_id = self.env["module.name"].create({"name": module_name})
             # ensure data is committed to db to avoid duplication
-            module_id.flush()
+            module_id.flush_model()
         return module_id
 
     @api.depends(
@@ -474,7 +522,13 @@ class OpenupgraderConfig(models.Model):
                 for name in self.module_installed_ids.filtered(
                     lambda x: not os.path.isdir(os.path.join(odoo_addons_path, x.name))
                     and not x.name == "base"
+                    and not x.name.startswith("test_")
                 ).mapped("name")
+            ]
+            names = [
+                name
+                for name in self.module_installed_ids.mapped("name")
+                if name not in odoo_modules_to_install_via_pip
             ]
             if self.odoo_pip_requirement_ids:
                 odoo_modules_to_install_via_pip += [
@@ -486,6 +540,7 @@ class OpenupgraderConfig(models.Model):
                     for auto_install in self.module_auto_install_ids
                     if auto_install.name in self.module_installed_ids.mapped("name")
                 ]
+            self._set_core_modules(names)
             openupgrader_migration_id.install_pip_modules(
                 self, odoo_modules_to_install_via_pip
             )

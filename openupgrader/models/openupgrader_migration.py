@@ -985,14 +985,14 @@ class OpenupgraderMigration(models.Model):
         venv_path = os.path.join(self.folder, f"openupgrade{version_id.name}")
         subprocess_env = _get_env_for_subprocess(venv_path, version_id.python_version)
         # try to install with pip and log error if it fails
-        commands = [
-            "uv pip install --pre odoo{version_name}-addon-{name}".format(
-                version_name=odoo_version_int if odoo_version_int < 15 else "",
+        not_installable_modules = []
+        for name in module_names:
+            command = "uv pip install --pre odoo{release}-addon-{name}{version}".format(
+                release=odoo_version_int if odoo_version_int < 15 else "",
                 name=name,
+                version=f"=={version_id.name}.*" if odoo_version_int >= 15 else "",
             )
-            for name in module_names
-        ]
-        for command in commands:
+            logger.info("Installing Odoo module with command: %s" % command)
             process = Popen(
                 command,
                 cwd=venv_path,
@@ -1001,13 +1001,19 @@ class OpenupgraderMigration(models.Model):
                 stdout=PIPE,
                 env=subprocess_env,
             )
-            error = process.stderr.readlines()
-            errors = [e.decode().lower() for e in error if "error" in e.decode()]
-            if errors:
+            log_lines = process.stderr.readlines()
+            log_texts = [log_line.decode().lower() for log_line in log_lines]
+            if any("no solution found" in log_text for log_text in log_texts):
+                not_installable_modules.append(name)
                 logger.info(
-                    "Some modules not found with pip installer: %s"
-                    % "\n".join(e for e in errors)
+                    "Module %s not found with uv pip installer: %s"
+                    % (name, "\n".join(log_text for log_text in log_texts))
                 )
+            logger.info(
+                "Odoo module %s installed successfully with uv pip: %s"
+                % (name, "\n".join(log_text for log_text in log_texts))
+            )
+        version_id._set_modules_installability_via_pip(not_installable_modules)
 
     def install_uninstall_module(self, module_name, install=True):
         logger.info(

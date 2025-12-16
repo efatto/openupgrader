@@ -76,6 +76,8 @@
                             <group string="Odoo Pip Requirements">
                                 <field name="odoo_pip_requirement_ids">
                                     <tree>
+                                        <field name="no_pip_found" />
+                                        <field name="is_core_module" />
                                         <field name="name" />
                                     </tree>
                                 </field>
@@ -83,6 +85,7 @@
                             <group string="Pip Requirements">
                                 <field name="pip_requirement_ids">
                                     <tree>
+                                        <field name="no_pip_found" />
                                         <field name="name" />
                                     </tree>
                                 </field>
@@ -108,7 +111,13 @@
                         </page>
                         <page string="Modules Installed">
                             <group string="Installed Modules">
-                                <field name="module_installed_ids" />
+                                <field name="module_installed_ids">
+                                    <tree>
+                                        <field name="no_pip_found" />
+                                        <field name="is_core_module" />
+                                        <field name="name" />
+                                    </tree>
+                                </field>
                             </group>
                         </page>
                         <page string="Modules Management">
@@ -116,6 +125,8 @@
                                 <field name="module_auto_install_ids">
                                     <tree editable="top">
                                         <field name="sequence" widget="handle" />
+                                        <field name="no_pip_found" />
+                                        <field name="is_core_module" />
                                         <field name="name" />
                                         <field name="module_to_install_name" />
                                     </tree>
