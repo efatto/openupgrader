@@ -1,4 +1,3 @@
-import io
 import logging
 import os
 import re
@@ -202,7 +201,7 @@ class OpenupgraderMigration(models.Model):
         error_log = " "
         warning_log = " "
         if os.path.isfile(log_file):
-            with open(log_file, "r") as f:
+            with open(log_file) as f:
                 for r in f.readlines():
                     if r and r != "" and "ERROR" in r:
                         error_text = r.split("ERROR")[1]
@@ -401,7 +400,7 @@ class OpenupgraderMigration(models.Model):
             )
         )
 
-        with io.open(odoo_log, "wb") as writer, io.open(odoo_log, "rb") as reader:
+        with open(odoo_log, "wb") as writer, open(odoo_log, "rb") as reader:
             process = Popen(
                 bash_command,
                 cwd=folder,
@@ -437,7 +436,7 @@ class OpenupgraderMigration(models.Model):
                 % version_name
             )
         if extra_command:
-            # extra command presumes Odoo will stop automatically like update - TODO check
+            # extra command presumes Odoo will stop automatically like update
             process.wait()
         if not update:
             time.sleep(10)
@@ -804,7 +803,7 @@ class OpenupgraderMigration(models.Model):
                 self.folder, self.next_version_id.name, migrate=True
             )
             if os.path.isfile(odoo_migrate_log):
-                with open(odoo_migrate_log, "r") as f:
+                with open(odoo_migrate_log) as f:
                     for log_line in f.readlines():
                         if "CRITICAL" in log_line:
                             new_state = "failed"
@@ -823,7 +822,7 @@ class OpenupgraderMigration(models.Model):
                 self.current_version_id.name,
             )
             if os.path.isfile(odoo_log):
-                with open(odoo_log, "r") as f:
+                with open(odoo_log) as f:
                     for log_line in f.readlines():
                         if "CRITICAL" in log_line:
                             new_state = "restore_failed"

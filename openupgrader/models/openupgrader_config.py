@@ -398,7 +398,7 @@ class OpenupgraderConfig(models.Model):
                     for module in module_installed_ids.mapped("name"):
                         if (
                             module
-                            not in record.module_to_uninstall_before_migration_ids.mapped(
+                            not in record.module_to_uninstall_before_migration_ids.mapped(  # noqa: E501
                                 "name"
                             )
                         ):

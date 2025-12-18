@@ -28,7 +28,8 @@ class DbBackup(models.Model):
     def dump_db_manifest(cr, version_name, dbname):
         pg_version = "%d.%d" % divmod(cr._obj.connection.server_version / 100, 100)
         cr.execute(
-            "SELECT name, latest_version FROM ir_module_module WHERE state = 'installed'"
+            "SELECT name, latest_version FROM ir_module_module "
+            "WHERE state = 'installed'"
         )
         modules = dict(cr.fetchall())
         manifest = {
