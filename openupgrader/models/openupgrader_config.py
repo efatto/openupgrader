@@ -478,11 +478,12 @@ class OpenupgraderConfig(models.Model):
                         "lxml==4.9.3",
                         "gevent==22.10.2",
                         "greenlet==2.0.2",
+                        "docutils==0.18.1",
                     ]
                 )
             if uv_override_deps:
                 logger.info("Fixing libraries mismatch in Odoo requirements.txt")
-                with open(os.path.join(odoo_path, "pyproject.toml"), "a") as f:
+                with open(os.path.join(venv_path, "pyproject.toml"), "a") as f:
                     f.write("[tool.uv]\n")
                     f.write(f"override-dependencies = {str(uv_override_deps)} ")
                     f.close()
