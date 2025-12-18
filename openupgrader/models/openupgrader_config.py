@@ -468,6 +468,12 @@ class OpenupgraderConfig(models.Model):
                     self.odoo_repo_id.remote_branch or self.name,
                     odoo_path,
                 )
+            subprocess.Popen(
+                "uv pip install packaging",
+                cwd=venv_path,
+                shell=True,
+                env=subprocess_env,
+            ).wait()
             uv_override_deps = []
             if self.name in ["14.0", "15.0", "16.0"]:
                 uv_override_deps.append("XlsxWriter==3.2.9")
