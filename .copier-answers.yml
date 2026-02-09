@@ -1,6 +1,7 @@
 # Do NOT update manually; changes here will be overwritten by Copier
-_commit: v1.35
+_commit: v1.37
 _src_path: https://github.com/OCA/oca-addons-repo-template.git
+additional_ruff_rules: []
 ci: GitHub
 convert_readme_fragments_to_markdown: false
 enable_checklog_odoo: false
@@ -22,5 +23,5 @@ repo_name: A tool to automate OpenUpgrade to upgrade Odoo in an easy way
 repo_slug: openupgrader
 repo_website: https://github.com/efatto/openupgrader
 use_pyproject_toml: true
-use_ruff: false
+use_ruff: true
 
