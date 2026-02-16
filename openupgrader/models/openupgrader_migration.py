@@ -1,4 +1,3 @@
-import io
 import logging
 import os
 import re
@@ -400,7 +399,9 @@ class OpenupgraderMigration(models.Model):
             )
         )
 
-        with io.open(odoo_log, "wb") as writer, io.open(odoo_log, "rb") as reader:
+        filename = self.odoo_upgrade_log_file
+        migration_errors = []
+        with open(filename, "wb") as writer, open(filename, "rb") as reader:
             process = Popen(
                 bash_command,
                 cwd=folder,
@@ -483,6 +484,39 @@ class OpenupgraderMigration(models.Model):
         pids = self._get_odoo_pids()
         for pid in pids:
             self._stop_pid(pid)
+        # read odoo log and put in logger
+        if os.path.isfile(self.odoo_update_log_file):
+            logger.debug("Show log for file %s" % self.odoo_update_log_file)
+            file_reader = open(self.odoo_update_log_file)
+            lines = file_reader.readlines()
+            for line in lines:
+                if line != " ":
+                    logger.debug(line)
+
+    def disable_mail(self, disable=False):
+        # FIXME: DO VIA PSQL IN MIGRATED DB
+        state = "draft" if disable else "done"
+        active = False if disable else True
+        fetchmail_server_ids = self.env["fetchmail.server"].search(
+            [
+                ("state", "=", state),
+            ]
+        )
+        if fetchmail_server_ids:
+            fetchmail_server_ids.write({"state": state})
+        ir_mail_server_ids = (
+            self.env["ir.mail_server"]
+            .with_context(
+                active_test=False,
+            )
+            .search(
+                [
+                    ("active", "=", active),
+                ]
+            )
+        )
+        if ir_mail_server_ids:
+            ir_mail_server_ids.write({"active": active})
 
     def restore_filestore(self, from_version_id, to_version_id):
         # restore filestore always from initial folder to default migration folder
