@@ -1,4 +1,6 @@
+[![Support the OCA](https://odoo-community.org/readme-banner-image)](https://odoo-community.org/get-involved?utm_source=repo-readme)
 
+# A tool to automate OpenUpgrade to upgrade Odoo in an easy way
 <!-- /!\ Non OCA Context : Set here the badge of your runbot / runboat instance. -->
 [![Pre-commit Status](https://github.com/efatto/openupgrader/actions/workflows/pre-commit.yml/badge.svg?branch=16.0)](https://github.com/efatto/openupgrader/actions/workflows/pre-commit.yml?query=branch%3A16.0)
 [![Build Status](https://github.com/efatto/openupgrader/actions/workflows/test.yml/badge.svg?branch=16.0)](https://github.com/efatto/openupgrader/actions/workflows/test.yml?query=branch%3A16.0)
@@ -7,9 +9,13 @@
 
 <!-- /!\ do not modify above this line -->
 
+<<<<<<< before updating
 # A tool to automate OpenUpgrade to upgrade Odoo in an easy way
 
 Modules for extend and fix use of Odoo
+=======
+Modules to upgrade Odoo in-place
+>>>>>>> after updating
 
 <!-- /!\ do not modify below this line -->
 
