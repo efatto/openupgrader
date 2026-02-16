@@ -1,4 +1,3 @@
-import io
 import logging
 import os
 import re
@@ -184,7 +183,7 @@ class OpenupgraderMigration(models.Model):
         error_log = " "
         warning_log = " "
         if os.path.isfile(log_file):
-            with open(log_file, "r") as f:
+            with open(log_file) as f:
                 for r in f.readlines():
                     if r and r != "" and "ERROR" in r:
                         error_text = r.split("ERROR")[1]
@@ -391,7 +390,7 @@ class OpenupgraderMigration(models.Model):
 
         filename = self.odoo_upgrade_log_file
         migration_errors = []
-        with io.open(filename, "wb") as writer, io.open(filename, "rb") as reader:
+        with open(filename, "wb") as writer, open(filename, "rb") as reader:
             process = Popen(
                 bash_command,
                 cwd=folder,
@@ -498,7 +497,7 @@ class OpenupgraderMigration(models.Model):
         # read odoo log and put in logger
         if os.path.exists(self.odoo_update_log_file):
             logger.debug("Show log for file %s" % self.odoo_update_log_file)
-            file_reader = open(self.odoo_update_log_file, "r")
+            file_reader = open(self.odoo_update_log_file)
             lines = file_reader.readlines()
             for line in lines:
                 if line != " ":
