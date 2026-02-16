@@ -200,7 +200,7 @@ class OpenupgraderMigration(models.Model):
         error_log = " "
         warning_log = " "
         if os.path.isfile(log_file):
-            with open(log_file, "r") as f:
+            with open(log_file) as f:
                 for r in f.readlines():
                     if r and r != "" and "ERROR" in r:
                         error_text = r.split("ERROR")[1]
@@ -299,22 +299,20 @@ class OpenupgraderMigration(models.Model):
         :param extra_command: command that will be passed after executable
         :return: null
         """
-        self.flush()
+        self.flush_model()
         if update:
             self._start_odoo_thread(version_id, update, migrate, extra_command)
         else:
             self._start_odoo(version_id, update, migrate, extra_command)
 
-    def _start_odoo_thread(self, version_id, update=False, extra_command=""):
+    def _start_odoo_thread(
+        self, version_id, update=False, migrate=False, extra_command=""
+    ):
         new_cr = self.pool.cursor()
         self = self.with_env(self.env(cr=new_cr))
-        state, migration_errors = self._start_odoo(version_id, update, extra_command)
-        logger.info("Current migration log is: %s" % self.migration_error_log)
-        logger.info("Migration error log is: %s" % str(migration_errors))
-        self.flush()
+        self._start_odoo(version_id, update, migrate, extra_command)
         new_cr.commit()
         new_cr.close()
-        return state, migration_errors
 
     def _start_odoo(  # noqa C901
         self, version_id, update=False, migrate=False, extra_command=""
@@ -391,17 +389,14 @@ class OpenupgraderMigration(models.Model):
             file_writer.close()
         bash_command += f"--logfile={odoo_log} "
         logger.info(
-            "Starting Odoo in virtualenv to %s version %s with command %s"
-            % (
-                "migrate" if migrate else "update",
-                version_id.name,
-                bash_command,
+            "Starting Odoo in virtualenv to {m} version {v} with command {c}".format(
+                m="migrate" if migrate else "update",
+                v=version_id.name,
+                c=bash_command,
             )
         )
 
-        filename = self.odoo_upgrade_log_file
-        migration_errors = []
-        with open(filename, "wb") as writer, open(filename, "rb") as reader:
+        with open(odoo_log, "wb") as writer, open(odoo_log, "rb") as reader:
             process = Popen(
                 bash_command,
                 cwd=folder,
@@ -456,7 +451,7 @@ class OpenupgraderMigration(models.Model):
                 try:
                     os.kill(pid, signal.SIGKILL)
                 except OSError as e:
-                    logger.info("Error %s in killing pid: %s " % (e, pid))
+                    logger.info(f"Error {e} in killing pid: {pid}")
         self.odoo_migrated_state = "stopped"
         logger.info("Odoo migration instance stopped.")
 
@@ -484,39 +479,6 @@ class OpenupgraderMigration(models.Model):
         pids = self._get_odoo_pids()
         for pid in pids:
             self._stop_pid(pid)
-        # read odoo log and put in logger
-        if os.path.isfile(self.odoo_update_log_file):
-            logger.debug("Show log for file %s" % self.odoo_update_log_file)
-            file_reader = open(self.odoo_update_log_file)
-            lines = file_reader.readlines()
-            for line in lines:
-                if line != " ":
-                    logger.debug(line)
-
-    def disable_mail(self, disable=False):
-        # FIXME: DO VIA PSQL IN MIGRATED DB
-        state = "draft" if disable else "done"
-        active = False if disable else True
-        fetchmail_server_ids = self.env["fetchmail.server"].search(
-            [
-                ("state", "=", state),
-            ]
-        )
-        if fetchmail_server_ids:
-            fetchmail_server_ids.write({"state": state})
-        ir_mail_server_ids = (
-            self.env["ir.mail_server"]
-            .with_context(
-                active_test=False,
-            )
-            .search(
-                [
-                    ("active", "=", active),
-                ]
-            )
-        )
-        if ir_mail_server_ids:
-            ir_mail_server_ids.write({"active": active})
 
     def restore_filestore(self, from_version_id, to_version_id):
         # restore filestore always from initial folder to default migration folder
@@ -526,16 +488,14 @@ class OpenupgraderMigration(models.Model):
         Path(migrated_folder).mkdir(parents=True, exist_ok=True)
         initial_folder = self.get_filestore_initial_path()
         logger.info(
-            "Restoring filestore from %s to %s folder."
-            % (initial_folder, migrated_folder)
+            f"Restoring filestore from {initial_folder} to {migrated_folder} folder."
         )
         Popen([f"cp -r * {migrated_folder}"], cwd=initial_folder, shell=True).wait()
         logger.info(
-            "Filestore restored from original version %s folder %s to %s."
-            % (
-                from_version_id.name,
-                initial_folder,
-                migrated_folder,
+            "Filestore restored from original version {f} folder {i} to {m}.".format(
+                f=from_version_id.name,
+                i=initial_folder,
+                m=migrated_folder,
             )
         )
 
@@ -618,8 +578,7 @@ class OpenupgraderMigration(models.Model):
         if not os.path.isfile(dump_file_sql):
             raise UserError(_("Dump sql file %s not found!") % dump_file_sql)
         logger.info(
-            "Restoring %(kind_db)s db %(from_db)s %(db)s_migrate."
-            % dict(
+            "Restoring {kind_db} db {from_db} {db}_migrate.".format(
                 db=self.env.cr.dbname,
                 from_db="" if version_id else f"from {self.env.cr.dbname} to",
                 kind_db="last dumped" if version_id else "original",
@@ -794,8 +753,9 @@ class OpenupgraderMigration(models.Model):
             self.show_message_odoo_running()
         if self.state == "migrated":
             logger.info(
-                "Migration done from version %s to version %s"
-                % (self.current_version_id.name, self.next_version_id.name)
+                "Migration done from version {c} to version {n}".format(
+                    c=self.current_version_id.name, n=self.next_version_id.name
+                )
             )
             # do after migration stuff
             self.uninstall_modules(self.next_version_id, after_migration=True)
@@ -812,8 +772,9 @@ class OpenupgraderMigration(models.Model):
             )
             if self.is_migration_done:
                 logger.info(
-                    "Migration completed from version %s to version %s"
-                    % (self.from_version_id.name, self.to_version_id.name)
+                    "Migration completed from version {f} to version {t}".format(
+                        f=self.from_version_id.name, t=self.to_version_id.name
+                    )
                 )
                 self.state = "done"
             return {
@@ -846,7 +807,7 @@ class OpenupgraderMigration(models.Model):
                 self.folder, self.next_version_id.name, migrate=True
             )
             if os.path.isfile(odoo_migrate_log):
-                with open(odoo_migrate_log, "r") as f:
+                with open(odoo_migrate_log) as f:
                     for log_line in f.readlines():
                         if "CRITICAL" in log_line:
                             new_state = "failed"
@@ -865,7 +826,7 @@ class OpenupgraderMigration(models.Model):
                 self.current_version_id.name,
             )
             if os.path.isfile(odoo_log):
-                with open(odoo_log, "r") as f:
+                with open(odoo_log) as f:
                     for log_line in f.readlines():
                         if "CRITICAL" in log_line:
                             new_state = "restore_failed"
@@ -1004,16 +965,14 @@ class OpenupgraderMigration(models.Model):
         try:
             module_to_unistall_id.button_immediate_uninstall()
             module_to_unistall_id.unlink()
-            logger.info("Module %s uninstalled" % module_to_unistall_id.name)
+            logger.info(f"Module {module_to_unistall_id.name} uninstalled")
             success = 5
         except Exception as e:
             logger.info(
-                "Module %s not uninstalled for %s, trying %s/%s times."
-                % (
-                    module_to_unistall_id.name,
-                    str(e).replace("\n", ""),
-                    success + 1,
-                    5,
+                "Module {m.name} not uninstalled for {e}, trying {s}/5 times.".format(
+                    m=module_to_unistall_id,
+                    s=success + 1,
+                    e=str(e).replace("\n", ""),
                 )
             )
             time.sleep(10)
@@ -1100,12 +1059,14 @@ class OpenupgraderMigration(models.Model):
             if any("no solution found" in log_text for log_text in log_texts):
                 not_installable_modules.append(name)
                 logger.info(
-                    "Module %s not found with uv pip installer: %s"
-                    % (name, "\n".join(log_text for log_text in log_texts))
+                    "Module {n} not found with uv pip installer: {log}".format(
+                        n=name, log="\n".join(log_text for log_text in log_texts)
+                    )
                 )
             logger.info(
-                "Odoo module %s installed successfully with uv pip: %s"
-                % (name, "\n".join(log_text for log_text in log_texts))
+                "Odoo module {n} installed successfully with uv pip: {log}".format(
+                    n=name, log="\n".join(log_text for log_text in log_texts)
+                )
             )
         if version_id == self.to_version_id:
             version_id._set_modules_installability_via_pip(not_installable_modules)
