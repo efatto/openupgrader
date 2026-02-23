@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <record id="view_openupgrader_config_search" model="ir.ui.view">
+        <field name="name">openupgrader.config.search</field>
+        <field name="model">openupgrader.config</field>
+        <field name="arch" type="xml">
+            <search string="OpenUpgrader Configuration Search">
+                <field name="name" />
+                <field name="python_version" />
+                <field name="sql_after_migration_command_ids" />
+                <field name="sql_before_migration_command_ids" />
+                <field name="module_auto_install_ids" />
+                <field name="module_to_delete_after_migration_ids" />
+                <field name="module_to_uninstall_after_migration_ids" />
+                <field name="module_to_uninstall_before_migration_ids" />
+            </search>
+        </field>
+    </record>
+
+    <record id="view_openupgrader_config_tree" model="ir.ui.view">
+        <field name="name">openupgrader.config.tree</field>
+        <field name="model">openupgrader.config</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="name" />
+                <field name="python_version" />
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_openupgrader_config_form" model="ir.ui.view">
+        <field name="name">openupgrader.config.form</field>
+        <field name="model">openupgrader.config</field>
+        <field name="arch" type="xml">
+            <form string="OpenUpgrader Configuration">
+                <header>
+                    <button
+                        name="button_create_venv"
+                        type="object"
+                        string="Create or update virtualenv"
+                    />
+                    <button
+                        name="button_recreate_venv"
+                        type="object"
+                        string="Re-create virtualenv"
+                        help="To recreate a clean virtualenv after removing some libraries"
+                    />
+                </header>
+                <sheet string="OpenUpgrader Configuration">
+                    <div class="oe_title">
+                        <label for="name" string="Odoo Version" />
+                        <h1>
+                            <field name="name" />
+                        </h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="openupgrader_migration_id" />
+                            <field name="config_file" filename="config_file_name" />
+                            <field name="config_file_name" invisible="1" />
+                            <button
+                                type="object"
+                                name="button_load_config"
+                                attrs="{'invisible': [('config_file', '=', False),
+                            ]}"
+                                string="Load recipe"
+                            />
+                        </group>
+                        <group>
+                            <field name="python_version" />
+                            <field name="odoo_repo_id" />
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Pip Requirements">
+                            <group string="Odoo Pip Requirements">
+                                <field name="odoo_pip_requirement_ids">
+                                    <tree>
+                                        <field name="no_pip_found" />
+                                        <field name="is_core_module" />
+                                        <field name="name" />
+                                    </tree>
+                                </field>
+                            </group>
+                            <group string="Pip Requirements">
+                                <field name="pip_requirement_ids">
+                                    <tree>
+                                        <field name="no_pip_found" />
+                                        <field name="name" />
+                                    </tree>
+                                </field>
+                            </group>
+                        </page>
+                        <page string="SQL Commands">
+                            <group string="Sql command to execute before migration">
+                                <field name="sql_before_migration_command_ids">
+                                    <tree editable="top">
+                                        <field name="sequence" widget="handle" />
+                                        <field name="name" />
+                                    </tree>
+                                </field>
+                            </group>
+                            <group string="Sql command to execute after migration">
+                                <field name="sql_after_migration_command_ids">
+                                    <tree editable="top">
+                                        <field name="sequence" widget="handle" />
+                                        <field name="name" />
+                                    </tree>
+                                </field>
+                            </group>
+                        </page>
+                        <page string="Modules Installed">
+                            <group string="Installed Modules">
+                                <field name="module_installed_ids">
+                                    <tree>
+                                        <field name="no_pip_found" />
+                                        <field name="is_core_module" />
+                                        <field name="name" />
+                                    </tree>
+                                </field>
+                            </group>
+                        </page>
+                        <page string="Modules Management">
+                            <group string="Auto-install modules">
+                                <field name="module_auto_install_ids">
+                                    <tree editable="top">
+                                        <field name="sequence" widget="handle" />
+                                        <field name="no_pip_found" />
+                                        <field name="is_core_module" />
+                                        <field name="name" />
+                                        <field name="module_to_install_name" />
+                                    </tree>
+                                </field>
+                            </group>
+                            <group string="Modules to delete after migration">
+                                <field
+                                    name="module_to_delete_after_migration_ids"
+                                    widget="many2many_tags"
+                                />
+                            </group>
+                            <group string="Modules to be uninstalled before migration">
+                                <field
+                                    name="module_to_uninstall_before_migration_ids"
+                                    widget="many2many_tags"
+                                />
+                            </group>
+                            <group string="Modules to uninstall after migration">
+                                <field
+                                    name="module_to_uninstall_after_migration_ids"
+                                    widget="many2many_tags"
+                                />
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_openupgrader_config" model="ir.actions.act_window">
+        <field name="name">OpenUpgrader Config</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="res_model">openupgrader.config</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+
+    <record model="ir.ui.menu" id="menu_openupgrader_config">
+        <field name="name">OpenUpgrader Configuration</field>
+        <field name="sequence" eval="15" />
+        <field name="parent_id" ref="menu_openupgrader" />
+        <field name="action" ref="action_openupgrader_config" />
+    </record>
+</odoo>

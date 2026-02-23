@@ -1,0 +1,8 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_auto_install_module,access_auto_install_module,model_auto_install_module,base.group_erp_manager,1,1,1,1
+access_module_name,access_module_name,model_module_name,base.group_erp_manager,1,1,1,1
+access_pip_requirement,access_pip_requirement,model_pip_requirement,base.group_erp_manager,1,1,1,1
+access_sql_update_command,access_sql_update_command,model_sql_update_command,base.group_erp_manager,1,1,1,1
+access_openupgrader_config,access_openupgrader_config,model_openupgrader_config,base.group_erp_manager,1,1,1,1
+access_remote_repo,access_remote_repo,model_remote_repo,base.group_erp_manager,1,1,1,1
+access_openupgrader_migration,access_openupgrader_migration,model_openupgrader_migration,base.group_erp_manager,1,1,1,1

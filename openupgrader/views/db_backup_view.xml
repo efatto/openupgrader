@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <record id="view_backup_conf_form" model="ir.ui.view">
+        <field name="model">db.backup</field>
+        <field name="inherit_id" ref="auto_backup.view_backup_conf_form" />
+        <field name="arch" type="xml">
+            <field name="backup_format" position="after">
+                <field name="is_migration_backup" />
+                <field
+                    name="openupgrader_config_id"
+                    attrs="{'invisible': [('is_migration_backup', '=', False)]}"
+                />
+            </field>
+            <button name="action_backup" position="attributes">
+                <attribute
+                    name="attrs"
+                >{'invisible': [('is_migration_backup', '=', True)]}</attribute>
+            </button>
+            <button name="action_backup" position="after">
+                <button
+                    name="action_backup_migration"
+                    type="object"
+                    string="Execute migration backup"
+                    class="oe_highlight"
+                />
+                <attribute
+                    name="attrs"
+                >{'invisible': [('is_migration_backup', '!=', True)]}</attribute>
+            </button>
+        </field>
+    </record>
+</odoo>
