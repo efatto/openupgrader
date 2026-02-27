@@ -1,11 +1,12 @@
 "18.0":
-  - python_version: "3.10.12"
+  - python_version: "3.12.11"
   - pip_requirements:
-      - setuptools
+      - setuptools<81
       - git+https://github.com/OCA/openupgradelib.git@master#egg=openupgradelib
       - odoorpc
       - pysftp
       - PyYAML
+      - packaging
   - odoo: https://github.com/OCA/OCB.git 18.0
   - odoo_pip_requirements:
       - module_change_auto_install
@@ -17,7 +18,7 @@
 "17.0":
   - python_version: "3.10.12"
   - pip_requirements:
-      - setuptools
+      - setuptools<81
       - git+https://github.com/OCA/openupgradelib.git@master#egg=openupgradelib
       - odoorpc
       - pysftp
@@ -84,6 +85,7 @@
 "13.0":
   - python_version: "3.7.16"
   - pip_requirements:
+      - setuptools<81
       - git+https://github.com/OCA/openupgradelib.git@master#egg=openupgradelib
       - odoorpc
       - pysftp
@@ -97,6 +99,7 @@
 "12.0":
   - python_version: "3.7.16"
   - pip_requirements:
+      - setuptools<70
       - git+https://github.com/OCA/openupgradelib.git@master#egg=openupgradelib
       - odoorpc
       - pysftp
@@ -110,6 +113,7 @@
 "11.0":
   - python_version: "3.5"
   - pip_requirements:
+      - setuptools<70
       - git+https://github.com/OCA/openupgradelib.git@master#egg=openupgradelib
   - after_migration_to_this_version_sql_command:
   - before_migration_to_next_version_sql_command:
@@ -120,6 +124,7 @@
 "10.0":
   - python_version: "2.7"
   - pip_requirements:
+      - setuptools<70
       - git+https://github.com/OCA/openupgradelib.git@master#egg=openupgradelib
   - after_migration_to_this_version_sql_command:
   - before_migration_to_next_version_sql_command:
@@ -130,6 +135,7 @@
 "9.0":
   - python_version: "2.7"
   - pip_requirements:
+      - setuptools<70
       - git+https://github.com/OCA/openupgradelib.git@master#egg=openupgradelib
   - after_migration_to_this_version_sql_command:
   - before_migration_to_next_version_sql_command:
@@ -140,6 +146,7 @@
 "8.0":
   - python_version: "2.7"
   - pip_requirements:
+      - setuptools<70
       - git+https://github.com/OCA/openupgradelib.git@master#egg=openupgradelib
   - after_migration_to_this_version_sql_command:
   - before_migration_to_next_version_sql_command:
@@ -150,6 +157,7 @@
 "7.0":
   - python_version: "2.7"
   - pip_requirements:
+      - setuptools<70
       - git+https://github.com/OCA/openupgradelib.git@master#egg=openupgradelib
   - after_migration_to_this_version_sql_command:
   - before_migration_to_next_version_sql_command:

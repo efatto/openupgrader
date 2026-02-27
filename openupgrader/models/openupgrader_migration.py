@@ -14,7 +14,7 @@ import odoorpc
 import psutil
 from odoorpc.rpc import CookieJar, HTTPCookieProcessor, build_opener
 
-from odoo import _, api, fields, models
+from odoo import _, api, fields, models, registry
 from odoo.exceptions import UserError
 from odoo.modules import get_module_resource
 from odoo.tools import config
@@ -300,7 +300,7 @@ class OpenupgraderMigration(models.Model):
         :return: null
         """
         self.flush_model()
-        if update:
+        if update and not config["test_enable"]:
             self._start_odoo_thread(version_id, update, migrate, extra_command)
         else:
             self._start_odoo(version_id, update, migrate, extra_command)
@@ -308,11 +308,13 @@ class OpenupgraderMigration(models.Model):
     def _start_odoo_thread(
         self, version_id, update=False, migrate=False, extra_command=""
     ):
-        new_cr = self.pool.cursor()
-        self = self.with_env(self.env(cr=new_cr))
-        self._start_odoo(version_id, update, migrate, extra_command)
-        new_cr.commit()
-        new_cr.close()
+        self.ensure_one()
+        with registry(self.env.cr.dbname).cursor() as new_cr:
+            new_env = api.Environment(new_cr, self.env.uid, self.env.context)
+            self_env = self.with_env(new_env).browse(self.id)
+            self_env._start_odoo(version_id, update, migrate, extra_command)
+            new_cr.commit()
+            new_cr.close()
 
     def _start_odoo(  # noqa C901
         self, version_id, update=False, migrate=False, extra_command=""

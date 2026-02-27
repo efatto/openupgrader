@@ -3,11 +3,11 @@ import time
 
 from odoo.modules import get_module_resource
 from odoo.release import version_info
-from odoo.tests.common import Form, SavepointCase, tagged
+from odoo.tests.common import Form, TransactionCase, tagged
 
 
 @tagged("post_install", "-at_install")
-class OpenUpgrader(SavepointCase):
+class OpenUpgrader(TransactionCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()

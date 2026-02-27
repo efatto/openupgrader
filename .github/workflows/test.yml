@@ -65,8 +65,6 @@ jobs:
         run: oca_init_test_database
       - name: Run tests
         run: oca_run_tests
-<<<<<<< before updating
-=======
       - name: Upload screenshots from JS tests
         uses: actions/upload-artifact@v4
         if: ${{ failure() }}
@@ -77,4 +75,3 @@ jobs:
       - name: Update .pot files
         run: oca_export_and_push_pot https://x-access-token:${{ secrets.GIT_PUSH_TOKEN }}@github.com/${{ github.repository }}
         if: ${{ matrix.makepot == 'true' && github.event_name == 'push' && github.repository_owner == 'efatto' }}
->>>>>>> after updating
