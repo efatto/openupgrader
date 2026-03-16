@@ -2,7 +2,7 @@
 # License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl).
 {
     "name": "OpenUpgrader",
-    "version": "15.0.1.1.2",
+    "version": "15.0.1.1.3",
     "category": "Odoo Management",
     "author": "Sergio Corato",
     "license": "AGPL-3",
