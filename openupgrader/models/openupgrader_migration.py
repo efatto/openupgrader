@@ -1,4 +1,3 @@
-import io
 import logging
 import os
 import re
@@ -398,7 +397,7 @@ class OpenupgraderMigration(models.Model):
             )
         )
 
-        with io.open(odoo_log, "wb") as writer, io.open(odoo_log, "rb") as reader:
+        with open(odoo_log, "wb") as writer, open(odoo_log, "rb") as reader:
             process = Popen(
                 bash_command,
                 cwd=folder,
