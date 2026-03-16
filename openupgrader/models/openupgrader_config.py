@@ -474,7 +474,7 @@ class OpenupgraderConfig(models.Model):
                 )
             uv_override_deps = []
             if self.name in ["14.0", "15.0", "16.0"]:
-                uv_override_deps.append("XlsxWriter==3.2.9")
+                uv_override_deps.extend(["setuptools<70", "XlsxWriter==3.2.9"])
             if self.name in ["16.0", "17.0"]:
                 uv_override_deps.extend(
                     [
