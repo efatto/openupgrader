@@ -59,7 +59,7 @@ class DbBackup(models.Model):
                 try:
                     os.makedirs(rec.folder)
                 except OSError as e:
-                    logger.info(f"Error {e} in creating folder: {rec.folder}")
+                    logger.info("Error %s in creating folder: %s " % (e, rec.folder))
                 with open(os.path.join(rec.folder, filename), "wb") as destiny:
                     # Always generate new backup
                     rec.dump_db_migration(
@@ -91,8 +91,8 @@ class DbBackup(models.Model):
                                 remote.makedirs(rec.folder)
                             except ConnectionException:
                                 logger.info(
-                                    f"Error {ConnectionException} in creating folder: "
-                                    f"{rec.folder}"
+                                    "Error %s in creating folder: %s "
+                                    % (ConnectionException, rec.folder)
                                 )
                             # Copy cached backup to remote server
                             with remote.open(
