@@ -15,7 +15,5 @@ class RemoteRepo(models.Model):
     def name_get(self):
         vals = []
         for record in self:
-            vals.append(
-                tuple([record.id, "%s - %s" % (record.name, record.remote_branch)])
-            )
+            vals.append(tuple([record.id, f"{record.name} - {record.remote_branch}"]))
         return vals
