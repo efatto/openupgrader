@@ -1051,7 +1051,9 @@ class OpenupgraderMigration(models.Model):
                 name=name,
                 version=f"=={version_id.name}.*" if odoo_version_int >= 15 else "",
             )
-            logger.info("Installing Odoo module with command: %s" % command)
+            logger.info(
+                f"Installing Odoo module with command: {command} and {subprocess_env}"
+            )
             process = Popen(
                 command,
                 cwd=venv_path,
@@ -1067,6 +1069,13 @@ class OpenupgraderMigration(models.Model):
                 logger.info(
                     "Module %s not found with uv pip installer: %s"
                     % (name, "\n".join(log_text for log_text in log_texts))
+                )
+            if any("pkg_resources" in log_text for log_text in log_texts):
+                not_installable_modules.append(name)
+                logger.info(
+                    "Module {n} not installable for setuptools error: {log}".format(
+                        n=name, log="\n".join(log_text for log_text in log_texts)
+                    )
                 )
             logger.info(
                 "Odoo module %s installed successfully with uv pip: %s"
