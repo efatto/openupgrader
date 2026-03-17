@@ -124,7 +124,7 @@ class OpenUpgrader(SavepointCase):
         while openupgrader_migration._get_odoo_migrated_state() == "running":
             time.sleep(10)
         openupgrader_migration.button_do_migration()
-        self.assertEqual(openupgrader_migration.state, "done")
+        self.assertEqual(openupgrader_migration.is_migration_done, True)
         self.assertEqual(
             openupgrader_migration.current_version_id,
             self.to_config_id,
