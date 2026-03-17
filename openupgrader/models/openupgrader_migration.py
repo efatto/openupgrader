@@ -842,13 +842,10 @@ class OpenupgraderMigration(models.Model):
                         if "Modules loaded" in log_line:
                             new_state = "updated"
                             break
-        if (
-            migrated_version_id
-            and self.current_version_id
-            and (migrated_version_id != self.current_version_id)
-        ):
-            # do migration complete stuff and set the next version to migrate
-            self._do_after_migration()
+        if migrated_version_id and self.current_version_id:
+            if migrated_version_id != self.current_version_id:
+                # do migration complete stuff and set the next version to migrate
+                self._do_after_migration()
         self.state = new_state
         return odoo_migrated_state
 
