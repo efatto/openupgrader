@@ -463,7 +463,7 @@ class OpenupgraderConfig(models.Model):
                 ).wait()
             else:
                 subprocess.Popen(
-                    ["git pull origin {self.name} --rebase"],
+                    [f"git pull origin {self.name} --rebase"],
                     cwd=openupgrade_path,
                     shell=True,
                 ).wait()
