@@ -794,6 +794,7 @@ class OpenupgraderMigration(models.Model):
 
     def _get_odoo_migrated_state(self):  # noqa C901
         # todo put in a cron job?
+        migrated_version_id = False
         odoo_migrated_state = "stopped"
         odoo_pids = self._get_odoo_pids()
         for odoo_pid in odoo_pids:
@@ -820,6 +821,7 @@ class OpenupgraderMigration(models.Model):
                             break
                         if "Modules loaded" in log_line:
                             new_state = "migrated"
+                            migrated_version_id = self.next_version_id
                             break
         if (
             self.current_version_id
@@ -840,9 +842,10 @@ class OpenupgraderMigration(models.Model):
                         if "Modules loaded" in log_line:
                             new_state = "updated"
                             break
-        self.state = new_state
-        if new_state == "migrated":
+        if migrated_version_id != self.current_version_id:
+            # set next version and do migration complete stuff
             self._do_after_migration()
+        self.state = new_state
         return odoo_migrated_state
 
     def sql_fixes(self, sql_commands):
