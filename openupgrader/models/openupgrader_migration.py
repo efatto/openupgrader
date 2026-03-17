@@ -753,34 +753,36 @@ class OpenupgraderMigration(models.Model):
         self.button_clean_logs()
         self.state = "draft"
 
+    def _do_after_migration(self):
+        logger.info(
+            "Migration done from version %s to version %s"
+            % (self.current_version_id.name, self.next_version_id.name)
+        )
+        # do after migration stuff
+        self.uninstall_modules(self.next_version_id, after_migration=True)
+        self.auto_install_modules(self.next_version_id)
+        self.sql_fixes(self.current_version_id.sql_after_migration_command_ids)
+        # if self.next_version_id.name == "10.0":
+        #     self.remove_modules(self.next_version_id, "upgrade")
+        #     self.remove_modules(self.next_version_id)
+        #     self.install_uninstall_module("l10n_it_intrastat")
+        # move version to the next step
+        self.current_version_id = self.next_version_id
+        self.next_version_id = self.env["openupgrader.config"].search(
+            [("name", "=", str(float(self.current_version_id.name) + 1))]
+        )
+        if self.is_migration_done:
+            logger.info(
+                "Migration completed from version %s to version %s"
+                % (self.from_version_id.name, self.to_version_id.name)
+            )
+            self.state = "done"
+
     def button_do_migration(self):
         self.button_refresh_odoo_migrated_state()
         if self.odoo_migrated_state == "running":
             self.show_message_odoo_running()
         if self.state == "migrated":
-            logger.info(
-                "Migration done from version %s to version %s"
-                % (self.current_version_id.name, self.next_version_id.name)
-            )
-            # do after migration stuff
-            self.uninstall_modules(self.next_version_id, after_migration=True)
-            self.auto_install_modules(self.next_version_id)
-            self.sql_fixes(self.current_version_id.sql_after_migration_command_ids)
-            # if self.next_version_id.name == "10.0":
-            #     self.remove_modules(self.next_version_id, "upgrade")
-            #     self.remove_modules(self.next_version_id)
-            #     self.install_uninstall_module("l10n_it_intrastat")
-            # move version to the next step
-            self.current_version_id = self.next_version_id
-            self.next_version_id = self.env["openupgrader.config"].search(
-                [("name", "=", str(float(self.current_version_id.name) + 1))]
-            )
-            if self.is_migration_done:
-                logger.info(
-                    "Migration completed from version %s to version %s"
-                    % (self.from_version_id.name, self.to_version_id.name)
-                )
-                self.state = "done"
             return {
                 "type": "ir.actions.client",
                 "tag": "reload",
@@ -839,6 +841,8 @@ class OpenupgraderMigration(models.Model):
                             new_state = "updated"
                             break
         self.state = new_state
+        if new_state == "migrated":
+            self._do_after_migration()
         return odoo_migrated_state
 
     def sql_fixes(self, sql_commands):
