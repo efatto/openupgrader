@@ -894,14 +894,13 @@ class OpenupgraderMigration(models.Model):
                 )
             Popen(
                 [
-                    f"git clone --single-branch -b {remote_repo.remote_branch} "
-                    f"{repo_url} --depth 1 {repo_path}"
+                    "git clone --single-branch --depth 1 "
+                    f"-b {remote_repo.remote_branch} {repo_url} {repo_path}"
                 ],
                 shell=True,
             ).wait()
         Popen(
-            f"git fetch origin {version_name} "
-            f"&& git reset --hard origin/{version_name}",
+            f"git pull origin {version_name} --rebase",
             cwd=repo_path,
             shell=True,
         ).wait()
