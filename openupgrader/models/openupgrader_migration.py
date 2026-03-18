@@ -771,6 +771,8 @@ class OpenupgraderMigration(models.Model):
         self.next_version_id = self.env["openupgrader.config"].search(
             [("name", "=", str(float(self.current_version_id.name) + 1))]
         )
+        # force save to avoid cache issues
+        self.flush()
         if self.is_migration_done:
             logger.info(
                 "Migration completed from version %s to version %s"
