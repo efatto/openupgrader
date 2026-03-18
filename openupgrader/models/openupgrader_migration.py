@@ -1059,9 +1059,7 @@ class OpenupgraderMigration(models.Model):
                 name=name,
                 version=f"=={version_id.name}.*" if odoo_version_int >= 15 else "",
             )
-            logger.info(
-                f"Installing Odoo module with command: {command} and {subprocess_env}"
-            )
+            logger.info(f"Installing Odoo module with command: {command}")
             process = Popen(
                 command,
                 cwd=venv_path,
