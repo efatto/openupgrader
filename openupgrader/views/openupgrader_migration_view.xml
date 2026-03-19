@@ -80,7 +80,7 @@
                     <button
                         name="button_do_migration"
                         type="object"
-                        attrs="{'invisible': ['|', ('state', '!=', 'failed'), ('next_version_id', '=', False)]}"
+                        attrs="{'invisible': ['|', ('state', 'not in', ['failed', 'restored']), ('next_version_id', '=', False)]}"
                         string="4: migrate (if the process has failed)"
                     />
                     <field
