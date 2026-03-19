@@ -254,12 +254,13 @@ class OpenupgraderMigration(models.Model):
         opener = build_opener(*handlers)
         return opener
 
-    def _set_odoorc(self, folder):
+    @staticmethod
+    def _set_odoorc(folder, version_id):
         odoorc_path = os.path.join(folder, ".odoorc")
         if not os.path.isfile(odoorc_path):
             odoorc_basic_path = get_module_resource("openupgrader", "data", ".odoorc")
             shutil.copyfile(odoorc_basic_path, odoorc_path)
-            if float(self.next_version_id.name) > 15:
+            if float(version_id.name) > 15:
                 Popen(
                     f"sed -i 's/longpolling/gevent/g' {odoorc_path}",
                     shell=True,
@@ -269,12 +270,17 @@ class OpenupgraderMigration(models.Model):
                 "partner_autocomplete",
                 "iap",
                 "mail_bot",
-                "account_edi",
                 "account_edi_facturx",
                 "account_edi_ubl",
                 "l10n_it_stock_ddt",
-                "l10n_it_edi",
             ]
+            if float(version_id.name) <= 14:
+                not_auto_install_list.extend(
+                    [
+                        "account_edi",
+                        "l10n_it_edi",
+                    ]
+                )
             mod_not_install = (
                 f"modules_auto_install_disabled = {','.join(not_auto_install_list)}"
             )
@@ -346,7 +352,7 @@ class OpenupgraderMigration(models.Model):
             if version_float < 14
             else f"{folder}/repos/odoo/odoo-bin"
         )
-        self._set_odoorc(folder)
+        self._set_odoorc(folder, version_id)
         addons_path = f"{folder}/repos/odoo/addons"
         if version_float < 14:
             addons_path = f"{folder}/odoo/addons"
