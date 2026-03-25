@@ -953,7 +953,12 @@ class OpenupgraderMigration(models.Model):
             module_obj = odoo_client.env["ir.module.module"]
             for module_to_delete in version_id.module_to_delete_after_migration_ids:
                 module_id = module_obj.browse(
-                    module_obj.search([("name", "=", module_to_delete.name)])
+                    module_obj.search(
+                        [
+                            ("name", "=", module_to_delete.name),
+                            ("state", "not in", ["to upgrade", "to install"]),
+                        ]
+                    )
                 )
                 if module_id:
                     module_id.unlink()
