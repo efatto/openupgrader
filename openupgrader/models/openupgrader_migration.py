@@ -927,6 +927,8 @@ class OpenupgraderMigration(models.Model):
                     [("name", "=", module_to_install)]
                 )
                 if module_toinstall_id:
+                    # uv pip install module as possibly absent
+                    self.install_pip_modules(version_id, module_to_install)
                     module_obj.browse(module_toinstall_id).button_immediate_install()
         self.button_stop_odoo()
 

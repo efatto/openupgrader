@@ -12,6 +12,7 @@
   - after_migration_to_this_version_sql_command:
   - before_migration_to_next_version_sql_command:
   - auto_install:
+      - base auditlog
   - delete:
   - uninstall_after_migration_to_this_version:
   - uninstall_before_migration_to_next_version:
