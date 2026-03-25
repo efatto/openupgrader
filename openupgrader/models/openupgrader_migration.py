@@ -949,10 +949,10 @@ class OpenupgraderMigration(models.Model):
             self.start_odoo(version_id)
             odoo_client = self.odoo_connect()
             module_obj = odoo_client.env["ir.module.module"]
-            for module in version_id.module_to_delete_after_migration_ids:
-                module = module_obj.search([("name", "=", module.name)])
-                if module:
-                    module.unlink()
+            for module_to_delete in version_id.module_to_delete_after_migration_ids:
+                module_id = module_obj.search([("name", "=", module_to_delete.name)])
+                if module_id:
+                    module_id.unlink()
             self.button_stop_odoo()
 
     def remove_modules(self, version_id, module_state=""):
