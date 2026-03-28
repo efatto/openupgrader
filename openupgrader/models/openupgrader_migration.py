@@ -713,6 +713,7 @@ class OpenupgraderMigration(models.Model):
                 f"UPDATE ir_cron SET active = {'true' if active else 'false'} "
                 f"WHERE id {sql_filter};"
             )
+            logger.info(f"Setting cron active to {active} for id {sql_filter}")
             Popen(
                 [f'{conn_vars} && psql -d {self.env.cr.dbname}_migrate -c "{sql}"'],
                 shell=True,
@@ -725,6 +726,7 @@ class OpenupgraderMigration(models.Model):
                 f"UPDATE ir_mail_server SET active = {'true' if active else 'false'} "
                 f"WHERE id {sql_filter};"
             )
+            logger.info(f"Setting mail server active to {active} for id {sql_filter}")
             Popen(
                 [f'{conn_vars} && psql -d {self.env.cr.dbname}_migrate -c "{sql}"'],
                 shell=True,
@@ -736,6 +738,10 @@ class OpenupgraderMigration(models.Model):
             sql = (
                 f"UPDATE fetchmail_server SET state = '{'done' if active else 'draft'}'"
                 f" WHERE id {sql_filter};"
+            )
+            logger.info(
+                f"Setting fetchmail server to '{'done' if active else 'draft'}' "
+                f"for id {sql_filter}"
             )
             Popen(
                 [f'{conn_vars} && psql -d {self.env.cr.dbname}_migrate -c "{sql}"'],
