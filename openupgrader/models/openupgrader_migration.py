@@ -1133,6 +1133,11 @@ class OpenupgraderMigration(models.Model):
         module_ids = module_obj.search(domain)
         if module_ids:
             modules = module_obj.browse(module_ids)
+            logger.info(
+                "Found {} modules to {}".format(
+                    len(modules), "install" if install else "uninstall"
+                )
+            )
             for module in modules:
                 if install:
                     module.button_immediate_install()
