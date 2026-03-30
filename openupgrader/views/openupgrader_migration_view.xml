@@ -182,6 +182,11 @@
                                         type="object"
                                         string="Refresh migration state"
                                     />
+                                    <button
+                                        name="button_refresh_odoo_migrated_state_force_check_after_migration"
+                                        type="object"
+                                        string="Check after migration state"
+                                    />
                                 </group>
                                 <group string="Clean utilities">
                                     <button

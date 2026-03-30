@@ -806,7 +806,12 @@ class OpenupgraderMigration(models.Model):
     def button_refresh_odoo_migrated_state(self):
         self.odoo_migrated_state = self._get_odoo_migrated_state()
 
-    def _get_odoo_migrated_state(self):  # noqa C901
+    def button_refresh_odoo_migrated_state_force_check_after_migration(self):
+        self.odoo_migrated_state = self._get_odoo_migrated_state(
+            force_after_migration=True
+        )
+
+    def _get_odoo_migrated_state(self, force_after_migration=False):  # noqa C901
         # todo put in a cron job?
         migrated_version_id = False
         odoo_migrated_state = "stopped"
@@ -856,7 +861,7 @@ class OpenupgraderMigration(models.Model):
                         if "Modules loaded" in log_line:
                             new_state = "updated"
                             break
-        if migrated_version_id and self.current_version_id:
+        if force_after_migration and migrated_version_id and self.current_version_id:
             if migrated_version_id != self.current_version_id:
                 # do migration complete stuff and set the next version to migrate
                 self._do_after_migration()
