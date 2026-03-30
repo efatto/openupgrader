@@ -1127,7 +1127,10 @@ class OpenupgraderMigration(models.Model):
         to_remove_modules = module_obj.search([("state", "=", "to remove")])
         for module_to_remove_id in to_remove_modules:
             module_obj.browse(module_to_remove_id).button_uninstall_cancel()
-        module_ids = module_obj.search([("name", "=", module_name)])
+        domain = [("name", "=", module_name)]
+        if not install:
+            domain.append(("state", "!=", "not installed"))
+        module_ids = module_obj.search(domain)
         if module_ids:
             modules = module_obj.browse(module_ids)
             for module in modules:
