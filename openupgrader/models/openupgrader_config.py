@@ -556,7 +556,14 @@ class OpenupgraderConfig(models.Model):
                 self, odoo_modules_to_install_via_pip
             )
 
-    def button_load_config(self):  # noqa: C901
+    @api.onchange("config_file")
+    def onchange_config_file(self):
+        if self.config_file:
+            self.action_load_config()
+
+    def action_load_config(self):  # noqa: C901
+        if not self.config_file:
+            raise UserError(_("Config file is required to load configuration"))
         version_name = self.name
         recipes = self.load_config_file()
         recipe_data = recipes[version_name]

@@ -58,13 +58,6 @@
                             <field name="openupgrader_migration_id" />
                             <field name="config_file" filename="config_file_name" />
                             <field name="config_file_name" invisible="1" />
-                            <button
-                                type="object"
-                                name="button_load_config"
-                                attrs="{'invisible': [('config_file', '=', False),
-                            ]}"
-                                string="Load recipe"
-                            />
                         </group>
                         <group>
                             <field name="python_version" />

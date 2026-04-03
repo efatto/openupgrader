@@ -56,7 +56,7 @@ class OpenUpgrader(SavepointCase):
                     openupgrader_config.config_file = base64.b64encode(
                         config_file_reader.read()
                     )
-                    openupgrader_config.button_load_config()
+                    openupgrader_config.action_load_config()
                 setattr(cls, f"{version}_id", openupgrader_config)
                 openupgrader_config.button_recreate_venv()
         cls.from_config_id = cls.config_obj.search(
