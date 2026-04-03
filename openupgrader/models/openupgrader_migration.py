@@ -16,7 +16,7 @@ import psutil
 from odoorpc.rpc import CookieJar, HTTPCookieProcessor, build_opener
 
 from odoo import _, api, fields, models
-from odoo.exceptions import UserError
+from odoo.exceptions import UserError, ValidationError
 from odoo.modules import get_module_resource
 from odoo.tools import config
 from odoo.tools.safe_eval import safe_eval
@@ -230,8 +230,15 @@ class OpenupgraderMigration(models.Model):
                 time.sleep(5)
                 return client
             except Exception as e:
-                logger.error("Connection to Odoo failed for %s!" % str(e))
-        return None
+                raise ValidationError(
+                    _("Connection to Odoo failed for %s!" % str(e))
+                ) from e
+        raise ValidationError(
+            _(
+                "Db_name and password are required to connect to the Odoo instance. "
+                "Please fill them and try again."
+            )
+        )
 
     @staticmethod
     def _get_opener(verify_ssl=True, sessions=True):
@@ -425,7 +432,7 @@ class OpenupgraderMigration(models.Model):
                                 try:
                                     modules = safe_eval(match[0])
                                     logger.info(f"Modules not installed {str(modules)}")
-                                    # self.install_pip_module(version_id, modules)
+                                    self.install_pip_modules(version_id, modules)
                                 except Exception:
                                     logger.info(
                                         "Unable to list modules to install via pip "
