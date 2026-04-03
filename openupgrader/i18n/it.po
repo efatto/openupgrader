@@ -148,11 +148,6 @@ msgstr "Pulisci log migrazione"
 
 #. module: openupgrader
 #: model_terms:ir.ui.view,arch_db:openupgrader.view_openupgrader_migration_form
-msgid "Clean unused views for current migrated version"
-msgstr "Rimuovi le viste non utilizzate per la versione migrata corrente"
-
-#. module: openupgrader
-#: model_terms:ir.ui.view,arch_db:openupgrader.view_openupgrader_migration_form
 msgid "Clean utilities"
 msgstr "Utilità di pulizia"
 

@@ -188,13 +188,6 @@
                                         string="Check after migration state"
                                     />
                                 </group>
-                                <group string="Clean utilities">
-                                    <button
-                                        name="button_delete_unused_views_recursively"
-                                        type="object"
-                                        string="Clean unused views for current migrated version"
-                                    />
-                                </group>
                             </group>
                         </group>
                     </group>

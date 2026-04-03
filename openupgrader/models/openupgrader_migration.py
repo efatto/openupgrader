@@ -1020,54 +1020,6 @@ class OpenupgraderMigration(models.Model):
             success += 1
         return success
 
-    def button_delete_unused_views_recursively(self):
-        # Try to catch the views not used anymore by checking module no more presents
-        self.start_odoo(self.current_version_id, migrate=True)
-        odoo_client = self.odoo_connect()
-        ir_ui_view_obj = odoo_client.env["ir.ui.view"]
-        ir_module_obj = odoo_client.env["ir.module.module"]
-        module_names = ir_module_obj.search_read(
-            [("state", "=", "uninstalled")], ["name"]
-        )
-
-        def delete_children_view(views):
-            for child_view in views:
-                while child_view.inherit_children_ids:
-                    delete_children_view(
-                        [
-                            x
-                            for x in child_view.inherit_children_ids
-                            if x.id not in to_delete_view_ids
-                        ]
-                    )
-                if child_view.id not in to_delete_view_ids:
-                    to_delete_view_ids.append(child_view.id)
-
-        master_view_ids = odoo_client.env["ir.model.data"].search_read(
-            [
-                ("model", "=", "ir.ui.view"),
-                ("module", "in", [x["name"] for x in module_names]),
-            ],
-            ["res_id"],
-        )
-        master_views = ir_ui_view_obj.browse(master_view_ids)
-        to_delete_view_ids = []
-
-        for master_view in master_views:
-            delete_children_view(master_view)
-            for view_id in reversed(to_delete_view_ids):
-                view = ir_ui_view_obj.browse(view_id)
-                try:
-                    view.unlink()
-                    logger.info(f"Deleted view: {view.name} (ID: {view.id})")
-                except Exception as e:
-                    logger.info(
-                        f"Error during the deletion of view: {view.id}: {str(e)}"
-                    )
-            to_delete_view_ids = []
-        # update to regenerate views
-        self.start_odoo(self.current_version_id, update=True, migrate=True)
-
     def install_pip_modules(self, version_id, module_names):
         logger.info("Installing Odoo modules with pip: %s" % str(module_names))
         self.ensure_one()
