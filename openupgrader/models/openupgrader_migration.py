@@ -60,17 +60,14 @@ class OpenupgraderMigration(models.Model):
     verify_ssl = fields.Boolean()
     address = fields.Char("Odoo URL")
     local = fields.Boolean("Odoo is in local network")
-    disabled_cron_ids = fields.Many2many(
-        comodel_name="ir.cron",
-        string="Disabled ir crons",
+    disabled_cron_ids = fields.Char(
+        string="Disabled ir cron ids",
     )
-    disabled_ir_mail_server_ids = fields.Many2many(
-        comodel_name="ir.mail_server",
-        string="Disabled mail servers",
+    disabled_ir_mail_server_ids = fields.Char(
+        string="Disabled mail server ids",
     )
-    disabled_fetchmail_server_ids = fields.Many2many(
-        comodel_name="fetchmail.server",
-        string="Disabled fechmail servers",
+    disabled_fetchmail_server_ids = fields.Char(
+        string="Disabled fechmail server ids",
     )
     db_port = fields.Char(
         string="Database port",
@@ -697,25 +694,46 @@ class OpenupgraderMigration(models.Model):
 
     def set_mail_server_and_cron_state_to(self, active):
         conn_vars = self._get_db_connection_variables()
-        if active:
-            # re-enable cron after the migration
-            ir_cron_ids = self.disabled_cron_ids
-            ir_mail_server_ids = self.disabled_ir_mail_server_ids
-            fetchmail_server_ids = self.disabled_fetchmail_server_ids
-        else:
+        # if active:
+        #     # re-enable cron after the migration
+        #     ir_cron_ids = self.disabled_cron_ids
+        #     ir_mail_server_ids = self.disabled_ir_mail_server_ids
+        #     fetchmail_server_ids = self.disabled_fetchmail_server_ids
+        if not active:
             # disable cron before migrating the instance
             ir_cron_ids = self.env["ir.cron"].search([])
-            self.disabled_cron_ids = ir_cron_ids
+            if self.disabled_cron_ids:
+                self.disabled_cron_ids = str(
+                    safe_eval(self.disabled_cron_ids).extend(ir_cron_ids.ids)
+                )
+            else:
+                self.disabled_cron_ids = str(ir_cron_ids.ids)
             ir_mail_server_ids = self.env["ir.mail_server"].search([])
-            self.disabled_ir_mail_server_ids = ir_mail_server_ids
+            if self.disabled_ir_mail_server_ids:
+                self.disabled_ir_mail_server_ids = str(
+                    safe_eval(self.disabled_ir_mail_server_ids).extend(
+                        ir_mail_server_ids.ids
+                    )
+                )
+            else:
+                self.disabled_ir_mail_server_ids = str(ir_mail_server_ids.ids)
             fetchmail_server_ids = self.env["fetchmail.server"].search(
                 [("state", "=", "done")]
             )
-            self.disabled_fetchmail_server_ids = fetchmail_server_ids
+            if fetchmail_server_ids:
+                self.disabled_fetchmail_server_ids = str(
+                    safe_eval(self.disabled_fetchmail_server_ids).extend(
+                        fetchmail_server_ids.ids
+                    )
+                )
+            else:
+                self.disabled_fetchmail_server_ids = str(fetchmail_server_ids.ids)
         if ir_cron_ids:
-            sql_filter = " = " + str(ir_cron_ids.ids[0])
-            if len(ir_cron_ids.ids) > 1:
-                sql_filter = " in " + str(tuple(ir_cron_ids.ids))
+            cron_ids = safe_eval(self.disabled_cron_ids)
+            if len(cron_ids) == 1:
+                sql_filter = f" = {cron_ids[0]}"
+            else:
+                sql_filter = f" in {tuple(cron_ids)}"
             sql = (
                 f"UPDATE ir_cron SET active = {'true' if active else 'false'} "
                 f"WHERE id {sql_filter};"
@@ -726,9 +744,11 @@ class OpenupgraderMigration(models.Model):
                 shell=True,
             )
         if ir_mail_server_ids:
-            sql_filter = " = " + str(ir_mail_server_ids.ids[0])
-            if len(ir_mail_server_ids.ids) > 1:
-                sql_filter = " in " + str(tuple(ir_mail_server_ids.ids))
+            mail_ids = safe_eval(self.disabled_ir_mail_server_ids)
+            if len(mail_ids) == 1:
+                sql_filter = f" = {mail_ids[0]}"
+            else:
+                sql_filter = f" in {tuple(mail_ids)}"
             sql = (
                 f"UPDATE ir_mail_server SET active = {'true' if active else 'false'} "
                 f"WHERE id {sql_filter};"
@@ -739,9 +759,11 @@ class OpenupgraderMigration(models.Model):
                 shell=True,
             )
         if fetchmail_server_ids:
-            sql_filter = " = " + str(fetchmail_server_ids.ids[0])
-            if len(fetchmail_server_ids.ids) > 1:
-                sql_filter = " in " + str(tuple(fetchmail_server_ids.ids))
+            fetchmail_ids = safe_eval(self.disabled_fetchmail_server_ids)
+            if len(fetchmail_ids) == 1:
+                sql_filter = f" = {fetchmail_ids[0]}"
+            else:
+                sql_filter = f" in {tuple(fetchmail_ids)}"
             sql = (
                 f"UPDATE fetchmail_server SET state = '{'done' if active else 'draft'}'"
                 f" WHERE id {sql_filter};"
