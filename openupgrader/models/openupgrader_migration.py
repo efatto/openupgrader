@@ -811,14 +811,14 @@ class OpenupgraderMigration(models.Model):
         return self.start_odoo(self.next_version_id, update=True, migrate=True)
 
     def button_refresh_odoo_migrated_state(self):
-        self.odoo_migrated_state = self._get_odoo_migrated_state()
-
-    def button_refresh_odoo_migrated_state_force_check_after_migration(self):
         self.odoo_migrated_state = self._get_odoo_migrated_state(
-            force_after_migration=True
+            force_after_migration=False
         )
 
-    def _get_odoo_migrated_state(self, force_after_migration=False):  # noqa C901
+    def button_refresh_odoo_migrated_state_force_check_after_migration(self):
+        self.odoo_migrated_state = self._get_odoo_migrated_state()
+
+    def _get_odoo_migrated_state(self, force_after_migration=True):  # noqa C901
         # todo put in a cron job?
         migrated_version_id = False
         odoo_migrated_state = "stopped"
