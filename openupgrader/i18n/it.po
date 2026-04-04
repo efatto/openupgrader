@@ -153,8 +153,8 @@ msgstr "Moduli da auto installare"
 
 #. module: openupgrader
 #: model_terms:ir.ui.view,arch_db:openupgrader.view_openupgrader_migration_form
-msgid "Check after migration state"
-msgstr "Controlla lo stato dopo la migrazione"
+msgid "Check migration running state"
+msgstr "Verifica se la migrazione è in corso"
 
 #. module: openupgrader
 #: model_terms:ir.ui.view,arch_db:openupgrader.view_openupgrader_migration_form
@@ -749,7 +749,7 @@ msgstr "Pronto per la migrazione"
 #. module: openupgrader
 #: model_terms:ir.ui.view,arch_db:openupgrader.view_openupgrader_migration_form
 msgid "Refresh migration state"
-msgstr "Aggiorna stato migrazione"
+msgstr "Controlla lo stato corrente della migrazione"
 
 #. module: openupgrader
 #: model:ir.model,name:openupgrader.model_remote_repo
