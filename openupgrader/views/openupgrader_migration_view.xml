@@ -178,14 +178,14 @@
                                 </div>
                                 <group colspan="2" col="1">
                                     <button
+                                        name="button_check_odoo_migrated_running_state"
+                                        type="object"
+                                        string="Check migration running state"
+                                    />
+                                    <button
                                         name="button_refresh_odoo_migrated_state"
                                         type="object"
                                         string="Refresh migration state"
-                                    />
-                                    <button
-                                        name="button_refresh_odoo_migrated_state_force_check_after_migration"
-                                        type="object"
-                                        string="Check after migration state"
                                     />
                                 </group>
                             </group>
