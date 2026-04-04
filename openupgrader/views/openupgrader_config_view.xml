@@ -85,7 +85,9 @@
                             </group>
                         </page>
                         <page string="SQL Commands">
-                            <group string="Sql command to execute before migration">
+                            <group
+                                string="Sql command to execute before migration to the next version"
+                            >
                                 <field name="sql_before_migration_command_ids">
                                     <tree editable="top">
                                         <field name="sequence" widget="handle" />
@@ -93,7 +95,9 @@
                                     </tree>
                                 </field>
                             </group>
-                            <group string="Sql command to execute after migration">
+                            <group
+                                string="Sql command to execute after migration to this version"
+                            >
                                 <field name="sql_after_migration_command_ids">
                                     <tree editable="top">
                                         <field name="sequence" widget="handle" />

@@ -863,13 +863,13 @@ msgstr "Imposta a bozza"
 
 #. module: openupgrader
 #: model_terms:ir.ui.view,arch_db:openupgrader.view_openupgrader_config_form
-msgid "Sql command to execute after migration"
-msgstr "Comandi SQL da eseguire dopo la migrazione"
+msgid "Sql command to execute after migration to this version"
+msgstr "Comandi SQL da eseguire dopo la migrazione a questa versione"
 
 #. module: openupgrader
 #: model_terms:ir.ui.view,arch_db:openupgrader.view_openupgrader_config_form
-msgid "Sql command to execute before migration"
-msgstr "Comandi SQL da eseguire prima della migrazione"
+msgid "Sql command to execute before migration to the next version"
+msgstr "Comandi SQL da eseguire prima della migrazione alla versione successiva"
 
 #. module: openupgrader
 #: model_terms:ir.ui.view,arch_db:openupgrader.view_openupgrader_migration_form
