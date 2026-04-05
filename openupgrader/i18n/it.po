@@ -258,17 +258,17 @@ msgstr ""
 "Riempi i campi e riprova."
 
 #. module: openupgrader
-#: model:ir.model.fields,field_description:openupgrader.field_openupgrader_migration__disabled_fetchmail_server_ids
+#: model:ir.model.fields,field_description:openupgrader.field_openupgrader_migration__disabled_fetchmail_server_ids_set
 msgid "Disabled fechmail servers"
 msgstr "Server mail in ingresso disabilitati"
 
 #. module: openupgrader
-#: model:ir.model.fields,field_description:openupgrader.field_openupgrader_migration__disabled_cron_ids
+#: model:ir.model.fields,field_description:openupgrader.field_openupgrader_migration__disabled_cron_ids_set
 msgid "Disabled ir crons"
 msgstr "Cron disabilitati"
 
 #. module: openupgrader
-#: model:ir.model.fields,field_description:openupgrader.field_openupgrader_migration__disabled_ir_mail_server_ids
+#: model:ir.model.fields,field_description:openupgrader.field_openupgrader_migration__disabled_ir_mail_server_ids_set
 msgid "Disabled mail servers"
 msgstr "Server mail in uscita disabilitati"
 

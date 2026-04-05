@@ -60,13 +60,13 @@ class OpenupgraderMigration(models.Model):
     verify_ssl = fields.Boolean()
     address = fields.Char("Odoo URL")
     local = fields.Boolean("Odoo is in local network")
-    disabled_cron_ids = fields.Char(
-        string="Disabled ir cron ids",
+    disabled_cron_ids_set = fields.Char(
+        string="Disabled ir cron ids set",
     )
-    disabled_ir_mail_server_ids = fields.Char(
+    disabled_ir_mail_server_ids_set = fields.Char(
         string="Disabled mail server ids",
     )
-    disabled_fetchmail_server_ids = fields.Char(
+    disabled_fetchmail_server_ids_set = fields.Char(
         string="Disabled fechmail server ids",
     )
     db_port = fields.Char(
@@ -696,42 +696,55 @@ class OpenupgraderMigration(models.Model):
         conn_vars = self._get_db_connection_variables()
         # if active:
         #     # re-enable cron after the migration
-        #     ir_cron_ids = self.disabled_cron_ids
-        #     ir_mail_server_ids = self.disabled_ir_mail_server_ids
-        #     fetchmail_server_ids = self.disabled_fetchmail_server_ids
+        #     ir_cron_ids = self.disabled_cron_ids_set
+        #     ir_mail_server_ids = self.disabled_ir_mail_server_ids_set
+        #     fetchmail_server_ids = self.disabled_fetchmail_server_ids_set
         if not active:
             # disable cron before migrating the instance
             ir_cron_ids = self.env["ir.cron"].search([])
-            if self.disabled_cron_ids:
-                self.disabled_cron_ids = str(
-                    safe_eval(self.disabled_cron_ids).extend(ir_cron_ids.ids)
-                )
-            else:
-                self.disabled_cron_ids = str(ir_cron_ids.ids)
+            if ir_cron_ids:
+                if self.disabled_cron_ids_set:
+                    disabled_cron_ids_set = safe_eval(self.disabled_cron_ids_set)
+                    disabled_cron_ids_set.update(set(ir_cron_ids.ids))
+                    self.disabled_cron_ids_set = str(disabled_cron_ids_set)
+                else:
+                    self.disabled_cron_ids_set = str(set(ir_cron_ids.ids))
             ir_mail_server_ids = self.env["ir.mail_server"].search([])
-            if self.disabled_ir_mail_server_ids:
-                self.disabled_ir_mail_server_ids = str(
-                    safe_eval(self.disabled_ir_mail_server_ids).extend(
-                        ir_mail_server_ids.ids
+            if ir_mail_server_ids:
+                if self.disabled_ir_mail_server_ids_set:
+                    disabled_ir_mail_server_ids_set = safe_eval(
+                        self.disabled_ir_mail_server_ids_set
                     )
-                )
-            else:
-                self.disabled_ir_mail_server_ids = str(ir_mail_server_ids.ids)
+                    disabled_ir_mail_server_ids_set.update(set(ir_mail_server_ids.ids))
+                    self.disabled_ir_mail_server_ids_set = str(
+                        disabled_ir_mail_server_ids_set
+                    )
+                else:
+                    self.disabled_ir_mail_server_ids_set = str(
+                        set(ir_mail_server_ids.ids)
+                    )
             fetchmail_server_ids = self.env["fetchmail.server"].search(
                 [("state", "=", "done")]
             )
             if fetchmail_server_ids:
-                self.disabled_fetchmail_server_ids = str(
-                    safe_eval(self.disabled_fetchmail_server_ids).extend(
-                        fetchmail_server_ids.ids
+                if self.disabled_fetchmail_server_ids_set:
+                    disabled_fetchmail_server_ids_set = safe_eval(
+                        self.disabled_fetchmail_server_ids_set
                     )
-                )
-            else:
-                self.disabled_fetchmail_server_ids = str(fetchmail_server_ids.ids)
-        if ir_cron_ids:
-            cron_ids = safe_eval(self.disabled_cron_ids)
+                    disabled_fetchmail_server_ids_set.update(
+                        set(fetchmail_server_ids.ids)
+                    )
+                    self.disabled_fetchmail_server_ids_set = str(
+                        disabled_fetchmail_server_ids_set
+                    )
+                else:
+                    self.disabled_fetchmail_server_ids_set = str(
+                        set(fetchmail_server_ids.ids)
+                    )
+        if self.disabled_cron_ids_set:
+            cron_ids = safe_eval(self.disabled_cron_ids_set)
             if len(cron_ids) == 1:
-                sql_filter = f" = {cron_ids[0]}"
+                sql_filter = f" = {cron_ids.pop()}"
             else:
                 sql_filter = f" in {tuple(cron_ids)}"
             sql = (
@@ -743,10 +756,10 @@ class OpenupgraderMigration(models.Model):
                 [f'{conn_vars} && psql -d {self.env.cr.dbname}_migrate -c "{sql}"'],
                 shell=True,
             )
-        if ir_mail_server_ids:
-            mail_ids = safe_eval(self.disabled_ir_mail_server_ids)
+        if self.disabled_ir_mail_server_ids_set:
+            mail_ids = safe_eval(self.disabled_ir_mail_server_ids_set)
             if len(mail_ids) == 1:
-                sql_filter = f" = {mail_ids[0]}"
+                sql_filter = f" = {mail_ids.pop()}"
             else:
                 sql_filter = f" in {tuple(mail_ids)}"
             sql = (
@@ -758,10 +771,10 @@ class OpenupgraderMigration(models.Model):
                 [f'{conn_vars} && psql -d {self.env.cr.dbname}_migrate -c "{sql}"'],
                 shell=True,
             )
-        if fetchmail_server_ids:
-            fetchmail_ids = safe_eval(self.disabled_fetchmail_server_ids)
+        if self.disabled_fetchmail_server_ids_set:
+            fetchmail_ids = safe_eval(self.disabled_fetchmail_server_ids_set)
             if len(fetchmail_ids) == 1:
-                sql_filter = f" = {fetchmail_ids[0]}"
+                sql_filter = f" = {fetchmail_ids.pop()}"
             else:
                 sql_filter = f" in {tuple(fetchmail_ids)}"
             sql = (
@@ -790,7 +803,9 @@ class OpenupgraderMigration(models.Model):
                 os.remove(sql_file_path)
         self.current_version_id = False
         self.next_version_id = False
-        self.disabled_cron_ids = False
+        self.disabled_cron_ids_set = False
+        self.disabled_ir_mail_server_ids_set = False
+        self.disabled_fetchmail_server_ids_set = False
         self.button_clean_logs()
         self.state = "draft"
 
