@@ -791,7 +791,7 @@ class OpenupgraderMigration(models.Model):
             )
 
     def button_draft(self):
-        self.button_refresh_odoo_migrated_state()
+        self.button_check_odoo_migrated_running_state()
         if self.odoo_migrated_state == "running":
             self.show_message_odoo_running()
         for version_id in [self.current_version_id, self.next_version_id]:
