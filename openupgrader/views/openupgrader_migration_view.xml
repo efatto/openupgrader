@@ -83,6 +83,12 @@
                         attrs="{'invisible': ['|', ('state', 'not in', ['failed', 'restored']), ('next_version_id', '=', False)]}"
                         string="4: migrate (if the process has failed)"
                     />
+                    <button
+                        name="button_do_all"
+                        type="object"
+                        string="I feel lucky!"
+                        attrs="{'invisible': [('state', '!=', 'draft')]}"
+                    />
                     <field
                         name="state"
                         widget="statusbar"

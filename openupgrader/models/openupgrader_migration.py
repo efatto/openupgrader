@@ -809,6 +809,32 @@ class OpenupgraderMigration(models.Model):
         self.button_clean_logs()
         self.state = "draft"
 
+    def button_do_all(self):
+        # initiate migration from draft
+        if self.state == "draft":
+            self.button_restore()
+            while self.state != "restored":
+                time.sleep(30)
+            while self.state != "updated":
+                self.button_update_current_version()
+                time.sleep(60)
+        self.env.ref("openupgrader.openugrader_do_auto_migration").write(
+            {"active": True}
+        )
+
+    def _cron_migration(self):
+        openupgrader_migration_id = self.env["openupgrader.migration"].search(
+            [("state", "not in", ["failed", "restore_failed"])]
+        )
+        if openupgrader_migration_id.state in ["updated", "migrated"]:
+            openupgrader_migration_id.button_prepare_for_migration()
+        elif openupgrader_migration_id.state == "ready_for_migration":
+            openupgrader_migration_id.button_do_migration()
+        elif openupgrader_migration_id.state == "done":
+            self.env.ref("openupgrader.openugrader_do_auto_migration").write(
+                {"active": False}
+            )
+
     def _do_after_migration(self):
         logger.info(
             "Migration done from version %s to version %s"
