@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <odoo noupdate="1">
 
-    <record id="openugrader_do_auto_migration" model="ir.cron">
+    <record id="cron_openugrader_do_auto_migration" model="ir.cron">
         <field name="name">OpenUpgrader - do all the migration automatically</field>
         <field name="interval_number">5</field>
         <field name="interval_type">minutes</field>

@@ -77,7 +77,7 @@ class OpenUpgrader(SavepointCase):
         cls.openupgrader_migration.from_version_id = cls.from_config_id
         cls.openupgrader_migration.to_version_id = cls.to_config_id
 
-    def test_openupgrader(self):
+    def test_00_openupgrader_manual(self):
         openupgrader_migration = self.openupgrader_migration
         openupgrader_migration.button_clean_logs()
         self.assertEqual(
@@ -124,6 +124,25 @@ class OpenUpgrader(SavepointCase):
         while openupgrader_migration._get_odoo_migrated_state() == "running":
             time.sleep(10)
         openupgrader_migration.button_do_migration()
+        self.assertEqual(openupgrader_migration.is_migration_done, True)
+        self.assertEqual(
+            openupgrader_migration.current_version_id,
+            self.to_config_id,
+        )
+
+    def test_01_openupgrader_auto(self):
+        openupgrader_migration = self.openupgrader_migration
+        openupgrader_migration.button_clean_logs()
+        self.assertEqual(
+            self.openupgrader_migration.to_version_id,
+            self.to_config_id,
+        )
+        self.assertEqual(
+            self.openupgrader_migration.from_version_id,
+            self.from_config_id,
+        )
+        openupgrader_migration.button_stop_odoo()
+        openupgrader_migration.button_do_all()
         self.assertEqual(openupgrader_migration.is_migration_done, True)
         self.assertEqual(
             openupgrader_migration.current_version_id,

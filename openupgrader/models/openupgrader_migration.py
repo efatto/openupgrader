@@ -818,7 +818,7 @@ class OpenupgraderMigration(models.Model):
             while self.state != "updated":
                 self.button_update_current_version()
                 time.sleep(60)
-        self.env.ref("openupgrader.openugrader_do_auto_migration").write(
+        self.env.ref("openupgrader.cron_openugrader_do_auto_migration").write(
             {"active": True}
         )
 
@@ -830,8 +830,8 @@ class OpenupgraderMigration(models.Model):
             openupgrader_migration_id.button_prepare_for_migration()
         elif openupgrader_migration_id.state == "ready_for_migration":
             openupgrader_migration_id.button_do_migration()
-        elif openupgrader_migration_id.state == "done":
-            self.env.ref("openupgrader.openugrader_do_auto_migration").write(
+        elif openupgrader_migration_id.is_migration_done:
+            self.env.ref("openupgrader.cron_openugrader_do_auto_migration").write(
                 {"active": False}
             )
 
