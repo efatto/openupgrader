@@ -567,11 +567,19 @@ class OpenupgraderConfig(models.Model):
         version_name = self.name
         recipes = self.load_config_file()
         recipe_data = recipes[version_name]
+        # reset all existing configurations
+        self.pip_requirement_ids = False
+        self.odoo_pip_requirement_ids = False
+        self.sql_after_migration_command_ids = False
+        self.sql_before_migration_command_ids = False
+        self.module_auto_install_ids = False
+        self.module_to_delete_after_migration_ids = False
+        self.module_to_uninstall_after_migration_ids = False
+        self.module_to_uninstall_before_migration_ids = False
         for recipe in recipe_data:
             if recipe.get("python_version"):
                 self.python_version = recipe.get("python_version")
             if recipe.get("pip_requirements"):
-                self.pip_requirement_ids = False
                 pip_requirements = recipe.get("pip_requirements")
                 for pip_name in pip_requirements:
                     pip_id = self.env["pip.requirement"].search(
@@ -582,7 +590,6 @@ class OpenupgraderConfig(models.Model):
                         pip_id.flush()
                     self.pip_requirement_ids |= pip_id
             if recipe.get("odoo_pip_requirements"):
-                self.odoo_pip_requirement_ids = False
                 odoo_pip_requirements = recipe.get("odoo_pip_requirements")
                 for pip_name in odoo_pip_requirements:
                     pip_id = self.env["pip.requirement"].search(
@@ -616,7 +623,6 @@ class OpenupgraderConfig(models.Model):
                     odoo_id.flush()
                 self.odoo_repo_id = odoo_id
             if recipe.get("after_migration_to_this_version_sql_command"):
-                self.sql_after_migration_command_ids = False
                 after_migration_to_this_version_sql_command = recipe.get(
                     "after_migration_to_this_version_sql_command"
                 )
@@ -636,7 +642,6 @@ class OpenupgraderConfig(models.Model):
                     not in self.sql_after_migration_command_ids.mapped("name")
                 ]
             if recipe.get("before_migration_to_next_version_sql_command"):
-                self.sql_before_migration_command_ids = False
                 before_migration_to_next_version_sql_command = recipe.get(
                     "before_migration_to_next_version_sql_command"
                 )
@@ -656,7 +661,6 @@ class OpenupgraderConfig(models.Model):
                     not in self.sql_before_migration_command_ids.mapped("name")
                 ]
             if recipe.get("auto_install"):
-                self.module_auto_install_ids = False
                 auto_install = recipe.get("auto_install")
                 for i, module in enumerate(auto_install):
                     module_name = module.split()[0]
@@ -680,7 +684,6 @@ class OpenupgraderConfig(models.Model):
                             )
                         ]
             if recipe.get("delete"):
-                self.module_to_delete_after_migration_ids = False
                 delete = recipe.get("delete")
                 for module in delete:
                     module_id = self.env["module.name"].search(
@@ -693,7 +696,6 @@ class OpenupgraderConfig(models.Model):
                         module_id.flush()
                     self.module_to_delete_after_migration_ids |= module_id
             if recipe.get("uninstall_after_migration_to_this_version"):
-                self.module_to_uninstall_after_migration_ids = False
                 uninstall_after = recipe.get(
                     "uninstall_after_migration_to_this_version"
                 )
@@ -708,7 +710,6 @@ class OpenupgraderConfig(models.Model):
                         module_id.flush()
                     self.module_to_uninstall_after_migration_ids |= module_id
             if recipe.get("uninstall_before_migration_to_next_version"):
-                self.module_to_uninstall_before_migration_ids = False
                 uninstall_before = recipe.get(
                     "uninstall_before_migration_to_next_version"
                 )
