@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<odoo noupdate="1">
+<odoo noupdate="0">
 
     <record id="cron_openugrader_do_auto_migration" model="ir.cron">
         <field name="name">OpenUpgrader - do all the migration automatically</field>

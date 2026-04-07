@@ -814,10 +814,10 @@ class OpenupgraderMigration(models.Model):
         if self.state == "draft":
             self.button_restore()
             while self.state != "restored":
-                time.sleep(30)
+                time.sleep(1)
             while self.state != "updated":
                 self.button_update_current_version()
-                time.sleep(60)
+                time.sleep(5)
         self.env.ref("openupgrader.cron_openugrader_do_auto_migration").write(
             {"active": True}
         )
