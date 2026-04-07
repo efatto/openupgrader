@@ -791,6 +791,10 @@ class OpenupgraderMigration(models.Model):
             )
 
     def button_draft(self):
+        # ensure cron is not running
+        self.env.ref("openupgrader.cron_openugrader_do_auto_migration").write(
+            {"active": False}
+        )
         self.button_check_odoo_migrated_running_state()
         if self.odoo_migrated_state == "running":
             self.show_message_odoo_running()
