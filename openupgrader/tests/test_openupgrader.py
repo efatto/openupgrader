@@ -143,6 +143,12 @@ class OpenUpgrader(SavepointCase):
         )
         openupgrader_migration.button_stop_odoo()
         openupgrader_migration.button_do_all()
+        max_wait_time = 30 * 60  # 30 minutes
+        while not openupgrader_migration.is_migration_done:
+            time.sleep(10)
+            max_wait_time -= 10
+            if max_wait_time <= 0:
+                raise Exception("Timeout waiting for migration to finish")
         self.assertEqual(openupgrader_migration.is_migration_done, True)
         self.assertEqual(
             openupgrader_migration.current_version_id,
