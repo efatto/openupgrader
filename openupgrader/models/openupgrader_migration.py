@@ -694,9 +694,9 @@ class OpenupgraderMigration(models.Model):
         self.sql_fixes(self.current_version_id.sql_before_migration_command_ids)
         self.uninstall_modules(self.current_version_id, before_migration=True)
         self.delete_old_modules(self.current_version_id)
-        if self.is_migration_done:
-            self._uninstall_missing_modules()
-        self.state = "ready_for_migration"
+        self._final_step()
+        if not self.is_migration_done:
+            self.state = "ready_for_migration"
 
     def set_mail_server_and_cron_state_to(self, active):
         conn_vars = self._get_db_connection_variables()
@@ -816,6 +816,8 @@ class OpenupgraderMigration(models.Model):
         self.disabled_cron_ids_set = False
         self.disabled_ir_mail_server_ids_set = False
         self.disabled_fetchmail_server_ids_set = False
+        self.uninstalled_modules = False
+        self.uninstallable_modules = False
         self.button_clean_logs()
         self.state = "draft"
 
@@ -832,18 +834,25 @@ class OpenupgraderMigration(models.Model):
             {"active": True}
         )
 
+    def _final_step(self):
+        cron_migration = self.env.ref("openupgrader.cron_openugrader_do_auto_migration")
+        if self.is_migration_done:
+            if cron_migration.active:
+                cron_migration.active = False
+            self.state = "done"
+            self._uninstall_missing_modules()
+
     def _cron_migration(self):
-        openupgrader_migration_id = self.env["openupgrader.migration"].search(
+        openupgrader_migration = self.env["openupgrader.migration"].search(
             [("state", "not in", ["failed", "restore_failed"])]
         )
-        if openupgrader_migration_id.is_migration_done:
-            self.env.ref("openupgrader.cron_openugrader_do_auto_migration").write(
-                {"active": False}
-            )
-        elif openupgrader_migration_id.state in ["updated", "migrated"]:
-            openupgrader_migration_id.button_prepare_for_migration()
-        elif openupgrader_migration_id.state == "ready_for_migration":
-            openupgrader_migration_id.button_do_migration()
+        openupgrader_migration._final_step()
+        if openupgrader_migration.state in ["updated", "migrated"]:
+            openupgrader_migration.button_prepare_for_migration()
+            openupgrader_migration._final_step()
+        elif openupgrader_migration.state == "ready_for_migration":
+            openupgrader_migration.button_do_migration()
+            openupgrader_migration._final_step()
 
     def _uninstall_missing_modules(self):
         odoo_log = self._get_log_path(
@@ -862,12 +871,12 @@ class OpenupgraderMigration(models.Model):
                         if match:
                             self.start_odoo(self.current_version_id)
                             for module in modules:
-                                try:
-                                    logger.info(f"Uninstalling missing module {module}")
-                                    self.install_uninstall_module(module, install=False)
+                                res = self.install_uninstall_module(
+                                    module, install=False
+                                )
+                                if res:
                                     uninstalled_modules.append(module)
-                                except Exception:
-                                    logger.info(f"Unable to uninstall module {module}")
+                                else:
                                     uninstallable_modules.append(module)
                             self.button_stop_odoo()
             if uninstalled_modules:
@@ -884,10 +893,6 @@ class OpenupgraderMigration(models.Model):
         self.uninstall_modules(self.next_version_id, after_migration=True)
         self.auto_install_modules(self.next_version_id)
         self.sql_fixes(self.current_version_id.sql_after_migration_command_ids)
-        # if self.next_version_id.name == "10.0":
-        #     self.remove_modules(self.next_version_id, "upgrade")
-        #     self.remove_modules(self.next_version_id)
-        #     self.install_uninstall_module("l10n_it_intrastat")
         # move version to the next step
         self.current_version_id = self.next_version_id
         self.next_version_id = self.env["openupgrader.config"].search(
