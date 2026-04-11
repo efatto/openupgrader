@@ -847,24 +847,23 @@ class OpenupgraderMigration(models.Model):
         )
 
     def _final_step(self):
-        cron_migration = self.env.ref("openupgrader.cron_openugrader_do_auto_migration")
         if self.is_migration_done:
-            if cron_migration.active:
-                cron_migration.active = False
             self.state = "done"
             self._uninstall_missing_modules()
+            self.flush()
 
     def _cron_migration(self):
         openupgrader_migration = self.env["openupgrader.migration"].search(
-            [("state", "not in", ["failed", "restore_failed"])]
+            [("state", "not in", ["failed", "restore_failed", "done"])]
         )
-        openupgrader_migration._final_step()
-        if openupgrader_migration.state in ["updated", "migrated"]:
-            openupgrader_migration.button_prepare_for_migration()
+        if openupgrader_migration:
             openupgrader_migration._final_step()
-        elif openupgrader_migration.state == "ready_for_migration":
-            openupgrader_migration.button_do_migration()
-            openupgrader_migration._final_step()
+            if openupgrader_migration.state in ["updated", "migrated"]:
+                openupgrader_migration.button_prepare_for_migration()
+                openupgrader_migration._final_step()
+            elif openupgrader_migration.state == "ready_for_migration":
+                openupgrader_migration.button_do_migration()
+                openupgrader_migration._final_step()
 
     def _uninstall_missing_modules(self):
         odoo_log = self._get_log_path(
@@ -923,7 +922,7 @@ class OpenupgraderMigration(models.Model):
         self.button_refresh_odoo_migrated_state()
         if self.odoo_migrated_state == "running":
             self.show_message_odoo_running()
-        if self.state == "migrated":
+        if self.state in ["migrated", "done"]:
             return {
                 "type": "ir.actions.client",
                 "tag": "reload",
@@ -989,7 +988,8 @@ class OpenupgraderMigration(models.Model):
             if migrated_version_id != self.current_version_id:
                 # do migration complete stuff and set the next version to migrate
                 self._do_after_migration()
-        self.state = new_state
+        if not self.is_migration_done:
+            self.state = new_state
         return odoo_migrated_state
 
     def sql_fixes(self, sql_commands):
