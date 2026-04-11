@@ -56,8 +56,6 @@
                     <group>
                         <group>
                             <field name="openupgrader_migration_id" />
-                            <field name="config_file" filename="config_file_name" />
-                            <field name="config_file_name" invisible="1" />
                         </group>
                         <group>
                             <field name="python_version" />

@@ -141,6 +141,18 @@ class OpenupgraderMigration(models.Model):
     migration_error_log = fields.Text(string="Migration errors in log")
     uninstalled_modules = fields.Text(string="Uninstalled modules")
     uninstallable_modules = fields.Text(string="Uninstallable modules")
+    config_file = fields.Binary(string="Config file (yml)")
+    config_file_name = fields.Char(string="Config file name")
+
+    def write(self, vals):
+        res = super().write(vals)
+        if "config_file" in vals:
+            openupgrader_configs = self.env["openupgrader.config"].search(
+                [("openupgrader_migration_id", "=", self.id)]
+            )
+            for openupgrader_config in openupgrader_configs:
+                openupgrader_config.action_load_config()
+        return res
 
     @api.depends("current_version_id", "to_version_id")
     def _compute_is_migration_done(self):

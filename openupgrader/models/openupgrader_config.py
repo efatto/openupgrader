@@ -216,12 +216,6 @@ class OpenupgraderConfig(models.Model):
         string="Database Backup",
         domain=[("is_migration_backup", "=", True)],
     )
-    config_file = fields.Binary(
-        string="Config file (yml)",
-    )
-    config_file_name = fields.Char(
-        string="Config file name",
-    )
     sql_after_migration_command_ids = fields.One2many(
         comodel_name="sql.update.command",
         inverse_name="openupgrade_after_config_id",
@@ -556,14 +550,13 @@ class OpenupgraderConfig(models.Model):
                 self, odoo_modules_to_install_via_pip
             )
 
-    @api.onchange("config_file")
-    def onchange_config_file(self):
-        if self.config_file:
-            self.action_load_config()
+    @api.model_create_multi
+    def create(self, vals_list):
+        res = super().create(vals_list)
+        res.action_load_config()
+        return res
 
     def action_load_config(self):  # noqa: C901
-        if not self.config_file:
-            raise UserError(_("Config file is required to load configuration"))
         version_name = self.name
         recipes = self.load_config_file()
         recipe_data = recipes[version_name]
@@ -725,9 +718,9 @@ class OpenupgraderConfig(models.Model):
                     self.module_to_uninstall_before_migration_ids |= module_id
 
     def load_config_file(self):
-        if not self.config_file:
+        if not self.openupgrader_migration_id.config_file:
             raise UserError(_("Missing configuration file!"))
-        file_content = base64.decodebytes(self.config_file)  # noqa
+        file_content = base64.decodebytes(self.openupgrader_migration_id.config_file)  # noqa
         repos = {}
         try:
             repos = yaml.safe_load(file_content) or {}
