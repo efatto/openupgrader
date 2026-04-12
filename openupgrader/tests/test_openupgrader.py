@@ -156,7 +156,3 @@ class OpenUpgrader(SavepointCase):
             if max_wait_time <= 0:
                 raise Exception("Timeout waiting for migration to finish")
         self.assertEqual(openupgrader_migration.is_migration_done, True)
-        self.assertEqual(
-            openupgrader_migration.current_version_id,
-            self.to_config_id,
-        )

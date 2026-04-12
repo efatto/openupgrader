@@ -3,7 +3,7 @@
 
     <record id="cron_openugrader_do_auto_migration" model="ir.cron">
         <field name="name">OpenUpgrader - do all the migration automatically</field>
-        <field name="interval_number">5</field>
+        <field name="interval_number">2</field>
         <field name="interval_type">minutes</field>
         <field name="numbercall">-1</field>
         <field name="active" eval="False" />

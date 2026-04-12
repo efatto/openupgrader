@@ -706,7 +706,6 @@ class OpenupgraderMigration(models.Model):
         self.sql_fixes(self.current_version_id.sql_before_migration_command_ids)
         self.uninstall_modules(self.current_version_id, before_migration=True)
         self.delete_old_modules(self.current_version_id)
-        self._final_step()
         if not self.is_migration_done:
             self.state = "ready_for_migration"
 
@@ -857,13 +856,10 @@ class OpenupgraderMigration(models.Model):
             [("state", "not in", ["failed", "restore_failed", "done"])]
         )
         if openupgrader_migration:
-            openupgrader_migration._final_step()
             if openupgrader_migration.state in ["updated", "migrated"]:
                 openupgrader_migration.button_prepare_for_migration()
-                openupgrader_migration._final_step()
             elif openupgrader_migration.state == "ready_for_migration":
                 openupgrader_migration.button_do_migration()
-                openupgrader_migration._final_step()
 
     def _uninstall_missing_modules(self):
         odoo_log = self._get_log_path(
@@ -917,6 +913,7 @@ class OpenupgraderMigration(models.Model):
                 % (self.from_version_id.name, self.to_version_id.name)
             )
             self.state = "done"
+            self._final_step()
 
     def button_do_migration(self):
         self.button_refresh_odoo_migrated_state()
