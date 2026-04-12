@@ -146,12 +146,12 @@ class OpenUpgrader(SavepointCase):
         openupgrader_migration.button_stop_odoo()
         openupgrader_migration.button_do_all()
         self.assertTrue(self.migration_cron.active)
-        # force cron start
-        self.migration_cron.method_direct_trigger()
+        # force cron start as cron seems not active
         max_wait_time = 30 * 60  # 30 minutes
         while not openupgrader_migration.is_migration_done:
-            time.sleep(10)
-            max_wait_time -= 10
+            time.sleep(120)
+            self.migration_cron.method_direct_trigger()
+            max_wait_time -= 120
             if max_wait_time <= 0:
                 raise Exception("Timeout waiting for migration to finish")
         self.assertEqual(openupgrader_migration.is_migration_done, True)
