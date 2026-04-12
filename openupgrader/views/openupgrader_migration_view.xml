@@ -138,6 +138,15 @@
                         </group>
                     </group>
                     <notebook>
+                        <page string="Migration info">
+                            <group>
+                                <field name="uninstalled_modules" />
+                                <field name="uninstallable_modules" />
+                                <field name="disabled_cron_ids_set" />
+                                <field name="disabled_ir_mail_server_ids_set" />
+                                <field name="disabled_fetchmail_server_ids_set" />
+                            </group>
+                        </page>
                         <page string="Logs">
                             <button
                                 name="button_get_logs"
@@ -154,15 +163,6 @@
                                 type="object"
                                 string="Clean migration log"
                             />
-                        </page>
-                        <page string="Migration info">
-                            <group>
-                                <field name="uninstalled_modules" />
-                                <field name="uninstallable_modules" />
-                                <field name="disabled_cron_ids_set" />
-                                <field name="disabled_ir_mail_server_ids_set" />
-                                <field name="disabled_fetchmail_server_ids_set" />
-                            </group>
                         </page>
                         <page string="Utilities">
                             <group>
