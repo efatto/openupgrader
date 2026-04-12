@@ -1,5 +1,6 @@
 import base64
 import configparser
+import importlib.util
 import logging
 import os
 import shutil
@@ -8,7 +9,7 @@ import subprocess
 import yaml
 
 from odoo import _, api, fields, models, release
-from odoo.exceptions import UserError, ValidationError
+from odoo.exceptions import ValidationError
 
 logger = logging.getLogger(__name__)
 
@@ -559,16 +560,102 @@ class OpenupgraderConfig(models.Model):
     def action_load_config(self):  # noqa: C901
         version_name = self.name
         recipes = self.load_config_file()
-        recipe_data = recipes[version_name]
-        # reset all existing configurations
-        self.pip_requirement_ids = False
-        self.odoo_pip_requirement_ids = False
-        self.sql_after_migration_command_ids = False
-        self.sql_before_migration_command_ids = False
-        self.module_auto_install_ids = False
-        self.module_to_delete_after_migration_ids = False
-        self.module_to_uninstall_after_migration_ids = False
-        self.module_to_uninstall_before_migration_ids = False
+        if recipes:
+            # reset all existing configurations
+            self.pip_requirement_ids = False
+            self.odoo_pip_requirement_ids = False
+            self.sql_after_migration_command_ids = False
+            self.sql_before_migration_command_ids = False
+            self.module_auto_install_ids = False
+            self.module_to_delete_after_migration_ids = False
+            self.module_to_uninstall_after_migration_ids = False
+            self.module_to_uninstall_before_migration_ids = False
+            recipe_data = recipes[version_name]
+        else:
+            # add only apriori_py data to existing records
+            recipe_data = [{"auto_install": []}]
+        apriori_py_path = os.path.join(
+            self.openupgrader_migration_id.folder,
+            f"openupgrade{self.name}",
+            "odoo",
+            "openupgrade_scripts",
+            "apriori.py",
+        )
+        if os.path.isfile(apriori_py_path):
+            # append auto_install modules from OpenUpgrade apriori.py
+
+            spec = importlib.util.spec_from_file_location("apriori", apriori_py_path)
+            if spec and spec.loader:
+                apriori_mod = importlib.util.module_from_spec(spec)
+                try:
+                    spec.loader.exec_module(apriori_mod)
+                except Exception as e:
+                    logger.error(
+                        "Error importing apriori.py from %s: %s", apriori_py_path, e
+                    )
+                    apriori_mod = None
+
+                if apriori_mod:
+                    renamed_modules = getattr(apriori_mod, "renamed_modules", {})
+                    if renamed_modules:
+                        for renamed_module, target_module in renamed_modules.items():
+                            if isinstance(recipe_data, list):
+                                found = False
+                                for recipe in recipe_data:
+                                    if "auto_install" in recipe.keys():
+                                        if not isinstance(recipe["auto_install"], list):
+                                            recipe["auto_install"] = []
+                                        recipe["auto_install"].append(
+                                            f"{renamed_module} {target_module}"
+                                        )
+                                        found = True
+                                if not found:
+                                    recipe_data.append(
+                                        {
+                                            "auto_install": [
+                                                f"{renamed_module} {target_module}"
+                                            ]
+                                        }
+                                    )
+                            else:
+                                recipe_data.append(
+                                    {
+                                        "auto_install": [
+                                            f"{renamed_module} {target_module}"
+                                        ]
+                                    }
+                                )
+                    merged_modules = getattr(apriori_mod, "merged_modules", {})
+                    if merged_modules:
+                        for merged_module, target_module in merged_modules.items():
+                            if isinstance(recipe_data, list):
+                                found = False
+                                for recipe in recipe_data:
+                                    if "auto_install" in recipe.keys():
+                                        if not isinstance(recipe["auto_install"], list):
+                                            recipe["auto_install"] = []
+                                        recipe["auto_install"].append(
+                                            f"{merged_module} {target_module}"
+                                        )
+                                        found = True
+                                if not found:
+                                    recipe_data.append(
+                                        {
+                                            "auto_install": [
+                                                f"{merged_module} {target_module}"
+                                            ]
+                                        }
+                                    )
+                            else:
+                                recipe_data.append(
+                                    {
+                                        "auto_install": [
+                                            f"{merged_module} {target_module}"
+                                        ]
+                                    }
+                                )
+        if isinstance(recipe_data, dict):
+            recipe_data = [recipe_data]
         for recipe in recipe_data:
             if recipe.get("python_version"):
                 self.python_version = recipe.get("python_version")
@@ -718,12 +805,14 @@ class OpenupgraderConfig(models.Model):
                     self.module_to_uninstall_before_migration_ids |= module_id
 
     def load_config_file(self):
-        if not self.openupgrader_migration_id.config_file:
-            raise UserError(_("Missing configuration file!"))
-        file_content = base64.decodebytes(self.openupgrader_migration_id.config_file)  # noqa
-        repos = {}
-        try:
-            repos = yaml.safe_load(file_content) or {}
-        except yaml.YAMLError as exc:
-            logger.info(exc)
-        return repos
+        if self.openupgrader_migration_id.config_file:
+            file_content = base64.decodebytes(
+                self.openupgrader_migration_id.config_file
+            )  # noqa
+            repos = {}
+            try:
+                repos = yaml.safe_load(file_content) or {}
+            except yaml.YAMLError as exc:
+                logger.info(exc)
+            return repos
+        return None
