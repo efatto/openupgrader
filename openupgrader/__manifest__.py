@@ -14,7 +14,6 @@
     ],
     "data": [
         "security/ir.model.access.csv",
-        "data/cron.xml",
         "views/openupgrader_migration_view.xml",
         "views/openupgrader_config_view.xml",
         "views/db_backup_view.xml",

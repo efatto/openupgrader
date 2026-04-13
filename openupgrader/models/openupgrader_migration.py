@@ -337,7 +337,6 @@ class OpenupgraderMigration(models.Model):
             new_cr = self.pool.cursor()
             self = self.with_env(self.env(cr=new_cr))
             self._start_odoo(version_id, update, migrate, extra_command)
-            # new_cr.commit()
             new_cr.close()
 
     def _start_odoo(  # noqa C901
@@ -808,10 +807,6 @@ class OpenupgraderMigration(models.Model):
             )
 
     def button_draft(self):
-        # ensure cron is not running
-        self.env.ref("openupgrader.cron_openugrader_do_auto_migration").write(
-            {"active": False}
-        )
         self.button_check_odoo_migrated_running_state()
         if self.odoo_migrated_state == "running":
             self.show_message_odoo_running()
@@ -841,14 +836,13 @@ class OpenupgraderMigration(models.Model):
             while self.state != "updated":
                 self.button_update_current_version()
                 time.sleep(5)
-        migration_cron = self.env.ref("openupgrader.cron_openugrader_do_auto_migration")
         max_wait_time = 60 * 60  # 60 minutes
         step = 120
         while not (
             float(self.current_version_id.name) == (float(self.to_version_id.name) - 1)
         ):
             time.sleep(step)  # wait 2 minutes
-            migration_cron.method_direct_trigger()
+            self._cron_migration()
             max_wait_time -= step
             if max_wait_time <= 0:
                 raise Exception("Timeout waiting for migration to finish")

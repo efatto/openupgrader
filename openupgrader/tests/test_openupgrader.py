@@ -11,9 +11,6 @@ class OpenUpgrader(SavepointCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.migration_cron = cls.env.ref(
-            "openupgrader.cron_openugrader_do_auto_migration"
-        )
         cls.config_obj = cls.env["openupgrader.config"]
         cls.migration_obj = cls.env["openupgrader.migration"]
         cls.from_version = ".".join(str(v) for v in version_info[:2])
@@ -145,13 +142,4 @@ class OpenUpgrader(SavepointCase):
         )
         openupgrader_migration.button_stop_odoo()
         openupgrader_migration.button_do_all()
-        # self.assertTrue(self.migration_cron.active)
-        # force cron start as cron seems not active
-        max_wait_time = 30 * 60  # 30 minutes
-        while not openupgrader_migration.is_migration_done:
-            time.sleep(120)
-            self.migration_cron.method_direct_trigger()
-            max_wait_time -= 120
-            if max_wait_time <= 0:
-                raise Exception("Timeout waiting for migration to finish")
         self.assertEqual(openupgrader_migration.is_migration_done, True)
