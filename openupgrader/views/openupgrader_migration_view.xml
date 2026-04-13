@@ -86,7 +86,8 @@
                     <button
                         name="button_do_all"
                         type="object"
-                        string="I feel lucky!"
+                        string="Do auto-migration"
+                        help="I feel lucky!"
                         attrs="{'invisible': [('state', '!=', 'draft')]}"
                     />
                     <field

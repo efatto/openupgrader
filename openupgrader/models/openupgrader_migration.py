@@ -337,7 +337,7 @@ class OpenupgraderMigration(models.Model):
             new_cr = self.pool.cursor()
             self = self.with_env(self.env(cr=new_cr))
             self._start_odoo(version_id, update, migrate, extra_command)
-            new_cr.commit()
+            # new_cr.commit()
             new_cr.close()
 
     def _start_odoo(  # noqa C901
@@ -841,8 +841,27 @@ class OpenupgraderMigration(models.Model):
             while self.state != "updated":
                 self.button_update_current_version()
                 time.sleep(5)
-        self.env.ref("openupgrader.cron_openugrader_do_auto_migration").write(
-            {"active": True}
+        migration_cron = self.env.ref("openupgrader.cron_openugrader_do_auto_migration")
+        max_wait_time = 60 * 60  # 60 minutes
+        step = 120
+        while not (
+            float(self.current_version_id.name) == (float(self.to_version_id.name) - 1)
+        ):
+            time.sleep(step)  # wait 2 minutes
+            migration_cron.method_direct_trigger()
+            max_wait_time -= step
+            if max_wait_time <= 0:
+                raise Exception("Timeout waiting for migration to finish")
+        self.button_prepare_for_migration()
+        while not self.is_migration_done:
+            self.button_do_migration()  # do the last migration
+            time.sleep(step)
+            max_wait_time -= step
+            if max_wait_time <= 0:
+                raise Exception("Timeout waiting for migration to finish")
+        logger.info(
+            f"Auto migration done from {self.current_version_id.name} "
+            f"to {self.to_version_id.name}"
         )
 
     def _final_step(self):
@@ -940,11 +959,8 @@ class OpenupgraderMigration(models.Model):
             if psutil.pid_exists(odoo_pid):
                 odoo_migrated_state = "running"
         if odoo_migrated_state == "running":
-            # don't do anything if migration is running
+            # do anything if migration is running
             return odoo_migrated_state
-        # if self.state == "ready_for_migration":
-        #     # set migration in ongoing (possible improvement)
-        #     # self.state = "migrating"
         current_state = self.state
         new_state = self.state
         if self.next_version_id:
