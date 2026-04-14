@@ -205,17 +205,29 @@ class OpenupgraderMigration(models.Model):
         self.update_error_log = ""
         self.update_warning_log = ""
         for openupgrader_config in self.env["openupgrader.config"].search(
-            [("openupgrader_migration_id", "=", self.id)]
+            [("openupgrader_migration_id", "=", self.id)], order="name desc"
         ):
             migration_error_log, migration_warning_log = self._get_migration_logs(
                 self._get_log_path(self.folder, openupgrader_config.name, migrate=True)
             )
+            self.migration_error_log += (
+                f"### MIGRATION ERROR LOG V. {openupgrader_config.name}\n"
+            )
             self.migration_error_log += migration_error_log
+            self.migration_warning_log += (
+                f"### MIGRATION WARNING LOG V. {openupgrader_config.name}\n"
+            )
             self.migration_warning_log += migration_warning_log
             update_error_log, update_warning_log = self._get_migration_logs(
                 self._get_log_path(self.folder, openupgrader_config.name)
             )
+            self.update_error_log += (
+                f"### UPDATE ERROR LOG V. {openupgrader_config.name}\n"
+            )
             self.update_error_log += update_error_log
+            self.update_warning_log += (
+                f"### UPDATE WARNING LOG V. {openupgrader_config.name}\n"
+            )
             self.update_warning_log += update_warning_log
 
     @staticmethod
