@@ -200,12 +200,23 @@ class OpenupgraderMigration(models.Model):
 
     def button_get_logs(self):
         self.ensure_one()
-        self.migration_error_log, self.migration_warning_log = self._get_migration_logs(
-            self._get_log_path(self.folder, self.next_version_id.name, migrate=True)
-        )
-        self.update_error_log, self.update_warning_log = self._get_migration_logs(
-            self._get_log_path(self.folder, self.current_version_id.name)
-        )
+        self.migration_error_log = ""
+        self.migration_warning_log = ""
+        self.update_error_log = ""
+        self.update_warning_log = ""
+        for openupgrader_config in self.env["openupgrader.config"].search(
+            [("openupgrader_migration_id", "=", self.id)]
+        ):
+            migration_error_log, migration_warning_log = self._get_migration_logs(
+                self._get_log_path(self.folder, openupgrader_config.name, migrate=True)
+            )
+            self.migration_error_log += migration_error_log
+            self.migration_warning_log += migration_warning_log
+            update_error_log, update_warning_log = self._get_migration_logs(
+                self._get_log_path(self.folder, openupgrader_config.name)
+            )
+            self.update_error_log += update_error_log
+            self.update_warning_log += update_warning_log
 
     @staticmethod
     def _get_migration_logs(log_file):
