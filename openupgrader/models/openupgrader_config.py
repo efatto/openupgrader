@@ -172,6 +172,7 @@ class OpenupgraderConfig(models.Model):
         comodel_name="openupgrader.migration",
         string="Odoo Migration",
         required=True,
+        default=lambda self: self.env["openupgrader.migration"].search([], limit=1),
     )
     python_version = fields.Char(required=True, default="3.7.16")
     odoo_is_openupgrade = fields.Boolean(
@@ -420,10 +421,8 @@ class OpenupgraderConfig(models.Model):
     def button_recreate_venv(self):
         # Remove the folder and re-create a clean virtual environment
         self.ensure_one()
-        openupgrader_migration_id = self.env["openupgrader.migration"].search([])
-        openupgrader_migration_id.ensure_one()
         venv_folder = os.path.join(
-            openupgrader_migration_id.folder, f"openupgrade{self.name}"
+            self.openupgrader_migration_id.folder, f"openupgrade{self.name}"
         )
         if os.path.isdir(venv_folder):
             shutil.rmtree(venv_folder, ignore_errors=True)
@@ -431,14 +430,13 @@ class OpenupgraderConfig(models.Model):
 
     def button_create_venv(self):
         self.ensure_one()
-        openupgrader_migration_id = self.env["openupgrader.migration"].search([])
-        openupgrader_migration_id.ensure_one()
+        openupgrader_migration = self.openupgrader_migration_id
         odoo_is_openupgrade = self.odoo_is_openupgrade
         # Odoo is OpenUpgrade until v. 13.0, from v. 14.0 Odoo is in ./<version/odoo
         # install odoo Openupgrade repo, from v. 14.0 it contains only migration script
-        if openupgrader_migration_id:
+        if openupgrader_migration:
             venv_path = os.path.join(
-                openupgrader_migration_id.folder, f"openupgrade{self.name}"
+                openupgrader_migration.folder, f"openupgrade{self.name}"
             )
             subprocess_env = _create_python_venv(venv_path, self.python_version)
             openupgrade_path = os.path.join(venv_path, "odoo")
@@ -451,7 +449,7 @@ class OpenupgraderConfig(models.Model):
                 subprocess.Popen(
                     [
                         f"git clone --single-branch --depth 1 -b {self.name} "
-                        f"{openupgrader_migration_id.openupgrade_repo} odoo"
+                        f"{openupgrader_migration.openupgrade_repo} odoo"
                     ],
                     cwd=venv_path,
                     shell=True,
@@ -465,7 +463,7 @@ class OpenupgraderConfig(models.Model):
 
             if not odoo_is_openupgrade:
                 # install odoo repo separately
-                openupgrader_migration_id.install_repo(
+                openupgrader_migration.install_repo(
                     self.odoo_repo_id,
                     self.odoo_repo_id.remote_branch or self.name,
                     odoo_path,
@@ -547,7 +545,7 @@ class OpenupgraderConfig(models.Model):
                     if auto_install.name in self.module_installed_ids.mapped("name")
                 ]
             self._set_core_modules(core_module_names)
-            openupgrader_migration_id.install_pip_modules(
+            openupgrader_migration.install_pip_modules(
                 self, odoo_modules_to_install_via_pip
             )
 

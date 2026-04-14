@@ -167,6 +167,17 @@
                         </page>
                         <page string="Utilities">
                             <group>
+                                <group
+                                    colspan="2"
+                                    col="1"
+                                    string="Environment management"
+                                >
+                                    <button
+                                        name="button_recreate_all_env"
+                                        type="object"
+                                        string="Recreate all environments"
+                                    />
+                                </group>
                                 <group colspan="2" col="1" string="Dump utilities">
                                     <button
                                         name="button_dump_current_database"

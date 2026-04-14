@@ -827,6 +827,14 @@ class OpenupgraderMigration(models.Model):
         self.button_clean_logs()
         self.state = "draft"
 
+    def button_recreate_all_env(self):
+        self.ensure_one()
+        openupgrader_configs = self.env["openupgrader.config"].search(
+            [("openupgrader_migration_id", "=", self.id)]
+        )
+        for openupgrader_config in openupgrader_configs:
+            openupgrader_config.button_recreate_venv()
+
     def button_do_all(self):
         # initiate migration from draft
         if self.state == "draft":
