@@ -862,8 +862,8 @@ class OpenupgraderMigration(models.Model):
             if max_wait_time <= 0:
                 raise Exception("Timeout waiting for migration to finish")
         logger.info(
-            f"Auto migration done from {self.current_version_id.name} "
-            f"to {self.to_version_id.name}"
+            f"Auto migration done from {self.from_version_id.name} "
+            f"to {self.current_version_id.name}."
         )
 
     def _final_step(self):
@@ -914,8 +914,8 @@ class OpenupgraderMigration(models.Model):
 
     def _do_after_migration(self):
         logger.info(
-            "Migration done from version %s to version %s"
-            % (self.current_version_id.name, self.next_version_id.name)
+            f"Migration done from version {self.current_version_id.name} "
+            f"to version {self.next_version_id.name}"
         )
         # do after migration stuff
         self.uninstall_modules(self.next_version_id, after_migration=True)
