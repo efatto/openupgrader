@@ -8,6 +8,7 @@ import ssl
 import sys
 import time
 from pathlib import Path
+from socket import socket
 from subprocess import PIPE, Popen
 from urllib.request import HTTPSHandler
 
@@ -249,12 +250,19 @@ class OpenupgraderMigration(models.Model):
 
     def odoo_connect(self):
         if self.db_name and self.db_password:
-            client = odoorpc.ODOO(
-                host="localhost",
-                protocol="jsonrpc",
-                port=self.xmlrpc_port,
-                opener=self._get_opener(verify_ssl=False),
-            )
+            try:
+                client = odoorpc.ODOO(
+                    host="localhost",
+                    protocol="jsonrpc",
+                    port=self.xmlrpc_port,
+                    opener=self._get_opener(verify_ssl=False),
+                )
+            except socket.timeout as e:
+                logger.info("Connection to Odoo failed for timeout %s!" % str(e))
+                return None
+            except Exception as e:
+                logger.info("Connection to Odoo failed for %s!" % str(e))
+                return None
             try:
                 client.login(
                     db=f"{self.db_name}_migrate",
@@ -1086,6 +1094,8 @@ class OpenupgraderMigration(models.Model):
     def auto_install_modules(self, version_id):
         self.start_odoo(version_id)
         odoo_client = self.odoo_connect()
+        if not odoo_client:
+            return
         module_obj = odoo_client.env["ir.module.module"]
         if version_id.name == "12.0":
             self.remove_modules(version_id, "upgrade")
@@ -1122,6 +1132,8 @@ class OpenupgraderMigration(models.Model):
         if version_id.module_to_delete_after_migration_ids:
             self.start_odoo(version_id)
             odoo_client = self.odoo_connect()
+            if not odoo_client:
+                return
             module_obj = odoo_client.env["ir.module.module"]
             for module_to_delete in version_id.module_to_delete_after_migration_ids:
                 module_id = module_obj.browse(
@@ -1144,6 +1156,8 @@ class OpenupgraderMigration(models.Model):
         else:
             state = ["to remove", "to install"]
         odoo_client = self.odoo_connect()
+        if not odoo_client:
+            return
         module_obj = odoo_client.env["ir.module.module"]
         modules = module_obj.browse(module_obj.search([("state", "in", state)]))
         msg_modules = ""
@@ -1236,6 +1250,8 @@ class OpenupgraderMigration(models.Model):
             % module_name
         )
         odoo_client = self.odoo_connect()
+        if not odoo_client:
+            return False
         module_obj = odoo_client.env["ir.module.module"]
         to_remove_modules = module_obj.search([("state", "=", "to remove")])
         for module_to_remove_id in to_remove_modules:
