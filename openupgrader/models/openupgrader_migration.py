@@ -719,12 +719,11 @@ class OpenupgraderMigration(models.Model):
     def button_prepare_for_migration(self):
         self.ensure_one()
         self.button_refresh_odoo_migrated_state()
-        # do pre upgrade stuff
+        # do pre-upgrade stuff
         if self.odoo_migrated_state == "running":
             self.show_message_odoo_running()
-        if self.from_version_id == self.current_version_id:
-            # these actions are needed for the initial version only
-            self.set_mail_server_and_cron_state_to(active=False)
+        # Disable at every version cron and mail servers, possibly re-enabled by system
+        self.set_mail_server_and_cron_state_to(active=False)
         self.sql_fixes(self.current_version_id.sql_before_migration_command_ids)
         self.uninstall_modules(self.current_version_id, before_migration=True)
         self.delete_old_modules(self.current_version_id)
