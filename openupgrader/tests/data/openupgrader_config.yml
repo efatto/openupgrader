@@ -14,6 +14,7 @@
   - auto_install:
       - base auditlog
   - delete:
+  - obsolete:
   - uninstall_after_migration_to_this_version:
   - uninstall_before_migration_to_next_version:
 "15.0":
@@ -31,6 +32,7 @@
   - before_migration_to_next_version_sql_command:
   - auto_install:
   - delete:
+  - obsolete:
   - uninstall_after_migration_to_this_version:
   - uninstall_before_migration_to_next_version:
 "14.0":
@@ -48,6 +50,7 @@
   - before_migration_to_next_version_sql_command:
   - auto_install:
   - delete:
+  - obsolete:
   - uninstall_after_migration_to_this_version:
   - uninstall_before_migration_to_next_version:
 "13.0":

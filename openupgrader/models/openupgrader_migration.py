@@ -918,6 +918,15 @@ class OpenupgraderMigration(models.Model):
             self.current_version_id.name,
         )
         if os.path.isfile(odoo_log):
+            obsolete_modules = set()
+            openupgrader_configs = self.env["openupgrader.config"].search(
+                [
+                    ("obsolete_modules", "!=", False),
+                    ("openupgrader_migration_id", "=", self.id),
+                ]
+            )
+            if openupgrader_configs:
+                obsolete_modules = set(openupgrader_configs.mapped("obsolete_modules"))
             uninstalled_modules = []
             uninstallable_modules = []
             with open(odoo_log, "r") as f:
@@ -932,10 +941,11 @@ class OpenupgraderMigration(models.Model):
                                 res = self.install_uninstall_module(
                                     module, install=False
                                 )
-                                if res:
-                                    uninstalled_modules.append(module)
-                                else:
-                                    uninstallable_modules.append(module)
+                                if module not in obsolete_modules:
+                                    if res:
+                                        uninstalled_modules.append(module)
+                                    else:
+                                        uninstallable_modules.append(module)
                             self.button_stop_odoo()
             if uninstalled_modules:
                 self.uninstalled_modules = str(uninstalled_modules)

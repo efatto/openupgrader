@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 14.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-14 20:35+0000\n"
-"PO-Revision-Date: 2026-04-14 20:35+0000\n"
+"POT-Creation-Date: 2026-04-15 16:37+0000\n"
+"PO-Revision-Date: 2026-04-15 16:37+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -310,6 +310,11 @@ msgid "Dump utilities"
 msgstr "Utilità di backup"
 
 #. module: openupgrader
+#: model_terms:ir.ui.view,arch_db:openupgrader.view_openupgrader_migration_form
+msgid "Environment management"
+msgstr "Gestione dell'ambiente"
+
+#. module: openupgrader
 #: model_terms:ir.ui.view,arch_db:openupgrader.view_backup_conf_form
 msgid "Execute migration backup"
 msgstr "Esegui il backup della migrazione"
@@ -470,6 +475,16 @@ msgid "Migrated Odo instance is running or stopped"
 msgstr "L'istanza di Odoo migrata è accesa o spenta"
 
 #. module: openupgrader
+#: model_terms:ir.ui.view,arch_db:openupgrader.view_openupgrader_migration_form
+msgid "Migration Error Logs"
+msgstr "Log errori di migrazione"
+
+#. module: openupgrader
+#: model_terms:ir.ui.view,arch_db:openupgrader.view_openupgrader_migration_form
+msgid "Migration Warning Logs"
+msgstr "Log avvisi di migrazione"
+
+#. module: openupgrader
 #: model:ir.model.fields,field_description:openupgrader.field_openupgrader_migration__migration_error_log
 msgid "Migration errors in log"
 msgstr "Log errori di migrazione"
@@ -564,6 +579,11 @@ msgstr "Prossima versione da migrare"
 #: model:ir.model.fields,field_description:openupgrader.field_pip_requirement__no_pip_found
 msgid "No pip found for target version"
 msgstr "Modulo pip non trovato nella versione di destinazione"
+
+#. module: openupgrader
+#: model:ir.model.fields,field_description:openupgrader.field_openupgrader_config__obsolete_modules
+msgid "Obsolete Modules"
+msgstr "Moduli obsoleti"
 
 #. module: openupgrader
 #: model:ir.model.fields,field_description:openupgrader.field_openupgrader_config__openupgrader_migration_id
@@ -940,6 +960,16 @@ msgstr "Moduli non disinstallabili"
 #: model:ir.model.fields,field_description:openupgrader.field_openupgrader_migration__uninstalled_modules
 msgid "Uninstalled modules"
 msgstr "Moduli disinstallati"
+
+#. module: openupgrader
+#: model_terms:ir.ui.view,arch_db:openupgrader.view_openupgrader_migration_form
+msgid "Update Error Logs"
+msgstr "Log degli errori di aggiornamento"
+
+#. module: openupgrader
+#: model_terms:ir.ui.view,arch_db:openupgrader.view_openupgrader_migration_form
+msgid "Update Warning Logs"
+msgstr "Log degli avvisi di aggiornamento"
 
 #. module: openupgrader
 #: model_terms:ir.ui.view,arch_db:openupgrader.view_openupgrader_migration_form

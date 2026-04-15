@@ -265,6 +265,7 @@ class OpenupgraderConfig(models.Model):
         ondelete="cascade",
         copy=False,
     )
+    obsolete_modules = fields.Text()
 
     def _set_modules_installability_via_pip(self, names):
         # set module not installable in all the possible origins:
@@ -598,7 +599,8 @@ class OpenupgraderConfig(models.Model):
                     if renamed_modules:
                         for renamed_module, target_module in renamed_modules.items():
                             if isinstance(recipe_data, list):
-                                found = False
+                                auto_install_found = False
+                                obsolete_found = False
                                 for recipe in recipe_data:
                                     if "auto_install" in recipe.keys():
                                         if not isinstance(recipe["auto_install"], list):
@@ -606,13 +608,24 @@ class OpenupgraderConfig(models.Model):
                                         recipe["auto_install"].append(
                                             f"{renamed_module} {target_module}"
                                         )
-                                        found = True
-                                if not found:
+                                        auto_install_found = True
+                                    if "obsolete" in recipe.keys():
+                                        if not isinstance(recipe["obsolete"], list):
+                                            recipe["obsolete"] = []
+                                        recipe["obsolete"].append(renamed_module)
+                                        obsolete_found = True
+                                if not auto_install_found:
                                     recipe_data.append(
                                         {
                                             "auto_install": [
                                                 f"{renamed_module} {target_module}"
-                                            ]
+                                            ],
+                                        }
+                                    )
+                                if not obsolete_found:
+                                    recipe_data.append(
+                                        {
+                                            "obsolete": [renamed_module],
                                         }
                                     )
                             else:
@@ -620,14 +633,15 @@ class OpenupgraderConfig(models.Model):
                                     {
                                         "auto_install": [
                                             f"{renamed_module} {target_module}"
-                                        ]
+                                        ],
+                                        "obsolete": [renamed_module],
                                     }
                                 )
                     merged_modules = getattr(apriori_mod, "merged_modules", {})
                     if merged_modules:
                         for merged_module, target_module in merged_modules.items():
                             if isinstance(recipe_data, list):
-                                found = False
+                                auto_install_found = False
                                 for recipe in recipe_data:
                                     if "auto_install" in recipe.keys():
                                         if not isinstance(recipe["auto_install"], list):
@@ -635,8 +649,8 @@ class OpenupgraderConfig(models.Model):
                                         recipe["auto_install"].append(
                                             f"{merged_module} {target_module}"
                                         )
-                                        found = True
-                                if not found:
+                                        auto_install_found = True
+                                if not auto_install_found:
                                     recipe_data.append(
                                         {
                                             "auto_install": [
@@ -773,6 +787,9 @@ class OpenupgraderConfig(models.Model):
                         module_id = self.env["module.name"].create({"name": module})
                         module_id.flush()
                     self.module_to_delete_after_migration_ids |= module_id
+            if recipe.get("obsolete"):
+                obsolete = recipe.get("obsolete")
+                self.obsolete_modules = str(set(obsolete))
             if recipe.get("uninstall_after_migration_to_this_version"):
                 uninstall_after = recipe.get(
                     "uninstall_after_migration_to_this_version"
