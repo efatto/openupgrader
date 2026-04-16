@@ -155,10 +155,14 @@
                                 string="Get errors and warnings in log"
                             />
                             <p />
+                            <separator string="Migration Critical Logs" />
+                            <field name="migration_critical_log" nolabel="1" />
                             <separator string="Migration Error Logs" />
                             <field name="migration_error_log" nolabel="1" />
                             <separator string="Migration Warning Logs" />
                             <field name="migration_warning_log" nolabel="1" />
+                            <separator string="Update Critical Logs" />
+                            <field name="update_critical_log" nolabel="1" />
                             <separator string="Update Error Logs" />
                             <field name="update_error_log" nolabel="1" />
                             <separator string="Update Warning Logs" />

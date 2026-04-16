@@ -136,8 +136,10 @@ class OpenupgraderMigration(models.Model):
         readonly=True,
         default="draft",
     )
+    update_critical_log = fields.Text(string="Update criticals in log")
     update_error_log = fields.Text(string="Update errors in log")
     update_warning_log = fields.Text(string="Update warnings in log")
+    migration_critical_log = fields.Text(string="Migration criticals in log")
     migration_warning_log = fields.Text(string="Migration warnings in log")
     migration_error_log = fields.Text(string="Migration errors in log")
     uninstalled_modules = fields.Text(string="Uninstalled modules")
@@ -201,16 +203,26 @@ class OpenupgraderMigration(models.Model):
 
     def button_get_logs(self):
         self.ensure_one()
+        self.migration_critical_log = ""
         self.migration_error_log = ""
         self.migration_warning_log = ""
+        self.update_critical_log = ""
         self.update_error_log = ""
         self.update_warning_log = ""
         for openupgrader_config in self.env["openupgrader.config"].search(
             [("openupgrader_migration_id", "=", self.id)], order="name desc"
         ):
-            migration_error_log, migration_warning_log = self._get_migration_logs(
+            (
+                migration_critical_log,
+                migration_error_log,
+                migration_warning_log,
+            ) = self._get_migration_logs(
                 self._get_log_path(self.folder, openupgrader_config.name, migrate=True)
             )
+            self.migration_critical_log += (
+                f"### MIGRATION CRITICAL LOG V. {openupgrader_config.name}\n"
+            )
+            self.migration_critical_log += migration_critical_log
             self.migration_error_log += (
                 f"### MIGRATION ERROR LOG V. {openupgrader_config.name}\n"
             )
@@ -219,9 +231,17 @@ class OpenupgraderMigration(models.Model):
                 f"### MIGRATION WARNING LOG V. {openupgrader_config.name}\n"
             )
             self.migration_warning_log += migration_warning_log
-            update_error_log, update_warning_log = self._get_migration_logs(
+            (
+                update_critical_log,
+                update_error_log,
+                update_warning_log,
+            ) = self._get_migration_logs(
                 self._get_log_path(self.folder, openupgrader_config.name)
             )
+            self.update_critical_log += (
+                f"### UPDATE CRITICAL LOG V. {openupgrader_config.name}\n"
+            )
+            self.update_critical_log += update_critical_log
             self.update_error_log += (
                 f"### UPDATE ERROR LOG V. {openupgrader_config.name}\n"
             )
@@ -233,11 +253,16 @@ class OpenupgraderMigration(models.Model):
 
     @staticmethod
     def _get_migration_logs(log_file):
+        critical_log = " "
         error_log = " "
         warning_log = " "
         if os.path.isfile(log_file):
             with open(log_file, "r") as f:
                 for r in f.readlines():
+                    if r and r != "" and "CRITICAL" in r:
+                        critical_text = r.split("CRITICAL")[1]
+                        if critical_text and critical_text not in critical_log:
+                            critical_log += critical_text
                     if r and r != "" and "ERROR" in r:
                         error_text = r.split("ERROR")[1]
                         if error_text and error_text not in error_log:
@@ -246,7 +271,7 @@ class OpenupgraderMigration(models.Model):
                         warning_text = r.split("WARNING")[1]
                         if warning_text and warning_text not in warning_log:
                             warning_log += warning_text
-        return error_log, warning_log
+        return critical_log, error_log, warning_log
 
     def odoo_connect(self):
         if self.db_name and self.db_password:
@@ -658,8 +683,10 @@ class OpenupgraderMigration(models.Model):
             os.unlink(dump_file_sql)
 
     def button_clean_logs(self):
+        self.migration_critical_log = " "
         self.migration_error_log = " "
         self.migration_warning_log = " "
+        self.update_critical_log = " "
         self.update_error_log = " "
         self.update_warning_log = " "
         for version_id in self.env["openupgrader.config"].search([]):
@@ -693,7 +720,7 @@ class OpenupgraderMigration(models.Model):
         self.button_refresh_odoo_migrated_state()
         if self.odoo_migrated_state == "running":
             self.show_message_odoo_running()
-        self.migration_error_log = " "
+        self.button_clean_logs()
         if not self.current_version_id:
             self.current_version_id = self.from_version_id
         if not self.next_version_id:
@@ -918,7 +945,7 @@ class OpenupgraderMigration(models.Model):
             self.current_version_id.name,
         )
         if os.path.isfile(odoo_log):
-            obsolete_modules = set()
+            obsolete_modules = []
             openupgrader_configs = self.env["openupgrader.config"].search(
                 [
                     ("obsolete_modules", "!=", False),
@@ -926,7 +953,11 @@ class OpenupgraderMigration(models.Model):
                 ]
             )
             if openupgrader_configs:
-                obsolete_modules = set(openupgrader_configs.mapped("obsolete_modules"))
+                for openupgrader_config in openupgrader_configs:
+                    obsolete_modules.extend(
+                        safe_eval(openupgrader_config.obsolete_modules)
+                    )
+                obsolete_modules = set(obsolete_modules)
             uninstalled_modules = []
             uninstallable_modules = []
             with open(odoo_log, "r") as f:
