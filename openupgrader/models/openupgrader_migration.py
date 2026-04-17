@@ -989,8 +989,8 @@ class OpenupgraderMigration(models.Model):
             f"to version {self.next_version_id.name}"
         )
         # do after migration stuff
-        self.uninstall_modules(self.next_version_id, after_migration=True)
         self.auto_install_modules(self.next_version_id)
+        self.uninstall_modules(self.next_version_id, after_migration=True)
         self.sql_fixes(self.current_version_id.sql_after_migration_command_ids)
         # move version to the next step
         self.current_version_id = self.next_version_id
