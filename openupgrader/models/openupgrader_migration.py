@@ -765,7 +765,7 @@ class OpenupgraderMigration(models.Model):
         if not self.is_migration_done:
             self.state = "ready_for_migration"
 
-    def set_mail_server_and_cron_state_to(self, active):
+    def set_mail_server_and_cron_state_to(self, active):  # noqa C901
         conn_vars = self._get_db_connection_variables()
         # if active:
         #     # re-enable cron after the migration
@@ -773,15 +773,38 @@ class OpenupgraderMigration(models.Model):
         #     ir_mail_server_ids = self.disabled_ir_mail_server_ids_set
         #     fetchmail_server_ids = self.disabled_fetchmail_server_ids_set
         if not active:
-            # disable cron before migrating the instance
-            ir_cron_ids = self.env["ir.cron"].search([])
+            ir_cron_ids = []
+            if self.current_version_id == self.from_version_id:
+                # get cron from current instance
+                # disable cron before migrating the instance
+                ir_crons = self.env["ir.cron"].search([])
+                ir_cron_ids = set(ir_crons.ids)
+            else:
+                # get cron from migrated database
+                sql = (
+                    f"SELECT id FROM ir_cron WHERE active = "
+                    f"{'true' if active else 'false'};"
+                )
+                process = Popen(
+                    [f'{conn_vars} && psql -d {self.env.cr.dbname}_migrate -c "{sql}"'],
+                    shell=True,
+                    stdout=PIPE,
+                )
+                has_stdout = True
+                while has_stdout:
+                    one_line_output = process.stdout.readline()
+                    if one_line_output:
+                        ir_cron_ids.append(int(one_line_output.split()[0]))
+                    else:
+                        has_stdout = False
+                ir_cron_ids = set(ir_cron_ids)
             if ir_cron_ids:
                 if self.disabled_cron_ids_set:
                     disabled_cron_ids_set = safe_eval(self.disabled_cron_ids_set)
-                    disabled_cron_ids_set.update(set(ir_cron_ids.ids))
+                    disabled_cron_ids_set.update(ir_cron_ids)
                     self.disabled_cron_ids_set = str(disabled_cron_ids_set)
                 else:
-                    self.disabled_cron_ids_set = str(set(ir_cron_ids.ids))
+                    self.disabled_cron_ids_set = str(ir_cron_ids)
             ir_mail_server_ids = self.env["ir.mail_server"].search([])
             if ir_mail_server_ids:
                 if self.disabled_ir_mail_server_ids_set:
