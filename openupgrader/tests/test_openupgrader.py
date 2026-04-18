@@ -114,9 +114,11 @@ class OpenUpgrader(SavepointCase):
             openupgrader_migration.next_version_id,
             self.middle_config_id,
         )
-        for _i, config_id in enumerate(
-            [self.middle_config_id, self.middle_config_id, self.middle_config2_id]
-        ):
+        for config_id in [
+            self.middle_config_id,
+            self.middle_config1_id,
+            self.middle_config2_id,
+        ]:
             openupgrader_migration.button_update_current_version()
             openupgrader_migration.button_update_current_version()
             openupgrader_migration.button_prepare_for_migration()

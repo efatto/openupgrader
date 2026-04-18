@@ -783,7 +783,7 @@ class OpenupgraderMigration(models.Model):
                 # get cron from migrated database
                 sql = (
                     f"SELECT id FROM ir_cron WHERE active = "
-                    f"{'true' if active else 'false'};"
+                    f"{'false' if active else 'true'};"
                 )
                 process = Popen(
                     [f'{conn_vars} && psql -d {self.env.cr.dbname}_migrate -c "{sql}"'],
@@ -794,7 +794,10 @@ class OpenupgraderMigration(models.Model):
                 while has_stdout:
                     one_line_output = process.stdout.readline()
                     if one_line_output:
-                        ir_cron_ids.append(int(one_line_output.split()[0]))
+                        try:
+                            ir_cron_ids.append(int(one_line_output.split()[0]))
+                        except (ValueError, IndexError):
+                            continue
                     else:
                         has_stdout = False
                 ir_cron_ids = set(ir_cron_ids)
