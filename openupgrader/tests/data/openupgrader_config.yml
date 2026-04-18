@@ -1,3 +1,65 @@
+"19.0":
+  - python_version: "3.12.11"
+  - pip_requirements:
+      - git+https://github.com/OCA/openupgradelib.git@master#egg=openupgradelib
+      - odoorpc
+      - pysftp
+      - PyYAML
+  - odoo: https://github.com/OCA/OCB.git 19.0
+  - after_migration_to_this_version_sql_command:
+  - before_migration_to_next_version_sql_command:
+  - odoo_pip_requirements:
+      - module_change_auto_install
+  - sql_update_commands:
+  - auto_install:
+  - delete:
+  - obsolete:
+  - uninstall_after_migration_to_this_version:
+  - uninstall_before_migration_to_next_version:
+"18.0":
+  - python_version: "3.12.11"
+  - pip_requirements:
+      - git+https://github.com/OCA/openupgradelib.git@master#egg=openupgradelib
+      - odoorpc
+      - pysftp
+      - PyYAML
+      - packaging
+  - odoo: https://github.com/OCA/OCB.git 18.0
+  - after_migration_to_this_version_sql_command:
+  - before_migration_to_next_version_sql_command:
+  - odoo_pip_requirements:
+      - module_change_auto_install
+  - sql_update_commands:
+  - auto_install:
+      - account_invoice_single_tax account_tax_one_vat
+  - delete:
+  - obsolete:
+  - found_to_check:
+      - none
+  - uninstall_as_not_exist:
+      - none
+  - uninstall_after_migration_to_this_version:
+  - uninstall_before_migration_to_next_version:
+"17.0":
+  - python_version: "3.10.12"
+  - pip_requirements:
+      - setuptools<70
+      - git+https://github.com/OCA/openupgradelib.git@master#egg=openupgradelib
+      - odoorpc
+      - pysftp
+      - PyYAML
+  - odoo: https://github.com/OCA/OCB.git 17.0
+  - after_migration_to_this_version_sql_command:
+  - before_migration_to_next_version_sql_command:
+      - "ALTER TABLE purchase_order DROP COLUMN IF EXISTS project_id;"
+  - odoo_pip_requirements:
+      - module_change_auto_install
+  - sql_update_commands:
+  - auto_install:
+  - delete:
+  - obsolete:
+  - uninstall_after_migration_to_this_version:
+  - uninstall_before_migration_to_next_version:
 "16.0":
   - python_version: "3.10.12"
   - pip_requirements:
@@ -15,6 +77,7 @@
       - base auditlog
   - delete:
   - obsolete:
+      - l10n_it_ricevute_bancarie # renamed to l10n_it_riba, then l10n_it_riba_oca
   - uninstall_after_migration_to_this_version:
   - uninstall_before_migration_to_next_version:
 "15.0":

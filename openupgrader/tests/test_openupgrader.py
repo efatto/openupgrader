@@ -15,14 +15,20 @@ class OpenUpgrader(SavepointCase):
         cls.migration_obj = cls.env["openupgrader.migration"]
         cls.from_version = ".".join(str(v) for v in version_info[:2])
         cls.middle_version = str(float(cls.from_version) + 1)
-        cls.to_version = str(float(cls.middle_version) + 1)
+        cls.middle_version1 = str(float(cls.from_version) + 2)
+        cls.middle_version2 = str(float(cls.from_version) + 3)
+        cls.to_version = str(float(cls.from_version) + 4)
         versions = {
             "from_version": cls.from_version,
             "middle_version": cls.middle_version,
+            "middle_version1": cls.middle_version1,
+            "middle_version2": cls.middle_version2,
             "to_version": cls.to_version,
         }
         cls.from_config_id = cls.config_obj
         cls.middle_config_id = cls.config_obj
+        cls.middle1_config_id = cls.config_obj
+        cls.middle2_config_id = cls.config_obj
         cls.to_config_id = cls.config_obj
         cls.openupgrader_migration = cls.migration_obj.search([])
         if not cls.openupgrader_migration:
@@ -68,6 +74,16 @@ class OpenUpgrader(SavepointCase):
                 ("name", "=", cls.middle_version),
             ]
         )
+        cls.middle_config1_id = cls.config_obj.search(
+            [
+                ("name", "=", cls.middle_version1),
+            ]
+        )
+        cls.middle_config2_id = cls.config_obj.search(
+            [
+                ("name", "=", cls.middle_version2),
+            ]
+        )
         cls.to_config_id = cls.config_obj.search(
             [
                 ("name", "=", cls.to_version),
@@ -98,30 +114,37 @@ class OpenUpgrader(SavepointCase):
             openupgrader_migration.next_version_id,
             self.middle_config_id,
         )
-        openupgrader_migration.button_update_current_version()
-        openupgrader_migration.button_update_current_version()
-        openupgrader_migration.button_prepare_for_migration()
-        self.assertEqual(openupgrader_migration.state, "ready_for_migration")
-        openupgrader_migration.button_do_migration()
-        # wait until migration is stopped with threading
-        while openupgrader_migration._get_odoo_migrated_state() == "running":
-            time.sleep(10)
-        openupgrader_migration.button_do_migration()
-        self.assertEqual(openupgrader_migration.state, "migrated")
-        self.assertEqual(
-            openupgrader_migration.current_version_id,
-            self.middle_config_id,
-        )
+        for _i, config_id in enumerate(
+            [self.middle_config_id, self.middle_config_id, self.middle_config2_id]
+        ):
+            openupgrader_migration.button_update_current_version()
+            openupgrader_migration.button_update_current_version()
+            openupgrader_migration.button_prepare_for_migration()
+            self.assertEqual(openupgrader_migration.state, "ready_for_migration")
+            openupgrader_migration.button_do_migration()
+            # wait until migration is stopped with threading
+            while openupgrader_migration._get_odoo_migrated_state() == "running":
+                time.sleep(10)
+            openupgrader_migration.button_do_migration()
+            self.assertEqual(openupgrader_migration.state, "migrated")
+            self.assertEqual(
+                openupgrader_migration.current_version_id,
+                config_id,
+            )
+            # self.assertEqual(
+            #     openupgrader_migration.next_version_id,
+            #     self.to_config_id,
+            # )
+            openupgrader_migration.button_prepare_for_migration()
+            self.assertEqual(openupgrader_migration.state, "ready_for_migration")
+            openupgrader_migration.button_do_migration()
+            # wait until migration is stopped with threading
+            while openupgrader_migration._get_odoo_migrated_state() == "running":
+                time.sleep(10)
         self.assertEqual(
             openupgrader_migration.next_version_id,
             self.to_config_id,
         )
-        openupgrader_migration.button_prepare_for_migration()
-        self.assertEqual(openupgrader_migration.state, "ready_for_migration")
-        openupgrader_migration.button_do_migration()
-        # wait until migration is stopped with threading
-        while openupgrader_migration._get_odoo_migrated_state() == "running":
-            time.sleep(10)
         openupgrader_migration.button_do_migration()
         self.assertEqual(openupgrader_migration.is_migration_done, True)
         self.assertEqual(
