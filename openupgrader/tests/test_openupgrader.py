@@ -1,5 +1,6 @@
 import base64
 import time
+from subprocess import PIPE, Popen
 
 from odoo.modules import get_module_resource
 from odoo.release import version_info
@@ -92,7 +93,33 @@ class OpenUpgrader(SavepointCase):
         cls.openupgrader_migration.from_version_id = cls.from_config_id
         cls.openupgrader_migration.to_version_id = cls.to_config_id
 
-    def test_00_openupgrader_manual(self):
+    def _check_installed_module(self, openupgrader_migration, module):
+        module_installed = False
+        conn_vars = openupgrader_migration._get_db_connection_variables()
+        sql = f"SELECT state FROM ir_module_module WHERE name = '{module}'"
+        process = Popen(
+            [f'{conn_vars} && psql -d {self.env.cr.dbname}_migrate -c "{sql}"'],
+            shell=True,
+            stdout=PIPE,
+        )
+        has_stdout = True
+        while has_stdout:
+            one_line_output = process.stdout.readline()
+            if one_line_output:
+                try:
+                    if (
+                        b"installed" in one_line_output
+                        and b"not" not in one_line_output
+                    ):
+                        module_installed = True
+                        break
+                except (ValueError, IndexError):
+                    continue
+            else:
+                has_stdout = False
+        self.assertTrue(module_installed)
+
+    def _test_openupgrader_manual(self, initial_module=False, final_module=False):
         openupgrader_migration = self.openupgrader_migration
         openupgrader_migration.button_clean_logs()
         self.assertEqual(
@@ -116,6 +143,14 @@ class OpenUpgrader(SavepointCase):
         )
         openupgrader_migration.button_update_current_version()
         openupgrader_migration.button_update_current_version()
+        if initial_module:
+            openupgrader_migration.install_pip_modules(
+                self.from_config_id, [initial_module]
+            )
+            openupgrader_migration.start_odoo(self.from_config_id)
+            openupgrader_migration.install_uninstall_module(initial_module)
+            openupgrader_migration.button_stop_odoo()
+            self._check_installed_module(openupgrader_migration, initial_module)
         for config_id in [
             self.middle_config_id,
             self.middle_config1_id,
@@ -149,8 +184,19 @@ class OpenUpgrader(SavepointCase):
             openupgrader_migration.current_version_id,
             self.to_config_id,
         )
+        if final_module:
+            self._check_installed_module(openupgrader_migration, final_module)
 
-    def test_01_openupgrader_auto(self):
+    def test_00_openupgrader_manual(self):
+        self._test_openupgrader_manual(
+            initial_module="l10n_it_ricevute_bancarie",
+            final_module="l10n_it_riba_oca",
+        )
+
+    def test_01_openupgrader_manual(self):
+        self._test_openupgrader_manual()
+
+    def test_02_openupgrader_auto(self):
         openupgrader_migration = self.openupgrader_migration
         openupgrader_migration.button_clean_logs()
         self.assertEqual(
