@@ -114,13 +114,13 @@ class OpenUpgrader(SavepointCase):
             openupgrader_migration.next_version_id,
             self.middle_config_id,
         )
+        openupgrader_migration.button_update_current_version()
+        openupgrader_migration.button_update_current_version()
         for config_id in [
             self.middle_config_id,
             self.middle_config1_id,
             self.middle_config2_id,
         ]:
-            openupgrader_migration.button_update_current_version()
-            openupgrader_migration.button_update_current_version()
             openupgrader_migration.button_prepare_for_migration()
             self.assertEqual(openupgrader_migration.state, "ready_for_migration")
             openupgrader_migration.button_do_migration()
@@ -133,21 +133,17 @@ class OpenUpgrader(SavepointCase):
                 openupgrader_migration.current_version_id,
                 config_id,
             )
-            # self.assertEqual(
-            #     openupgrader_migration.next_version_id,
-            #     self.to_config_id,
-            # )
-            openupgrader_migration.button_prepare_for_migration()
-            self.assertEqual(openupgrader_migration.state, "ready_for_migration")
-            openupgrader_migration.button_do_migration()
-            # wait until migration is stopped with threading
-            while openupgrader_migration._get_odoo_migrated_state() == "running":
-                time.sleep(10)
         self.assertEqual(
             openupgrader_migration.next_version_id,
             self.to_config_id,
         )
+        openupgrader_migration.button_prepare_for_migration()
         openupgrader_migration.button_do_migration()
+        # wait until migration is stopped with threading
+        while openupgrader_migration._get_odoo_migrated_state() == "running":
+            time.sleep(10)
+        openupgrader_migration.button_do_migration()
+        self.assertEqual(openupgrader_migration.state, "done")
         self.assertEqual(openupgrader_migration.is_migration_done, True)
         self.assertEqual(
             openupgrader_migration.current_version_id,
@@ -167,4 +163,9 @@ class OpenUpgrader(SavepointCase):
         )
         openupgrader_migration.button_stop_odoo()
         openupgrader_migration.button_do_all()
+        self.assertEqual(openupgrader_migration.state, "done")
         self.assertEqual(openupgrader_migration.is_migration_done, True)
+        self.assertEqual(
+            openupgrader_migration.current_version_id,
+            self.to_config_id,
+        )
