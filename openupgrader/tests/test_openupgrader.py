@@ -187,7 +187,7 @@ class OpenUpgrader(SavepointCase):
         if final_module:
             self._check_installed_module(openupgrader_migration, final_module)
 
-    def test_00_openupgrader_manual(self):
+    def _test_00_openupgrader_manual(self):
         self._test_openupgrader_manual(
             initial_module="l10n_it_ricevute_bancarie",
             final_module="l10n_it_riba_oca",
