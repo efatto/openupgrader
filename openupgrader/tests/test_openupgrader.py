@@ -109,7 +109,7 @@ class OpenUpgrader(SavepointCase):
                 try:
                     if (
                         b"installed" in one_line_output
-                        and b"not" not in one_line_output
+                        and b"uninstalled" not in one_line_output
                     ):
                         module_installed = True
                         break
