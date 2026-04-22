@@ -77,7 +77,7 @@ def _create_python_venv(venv_path, py_version):
 class AutoInstallModule(models.Model):
     _name = "auto.install.module"
     _description = "AutoInstall Module"
-    _order = "no_pip_found desc, name"
+    _order = "name"
 
     name = fields.Text(string="Technical Name of Installed Module", required=True)
     sequence = fields.Integer(string="SQL Sequence")
@@ -96,7 +96,7 @@ class AutoInstallModule(models.Model):
 class ModuleName(models.Model):
     _name = "module.name"
     _description = "Module name"
-    _order = "no_pip_found desc, name"
+    _order = "name"
 
     name = fields.Text(string="Module Technical Name", required=True)
     no_pip_found = fields.Boolean(string="No pip found for target version")
@@ -114,7 +114,7 @@ class ModuleName(models.Model):
 class PipRequirement(models.Model):
     _name = "pip.requirement"
     _description = "Pip requirement"
-    _order = "no_pip_found desc, name"
+    _order = "name"
 
     name = fields.Text(string="Pip requirement", required=True)
     no_pip_found = fields.Boolean(string="No pip found for target version")
