@@ -493,18 +493,29 @@ class OpenupgraderMigration(models.Model):
                     if out and out != " ":
                         if "Some modules have inconsistent states" in out:
                             # try to install missing module with pip on-the-fly
-                            match = re.search(r"\[.*\]", out)
+                            inconsistent_string = (
+                                "Some modules have inconsistent states, some "
+                                "dependencies may be missing: "
+                            )
+                            match = re.search(r"%s\[.*\]" % inconsistent_string, out)
                             if match:
                                 try:
-                                    modules = safe_eval(match[0])
+                                    modules = safe_eval(
+                                        match[0].replace(inconsistent_string, "")
+                                    )
                                     logger.info(
                                         f"Installing missing modules {str(modules)}"
                                     )
                                     self.install_pip_modules(version_id, modules)
-                                except Exception:
+                                except ValueError:
                                     logger.info(
-                                        "Unable to list modules to install via pip "
-                                        "on-the-fly"
+                                        f"Unable to list modules to install via pip "
+                                        f"on-the-fly: {match[0]}"
+                                    )
+                                except Exception as e:
+                                    logger.info(
+                                        f"Unexpected error while installing missing "
+                                        f"modules via pip on-the-fly: {e}"
                                     )
                         logger.info(out.strip())
                 # Read the remaining
