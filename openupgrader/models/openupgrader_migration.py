@@ -491,18 +491,38 @@ class OpenupgraderMigration(models.Model):
                 while process.poll() is None:
                     out = reader.read().decode()
                     if out and out != " ":
-                        if "Some modules have inconsistent states" in out:
-                            # try to install missing module with pip on-the-fly
-                            inconsistent_string = (
-                                "Some modules have inconsistent states, some "
-                                "dependencies may be missing: "
-                            )
-                            match = re.search(r"%s\[.*\]" % inconsistent_string, out)
+                        # try to install missing module with pip on-the-fly
+                        if any(
+                            x in out
+                            for x in [
+                                "Some modules have inconsistent states",
+                                "Unmet dependencies",
+                            ]
+                        ):
+                            match = False
+                            if "Some modules have inconsistent states" in out:
+                                match_string = (
+                                    "Some modules have inconsistent states, some "
+                                    "dependencies may be missing: "
+                                )
+                                match = re.search(r"%s\[.*\]" % match_string, out)
+                            else:
+                                match_string = "Unmet dependencies: "
+                                match = re.search(r"%s[a-z0-9_,]+" % match_string, out)
                             if match:
                                 try:
-                                    modules = safe_eval(
-                                        match[0].replace(inconsistent_string, "")
-                                    )
+                                    modules_str = match[0].replace(match_string, "")
+                                    if "," in modules_str and not (
+                                        modules_str.startswith("[")
+                                        or modules_str.startswith("(")
+                                    ):
+                                        modules = [
+                                            m.strip()
+                                            for m in modules_str.split(",")
+                                            if m.strip()
+                                        ]
+                                    else:
+                                        modules = safe_eval(modules_str)
                                     logger.info(
                                         f"Installing missing modules {str(modules)}"
                                     )
