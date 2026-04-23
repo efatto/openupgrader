@@ -109,8 +109,9 @@ class OpenUpgrader(SavepointCase):
                 try:
                     if (
                         b"installed" in one_line_output
-                        and b"uninstalled" not in one_line_output
-                    ):
+                        or b"to upgrade" in one_line_output
+                        or b"to install" in one_line_output
+                    ) and b"uninstalled" not in one_line_output:
                         module_installed = True
                         break
                 except (ValueError, IndexError):
