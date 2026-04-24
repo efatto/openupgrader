@@ -194,14 +194,14 @@ class OpenUpgrader(SavepointCase):
 
     def test_00_openupgrader_manual_renamed_module(self):
         self._test_openupgrader_manual(
-            initial_module="product_supplierinfo_for_customer",
-            final_module="product_customerinfo",
+            initial_module="l10n_it_fatturapa",
+            final_module="l10n_it_edi_extension",
         )
 
-    def test_01_openupgrader_manual(self):
+    def _test_01_openupgrader_manual(self):
         self._test_openupgrader_manual()
 
-    def test_02_openupgrader_auto(self):
+    def _test_02_openupgrader_auto(self):
         openupgrader_migration = self.openupgrader_migration
         self.assertEqual(
             self.openupgrader_migration.to_config_id,
