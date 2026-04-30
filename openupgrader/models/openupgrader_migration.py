@@ -395,48 +395,6 @@ class OpenupgraderMigration(models.Model):
             self._start_odoo(version_id, update, migrate, extra_command)
             new_cr.close()
 
-    def _try_install_missing_pips(self, version_id, out):
-        # try to install missing module with pip on-the-fly
-        if any(
-            x in out
-            for x in [
-                "Some modules have inconsistent states",
-                "Unmet dependencies",
-            ]
-        ):
-            if "Some modules have inconsistent states" in out:
-                match_string = (
-                    "Some modules have inconsistent states, some "
-                    "dependencies may be missing: "
-                )
-                match = re.search(r"%s\[.*\]" % match_string, out)
-            else:
-                match_string = "Unmet dependencies: "
-                match = re.search(r"%s[a-z0-9_,]+" % match_string, out)
-            if match:
-                try:
-                    modules_str = match[0].replace(match_string, "")
-                    if "," in modules_str and not (
-                        modules_str.startswith("[") or modules_str.startswith("(")
-                    ):
-                        modules = [
-                            m.strip() for m in modules_str.split(",") if m.strip()
-                        ]
-                    else:
-                        modules = safe_eval(modules_str)
-                    logger.info(f"Installing missing modules {str(modules)}")
-                    self.install_pip_modules(version_id, modules)
-                except ValueError:
-                    logger.info(
-                        f"Unable to list modules to install via pip "
-                        f"on-the-fly: {match[0]}"
-                    )
-                except Exception as e:
-                    logger.info(
-                        f"Unexpected error while installing missing "
-                        f"modules via pip on-the-fly: {e}"
-                    )
-
     def _start_odoo(  # noqa C901
         self, version_id, update=False, migrate=False, extra_command=""
     ):
@@ -533,7 +491,52 @@ class OpenupgraderMigration(models.Model):
                 while process.poll() is None:
                     out = reader.read().decode()
                     if out and out != " ":
-                        self._try_install_missing_pips(version_id, out)
+                        # try to install missing module with pip on-the-fly
+                        if any(
+                            x in out
+                            for x in [
+                                "Some modules have inconsistent states",
+                                "Unmet dependencies",
+                            ]
+                        ):
+                            match = False
+                            if "Some modules have inconsistent states" in out:
+                                match_string = (
+                                    "Some modules have inconsistent states, some "
+                                    "dependencies may be missing: "
+                                )
+                                match = re.search(r"%s\[.*\]" % match_string, out)
+                            else:
+                                match_string = "Unmet dependencies: "
+                                match = re.search(r"%s[a-z0-9_,]+" % match_string, out)
+                            if match:
+                                try:
+                                    modules_str = match[0].replace(match_string, "")
+                                    if "," in modules_str and not (
+                                        modules_str.startswith("[")
+                                        or modules_str.startswith("(")
+                                    ):
+                                        modules = [
+                                            m.strip()
+                                            for m in modules_str.split(",")
+                                            if m.strip()
+                                        ]
+                                    else:
+                                        modules = safe_eval(modules_str)
+                                    logger.info(
+                                        f"Installing missing modules {str(modules)}"
+                                    )
+                                    self.install_pip_modules(version_id, modules)
+                                except ValueError:
+                                    logger.info(
+                                        f"Unable to list modules to install via pip "
+                                        f"on-the-fly: {match[0]}"
+                                    )
+                                except Exception as e:
+                                    logger.info(
+                                        f"Unexpected error while installing missing "
+                                        f"modules via pip on-the-fly: {e}"
+                                    )
                         logger.info(out.strip())
                 # Read the remaining
                 out = reader.read().decode()
@@ -1118,9 +1121,6 @@ class OpenupgraderMigration(models.Model):
             if os.path.isfile(odoo_log):
                 with open(odoo_log, "r") as f:
                     for log_line in f.readlines():
-                        self._try_install_missing_pips(
-                            self.current_version_id, log_line
-                        )
                         if "CRITICAL" in log_line:
                             new_state = "restore_failed"
                             break
