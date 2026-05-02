@@ -1101,9 +1101,20 @@ class OpenupgraderMigration(models.Model):
                 odoo_migrated_state = "running"
                 break
         if odoo_migrated_state == "running":
-            # don't do nothing if migration is running
-            logger.info("Odoo is already running, skipping migration")
+            logger.info("Odoo is already running, skipping command")
             return odoo_migrated_state
+        # migration could be "waiting", so we check if any migration files exist
+        # do not trust self.* values, as they are only in cache of the working cr
+        for version in self.env["openupgrader.config"].search([]):
+            odoo_migrate_log = self._get_log_path(
+                self.folder, version.name, migrate=True
+            )
+            if os.path.isfile(odoo_migrate_log):
+                logger.info(
+                    "Some migration log files exist, so we presume migration "
+                    "is running, skipping command"
+                )
+                return odoo_migrated_state
         current_state = self.state
         new_state = self.state
         if self.next_version_id:
