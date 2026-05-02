@@ -557,9 +557,7 @@ class OpenupgraderMigration(models.Model):
             process.wait()
         if not update:
             time.sleep(10)
-            # todo study a safer method to check if Odoo is running!
-            self.odoo_migrated_state = "running"
-            logger.info("Odoo migration instance v. %s is running." % version_name)
+            self.button_check_odoo_migrated_running_state()
         time.sleep(2)
 
     def _stop_pid(self, pid=False):
