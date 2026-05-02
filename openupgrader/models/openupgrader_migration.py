@@ -1101,8 +1101,10 @@ class OpenupgraderMigration(models.Model):
         for odoo_pid in odoo_pids:
             if psutil.pid_exists(odoo_pid):
                 odoo_migrated_state = "running"
+                break
         if odoo_migrated_state == "running":
-            # do anything if migration is running
+            # don't do nothing if migration is running
+            logger.info("Odoo is already running, skipping migration")
             return odoo_migrated_state
         current_state = self.state
         new_state = self.state
