@@ -960,6 +960,19 @@ class OpenupgraderMigration(models.Model):
         for openupgrader_config in openupgrader_configs:
             openupgrader_config.button_recreate_venv()
 
+    def _check_final_migration_exist(self):
+        # migration could be "waiting", so we check if any migration files exist
+        # do not trust self.* values, as they are only in cache of the working cr
+        odoo_migrate_log = self._get_log_path(
+            self.folder, self.to_version_id.name, migrate=True
+        )
+        if os.path.isfile(odoo_migrate_log):
+            logger.info(
+                "Final migration log files exist, so we don't try to restart it"
+            )
+            return True
+        return False
+
     def button_do_all(self):
         # initiate migration from draft
         if self.state == "draft":
@@ -981,7 +994,9 @@ class OpenupgraderMigration(models.Model):
                 raise Exception("Timeout waiting for migration to finish")
         self.button_prepare_for_migration()
         while not self.is_migration_done:
-            self.button_do_migration()  # do the last migration
+            if not self._check_final_migration_exist():
+                # do the last migration
+                self.button_do_migration()
             time.sleep(step)
             max_wait_time -= step
             if max_wait_time <= 0:
@@ -1103,18 +1118,6 @@ class OpenupgraderMigration(models.Model):
         if odoo_migrated_state == "running":
             logger.info("Odoo is already running, skipping command")
             return odoo_migrated_state
-        # migration could be "waiting", so we check if any migration files exist
-        # do not trust self.* values, as they are only in cache of the working cr
-        for version in self.env["openupgrader.config"].search([]):
-            odoo_migrate_log = self._get_log_path(
-                self.folder, version.name, migrate=True
-            )
-            if os.path.isfile(odoo_migrate_log):
-                logger.info(
-                    "Some migration log files exist, so we presume migration "
-                    "is running, skipping command"
-                )
-                return odoo_migrated_state
         current_state = self.state
         new_state = self.state
         if self.next_version_id:
