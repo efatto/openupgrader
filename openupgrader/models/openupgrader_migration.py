@@ -489,7 +489,10 @@ class OpenupgraderMigration(models.Model):
             )
             if update:  # if not updating, this part will recurse infinitely
                 while process.poll() is None:
-                    out = reader.read().decode()
+                    try:
+                        out = reader.read().decode()
+                    except UnicodeDecodeError:
+                        continue
                     if out and out != " ":
                         # try to install missing module with pip on-the-fly
                         if any(
@@ -539,7 +542,10 @@ class OpenupgraderMigration(models.Model):
                                     )
                         logger.info(out.strip())
                 # Read the remaining
-                out = reader.read().decode()
+                try:
+                    out = reader.read().decode()
+                except UnicodeDecodeError:
+                    pass
                 logger.info(out)
             # only updating the process will end automatically
             logger.info(
@@ -676,7 +682,14 @@ class OpenupgraderMigration(models.Model):
         )
         process.wait()
         error = process.stderr.readlines()
-        errors = [e.decode().lower() for e in error if "error" in e.decode()]
+        errors = []
+        for e in error:
+            try:
+                err = e.decode().lower()
+                if "error" in err:
+                    errors.append(err)
+            except UnicodeDecodeError:
+                continue
         if errors:
             raise UserError("\n".join(e for e in errors))
         Popen(
@@ -1321,7 +1334,13 @@ class OpenupgraderMigration(models.Model):
                 env=subprocess_env,
             )
             log_lines = process.stderr.readlines()
-            log_texts = [log_line.decode().lower() for log_line in log_lines]
+            log_texts = []
+            for log_line in log_lines:
+                try:
+                    log_l = log_line.decode().lower()
+                    log_texts.append(log_l)
+                except UnicodeDecodeError:
+                    continue
             if any("no solution found" in log_text for log_text in log_texts):
                 not_installable_modules.append(name)
                 logger.info(
