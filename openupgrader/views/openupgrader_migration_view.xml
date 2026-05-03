@@ -6,8 +6,8 @@
         <field name="arch" type="xml">
             <search string="OpenUpgrader Migration Search">
                 <field name="db_name" />
-                <field name="from_version_id" />
-                <field name="to_version_id" />
+                <field name="from_config_id" />
+                <field name="to_config_id" />
             </search>
         </field>
     </record>
@@ -18,8 +18,8 @@
         <field name="arch" type="xml">
             <tree>
                 <field name="db_name" />
-                <field name="from_version_id" />
-                <field name="to_version_id" />
+                <field name="from_config_id" />
+                <field name="to_config_id" />
             </tree>
         </field>
     </record>
@@ -59,14 +59,14 @@
                         name="button_prepare_for_migration"
                         type="object"
                         class="oe_highlight"
-                        attrs="{'invisible': ['|', '|', ('state', 'not in', ['updated', 'migrated']), ('next_version_id', '=', False), ('is_migration_done', '=', True)]}"
+                        attrs="{'invisible': ['|', '|', ('state', 'not in', ['updated', 'migrated']), ('next_config_id', '=', False), ('is_migration_done', '=', True)]}"
                         string="3: prepare migration"
                         help="Do some useful stuff before migration"
                     />
                     <button
                         name="button_prepare_for_migration"
                         type="object"
-                        attrs="{'invisible': ['|', '|', ('state', 'in', ['updated', 'migrated', 'restored', 'ready_for_migration']), ('next_version_id', '=', False), ('is_migration_done', '=', True)]}"
+                        attrs="{'invisible': ['|', '|', ('state', 'in', ['updated', 'migrated', 'restored', 'ready_for_migration']), ('next_config_id', '=', False), ('is_migration_done', '=', True)]}"
                         string="3: prepare migration"
                         help="Do some useful stuff before migration"
                     />
@@ -74,13 +74,13 @@
                         name="button_do_migration"
                         type="object"
                         class="oe_highlight"
-                        attrs="{'invisible': ['|', ('state', '!=', 'ready_for_migration'), ('next_version_id', '=', False)]}"
+                        attrs="{'invisible': ['|', ('state', '!=', 'ready_for_migration'), ('next_config_id', '=', False)]}"
                         string="4: migrate (re-click until this disappears)"
                     />
                     <button
                         name="button_do_migration"
                         type="object"
-                        attrs="{'invisible': ['|', ('state', 'not in', ['failed', 'restored']), ('next_version_id', '=', False)]}"
+                        attrs="{'invisible': ['|', ('state', 'not in', ['failed', 'restored']), ('next_config_id', '=', False)]}"
                         string="4: migrate (if the process has failed)"
                     />
                     <button
@@ -104,19 +104,19 @@
                     <group>
                         <group>
                             <field
-                                name="from_version_id"
+                                name="from_config_id"
                                 context="{'default_openupgrader_migration_id': active_id} "
                             />
                             <field
-                                name="to_version_id"
+                                name="to_config_id"
                                 context="{'default_openupgrader_migration_id': active_id}"
                             />
                             <field
-                                name="current_version_id"
+                                name="current_config_id"
                                 context="{'default_openupgrader_migration_id': active_id}"
                             />
                             <field
-                                name="next_version_id"
+                                name="next_config_id"
                                 context="{'default_openupgrader_migration_id': active_id}"
                             />
                             <field name="migrate_filestore" />
@@ -223,11 +223,11 @@
                                     />
                                 </group>
                                 <group>
-                                    <field name="odoo_migrated_state" readonly="True" />
+                                    <field name="odoo_running_state" readonly="True" />
                                     <div
                                         class="alert alert-warning"
                                         role="alert"
-                                        attrs="{'invisible': [('odoo_migrated_state', '=', 'stopped')]}"
+                                        attrs="{'invisible': [('odoo_running_state', '=', 'stopped')]}"
                                         style="margin-bottom:0;"
                                     >
                                         <p>
@@ -243,7 +243,7 @@
                                         />
                                         <p />
                                         <button
-                                            name="button_refresh_odoo_migrated_state"
+                                            name="button_refresh_odoo_running_state"
                                             type="object"
                                             string="Refresh migration state"
                                         />

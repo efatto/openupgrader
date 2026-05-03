@@ -14,17 +14,17 @@ class OpenUpgrader(SavepointCase):
         super().setUpClass()
         cls.config_obj = cls.env["openupgrader.config"]
         cls.migration_obj = cls.env["openupgrader.migration"]
-        cls.from_version = ".".join(str(v) for v in version_info[:2])
-        cls.middle_version = str(float(cls.from_version) + 1)
-        cls.middle_version1 = str(float(cls.from_version) + 2)
-        cls.middle_version2 = str(float(cls.from_version) + 3)
-        cls.to_version = str(float(cls.from_version) + 4)
-        versions = {
-            "from_version": cls.from_version,
-            "middle_version": cls.middle_version,
-            "middle_version1": cls.middle_version1,
-            "middle_version2": cls.middle_version2,
-            "to_version": cls.to_version,
+        cls.from_config = ".".join(str(v) for v in version_info[:2])
+        cls.middle_config = str(float(cls.from_config) + 1)
+        cls.middle_config1 = str(float(cls.from_config) + 2)
+        cls.middle_config2 = str(float(cls.from_config) + 3)
+        cls.to_config = str(float(cls.from_config) + 4)
+        configs = {
+            "from_config": cls.from_config,
+            "middle_config": cls.middle_config,
+            "middle_config1": cls.middle_config1,
+            "middle_config2": cls.middle_config2,
+            "to_config": cls.to_config,
         }
         cls.from_config_id = cls.config_obj
         cls.middle_config_id = cls.config_obj
@@ -50,48 +50,48 @@ class OpenUpgrader(SavepointCase):
             cls.openupgrader_migration.config_file = base64.b64encode(
                 config_file_reader.read()
             )
-        for version in versions:
+        for config in configs:
             openupgrader_config = cls.config_obj.search(
                 [
-                    ("name", "=", versions[version]),
+                    ("name", "=", configs[config]),
                 ]
             )
             if not openupgrader_config:
                 openupgrader_config_form = Form(cls.config_obj)
-                openupgrader_config_form.name = versions[version]
+                openupgrader_config_form.name = configs[config]
                 openupgrader_config_form.openupgrader_migration_id = (
                     cls.openupgrader_migration
                 )
                 openupgrader_config = openupgrader_config_form.save()
-                setattr(cls, f"{version}_id", openupgrader_config)
+                setattr(cls, f"{config}_id", openupgrader_config)
                 openupgrader_config.button_recreate_venv()
         cls.from_config_id = cls.config_obj.search(
             [
-                ("name", "=", cls.from_version),
+                ("name", "=", cls.from_config),
             ]
         )
         cls.middle_config_id = cls.config_obj.search(
             [
-                ("name", "=", cls.middle_version),
+                ("name", "=", cls.middle_config),
             ]
         )
         cls.middle_config1_id = cls.config_obj.search(
             [
-                ("name", "=", cls.middle_version1),
+                ("name", "=", cls.middle_config1),
             ]
         )
         cls.middle_config2_id = cls.config_obj.search(
             [
-                ("name", "=", cls.middle_version2),
+                ("name", "=", cls.middle_config2),
             ]
         )
         cls.to_config_id = cls.config_obj.search(
             [
-                ("name", "=", cls.to_version),
+                ("name", "=", cls.to_config),
             ]
         )
-        cls.openupgrader_migration.from_version_id = cls.from_config_id
-        cls.openupgrader_migration.to_version_id = cls.to_config_id
+        cls.openupgrader_migration.from_config_id = cls.from_config_id
+        cls.openupgrader_migration.to_config_id = cls.to_config_id
 
     def _check_installed_module(self, openupgrader_migration, module):
         module_installed = False
@@ -124,26 +124,26 @@ class OpenUpgrader(SavepointCase):
         openupgrader_migration = self.openupgrader_migration
         openupgrader_migration.button_clean_logs()
         self.assertEqual(
-            self.openupgrader_migration.to_version_id,
+            self.openupgrader_migration.to_config_id,
             self.to_config_id,
         )
         self.assertEqual(
-            self.openupgrader_migration.from_version_id,
+            self.openupgrader_migration.from_config_id,
             self.from_config_id,
         )
         openupgrader_migration.button_stop_odoo()
         openupgrader_migration.button_restore()
         self.assertEqual(openupgrader_migration.state, "restored")
         self.assertEqual(
-            openupgrader_migration.current_version_id,
+            openupgrader_migration.current_config_id,
             self.from_config_id,
         )
         self.assertEqual(
-            openupgrader_migration.next_version_id,
+            openupgrader_migration.next_config_id,
             self.middle_config_id,
         )
-        openupgrader_migration.button_update_current_version()
-        openupgrader_migration.button_update_current_version()
+        openupgrader_migration.button_update_current_config()
+        openupgrader_migration.button_update_current_config()
         if initial_module:
             openupgrader_migration.install_pip_modules(
                 self.from_config_id, [initial_module]
@@ -161,28 +161,48 @@ class OpenUpgrader(SavepointCase):
             self.assertEqual(openupgrader_migration.state, "ready_for_migration")
             openupgrader_migration.button_do_migration()
             # wait until migration is stopped with threading
-            while openupgrader_migration._get_odoo_migrated_state() == "running":
+            (
+                odoo_running_state,
+                migration_state,
+                current_config,
+            ) = openupgrader_migration._get_odoo_running_state()
+            while odoo_running_state == "running":
                 time.sleep(10)
+                (
+                    odoo_running_state,
+                    migration_state,
+                    current_config,
+                ) = openupgrader_migration._get_odoo_running_state()
             openupgrader_migration.button_do_migration()
             self.assertEqual(openupgrader_migration.state, "migrated")
             self.assertEqual(
-                openupgrader_migration.current_version_id,
+                openupgrader_migration.current_config_id,
                 config_id,
             )
         self.assertEqual(
-            openupgrader_migration.next_version_id,
+            openupgrader_migration.next_config_id,
             self.to_config_id,
         )
         openupgrader_migration.button_prepare_for_migration()
         openupgrader_migration.button_do_migration()
         # wait until migration is stopped with threading
-        while openupgrader_migration._get_odoo_migrated_state() == "running":
+        (
+            odoo_running_state,
+            migration_state,
+            current_config,
+        ) = openupgrader_migration._get_odoo_running_state()
+        while odoo_running_state == "running":
             time.sleep(10)
+            (
+                odoo_running_state,
+                migration_state,
+                current_config,
+            ) = openupgrader_migration._get_odoo_running_state()
         openupgrader_migration.button_do_migration()
         self.assertEqual(openupgrader_migration.state, "done")
         self.assertEqual(openupgrader_migration.is_migration_done, True)
         self.assertEqual(
-            openupgrader_migration.current_version_id,
+            openupgrader_migration.current_config_id,
             self.to_config_id,
         )
         if final_module:
@@ -199,20 +219,21 @@ class OpenUpgrader(SavepointCase):
 
     def test_02_openupgrader_auto(self):
         openupgrader_migration = self.openupgrader_migration
-        openupgrader_migration.button_clean_logs()
         self.assertEqual(
-            self.openupgrader_migration.to_version_id,
+            self.openupgrader_migration.to_config_id,
             self.to_config_id,
         )
         self.assertEqual(
-            self.openupgrader_migration.from_version_id,
+            self.openupgrader_migration.from_config_id,
             self.from_config_id,
         )
-        openupgrader_migration.button_stop_odoo()
         openupgrader_migration.button_do_all()
-        self.assertEqual(openupgrader_migration.state, "done")
+        cron_migration = self.env.ref("openupgrader.cron_openugrader_do_auto_migration")
+        while openupgrader_migration.state != "done":
+            cron_migration.method_direct_trigger()  # cron do not start in tests?
+            time.sleep(10)
         self.assertEqual(openupgrader_migration.is_migration_done, True)
         self.assertEqual(
-            openupgrader_migration.current_version_id,
+            openupgrader_migration.current_config_id,
             self.to_config_id,
         )

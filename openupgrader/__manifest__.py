@@ -2,7 +2,7 @@
 # License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl).
 {
     "name": "OpenUpgrader",
-    "version": "14.0.1.2.2",
+    "version": "14.0.1.3.0",
     "category": "Odoo Management",
     "author": "Sergio Corato",
     "license": "AGPL-3",
@@ -14,6 +14,7 @@
     ],
     "data": [
         "security/ir.model.access.csv",
+        "data/cron.xml",
         "views/openupgrader_migration_view.xml",
         "views/openupgrader_config_view.xml",
         "views/db_backup_view.xml",

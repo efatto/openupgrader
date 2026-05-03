@@ -205,7 +205,7 @@ msgid "Created on"
 msgstr "Creato il"
 
 #. module: openupgrader
-#: model:ir.model.fields,field_description:openupgrader.field_openupgrader_migration__current_version_id
+#: model:ir.model.fields,field_description:openupgrader.field_openupgrader_migration__current_config_id
 msgid "Current migrated version"
 msgstr "Versione migrata corrente"
 
@@ -335,7 +335,7 @@ msgid "Folder"
 msgstr "Cartella"
 
 #. module: openupgrader
-#: model:ir.model.fields,field_description:openupgrader.field_openupgrader_migration__from_version_id
+#: model:ir.model.fields,field_description:openupgrader.field_openupgrader_migration__from_config_id
 msgid "From version"
 msgstr "Dalla versione"
 
@@ -470,7 +470,7 @@ msgid "Migrated"
 msgstr "Migrato"
 
 #. module: openupgrader
-#: model:ir.model.fields,help:openupgrader.field_openupgrader_migration__odoo_migrated_state
+#: model:ir.model.fields,help:openupgrader.field_openupgrader_migration__odoo_running_state
 msgid "Migrated Odo instance is running or stopped"
 msgstr "L'istanza di Odoo migrata è accesa o spenta"
 
@@ -569,7 +569,7 @@ msgid "Modules to uninstall after migration"
 msgstr "Moduli da disinstallare dopo la migrazione"
 
 #. module: openupgrader
-#: model:ir.model.fields,field_description:openupgrader.field_openupgrader_migration__next_version_id
+#: model:ir.model.fields,field_description:openupgrader.field_openupgrader_migration__next_config_id
 msgid "Next version to be migrated"
 msgstr "Prossima versione da migrare"
 
@@ -633,7 +633,7 @@ msgid "Odoo is in local network"
 msgstr "Odoo è nella rete locale"
 
 #. module: openupgrader
-#: model:ir.model.fields,field_description:openupgrader.field_openupgrader_migration__odoo_migrated_state
+#: model:ir.model.fields,field_description:openupgrader.field_openupgrader_migration__odoo_running_state
 msgid "Odoo migrating instance state"
 msgstr "Stato dell'istanza Odoo in migrazione"
 
@@ -820,7 +820,7 @@ msgid "Restored"
 msgstr "Ripristinato"
 
 #. module: openupgrader
-#: model:ir.model.fields.selection,name:openupgrader.selection__openupgrader_migration__odoo_migrated_state__running
+#: model:ir.model.fields.selection,name:openupgrader.selection__openupgrader_migration__odoo_running_state__running
 msgid "Running"
 msgstr "Attivo"
 
@@ -911,7 +911,7 @@ msgid "Stop Odoo"
 msgstr "Ferma Odoo"
 
 #. module: openupgrader
-#: model:ir.model.fields.selection,name:openupgrader.selection__openupgrader_migration__odoo_migrated_state__stopped
+#: model:ir.model.fields.selection,name:openupgrader.selection__openupgrader_migration__odoo_running_state__stopped
 msgid "Stopped"
 msgstr "Spento"
 
@@ -947,7 +947,7 @@ msgid "To recreate a clean virtualenv after removing some libraries"
 msgstr "Per ricreare un virtualenv pulito dopo aver rimosso alcune librerie"
 
 #. module: openupgrader
-#: model:ir.model.fields,field_description:openupgrader.field_openupgrader_migration__to_version_id
+#: model:ir.model.fields,field_description:openupgrader.field_openupgrader_migration__to_config_id
 msgid "To version"
 msgstr "Alla versione"
 
