@@ -383,6 +383,8 @@ class OpenupgraderMigration(models.Model):
         :return: null
         """
         self.flush()
+        if not config_id:
+            raise ValidationError(_("Missing odoo version to start"))
         if update:
             self._start_odoo_thread(config_id, update, migrate, extra_command)
         else:
@@ -504,7 +506,6 @@ class OpenupgraderMigration(models.Model):
                                 "Unmet dependencies",
                             ]
                         ):
-                            match = False
                             if "Some modules have inconsistent states" in out:
                                 match_string = (
                                     "Some modules have inconsistent states, some "
@@ -938,6 +939,8 @@ class OpenupgraderMigration(models.Model):
             )
 
     def button_draft(self):
+        cron_migration = self.env.ref("openupgrader.cron_openugrader_do_auto_migration")
+        cron_migration.active = False
         self.button_check_odoo_migrated_running_state()
         if self.odoo_running_state == "running":
             self.show_message_odoo_running()
@@ -1339,6 +1342,8 @@ class OpenupgraderMigration(models.Model):
         return success
 
     def install_pip_modules(self, config_id, module_names):
+        if not isinstance(module_names, list):
+            module_names = [module_names]
         logger.info("Installing Odoo modules with pip: %s" % str(module_names))
         self.ensure_one()
         odoo_version_int = int(config_id.name.split(".")[0])
