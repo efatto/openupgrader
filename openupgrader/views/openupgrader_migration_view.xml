@@ -51,7 +51,6 @@
                     <button
                         name="button_update_current_version"
                         type="object"
-                        attrs="{'invisible': [('state', 'in', ['draft', 'restored', 'updated', 'ready_for_migration'])]}"
                         string="2: update (if the process has failed)"
                         help="Update db of current version before migration"
                     />
@@ -66,7 +65,7 @@
                     <button
                         name="button_prepare_for_migration"
                         type="object"
-                        attrs="{'invisible': ['|', '|', ('state', 'in', ['updated', 'migrated', 'restored', 'ready_for_migration']), ('next_config_id', '=', False), ('is_migration_done', '=', True)]}"
+                        attrs="{'invisible': ['|', ('next_config_id', '=', False), ('is_migration_done', '=', True)]}"
                         string="3: prepare migration"
                         help="Do some useful stuff before migration"
                     />
@@ -80,7 +79,7 @@
                     <button
                         name="button_do_migration"
                         type="object"
-                        attrs="{'invisible': ['|', ('state', 'not in', ['failed', 'restored']), ('next_config_id', '=', False)]}"
+                        attrs="{'invisible': [('next_config_id', '=', False)]}"
                         string="4: migrate (if the process has failed)"
                     />
                     <button
@@ -93,7 +92,7 @@
                     <field
                         name="state"
                         widget="statusbar"
-                        statusbar_visible="draft,restore_failed,restored,ready_for_migration,failed,migrated,done"
+                        statusbar_visible="draft,restore_failed,updating,updated,restored,ready_for_migration,failed,migrating,migrated,done"
                     />
                 </header>
                 <sheet string="OpenUpgrader Migration">
