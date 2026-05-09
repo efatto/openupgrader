@@ -806,6 +806,7 @@ class OpenupgraderMigration(models.Model):
         self.set_mail_server_and_cron_state_to(active=False)
         self.sql_fixes(self.current_config_id.sql_before_migration_command_ids)
         self.uninstall_modules(self.current_config_id, before_migration=True)
+        self.delete_not_installed_module_views()
         self.delete_old_modules(self.current_config_id)
         if not self.is_migration_done:
             # write in update log "Ready for migration" to check later
@@ -1273,6 +1274,24 @@ class OpenupgraderMigration(models.Model):
             for module in config_id.module_to_uninstall_before_migration_ids:
                 self.install_uninstall_module(module.name, install=False)
         self.button_stop_odoo()
+
+    def delete_not_installed_module_views(self):
+        conn_vars = self._get_db_connection_variables()
+        sql = (
+            """
+            DELETE FROM ir_ui_view WHERE id NOT IN (
+            SELECT res_id FROM ir_model_data
+            WHERE model='ir.ui.view'
+            AND module IN (
+            SELECT name FROM ir_module_module WHERE state='installed'));
+            """
+        )
+        logger.info(
+            "Delete via sql all views that aren't linked to an installed module.")
+        Popen(
+            [f'{conn_vars} && psql -d {self.env.cr.dbname}_migrate -c "{sql}"'],
+            shell=True,
+        )
 
     def delete_old_modules(self, config_id):
         if config_id.module_to_delete_after_migration_ids:
