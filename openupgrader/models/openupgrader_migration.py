@@ -8,7 +8,6 @@ import ssl
 import sys
 import time
 from pathlib import Path
-from socket import socket
 from subprocess import PIPE, Popen
 from urllib.request import HTTPSHandler
 
@@ -284,9 +283,6 @@ class OpenupgraderMigration(models.Model):
                     port=self.xmlrpc_port,
                     opener=self._get_opener(verify_ssl=False),
                 )
-            except socket.timeout as e:
-                logger.info("Connection to Odoo failed for timeout %s!" % str(e))
-                return None
             except Exception as e:
                 logger.info("Connection to Odoo failed for %s!" % str(e))
                 return None
@@ -299,9 +295,8 @@ class OpenupgraderMigration(models.Model):
                 time.sleep(5)
                 return client
             except Exception as e:
-                raise ValidationError(
-                    _("Connection to Odoo failed for %s!" % str(e))
-                ) from e
+                logger.info("Login to Odoo failed for %s!" % str(e))
+                return None
         raise ValidationError(
             _(
                 "Db_name and password are required to connect to the Odoo instance. "
@@ -1277,17 +1272,16 @@ class OpenupgraderMigration(models.Model):
 
     def delete_not_installed_module_views(self):
         conn_vars = self._get_db_connection_variables()
-        sql = (
-            """
+        sql = """
             DELETE FROM ir_ui_view WHERE id NOT IN (
             SELECT res_id FROM ir_model_data
             WHERE model='ir.ui.view'
             AND module IN (
             SELECT name FROM ir_module_module WHERE state='installed'));
             """
-        )
         logger.info(
-            "Delete via sql all views that aren't linked to an installed module.")
+            "Delete via sql all views that aren't linked to an installed module."
+        )
         Popen(
             [f'{conn_vars} && psql -d {self.env.cr.dbname}_migrate -c "{sql}"'],
             shell=True,
