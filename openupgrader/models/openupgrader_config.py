@@ -18,6 +18,7 @@ def _get_env_for_subprocess(folder, py_version):
     env_for_subprocess = os.environ.copy()
     env_folder = os.path.join(folder, ".venv")
     env_for_subprocess["VIRTUAL_ENV"] = env_folder
+    env_for_subprocess["UV_PROJECT_ENVIRONMENT"] = env_folder
     env_for_subprocess["PYTHONPATH"] = os.path.join(env_folder, "bin", "python")
     # If there is a PIP_EXTRA_INDEX_URL in local env, put in the pyenv
     pip_extra_index_url = os.environ.get("PIP_EXTRA_INDEX_URL")
@@ -60,11 +61,15 @@ def _create_python_venv(venv_path, py_version):
         ).wait()
     if not os.path.isfile(uv_path):
         raise ValidationError(_("uv is not installed, please install it first!"))
+    commands = []
     if not os.path.isfile(os.path.join(venv_path, "pyproject.toml")):
-        for command in [
-            f"uv init --directory {venv_path} --python 'python=={py_version}'",
-            f"uv venv --python {py_version}",
-        ]:
+        commands.append(
+            f"uv init --directory {venv_path} --python 'python=={py_version}'"
+        )
+    if not os.path.isfile(os.path.join(venv_path, ".venv", "bin")):
+        commands.append(f"uv venv --python {py_version}")
+    if commands:
+        for command in commands:
             subprocess.Popen(
                 command,
                 shell=True,
@@ -172,6 +177,7 @@ class OpenupgraderConfig(models.Model):
         comodel_name="openupgrader.migration",
         string="Odoo Migration",
         required=True,
+        ondelete="cascade",
         default=lambda self: self.env["openupgrader.migration"].search([], limit=1),
     )
     python_version = fields.Char(required=True, default="3.7.16")

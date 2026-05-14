@@ -367,7 +367,10 @@ class OpenupgraderMigration(models.Model):
         folder = os.path.join(self.folder, f"openupgrade{version_name}")
         if os.path.isdir(os.path.join(folder, ".venv", "bin")):
             return folder
-        return False
+        raise UserError(
+            _("Missing environment for version %s! Create it in Odoo Version menu.")
+            % version_name
+        )
 
     def start_odoo(self, config_id, update=False, migrate=False, extra_command=""):
         """
@@ -405,11 +408,6 @@ class OpenupgraderMigration(models.Model):
         version_float = float(version_name)
         self.button_stop_odoo()
         folder = self.check_venv(version_name)
-        if not folder:
-            raise UserError(
-                _("Missing env for version %s! Create in Odoo Version menu.")
-                % version_name
-            )
         load = "web"
         if version_name == "10.0":
             load = "web,web_kanban"
@@ -747,12 +745,7 @@ class OpenupgraderMigration(models.Model):
 
     def button_restore(self):
         for config_id in self.env["openupgrader.config"].search([]):
-            folder = self.check_venv(config_id.name)
-            if not folder:
-                raise UserError(
-                    _("Missing env for version %s! Create in Odoo Version menu.")
-                    % config_id.name
-                )
+            self.check_venv(config_id.name)
         self._restore()
 
     def _restore(self, force=False):

@@ -513,7 +513,7 @@ msgstr "Avvisi nel log della migrazione"
 #: code:addons/openupgrader/models/openupgrader_migration.py:0
 #: code:addons/openupgrader/models/openupgrader_migration.py:0
 #, python-format
-msgid "Missing env for version %s! Create in Odoo Version menu."
+msgid "Missing environment for version %s! Create it in Odoo Version menu."
 msgstr ""
 "Virtualenv mancante per la versione %s! Creala nel menu Versioni Odoo."
 
