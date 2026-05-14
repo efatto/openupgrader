@@ -1234,6 +1234,8 @@ class OpenupgraderMigration(models.Model):
         module_obj = odoo_client.env["ir.module.module"]
         if config_id.name == "12.0":
             self.remove_modules(config_id, "upgrade")
+        # force recompute of installed modules for the current version
+        config_id._compute_module_installed_ids()
         for module in config_id.module_auto_install_ids:
             module_to_check = module.name
             module_to_install = module.module_to_install_name
