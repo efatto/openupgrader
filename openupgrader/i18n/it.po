@@ -404,13 +404,6 @@ msgid "Is Odoo"
 msgstr "È Odoo"
 
 #. module: openupgrader
-#: model:ir.model.fields,field_description:openupgrader.field_auto_install_module__is_core_module
-#: model:ir.model.fields,field_description:openupgrader.field_module_name__is_core_module
-#: model:ir.model.fields,field_description:openupgrader.field_pip_requirement__is_core_module
-msgid "Is core module in target version"
-msgstr "Modulo core nella versione di destinazione"
-
-#. module: openupgrader
 #: model:ir.model.fields,field_description:openupgrader.field_auto_install_module____last_update
 #: model:ir.model.fields,field_description:openupgrader.field_db_backup____last_update
 #: model:ir.model.fields,field_description:openupgrader.field_module_name____last_update
@@ -572,13 +565,6 @@ msgstr "Moduli da disinstallare dopo la migrazione"
 #: model:ir.model.fields,field_description:openupgrader.field_openupgrader_migration__next_config_id
 msgid "Next version to be migrated"
 msgstr "Prossima versione da migrare"
-
-#. module: openupgrader
-#: model:ir.model.fields,field_description:openupgrader.field_auto_install_module__no_pip_found
-#: model:ir.model.fields,field_description:openupgrader.field_module_name__no_pip_found
-#: model:ir.model.fields,field_description:openupgrader.field_pip_requirement__no_pip_found
-msgid "No pip found for target version"
-msgstr "Modulo pip non trovato nella versione di destinazione"
 
 #. module: openupgrader
 #: model:ir.model.fields,field_description:openupgrader.field_openupgrader_config__obsolete_modules

@@ -94,8 +94,6 @@ class AutoInstallModule(models.Model):
         string="Technical Name of Module To Install",
         required=True,
     )
-    no_pip_found = fields.Boolean(string="No pip found for target version")
-    is_core_module = fields.Boolean(string="Is core module in target version")
 
 
 class ModuleName(models.Model):
@@ -104,8 +102,6 @@ class ModuleName(models.Model):
     _order = "name"
 
     name = fields.Text(string="Module Technical Name", required=True)
-    no_pip_found = fields.Boolean(string="No pip found for target version")
-    is_core_module = fields.Boolean(string="Is core module in target version")
 
     _sql_constraints = [
         (
@@ -122,8 +118,6 @@ class PipRequirement(models.Model):
     _order = "name"
 
     name = fields.Text(string="Pip requirement", required=True)
-    no_pip_found = fields.Boolean(string="No pip found for target version")
-    is_core_module = fields.Boolean(string="Is core module in target version")
 
     _sql_constraints = [
         (
@@ -272,46 +266,6 @@ class OpenupgraderConfig(models.Model):
         copy=False,
     )
     obsolete_modules = fields.Text()
-
-    def _set_modules_installability_via_pip(self, names):
-        # set module not installable in all the possible origins:
-        self.ensure_one()
-        self.module_installed_ids.no_pip_found = False
-        self.module_auto_install_ids.no_pip_found = False
-        self.pip_requirement_ids.no_pip_found = False
-        self.odoo_pip_requirement_ids.no_pip_found = False
-        if names:
-            self.module_installed_ids.filtered(
-                lambda x: x.name in names
-            ).no_pip_found = True
-            self.module_auto_install_ids.filtered(
-                lambda x: x.module_to_install_name in names
-            ).no_pip_found = True
-            self.pip_requirement_ids.filtered(
-                lambda x: x.name in names
-            ).no_pip_found = True
-            self.odoo_pip_requirement_ids.filtered(
-                lambda x: x.name in names
-            ).no_pip_found = True
-
-    def _set_core_modules(self, names):
-        self.ensure_one()
-        self.module_installed_ids.is_core_module = False
-        self.module_installed_ids.filtered(
-            lambda x: x.name in names
-        ).is_core_module = True
-        self.module_auto_install_ids.is_core_module = False
-        self.module_auto_install_ids.filtered(
-            lambda x: x.module_to_install_name in names
-        ).is_core_module = True
-        self.pip_requirement_ids.is_core_module = False
-        self.pip_requirement_ids.filtered(
-            lambda x: x.name in names
-        ).is_core_module = True
-        self.odoo_pip_requirement_ids.is_core_module = False
-        self.odoo_pip_requirement_ids.filtered(
-            lambda x: x.name in names
-        ).is_core_module = True
 
     def _create_db_backup(self, folder):
         self.ensure_one()

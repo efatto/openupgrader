@@ -1403,8 +1403,6 @@ class OpenupgraderMigration(models.Model):
                 "Odoo module %s installed successfully with uv pip: %s"
                 % (name, "\n".join(log_text for log_text in log_texts))
             )
-        if config_id == self.to_config_id:
-            config_id._set_modules_installability_via_pip(not_installable_modules)
 
     def install_uninstall_module(self, module_name, install=True):
         logger.info(
