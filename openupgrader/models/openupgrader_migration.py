@@ -1273,20 +1273,34 @@ class OpenupgraderMigration(models.Model):
 
     def delete_not_installed_module_views(self):
         conn_vars = self._get_db_connection_variables()
-        sql = """
+        sql_commands = [
+            """
+            DELETE FROM ir_act_window_view WHERE view_id NOT IN (
+            SELECT res_id FROM ir_model_data
+            WHERE model='ir.ui.view'
+            AND module IN (
+            SELECT name FROM ir_module_module WHERE state='installed'));
+            """,
+            """
             DELETE FROM ir_ui_view WHERE id NOT IN (
             SELECT res_id FROM ir_model_data
             WHERE model='ir.ui.view'
             AND module IN (
             SELECT name FROM ir_module_module WHERE state='installed'));
-            """
+            """,
+        ]
         logger.info(
-            "Delete via sql all views that aren't linked to an installed module."
+            "Delete via sql all views and act_windows that aren't linked to an "
+            "installed module."
         )
-        Popen(
-            [f'{conn_vars} && psql -d {self.env.cr.dbname}_migrate -c "{sql}"'],
-            shell=True,
-        )
+        for sql_command in sql_commands:
+            Popen(
+                [
+                    f'{conn_vars} && '
+                    f'psql -d {self.env.cr.dbname}_migrate -c "{sql_command}"'
+                ],
+                shell=True,
+            )
 
     def delete_old_modules(self, config_id):
         if config_id.module_to_delete_after_migration_ids:
