@@ -295,6 +295,12 @@ class OpenupgraderMigration(models.Model):
                 time.sleep(5)
                 return client
             except Exception as e:
+                error_string = str(e)
+                if (
+                    "login failed" in error_string
+                    or 'Wrong login ID or password' in error_string
+                ):
+                    raise ValidationError(_("Login to Odoo failed for %s!" % str(e)))
                 logger.info("Login to Odoo failed for %s!" % str(e))
                 return None
         raise ValidationError(
