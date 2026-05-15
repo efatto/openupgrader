@@ -240,10 +240,10 @@ msgstr "Porta Db"
 #: code:addons/openupgrader/models/openupgrader_migration.py:0
 #, python-format
 msgid ""
-"Db_name and password are required to connect to the Odoo instance. Please "
+"Db name, login and password are required to connect to the Odoo instance. Please "
 "fill them and try again."
 msgstr ""
-"Db_name e password sono richiesti per la connessione all'istanza Odoo. Compilare "
+"Nome del db, login e password sono richiesti per la connessione all'istanza Odoo. Compilare "
 " i campi e riprovare."
 
 #. module: openupgrader

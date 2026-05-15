@@ -505,7 +505,6 @@ class OpenupgraderConfig(models.Model):
                     for auto_install in self.module_auto_install_ids
                     if auto_install.name in self.module_installed_ids.mapped("name")
                 ]
-            self._set_core_modules(core_module_names)
             openupgrader_migration.install_pip_modules(
                 self, odoo_modules_to_install_via_pip
             )

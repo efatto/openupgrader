@@ -275,7 +275,7 @@ class OpenupgraderMigration(models.Model):
         return critical_log, error_log, warning_log
 
     def odoo_connect(self):
-        if self.db_name and self.db_password:
+        if self.db_name and self.db_user and self.db_password:
             try:
                 client = odoorpc.ODOO(
                     host="localhost",
@@ -298,15 +298,17 @@ class OpenupgraderMigration(models.Model):
                 error_string = str(e)
                 if (
                     "login failed" in error_string
-                    or 'Wrong login ID or password' in error_string
+                    or "Wrong login ID or password" in error_string
                 ):
-                    raise ValidationError(_("Login to Odoo failed for %s!" % str(e)))
-                logger.info("Login to Odoo failed for %s!" % str(e))
+                    raise ValidationError(
+                        _("Login to Odoo failed for %s!" % error_string)
+                    ) from e
+                logger.info("Login to Odoo failed for %s!" % error_string)
                 return None
         raise ValidationError(
             _(
-                "Db_name and password are required to connect to the Odoo instance. "
-                "Please fill them and try again."
+                "Db name, login and password are required to connect to the Odoo "
+                "instance. Please fill them and try again."
             )
         )
 
@@ -1296,7 +1298,7 @@ class OpenupgraderMigration(models.Model):
         for sql_command in sql_commands:
             Popen(
                 [
-                    f'{conn_vars} && '
+                    f"{conn_vars} && "
                     f'psql -d {self.env.cr.dbname}_migrate -c "{sql_command}"'
                 ],
                 shell=True,
@@ -1380,6 +1382,13 @@ class OpenupgraderMigration(models.Model):
         # try to install with pip and log error if it fails
         not_installable_modules = []
         for name in module_names:
+            # exclude module if present in config_id obsolete modules
+            if (
+                name in config_id.obsolete_modules
+                or name
+                in config_id.module_to_uninstall_before_migration_ids.mapped("name")
+            ):
+                continue
             # all pip servers used are safe, do not ignore any package found
             command = (
                 "uv pip install --index-strategy unsafe-best-match --prerelease=allow "
