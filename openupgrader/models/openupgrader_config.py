@@ -266,6 +266,7 @@ class OpenupgraderConfig(models.Model):
         copy=False,
     )
     obsolete_modules = fields.Text()
+    core_modules = fields.Text()
 
     def _create_db_backup(self, folder):
         self.ensure_one()
@@ -322,12 +323,27 @@ class OpenupgraderConfig(models.Model):
             module_id.flush()
         return module_id
 
+    def _get_core_modules(self, odoo_path):
+        self.ensure_one()
+        odoo_addons_path = os.path.join(
+            odoo_path,
+            "addons",
+        )
+        res = []
+        if os.path.isdir(odoo_addons_path):
+            for module in os.listdir(odoo_addons_path):
+                if os.path.isfile(
+                    os.path.join(odoo_addons_path, module, "__manifest__.py")
+                ):
+                    res.append(module)
+        return res
+
     @api.depends(
         "name", "module_auto_install_ids", "module_to_uninstall_before_migration_ids"
     )
     def _compute_module_installed_ids(self):
-        for record in self:
-            if record.name:
+        for config in self:
+            if config.name:
                 # get current installed modules
                 installed_modules = self.env["ir.module.module"].search(
                     [
@@ -342,13 +358,15 @@ class OpenupgraderConfig(models.Model):
                     for module_name in module_names:
                         module_id = self._search_create_module(module_name)
                         module_installed_ids |= module_id
-                if record.name == release.version:
+                if config.name == release.version:
+                    # This is the initial version, so we install all the installed
+                    # modules
                     new_module_installed_ids = module_installed_ids
                 else:
                     new_module_installed = []
                     new_module_installed_ids = self.env["module.name"]
                     # add new modules to install
-                    for module_auto_install in record.module_auto_install_ids:
+                    for module_auto_install in config.module_auto_install_ids:
                         if module_auto_install.name in module_installed_ids.mapped(
                             "name"
                         ):
@@ -359,7 +377,7 @@ class OpenupgraderConfig(models.Model):
                     for module in module_installed_ids.mapped("name"):
                         if (
                             module
-                            not in record.module_to_uninstall_before_migration_ids.mapped(  # noqa
+                            not in config.module_to_uninstall_before_migration_ids.mapped(  # noqa
                                 "name"
                             )
                         ):
@@ -369,15 +387,15 @@ class OpenupgraderConfig(models.Model):
                         module_id = self._search_create_module(module_name)
                         new_module_installed_ids |= module_id
                 new_module_installed_ids -= (
-                    record.module_to_uninstall_after_migration_ids
+                    config.module_to_uninstall_after_migration_ids
                 )
-                new_module_installed_ids -= record.module_to_delete_after_migration_ids
+                new_module_installed_ids -= config.module_to_delete_after_migration_ids
                 new_module_installed_ids -= (
-                    record.module_to_uninstall_before_migration_ids
+                    config.module_to_uninstall_before_migration_ids
                 )
-                record.module_installed_ids = new_module_installed_ids
+                config.module_installed_ids = new_module_installed_ids
             else:
-                record.module_installed_ids = False
+                config.module_installed_ids = False
 
     def button_recreate_venv(self):
         # Remove the folder and re-create a clean virtual environment
@@ -473,10 +491,6 @@ class OpenupgraderConfig(models.Model):
                     commands.append(c)
 
             # exclude odoo core modules
-            odoo_addons_path = os.path.join(
-                odoo_path,
-                "addons",
-            )
             for command in commands:
                 subprocess.Popen(
                     command,
@@ -485,15 +499,12 @@ class OpenupgraderConfig(models.Model):
                     env=subprocess_env,
                 ).wait()
 
-            core_module_names = self.module_installed_ids.filtered(
-                lambda x: os.path.isdir(os.path.join(odoo_addons_path, x.name))
-                or x.name == "base"
-                or x.name.startswith("test_")
-            ).mapped("name")
+            core_modules = self._get_core_modules(odoo_path)
+            self.core_modules = str(set(core_modules))
             odoo_modules_to_install_via_pip = [
                 name
                 for name in self.module_installed_ids.mapped("name")
-                if name not in core_module_names
+                if name not in core_modules
             ]
             if self.odoo_pip_requirement_ids:
                 odoo_modules_to_install_via_pip.extend(

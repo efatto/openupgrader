@@ -138,8 +138,11 @@
                                     widget="many2many_tags"
                                 />
                             </group>
-                            <group string="Modules obsolete">
+                            <group string="Obsolete modules">
                                 <field name="obsolete_modules" />
+                            </group>
+                            <group string="Core modules">
+                                <field name="core_modules" />
                             </group>
                         </page>
                     </notebook>
