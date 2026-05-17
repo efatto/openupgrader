@@ -107,7 +107,12 @@ class OpenupgraderMigration(models.Model):
         store=True,
     )
     migrate_filestore = fields.Boolean(default=True)
-    dump_each_version_database = fields.Boolean(default=True)
+    dump_each_version_database = fields.Boolean(
+        default=True,
+        help="If enabled, each migration version will be dumped to a file with name "
+             "'database.{version_name}.sql' after migration and after the execution "
+             "of the methods to auto install and uninstall modules and do sql fixes.",
+    )
     openupgrade_repo = fields.Char(
         string="OpenUpgrade Repository",
         default="https://github.com/OCA/OpenUpgrade.git",
