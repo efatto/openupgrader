@@ -1083,6 +1083,7 @@ class OpenupgraderMigration(models.Model):
         self.next_config_id = self.env["openupgrader.config"].search(
             [("name", "=", str(float(self.current_config_id.name) + 1))]
         )
+        self.button_dump_current_database()
         # force save to avoid cache issues
         self.flush()
         if self.is_migration_done:
@@ -1350,27 +1351,6 @@ class OpenupgraderMigration(models.Model):
         logger.info("Modules present before the removal: %s" % msg_modules)
         logger.info("Modules present after the removal: %s" % msg_modules_after)
 
-    @staticmethod
-    def uninst(module_to_unistall_id, success):
-        try:
-            module_to_unistall_id.button_immediate_uninstall()
-            module_to_unistall_id.unlink()
-            logger.info("Module %s uninstalled" % module_to_unistall_id.name)
-            success = 5
-        except Exception as e:
-            logger.info(
-                "Module %s not uninstalled for %s, trying %s/%s times."
-                % (
-                    module_to_unistall_id.name,
-                    str(e).replace("\n", ""),
-                    success + 1,
-                    5,
-                )
-            )
-            time.sleep(10)
-            success += 1
-        return success
-
     def install_pip_modules(self, config_id, module_names):
         if not isinstance(module_names, list):
             module_names = [module_names]
@@ -1465,9 +1445,26 @@ class OpenupgraderMigration(models.Model):
                 if install:
                     module.button_immediate_install()
                 elif module.state in ["installed", "to upgrade", "uninstallable"]:
-                    res = 0
-                    while res < 5:
-                        res = self.uninst(module, res)
+                    try_number = 0
+                    while try_number < 5:
+                        try:
+                            module.button_immediate_uninstall()
+                            module.unlink()
+                            logger.info(
+                                "Module %s uninstalled" % module.name)
+                            try_number = 5
+                        except Exception as e:
+                            try_number += 1
+                            logger.info(
+                                "Module %s not uninstalled for %s, trying %s/%s times."
+                                % (
+                                    module.name,
+                                    str(e).replace("\n", ""),
+                                    try_number,
+                                    5,
+                                )
+                            )
+                            time.sleep(10)
             return modules
         else:
             logger.info("Module %s not found" % module_name)
