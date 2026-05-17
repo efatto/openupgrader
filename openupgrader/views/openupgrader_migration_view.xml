@@ -31,12 +31,16 @@
             <form string="OpenUpgrader Migration">
                 <header>
                     <field name="is_migration_done" invisible="1" />
+                    <field name="is_auto_migration_active" invisible="1" />
                     <button name="button_draft" type="object" string="Set to draft" />
+                    <div class="oe_highlight" attrs="{'invisible': [('is_auto_migration_active', '=', False)]}">
+                        Auto-migration running
+                    </div>
                     <button
                         name="button_restore"
                         type="object"
                         class="oe_highlight"
-                        attrs="{'invisible': [('state', '!=', 'draft')]}"
+                        attrs="{'invisible': ['|', ('state', '!=', 'draft'), ('is_auto_migration_active', '=', True)]}"
                         string="1: restore"
                         help="Restore db of current version before migration"
                     />
@@ -44,7 +48,7 @@
                         name="button_update_current_version"
                         type="object"
                         class="oe_highlight"
-                        attrs="{'invisible': [('state', '!=', 'restored')]}"
+                        attrs="{'invisible': ['|', ('state', '!=', 'restored'), ('is_auto_migration_active', '=', True)]}"
                         string="2: update (click until this disappears)"
                         help="Update db of current version before migration"
                     />
@@ -52,20 +56,21 @@
                         name="button_update_current_version"
                         type="object"
                         string="2: update (if the process has failed)"
+                        attrs="{'invisible': [('is_auto_migration_active', '=', True)]}"
                         help="Update db of current version before migration"
                     />
                     <button
                         name="button_prepare_for_migration"
                         type="object"
                         class="oe_highlight"
-                        attrs="{'invisible': ['|', '|', ('state', 'not in', ['updated', 'migrated']), ('next_config_id', '=', False), ('is_migration_done', '=', True)]}"
+                        attrs="{'invisible': ['|', '|', '|', ('state', 'not in', ['updated', 'migrated']), ('next_config_id', '=', False), ('is_migration_done', '=', True), ('is_auto_migration_active', '=', True)]}"
                         string="3: prepare migration"
                         help="Do some useful stuff before migration"
                     />
                     <button
                         name="button_prepare_for_migration"
                         type="object"
-                        attrs="{'invisible': ['|', ('next_config_id', '=', False), ('is_migration_done', '=', True)]}"
+                        attrs="{'invisible': ['|', '|', ('next_config_id', '=', False), ('is_migration_done', '=', True), ('is_auto_migration_active', '=', True)]}"
                         string="3: prepare migration"
                         help="Do some useful stuff before migration"
                     />
@@ -73,13 +78,13 @@
                         name="button_do_migration"
                         type="object"
                         class="oe_highlight"
-                        attrs="{'invisible': ['|', ('state', '!=', 'ready_for_migration'), ('next_config_id', '=', False)]}"
+                        attrs="{'invisible': ['|', '|', ('state', '!=', 'ready_for_migration'), ('next_config_id', '=', False), ('is_auto_migration_active', '=', True)]}"
                         string="4: migrate (re-click until this disappears)"
                     />
                     <button
                         name="button_do_migration"
                         type="object"
-                        attrs="{'invisible': [('next_config_id', '=', False)]}"
+                        attrs="{'invisible': ['|', ('next_config_id', '=', False), ('is_auto_migration_active', '=', True)]}"
                         string="4: migrate (if the process has failed)"
                     />
                     <button
@@ -87,7 +92,7 @@
                         type="object"
                         string="Do auto-migration"
                         help="I feel lucky!"
-                        attrs="{'invisible': [('state', '!=', 'draft')]}"
+                        attrs="{'invisible': ['|', ('state', '!=', 'draft'), ('is_auto_migration_active', '=', True)]}"
                     />
                     <field
                         name="state"
