@@ -107,6 +107,7 @@ class OpenupgraderMigration(models.Model):
         store=True,
     )
     migrate_filestore = fields.Boolean(default=True)
+    dump_each_version_database = fields.Boolean(default=True)
     openupgrade_repo = fields.Char(
         string="OpenUpgrade Repository",
         default="https://github.com/OCA/OpenUpgrade.git",
@@ -1083,7 +1084,8 @@ class OpenupgraderMigration(models.Model):
         self.next_config_id = self.env["openupgrader.config"].search(
             [("name", "=", str(float(self.current_config_id.name) + 1))]
         )
-        self.button_dump_current_database()
+        if self.dump_each_version_database:
+            self.button_dump_current_database()
         # force save to avoid cache issues
         self.flush()
         if self.is_migration_done:
