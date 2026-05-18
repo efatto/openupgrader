@@ -19,6 +19,7 @@ from odoo import _, api, fields, models
 from odoo.exceptions import UserError, ValidationError
 from odoo.modules import get_module_resource
 from odoo.tools import config
+from odoo.tools.date_utils import relativedelta
 from odoo.tools.safe_eval import safe_eval
 
 from .openupgrader_config import _get_env_for_subprocess
@@ -795,7 +796,7 @@ class OpenupgraderMigration(models.Model):
             self.restore_db(self.current_config_id)
         self.state = "restored"
 
-    def button_update_current_version(self):
+    def button_update_current_config(self):
         self.ensure_one()
         self.button_refresh_odoo_running_state()
         if self.odoo_running_state == "running":
@@ -953,8 +954,7 @@ class OpenupgraderMigration(models.Model):
             )
 
     def button_draft(self):
-        cron_migration = self.env.ref("openupgrader.cron_openugrader_do_auto_migration")
-        cron_migration.active = False
+        self.auto_migration_cron_id.active = False
         self.button_check_odoo_migrated_running_state()
         if self.odoo_running_state == "running":
             self.show_message_odoo_running()
@@ -994,11 +994,14 @@ class OpenupgraderMigration(models.Model):
         while self.state != "restored":
             time.sleep(2)
         while self.state != "updated":
-            self.button_update_current_version()
+            self.button_update_current_config()
             time.sleep(5)
         self.button_prepare_for_migration()
-        cron_migration = self.env.ref("openupgrader.cron_openugrader_do_auto_migration")
-        cron_migration.active = True
+        self.auto_migration_cron_id.active = True
+        self.auto_migration_cron_id.nextcall = fields.Datetime.now() + relativedelta(
+            minutes=5
+        )
+        # self.auto_migration_cron_id.method_direct_trigger()
 
     def _final_step(self):
         if self.is_migration_done:

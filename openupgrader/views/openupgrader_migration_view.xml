@@ -48,7 +48,7 @@
                         help="Restore db of current version before migration"
                     />
                     <button
-                        name="button_update_current_version"
+                        name="button_update_current_config"
                         type="object"
                         class="oe_highlight"
                         attrs="{'invisible': ['|', ('state', '!=', 'restored'), ('is_auto_migration_active', '=', True)]}"
@@ -56,7 +56,7 @@
                         help="Update db of current version before migration"
                     />
                     <button
-                        name="button_update_current_version"
+                        name="button_update_current_config"
                         type="object"
                         string="2: update (if the process has failed)"
                         attrs="{'invisible': [('is_auto_migration_active', '=', True)]}"
