@@ -1379,8 +1379,14 @@ class OpenupgraderMigration(models.Model):
         subprocess_env = _get_env_for_subprocess(venv_path, config_id.python_version)
         # try to install with pip and log error if it fails
         not_installable_modules = []
-        obsolete_modules = safe_eval(config_id.obsolete_modules) or []
-        core_modules = safe_eval(config_id.core_modules) or []
+        if not config_id.obsolete_modules:
+            obsolete_modules = []
+        else:
+            obsolete_modules = safe_eval(config_id.obsolete_modules)
+        if not config_id.core_modules:
+            core_modules = []
+        else:
+            core_modules = safe_eval(config_id.core_modules)
         for name in module_names:
             # exclude module if present in config_id obsolete modules, core modules or
             # to be uninstalled before migration
