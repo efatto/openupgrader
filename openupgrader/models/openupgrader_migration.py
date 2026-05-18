@@ -997,10 +997,10 @@ class OpenupgraderMigration(models.Model):
             self.button_update_current_config()
             time.sleep(5)
         self.button_prepare_for_migration()
-        self.auto_migration_cron_id.active = True
         self.auto_migration_cron_id.nextcall = fields.Datetime.now() + relativedelta(
             minutes=5
         )
+        self.auto_migration_cron_id.active = True
         # self.auto_migration_cron_id.method_direct_trigger()
 
     def _final_step(self):
