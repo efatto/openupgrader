@@ -174,6 +174,8 @@ class OpenUpgrader(SavepointCase):
                     current_config,
                 ) = openupgrader_migration._get_odoo_running_state()
             openupgrader_migration.button_do_migration()
+            openupgrader_migration.button_do_migration()
+            openupgrader_migration.button_do_migration()
             self.assertEqual(
                 openupgrader_migration.current_config_id,
                 config_id,
