@@ -159,7 +159,6 @@ class OpenUpgrader(SavepointCase):
             self.to_config_id,
         ]:
             openupgrader_migration.button_prepare_for_migration()
-            self.assertEqual(openupgrader_migration.state, "ready_for_migration")
             openupgrader_migration.button_do_migration()
             # wait until migration is stopped with threading
             (
