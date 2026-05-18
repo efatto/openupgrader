@@ -33,7 +33,10 @@
                     <field name="is_migration_done" invisible="1" />
                     <field name="is_auto_migration_active" invisible="1" />
                     <button name="button_draft" type="object" string="Set to draft" />
-                    <div class="oe_highlight" attrs="{'invisible': [('is_auto_migration_active', '=', False)]}">
+                    <div
+                        class="oe_highlight"
+                        attrs="{'invisible': [('is_auto_migration_active', '=', False)]}"
+                    >
                         Auto-migration running
                     </div>
                     <button

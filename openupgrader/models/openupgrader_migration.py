@@ -110,7 +110,7 @@ class OpenupgraderMigration(models.Model):
         comodel_name="ir.cron",
         string="Auto Migration Cron",
         default=lambda self: self.env.ref(
-            'openupgrader.cron_openugrader_do_auto_migration', raise_if_not_found=False
+            "openupgrader.cron_openugrader_do_auto_migration", raise_if_not_found=False
         ),
     )
     is_auto_migration_active = fields.Boolean(
@@ -121,8 +121,8 @@ class OpenupgraderMigration(models.Model):
     dump_each_version_database = fields.Boolean(
         default=True,
         help="If enabled, each migration version will be dumped to a file with name "
-             "'database.{version_name}.sql' after migration and after the execution "
-             "of the methods to auto install and uninstall modules and do sql fixes.",
+        "'database.{version_name}.sql' after migration and after the execution "
+        "of the methods to auto install and uninstall modules and do sql fixes.",
     )
     openupgrade_repo = fields.Char(
         string="OpenUpgrade Repository",
@@ -1468,8 +1468,7 @@ class OpenupgraderMigration(models.Model):
                         try:
                             module.button_immediate_uninstall()
                             module.unlink()
-                            logger.info(
-                                "Module %s uninstalled" % module.name)
+                            logger.info("Module %s uninstalled" % module.name)
                             try_number = 5
                         except Exception as e:
                             try_number += 1

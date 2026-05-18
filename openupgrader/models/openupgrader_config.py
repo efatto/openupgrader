@@ -329,7 +329,9 @@ class OpenupgraderConfig(models.Model):
             odoo_path,
             "addons",
         )
-        res = ["base",]
+        res = [
+            "base",
+        ]
         if os.path.isdir(odoo_addons_path):
             for module in os.listdir(odoo_addons_path):
                 if os.path.isfile(
