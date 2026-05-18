@@ -742,7 +742,7 @@ class OpenupgraderMigration(models.Model):
             ],
             shell=True,
         ).wait()
-        if not config_id:
+        if not config_id and not self.dump_each_version_database:
             # this is not a restore done by hand from the user, so delete dump
             os.unlink(dump_file_sql)
 

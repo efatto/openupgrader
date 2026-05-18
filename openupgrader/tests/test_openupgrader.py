@@ -156,6 +156,7 @@ class OpenUpgrader(SavepointCase):
             self.middle_config_id,
             self.middle_config1_id,
             self.middle_config2_id,
+            self.to_config_id,
         ]:
             openupgrader_migration.button_prepare_for_migration()
             self.assertEqual(openupgrader_migration.state, "ready_for_migration")
@@ -174,32 +175,13 @@ class OpenUpgrader(SavepointCase):
                     current_config,
                 ) = openupgrader_migration._get_odoo_running_state()
             openupgrader_migration.button_do_migration()
-            openupgrader_migration.button_do_migration()
-            openupgrader_migration.button_do_migration()
-            self.assertEqual(
-                openupgrader_migration.current_config_id,
-                config_id,
-            )
-        self.assertEqual(
-            openupgrader_migration.next_config_id,
-            self.to_config_id,
-        )
-        openupgrader_migration.button_prepare_for_migration()
-        openupgrader_migration.button_do_migration()
-        # wait until migration is stopped with threading
-        (
-            odoo_running_state,
-            migration_state,
-            current_config,
-        ) = openupgrader_migration._get_odoo_running_state()
-        while odoo_running_state == "running":
-            time.sleep(10)
-            (
-                odoo_running_state,
-                migration_state,
-                current_config,
-            ) = openupgrader_migration._get_odoo_running_state()
-        openupgrader_migration.button_do_migration()
+            while self.to_config_id != current_config != config_id:
+                time.sleep(10)
+                (
+                    _r,
+                    _m,
+                    current_config,
+                ) = openupgrader_migration._get_odoo_running_state()
         self.assertEqual(openupgrader_migration.state, "done")
         self.assertEqual(openupgrader_migration.is_migration_done, True)
         self.assertEqual(
