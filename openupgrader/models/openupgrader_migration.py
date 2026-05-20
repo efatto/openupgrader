@@ -1014,12 +1014,7 @@ class OpenupgraderMigration(models.Model):
             [("state", "not in", ["failed", "restore_failed", "done"])]
         )
         if openupgrader_migration:
-            # todo dalla versione più avanti vado all'indietro a vedere quale file è
-            #  presente per capire lo stato della migrazione:
-            #  1. l'update è successivo al migrate, quindi se c'è la migrazione è stata
-            #     eseguita e si attende l'aggiornamento
-            #  Lanciare solo per la versione che risulta presente il log di migrazione
-            # wait until migration is stopped with threading
+            # Wait until migration and update are stopped.
             (
                 odoo_running_state,
                 migration_state,
@@ -1127,19 +1122,26 @@ class OpenupgraderMigration(models.Model):
         return self.start_odoo(self.next_config_id, update=True, migrate=True)
 
     def button_refresh_odoo_running_state(self):
-        odoo_running_state, _m, _c = self._get_odoo_running_state()
+        (
+            odoo_running_state,
+            migration_state,
+            current_version,
+        ) = self._get_odoo_running_state()
+        if current_version and self.current_config_id:
+            if migration_state == "migrated":
+                # do migration complete stuff and set the next version to migrate
+                self._do_after_migration()
+        if not self.is_migration_done:
+            self.state = migration_state
         self.odoo_running_state = odoo_running_state
 
     def button_check_odoo_migrated_running_state(self):
-        odoo_running_state, _m, _c = self._get_odoo_running_state(check_only_state=True)
+        odoo_running_state, _m, _c = self._get_odoo_running_state()
         self.odoo_running_state = odoo_running_state
 
-    def _get_odoo_running_state(self, check_only_state=False):  # noqa C901
+    def _get_odoo_running_state(self):  # noqa C901
         """
         Get the running state of Odoo and the current version.
-
-        :param check_only_state: If True, only check the running state without fetching
-         current version.
         :return: Tuple of (odoo_running_state, migration_state, current_version)
         """
         odoo_running_state = "stopped"
@@ -1153,6 +1155,11 @@ class OpenupgraderMigration(models.Model):
         if odoo_running_state == "running":
             logger.info("Odoo is already running, skipping command")
             return odoo_running_state, migration_state, current_version
+        # Check backward from the greater version to the lower what file is present
+        # to get the migration state.
+        # Note: the "update" file is later than the "migrate" file, so migration is
+        # done and it's waiting for update
+        # FIXME Is needed to check only for the version that has the migration log?
         versions = self.env["openupgrader.config"].search([], order="name DESC")
         for version in versions:
             # get the state of the migration from log update
@@ -1194,12 +1201,6 @@ class OpenupgraderMigration(models.Model):
                             break
                 break
 
-        if not check_only_state and current_version and self.current_config_id:
-            if migration_state == "migrated":
-                # do migration complete stuff and set the next version to migrate
-                self._do_after_migration()
-        if not self.is_migration_done:
-            self.state = migration_state
         return odoo_running_state, migration_state, current_version
 
     def sql_fixes(self, sql_commands):
