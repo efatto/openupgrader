@@ -1100,6 +1100,8 @@ class OpenupgraderMigration(models.Model):
         )
         if self.dump_each_version_database:
             self.button_dump_current_database()
+        # force save to avoid cache issues
+        self.flush()
         if self.is_migration_done:
             logger.info(
                 "Migration completed from version %s to version %s"
