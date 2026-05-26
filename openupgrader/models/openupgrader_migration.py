@@ -1357,12 +1357,14 @@ class OpenupgraderMigration(models.Model):
             if module_obj.search(
                 [("name", "=", module_to_check), ("state", "=", "installed")], limit=1
             ):
+                # uv pip install module as possibly absent
+                self.install_pip_modules(config_id, module_to_install_name)
+                module_obj.update_list()
                 module_toinstall = module_obj.search(
                     [("name", "=", module_to_install_name)], limit=1
                 )
                 if module_toinstall:
-                    # uv pip install module as possibly absent
-                    self.install_pip_modules(config_id, module_to_install_name)
+                    logging.info(f"Installing module: {module_toinstall.name}")
                     module_toinstall.button_immediate_install()
         self.button_stop_odoo()
 
