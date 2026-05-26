@@ -1501,7 +1501,7 @@ class OpenupgraderMigration(models.Model):
             version_val = f"=={config_id.name}.*" if odoo_version_int >= 15 else ""
             pkg_name = f"odoo{release_val}-addon-{name}{version_val}"
             command = (
-                "uv pip install --index-strategy unsafe-best-match "
+                "uv pip install --index-strategy unsafe-best-match --upgrade "
                 "--prerelease=allow {pkg}"
             ).format(pkg=pkg_name)
             logger.info("Installing Odoo module with command: %s", command)
