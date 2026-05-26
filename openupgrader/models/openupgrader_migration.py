@@ -1364,8 +1364,10 @@ class OpenupgraderMigration(models.Model):
                     [("name", "=", module_to_install_name)], limit=1
                 )
                 if module_toinstall:
-                    logging.info(f"Installing module: {module_toinstall.name}")
-                    module_toinstall.button_immediate_install()
+                    module_toinstall_id = module_obj.browse(module_toinstall)
+                    if module_toinstall_id:
+                        logging.info(f"Installing module: {module_toinstall_id.name}")
+                        module_toinstall_id.button_immediate_install()
         self.button_stop_odoo()
 
     def uninstall_modules(
