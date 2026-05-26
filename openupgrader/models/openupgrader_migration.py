@@ -988,7 +988,7 @@ class OpenupgraderMigration(models.Model):
             )
 
     def button_draft(self):
-        self.auto_migration_cron_id.active = False
+        self.env.ref("openupgrader.cron_openugrader_do_auto_migration").active = False
         self.button_check_odoo_migrated_running_state()
         if self.odoo_running_state == "running":
             self.show_message_odoo_running()
@@ -1031,7 +1031,7 @@ class OpenupgraderMigration(models.Model):
             self.button_update_current_config()
             time.sleep(5)
         self.button_prepare_for_migration()
-        self.auto_migration_cron_id.write({
+        self.env.ref("openupgrader.cron_openugrader_do_auto_migration").write({
             'active': True,
             'nextcall': fields.Datetime.now(),
             'numbercall': -1,
@@ -1042,7 +1042,7 @@ class OpenupgraderMigration(models.Model):
         # se necessario, ma proviamo prima con l'ORM corretto.
         logger.info(
             "Cron %s activated and committed.",
-            self.auto_migration_cron_id.name
+            self.env.ref("openupgrader.cron_openugrader_do_auto_migration").name
         )
 
     def _final_step(self):
