@@ -109,18 +109,6 @@ class OpenupgraderMigration(models.Model):
         compute="_compute_is_migration_done",
         store=True,
     )
-    auto_migration_cron_id = fields.Many2one(
-        comodel_name="ir.cron",
-        string="Auto Migration Cron",
-        default=lambda self: self.env.ref(
-            "openupgrader.cron_openugrader_do_auto_migration",
-            raise_if_not_found=False,
-        ),
-    )
-    is_auto_migration_active = fields.Boolean(
-        related="auto_migration_cron_id.active",
-        store=True,
-    )
     migrate_filestore = fields.Boolean(default=True)
     dump_each_version_database = fields.Boolean(
         default=True,
