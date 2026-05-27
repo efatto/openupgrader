@@ -772,7 +772,7 @@ class OpenupgraderMigration(models.Model):
 
     def _restore(self, force=False):
         self.ensure_one()
-        self.button_refresh_odoo_running_state()
+        self.button_check_odoo_migrated_running_state()
         if self.odoo_running_state == "running":
             self.show_message_odoo_running()
         self.button_clean_logs()
