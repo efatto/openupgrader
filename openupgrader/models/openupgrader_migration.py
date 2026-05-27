@@ -1269,29 +1269,22 @@ class OpenupgraderMigration(models.Model):
         migration_state, current_version = self._get_migration_state_from_logs()
         return odoo_running_state, migration_state, current_version
 
-    def _get_pg_env(self):
-        env = os.environ.copy()
-        env.update(
-            {
-                "PGPORT": self.db_port,
-                "PGHOST": self.pg_host or "",
-                "PGUSER": self.pg_user,
-                "PGPASSWORD": self.pg_password_var or self.pg_password or "",
-            }
-        )
-        return env
-
-    def _run_psql_command(self, db_name, command):
-        """Helper to run a psql command with the correct environment"""
-        env = self._get_pg_env()
-        cmd = ["psql", "-d", db_name, "-c", command]
-        return run(cmd, env=env, check=False)
-
     def sql_fixes(self, sql_commands):
+        # do not change quote order as it will change the way the sql command is
+        # interpreted!
         logger.info("Doing custom sql commands.")
-        db_name = f"{self.env.cr.dbname}_migrate"
         for sql_command in sql_commands:
-            self._run_psql_command(db_name, sql_command.name)
+            run(
+                [
+                    f"export PGPORT={self.db_port} && "
+                    f"export PGHOST={self.pg_host or ''} && "
+                    f"export PGUSER={self.pg_user} && export "
+                    f"PGPASSWORD={self.pg_password_var or self.pg_password or ''} && "
+                    f"psql -d {self.env.cr.dbname}_migrate "
+                    f'-c "{sql_command.name}"',
+                ],
+                shell=True,
+            )
 
     def post_migration(self):
         pass
