@@ -454,8 +454,8 @@ class OpenupgraderConfig(models.Model):
             if os.path.isfile(odoo_requirements_file):
                 with open(odoo_requirements_file, "r") as req_file:
                     for line in req_file:
-                        line = line.strip()
-                        if line and not line.startswith("#"):
+                        line = line.split("#")[0].strip()
+                        if line:
                             uv_override_deps.append(line)
 
             if uv_override_deps:
