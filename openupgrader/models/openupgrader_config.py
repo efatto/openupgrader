@@ -449,21 +449,7 @@ class OpenupgraderConfig(models.Model):
                     self.odoo_repo_id.remote_branch or self.name,
                     odoo_path,
                 )
-            uv_override_deps = []
-            if self.name in ["14.0", "15.0"]:
-                uv_override_deps.extend(["setuptools<70", "XlsxWriter==3.2.9"])
-            if self.name in ["16.0"]:
-                uv_override_deps.append("setuptools<70")
-            if self.name in ["16.0", "17.0"]:
-                uv_override_deps.extend(
-                    [
-                        "Werkzeug==2.0.2",
-                        "lxml==4.9.3",
-                        "gevent==22.10.2",
-                        "greenlet==2.0.2",
-                        "docutils==0.18.1",
-                    ]
-                )
+            uv_override_deps = self.pip_requirement_ids.mapped("name") or []
             if uv_override_deps:
                 if (
                     "tool.uv"
