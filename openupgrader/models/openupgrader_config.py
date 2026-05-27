@@ -450,6 +450,14 @@ class OpenupgraderConfig(models.Model):
                     odoo_path,
                 )
             uv_override_deps = self.pip_requirement_ids.mapped("name") or []
+            odoo_requirements_file = os.path.join(odoo_path, "requirements.txt")
+            if os.path.isfile(odoo_requirements_file):
+                with open(odoo_requirements_file, "r") as req_file:
+                    for line in req_file:
+                        line = line.strip()
+                        if line and not line.startswith("#"):
+                            uv_override_deps.append(line)
+
             if uv_override_deps:
                 if (
                     "tool.uv"
