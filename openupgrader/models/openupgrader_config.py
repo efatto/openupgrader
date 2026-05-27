@@ -449,14 +449,44 @@ class OpenupgraderConfig(models.Model):
                     self.odoo_repo_id.remote_branch or self.name,
                     odoo_path,
                 )
-            uv_override_deps = self.pip_requirement_ids.mapped("name") or []
+            pip_requirements = self.pip_requirement_ids.mapped("name") or []
+            uv_override_deps = []
+            # we need to keep the name of the package to avoid duplicates
+            # from odoo_requirements_file
+            pip_requirements_names = [
+                r.split("==")[0]
+                .split(">")[0]
+                .split("<")[0]
+                .split("~")[0]
+                .split("!")[0]
+                .split(";")[0]
+                .split("[")[0]
+                .strip()
+                .lower()
+                for r in pip_requirements
+            ]
             odoo_requirements_file = os.path.join(odoo_path, "requirements.txt")
             if os.path.isfile(odoo_requirements_file):
                 with open(odoo_requirements_file, "r") as req_file:
                     for line in req_file:
                         line = line.split("#")[0].strip()
-                        if line:
+                        if not line:
+                            continue
+                        # check if the package is already in pip_requirements
+                        package_name = (
+                            line.split("==")[0]
+                            .split(">")[0]
+                            .split("<")[0]
+                            .split("~")[0]
+                            .split("!")[0]
+                            .split(";")[0]
+                            .split("[")[0]
+                            .strip()
+                            .lower()
+                        )
+                        if package_name not in pip_requirements_names:
                             uv_override_deps.append(line)
+            uv_override_deps.extend(pip_requirements)
 
             if uv_override_deps:
                 if (
