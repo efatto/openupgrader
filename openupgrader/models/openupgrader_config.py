@@ -461,6 +461,7 @@ class OpenupgraderConfig(models.Model):
                 .split("!")[0]
                 .split(";")[0]
                 .split("[")[0]
+                .split("@")[0]
                 .strip()
                 .lower()
                 for r in pip_requirements
@@ -481,6 +482,7 @@ class OpenupgraderConfig(models.Model):
                             .split("!")[0]
                             .split(";")[0]
                             .split("[")[0]
+                            .split("@")[0]
                             .strip()
                             .lower()
                         )
