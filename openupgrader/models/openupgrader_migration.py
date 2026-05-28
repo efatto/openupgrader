@@ -724,11 +724,12 @@ class OpenupgraderMigration(models.Model):
         if not os.path.isfile(dump_file_sql):
             raise UserError(_("Dump sql file %s not found!") % dump_file_sql)
         logger.info(
-            "Restoring %(kind_db)s db %(from_db)s %(db)s_migrate."
+            "Restoring %(kind_db)s from %(sql_file)s db %(from_db)s %(db)s_migrate."
             % dict(
                 db=self.env.cr.dbname,
                 from_db="" if config_id else f"from {self.env.cr.dbname} to",
                 kind_db="last dumped" if config_id else "original",
+                sql_file=dump_file_sql,
             )
         )
         Popen(
