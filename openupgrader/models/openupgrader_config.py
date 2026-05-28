@@ -268,6 +268,21 @@ class OpenupgraderConfig(models.Model):
     obsolete_modules = fields.Text()
     core_modules = fields.Text()
 
+    @staticmethod
+    def _extract_package_name(requirement):
+        return (
+            requirement.split("==")[0]
+            .split(">")[0]
+            .split("<")[0]
+            .split("~")[0]
+            .split("!")[0]
+            .split(";")[0]
+            .split("[")[0]
+            .split("@")[0]
+            .strip()
+            .lower()
+        )
+
     def _create_db_backup(self, folder):
         self.ensure_one()
         if not self.db_backup_id:
@@ -454,17 +469,7 @@ class OpenupgraderConfig(models.Model):
             # we need to keep the name of the package to avoid duplicates
             # from odoo_requirements_file
             pip_requirements_names = [
-                r.split("==")[0]
-                .split(">")[0]
-                .split("<")[0]
-                .split("~")[0]
-                .split("!")[0]
-                .split(";")[0]
-                .split("[")[0]
-                .split("@")[0]
-                .strip()
-                .lower()
-                for r in pip_requirements
+                self._extract_package_name(r) for r in pip_requirements
             ]
             odoo_requirements_file = os.path.join(odoo_path, "requirements.txt")
             if os.path.isfile(odoo_requirements_file):
@@ -474,18 +479,7 @@ class OpenupgraderConfig(models.Model):
                         if not line:
                             continue
                         # check if the package is already in pip_requirements
-                        package_name = (
-                            line.split("==")[0]
-                            .split(">")[0]
-                            .split("<")[0]
-                            .split("~")[0]
-                            .split("!")[0]
-                            .split(";")[0]
-                            .split("[")[0]
-                            .split("@")[0]
-                            .strip()
-                            .lower()
-                        )
+                        package_name = self._extract_package_name(line)
                         if package_name not in pip_requirements_names:
                             uv_override_deps.append(line)
             uv_override_deps.extend(pip_requirements)
