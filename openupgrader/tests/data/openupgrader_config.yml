@@ -5,17 +5,21 @@
       - odoorpc
       - pysftp
       - PyYAML
-  - odoo: https://github.com/OCA/OCB.git 19.0
-  - after_migration_to_this_version_sql_command:
-  - before_migration_to_next_version_sql_command:
+  - odoo: "https://github.com/OCA/OCB.git 19.0"
   - odoo_pip_requirements:
       - module_change_auto_install
-  - sql_update_commands:
-  - auto_install:
-  - delete:
-  - obsolete:
-  - uninstall_after_migration_to_this_version:
-  - uninstall_before_migration_to_next_version:
+  - sql_update_commands: ""
+  - after_migration_to_this_version_sql_command: ""
+  - before_migration_to_next_version_sql_command: ""
+  - after_migration_to_this_version_python_command: ""
+  - before_migration_to_next_version_python_command: ""
+  - auto_install: ""
+  - delete: ""
+  - obsolete: ""
+  - uninstall_after_migration_to_this_version: ""
+  - uninstall_before_migration_to_next_version: ""
+  - found_to_check: ""
+  - uninstall_as_not_exist: ""
 "18.0":
   - python_version: "3.12.11"
   - pip_requirements:
@@ -24,22 +28,24 @@
       - pysftp
       - PyYAML
       - packaging
-  - odoo: https://github.com/OCA/OCB.git 18.0
-  - after_migration_to_this_version_sql_command:
-  - before_migration_to_next_version_sql_command:
+  - odoo: "https://github.com/OCA/OCB.git 18.0"
   - odoo_pip_requirements:
       - module_change_auto_install
-  - sql_update_commands:
+  - sql_update_commands: ""
+  - after_migration_to_this_version_sql_command: ""
+  - before_migration_to_next_version_sql_command: ""
+  - after_migration_to_this_version_python_command: ""
+  - before_migration_to_next_version_python_command: ""
   - auto_install:
       - account_invoice_single_tax account_tax_one_vat
-  - delete:
-  - obsolete:
+  - delete: ""
+  - obsolete: ""
+  - uninstall_after_migration_to_this_version: ""
+  - uninstall_before_migration_to_next_version: ""
   - found_to_check:
       - none
   - uninstall_as_not_exist:
       - none
-  - uninstall_after_migration_to_this_version:
-  - uninstall_before_migration_to_next_version:
 "17.0":
   - python_version: "3.10.12"
   - pip_requirements:
@@ -48,18 +54,22 @@
       - odoorpc
       - pysftp
       - PyYAML
-  - odoo: https://github.com/OCA/OCB.git 17.0
-  - after_migration_to_this_version_sql_command:
-  - before_migration_to_next_version_sql_command:
-      - "ALTER TABLE purchase_order DROP COLUMN IF EXISTS project_id;"
+  - odoo: "https://github.com/OCA/OCB.git 17.0"
   - odoo_pip_requirements:
       - module_change_auto_install
-  - sql_update_commands:
-  - auto_install:
-  - delete:
-  - obsolete:
-  - uninstall_after_migration_to_this_version:
-  - uninstall_before_migration_to_next_version:
+  - sql_update_commands: ""
+  - after_migration_to_this_version_sql_command: ""
+  - before_migration_to_next_version_sql_command:
+      - ALTER TABLE purchase_order DROP COLUMN IF EXISTS project_id;
+  - after_migration_to_this_version_python_command: ""
+  - before_migration_to_next_version_python_command: ""
+  - auto_install: ""
+  - delete: ""
+  - obsolete: ""
+  - uninstall_after_migration_to_this_version: ""
+  - uninstall_before_migration_to_next_version: ""
+  - found_to_check: ""
+  - uninstall_as_not_exist: ""
 "16.0":
   - python_version: "3.10.12"
   - pip_requirements:
@@ -68,18 +78,23 @@
       - odoorpc
       - pysftp
       - PyYAML
-  - odoo: https://github.com/OCA/OCB.git 16.0
+  - odoo: "https://github.com/OCA/OCB.git 16.0"
   - odoo_pip_requirements:
       - module_change_auto_install
-  - after_migration_to_this_version_sql_command:
-  - before_migration_to_next_version_sql_command:
+  - sql_update_commands: ""
+  - after_migration_to_this_version_sql_command: ""
+  - before_migration_to_next_version_sql_command: ""
+  - after_migration_to_this_version_python_command: ""
+  - before_migration_to_next_version_python_command: ""
   - auto_install:
       - base auditlog
-  - delete:
+  - delete: ""
   - obsolete:
-      - l10n_it_ricevute_bancarie # renamed to l10n_it_riba, then l10n_it_riba_oca
-  - uninstall_after_migration_to_this_version:
-  - uninstall_before_migration_to_next_version:
+      - l10n_it_ricevute_bancarie
+  - uninstall_after_migration_to_this_version: ""
+  - uninstall_before_migration_to_next_version: ""
+  - found_to_check: ""
+  - uninstall_as_not_exist: ""
 "15.0":
   - python_version: "3.8.16"
   - pip_requirements:
@@ -88,16 +103,21 @@
       - odoorpc
       - pysftp
       - PyYAML
-  - odoo: https://github.com/OCA/OCB.git 15.0
+  - odoo: "https://github.com/OCA/OCB.git 15.0"
   - odoo_pip_requirements:
       - module_change_auto_install
-  - after_migration_to_this_version_sql_command:
-  - before_migration_to_next_version_sql_command:
-  - auto_install:
-  - delete:
-  - obsolete:
-  - uninstall_after_migration_to_this_version:
-  - uninstall_before_migration_to_next_version:
+  - sql_update_commands: ""
+  - after_migration_to_this_version_sql_command: ""
+  - before_migration_to_next_version_sql_command: ""
+  - after_migration_to_this_version_python_command: ""
+  - before_migration_to_next_version_python_command: ""
+  - auto_install: ""
+  - delete: ""
+  - obsolete: ""
+  - uninstall_after_migration_to_this_version: ""
+  - uninstall_before_migration_to_next_version: ""
+  - found_to_check: ""
+  - uninstall_as_not_exist: ""
 "14.0":
   - python_version: "3.8.16"
   - pip_requirements:
@@ -106,89 +126,18 @@
       - odoorpc
       - pysftp
       - PyYAML
-  - odoo: https://github.com/OCA/OCB.git 14.0
+  - odoo: "https://github.com/OCA/OCB.git 14.0"
   - odoo_pip_requirements:
       - module_change_auto_install
-  - after_migration_to_this_version_sql_command:
-  - before_migration_to_next_version_sql_command:
-  - auto_install:
-  - delete:
-  - obsolete:
-  - uninstall_after_migration_to_this_version:
-  - uninstall_before_migration_to_next_version:
-"13.0":
-  - python_version: "3.7.16"
-  - pip_requirements:
-      - git+https://github.com/OCA/openupgradelib.git@master#egg=openupgradelib
-      - odoorpc
-      - pysftp
-      - PyYAML
-  - after_migration_to_this_version_sql_command:
-  - before_migration_to_next_version_sql_command:
-  - auto_install:
-  - delete:
-  - uninstall_after_migration_to_this_version:
-  - uninstall_before_migration_to_next_version:
-"12.0":
-  - python_version: "3.7.16"
-  - pip_requirements:
-      - git+https://github.com/OCA/openupgradelib.git@master#egg=openupgradelib
-      - odoorpc
-      - pysftp
-      - PyYAML
-  - after_migration_to_this_version_sql_command:
-  - before_migration_to_next_version_sql_command:
-  - auto_install:
-  - delete:
-  - uninstall_after_migration_to_this_version:
-  - uninstall_before_migration_to_next_version:
-"11.0":
-  - python_version: "3.5"
-  - pip_requirements:
-      - git+https://github.com/OCA/openupgradelib.git@master#egg=openupgradelib
-  - after_migration_to_this_version_sql_command:
-  - before_migration_to_next_version_sql_command:
-  - auto_install:
-  - delete:
-  - uninstall_after_migration_to_this_version:
-  - uninstall_before_migration_to_next_version:
-"10.0":
-  - python_version: "2.7"
-  - pip_requirements:
-      - git+https://github.com/OCA/openupgradelib.git@master#egg=openupgradelib
-  - after_migration_to_this_version_sql_command:
-  - before_migration_to_next_version_sql_command:
-  - auto_install:
-  - delete:
-  - uninstall_after_migration_to_this_version:
-  - uninstall_before_migration_to_next_version:
-"9.0":
-  - python_version: "2.7"
-  - pip_requirements:
-      - git+https://github.com/OCA/openupgradelib.git@master#egg=openupgradelib
-  - after_migration_to_this_version_sql_command:
-  - before_migration_to_next_version_sql_command:
-  - auto_install:
-  - delete:
-  - uninstall_after_migration_to_this_version:
-  - uninstall_before_migration_to_next_version:
-"8.0":
-  - python_version: "2.7"
-  - pip_requirements:
-      - git+https://github.com/OCA/openupgradelib.git@master#egg=openupgradelib
-  - after_migration_to_this_version_sql_command:
-  - before_migration_to_next_version_sql_command:
-  - auto_install:
-  - delete:
-  - uninstall_after_migration_to_this_version:
-  - uninstall_before_migration_to_next_version:
-"7.0":
-  - python_version: "2.7"
-  - pip_requirements:
-      - git+https://github.com/OCA/openupgradelib.git@master#egg=openupgradelib
-  - after_migration_to_this_version_sql_command:
-  - before_migration_to_next_version_sql_command:
-  - auto_install:
-  - delete:
-  - uninstall_after_migration_to_this_version:
-  - uninstall_before_migration_to_next_version:
+  - sql_update_commands: ""
+  - after_migration_to_this_version_sql_command: ""
+  - before_migration_to_next_version_sql_command: ""
+  - after_migration_to_this_version_python_command: ""
+  - before_migration_to_next_version_python_command: ""
+  - auto_install: ""
+  - delete: ""
+  - obsolete: ""
+  - uninstall_after_migration_to_this_version: ""
+  - uninstall_before_migration_to_next_version: ""
+  - found_to_check: ""
+  - uninstall_as_not_exist: ""
