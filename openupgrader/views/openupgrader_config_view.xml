@@ -9,6 +9,8 @@
                 <field name="python_version" />
                 <field name="sql_after_migration_command_ids" />
                 <field name="sql_before_migration_command_ids" />
+                <field name="python_after_migration_command_ids" />
+                <field name="python_before_migration_command_ids" />
                 <field name="module_auto_install_ids" />
                 <field name="module_to_delete_after_migration_ids" />
                 <field name="module_to_uninstall_after_migration_ids" />
@@ -79,7 +81,7 @@
                                 </field>
                             </group>
                         </page>
-                        <page string="SQL Commands">
+                        <page string="Custom Commands">
                             <group
                                 string="Sql command to execute before migration to the next version"
                             >
@@ -94,6 +96,26 @@
                                 string="Sql command to execute after migration to this version"
                             >
                                 <field name="sql_after_migration_command_ids">
+                                    <tree editable="top">
+                                        <field name="sequence" widget="handle" />
+                                        <field name="name" />
+                                    </tree>
+                                </field>
+                            </group>
+                            <group
+                                string="Python command to execute before migration to the next version"
+                            >
+                                <field name="python_before_migration_command_ids">
+                                    <tree editable="top">
+                                        <field name="sequence" widget="handle" />
+                                        <field name="name" />
+                                    </tree>
+                                </field>
+                            </group>
+                            <group
+                                string="Python command to execute after migration to this version"
+                            >
+                                <field name="python_after_migration_command_ids">
                                     <tree editable="top">
                                         <field name="sequence" widget="handle" />
                                         <field name="name" />

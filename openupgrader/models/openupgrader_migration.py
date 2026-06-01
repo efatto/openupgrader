@@ -817,6 +817,8 @@ class OpenupgraderMigration(models.Model):
         self.set_mail_server_and_cron_state_to(active=False)
         before_sql = self.current_config_id.sql_before_migration_command_ids
         self.sql_fixes(before_sql)
+        before_python = self.current_config_id.python_before_migration_command_ids
+        self.python_fixes(before_python)
         self.uninstall_modules(self.current_config_id, before_migration=True)
         self.delete_not_installed_module_views()
         self.delete_old_modules(self.current_config_id)
@@ -1131,6 +1133,7 @@ class OpenupgraderMigration(models.Model):
         self.auto_install_modules(self.next_config_id)
         self.uninstall_modules(self.next_config_id, after_migration=True)
         self.sql_fixes(self.current_config_id.sql_after_migration_command_ids)
+        self.python_fixes(self.current_config_id.python_after_migration_command_ids)
         # move version to the next step
         self.current_config_id = self.next_config_id
         self.next_config_id = self.env["openupgrader.config"].search(
@@ -1286,6 +1289,19 @@ class OpenupgraderMigration(models.Model):
                 ],
                 shell=True,
             )
+
+    def python_fixes(self, python_commands):
+        logger.info("Doing custom python commands.")
+        for python_command in python_commands:
+            try:
+                safe_eval(
+                    python_command.name,
+                    {"self": self, "api": api, "fields": fields, "models": models},
+                )
+            except Exception as e:
+                logger.error(
+                    f"Error executing python command: {python_command.name}. Error: {e}"
+                )
 
     def post_migration(self):
         pass

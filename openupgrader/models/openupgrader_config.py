@@ -143,6 +143,21 @@ class SqlUpdateCommand(models.Model):
     )
 
 
+class PythonUpdateCommand(models.Model):
+    _name = "python.update.command"
+    _description = "Python Update Command"
+    _order = "sequence, id"
+
+    name = fields.Text(string="Python Command", required=True)
+    sequence = fields.Integer(string="Python Sequence")
+    openupgrade_after_config_id = fields.Many2one(
+        comodel_name="openupgrader.config",
+    )
+    openupgrade_before_config_id = fields.Many2one(
+        comodel_name="openupgrader.config",
+    )
+
+
 class OpenupgraderConfig(models.Model):
     _name = "openupgrader.config"
     _description = "OpenUpgrader config"
@@ -228,6 +243,18 @@ class OpenupgraderConfig(models.Model):
         comodel_name="sql.update.command",
         inverse_name="openupgrade_before_config_id",
         string="SQL before commands",
+        copy=False,
+    )
+    python_after_migration_command_ids = fields.One2many(
+        comodel_name="python.update.command",
+        inverse_name="openupgrade_after_config_id",
+        string="Python after commands",
+        copy=False,
+    )
+    python_before_migration_command_ids = fields.One2many(
+        comodel_name="python.update.command",
+        inverse_name="openupgrade_before_config_id",
+        string="Python before commands",
         copy=False,
     )
     module_auto_install_ids = fields.One2many(
@@ -557,6 +584,8 @@ class OpenupgraderConfig(models.Model):
             self.odoo_pip_requirement_ids = False
             self.sql_after_migration_command_ids = False
             self.sql_before_migration_command_ids = False
+            self.python_after_migration_command_ids = False
+            self.python_before_migration_command_ids = False
             self.module_auto_install_ids = False
             self.module_to_delete_after_migration_ids = False
             self.module_to_uninstall_after_migration_ids = False
@@ -743,6 +772,44 @@ class OpenupgraderConfig(models.Model):
                     )
                     if command
                     not in self.sql_before_migration_command_ids.mapped("name")
+                ]
+            if recipe.get("after_migration_to_this_version_python_command"):
+                after_migration_to_this_version_python_command = recipe.get(
+                    "after_migration_to_this_version_python_command"
+                )
+                self.python_after_migration_command_ids = [
+                    (
+                        0,
+                        0,
+                        {
+                            "name": command,
+                            "sequence": i,
+                        },
+                    )
+                    for i, command in enumerate(
+                        after_migration_to_this_version_python_command
+                    )
+                    if command
+                    not in self.python_after_migration_command_ids.mapped("name")
+                ]
+            if recipe.get("before_migration_to_next_version_python_command"):
+                before_migration_to_next_version_python_command = recipe.get(
+                    "before_migration_to_next_version_python_command"
+                )
+                self.python_before_migration_command_ids = [
+                    (
+                        0,
+                        0,
+                        {
+                            "name": command,
+                            "sequence": i,
+                        },
+                    )
+                    for i, command in enumerate(
+                        before_migration_to_next_version_python_command
+                    )
+                    if command
+                    not in self.python_before_migration_command_ids.mapped("name")
                 ]
             if recipe.get("auto_install"):
                 auto_install = recipe.get("auto_install")
