@@ -1545,13 +1545,11 @@ class OpenupgraderMigration(models.Model):
             installed_from_extra = False
             if extra_index_url:
                 command = (
-                    "uv pip install --index-url {index_url} --no-index "
+                    "uv pip install --default-index {index_url} "
                     "--index-strategy unsafe-best-match --upgrade "
                     "--prerelease=allow {pkg}"
                 ).format(index_url=extra_index_url, pkg=pkg_name)
-                logger.info(
-                    "Attempting to install from extra index: %s", extra_index_url
-                )
+                logger.info("Attempting to install from extra index")
                 process = Popen(
                     command,
                     cwd=venv_path,
@@ -1560,19 +1558,23 @@ class OpenupgraderMigration(models.Model):
                     stdout=PIPE,
                     env=subprocess_env,
                 )
-                stdout, stderr = process.communicate()
+                process.communicate()
                 if process.returncode == 0:
                     installed_from_extra = True
                     logger.info(
-                        "Odoo module %s installed successfully from extra index" % name
+                        "Odoo module %s installed successfully from extra index"
+                        % name
                     )
 
             if not installed_from_extra:
                 # Priority 2: OCA (standard index)
                 # Verify authorship before installing from standard index
                 if self._check_oca_authorship(pkg_name):
+                    # Ensure we use standard index even if UV_INDEX is set
                     command = (
-                        "uv pip install --index-strategy unsafe-best-match --upgrade "
+                        "uv pip install --default-index "
+                        "https://pypi.org/simple "
+                        "--index-strategy unsafe-best-match --upgrade "
                         "--prerelease=allow {pkg}"
                     ).format(pkg=pkg_name)
                     logger.info(
