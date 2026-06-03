@@ -1544,11 +1544,18 @@ class OpenupgraderMigration(models.Model):
             extra_index_url = subprocess_env.get("UV_INDEX")
             installed_from_extra = False
             if extra_index_url:
+                # Use a copy of env to avoid modifying it for subsequent calls
+                env_extra = subprocess_env.copy()
+                # Ensure UV_INDEX doesn't conflict with --default-index
+                # and forces uv to use only the provided index
+                if "UV_INDEX" in env_extra:
+                    del env_extra["UV_INDEX"]
+
                 command = (
-                    "uv pip install --default-index {index_url} "
+                    "uv pip install --default-index {extra_index_url} "
                     "--index-strategy unsafe-best-match --upgrade "
                     "--prerelease=allow {pkg}"
-                ).format(index_url=extra_index_url, pkg=pkg_name)
+                ).format(extra_index_url=extra_index_url, pkg=pkg_name)
                 logger.info("Attempting to install from extra index")
                 process = Popen(
                     command,
@@ -1556,7 +1563,7 @@ class OpenupgraderMigration(models.Model):
                     shell=True,
                     stderr=PIPE,
                     stdout=PIPE,
-                    env=subprocess_env,
+                    env=env_extra,
                 )
                 process.communicate()
                 if process.returncode == 0:
@@ -1570,7 +1577,11 @@ class OpenupgraderMigration(models.Model):
                 # Priority 2: OCA (standard index)
                 # Verify authorship before installing from standard index
                 if self._check_oca_authorship(pkg_name):
-                    # Ensure we use standard index even if UV_INDEX is set
+                    # Ensure we use ONLY standard index even if UV_INDEX is set
+                    env_standard = subprocess_env.copy()
+                    if "UV_INDEX" in env_standard:
+                        del env_standard["UV_INDEX"]
+
                     command = (
                         "uv pip install --default-index "
                         "https://pypi.org/simple "
@@ -1587,7 +1598,7 @@ class OpenupgraderMigration(models.Model):
                         shell=True,
                         stderr=PIPE,
                         stdout=PIPE,
-                        env=subprocess_env,
+                        env=env_standard,
                     )
                     stdout, stderr = process.communicate()
                     log_texts = []
