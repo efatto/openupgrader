@@ -1,4 +1,5 @@
 import io
+import json
 import logging
 import os
 import re
@@ -9,7 +10,7 @@ import sys
 import time
 from pathlib import Path
 from subprocess import PIPE, Popen, run
-from urllib.request import HTTPSHandler
+from urllib.request import HTTPSHandler, Request, urlopen
 
 import odoorpc
 import psutil
@@ -1477,6 +1478,34 @@ class OpenupgraderMigration(models.Model):
         logger.info("Modules present before the removal: %s" % msg_modules)
         logger.info("Modules present after the removal: %s" % msg_modules_after)
 
+    def _check_oca_authorship(self, pkg_name):
+        """
+        Verify if the package on PyPI is owned by the 'OCA' user.
+        """
+        url = f"https://pypi.org/pypi/{pkg_name}/json"
+        try:
+            req = Request(url)
+            # Use a short timeout to avoid blocking migration for too long
+            with urlopen(req, timeout=10) as response:
+                if response.status == 200:
+                    data = json.loads(response.read().decode())
+                    ownership = data.get("ownership", {})
+                    roles = ownership.get("roles", [])
+                    for role_info in roles:
+                        if (
+                            role_info.get("user") == "OCA"
+                            and role_info.get("role") == "Owner"
+                        ):
+                            return True
+            logger.warning(
+                "Package %s found on PyPI but not owned by OCA. "
+                "Authorship check failed.",
+                pkg_name,
+            )
+        except Exception as e:
+            logger.error("Error verifying OCA authorship for %s: %s", pkg_name, e)
+        return False
+
     def install_pip_modules(self, config_id, module_names):
         if not isinstance(module_names, list):
             module_names = [module_names]
@@ -1510,43 +1539,102 @@ class OpenupgraderMigration(models.Model):
             release_val = odoo_version_int if odoo_version_int < 15 else ""
             version_val = f"=={config_id.name}.*" if odoo_version_int >= 15 else ""
             pkg_name = f"odoo{release_val}-addon-{name}{version_val}"
-            command = (
-                "uv pip install --index-strategy unsafe-best-match --upgrade "
-                "--prerelease=allow {pkg}"
-            ).format(pkg=pkg_name)
-            logger.info("Installing Odoo module with command: %s", command)
-            process = Popen(
-                command,
-                cwd=venv_path,
-                shell=True,
-                stderr=PIPE,
-                stdout=PIPE,
-                env=subprocess_env,
-            )
-            log_lines = process.stderr.readlines()
-            log_texts = []
-            for log_line in log_lines:
-                try:
-                    log_l = log_line.decode().lower()
-                    log_texts.append(log_l)
-                except UnicodeDecodeError:
-                    continue
-            if any("no solution found" in log_text for log_text in log_texts):
-                not_installable_modules.append(name)
+
+            # Priority 1: Extra index URL
+            extra_index_url = subprocess_env.get("UV_INDEX")
+            installed_from_extra = False
+            if extra_index_url:
+                command = (
+                    "uv pip install --index-url {index_url} --no-index "
+                    "--index-strategy unsafe-best-match --upgrade "
+                    "--prerelease=allow {pkg}"
+                ).format(index_url=extra_index_url, pkg=pkg_name)
                 logger.info(
-                    "Module %s not found with uv pip installer: %s"
-                    % (name, "\n".join(log_text for log_text in log_texts))
+                    "Attempting to install from extra index: %s", extra_index_url
                 )
-            if any("pkg_resources" in log_text for log_text in log_texts):
-                not_installable_modules.append(name)
-                err_log = "\n".join(log_text for log_text in log_texts)
-                logger.info(
-                    "Module %s not installable for setuptools error: %s", name, err_log
+                process = Popen(
+                    command,
+                    cwd=venv_path,
+                    shell=True,
+                    stderr=PIPE,
+                    stdout=PIPE,
+                    env=subprocess_env,
                 )
-            logger.info(
-                "Odoo module %s installed successfully with uv pip: %s"
-                % (name, "\n".join(log_text for log_text in log_texts))
-            )
+                stdout, stderr = process.communicate()
+                if process.returncode == 0:
+                    installed_from_extra = True
+                    logger.info(
+                        "Odoo module %s installed successfully from extra index" % name
+                    )
+
+            if not installed_from_extra:
+                # Priority 2: OCA (standard index)
+                # Verify authorship before installing from standard index
+                if self._check_oca_authorship(pkg_name):
+                    command = (
+                        "uv pip install --index-strategy unsafe-best-match --upgrade "
+                        "--prerelease=allow {pkg}"
+                    ).format(pkg=pkg_name)
+                    logger.info(
+                        "Installing Odoo module from standard index: %s",
+                        command,
+                    )
+                    process = Popen(
+                        command,
+                        cwd=venv_path,
+                        shell=True,
+                        stderr=PIPE,
+                        stdout=PIPE,
+                        env=subprocess_env,
+                    )
+                    stdout, stderr = process.communicate()
+                    log_texts = []
+                    if stderr:
+                        for log_line in stderr.splitlines():
+                            try:
+                                log_l = log_line.decode().lower()
+                                log_texts.append(log_l)
+                            except UnicodeDecodeError:
+                                continue
+
+                    if process.returncode != 0:
+                        if any(
+                            "no solution found" in log_text for log_text in log_texts
+                        ):
+                            not_installable_modules.append(name)
+                            logger.info(
+                                "Module %s not found with uv pip installer: %s"
+                                % (
+                                    name,
+                                    "\n".join(log_text for log_text in log_texts),
+                                )
+                            )
+                        elif any("pkg_resources" in log_text for log_text in log_texts):
+                            not_installable_modules.append(name)
+                            err_log = "\n".join(log_text for log_text in log_texts)
+                            logger.info(
+                                "Module %s not installable for setuptools error: %s",
+                                name,
+                                err_log,
+                            )
+                        else:
+                            logger.warning(
+                                "Failed to install module %s: %s",
+                                name,
+                                "\n".join(log_text for log_text in log_texts),
+                            )
+                    else:
+                        logger.info(
+                            "Odoo module %s installed successfully from standard index"
+                            % name
+                        )
+                else:
+                    logger.error(
+                        "Skipping installation of %s from standard index: "
+                        "OCA authorship not verified",
+                        pkg_name,
+                    )
+                    not_installable_modules.append(name)
 
     def install_uninstall_module(self, module_name, install=True):
         logger.info(
