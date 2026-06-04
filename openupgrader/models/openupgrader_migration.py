@@ -1478,7 +1478,7 @@ class OpenupgraderMigration(models.Model):
         logger.info("Modules present before the removal: %s" % msg_modules)
         logger.info("Modules present after the removal: %s" % msg_modules_after)
 
-    def _check_oca_authorship(self, pkg_name):
+    def _check_oca_authorship(self, pkg_name, release):
         """
         Verify if the package on PyPI is owned by the 'OCA' user.
         """
@@ -1491,22 +1491,30 @@ class OpenupgraderMigration(models.Model):
                     data = json.loads(response.read().decode())
                     ownership = data.get("ownership", {})
                     roles = ownership.get("roles", [])
+                    releases = data.get("releases", {})
                     for role_info in roles:
                         if (
                             role_info.get("user") == "OCA"
                             and role_info.get("role") == "Owner"
+                            and release[:4] in [r[:4] for r in releases]
                         ):
                             return True
             logger.warning(
-                "Package %s found on PyPI but not owned by OCA. "
+                "Package %s found on PyPI but not owned by OCA or not with release %s. "
                 "Authorship check failed.",
                 pkg_name,
+                release,
             )
         except Exception as e:
-            logger.error("Error verifying OCA authorship for %s: %s", pkg_name, e)
+            logger.error(
+                "Error verifying OCA authorship for %s release %s: %s",
+                pkg_name,
+                release,
+                e,
+            )
         return False
 
-    def install_pip_modules(self, config_id, module_names):
+    def install_pip_modules(self, config_id, module_names):  # noqa C901
         if not isinstance(module_names, list):
             module_names = [module_names]
         logger.info("Installing Odoo modules with pip: %s" % str(module_names))
@@ -1538,7 +1546,8 @@ class OpenupgraderMigration(models.Model):
             # all pip servers used are safe, do not ignore any package found
             release_val = odoo_version_int if odoo_version_int < 15 else ""
             version_val = f"=={config_id.name}.*" if odoo_version_int >= 15 else ""
-            pkg_name = f"odoo{release_val}-addon-{name}{version_val}"
+            base_pkg_name = f"odoo{release_val}-addon-{name}"
+            pkg_name = f"{base_pkg_name}{version_val}"
 
             # Priority 1: Extra index URL
             extra_index_url = subprocess_env.get("UV_INDEX")
@@ -1569,14 +1578,13 @@ class OpenupgraderMigration(models.Model):
                 if process.returncode == 0:
                     installed_from_extra = True
                     logger.info(
-                        "Odoo module %s installed successfully from extra index"
-                        % name
+                        "Odoo module %s installed successfully from extra index" % name
                     )
 
             if not installed_from_extra:
                 # Priority 2: OCA (standard index)
                 # Verify authorship before installing from standard index
-                if self._check_oca_authorship(pkg_name):
+                if self._check_oca_authorship(base_pkg_name, config_id.name):
                     # Ensure we use ONLY standard index even if UV_INDEX is set
                     env_standard = subprocess_env.copy()
                     if "UV_INDEX" in env_standard:
