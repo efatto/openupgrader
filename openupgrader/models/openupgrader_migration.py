@@ -982,7 +982,9 @@ class OpenupgraderMigration(models.Model):
             [("openupgrader_migration_id", "=", self.id)]
         )
         for openupgrader_config in openupgrader_configs:
-            openupgrader_config.button_recreate_venv()
+            with api.Environment.manage(), self.env.registry.cursor() as new_cr:
+                new_env = api.Environment(new_cr, self.env.uid, self.env.context)
+                openupgrader_config.with_env(new_env).button_recreate_venv()
 
     def button_do_all(self):
         #  0. set migration state to draft
