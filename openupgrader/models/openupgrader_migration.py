@@ -1561,8 +1561,9 @@ class OpenupgraderMigration(models.Model):
                     del env_extra["UV_INDEX"]
 
                 command = (
-                    "uv pip install --default-index {extra_index_url} "
-                    "--index-strategy unsafe-best-match --upgrade "
+                    "uv pip install --index {extra_index_url} "
+                    "--default-index https://pypi.org/simple "
+                    "--index-strategy first-index --upgrade "
                     "--prerelease=allow {pkg}"
                 ).format(extra_index_url=extra_index_url, pkg=pkg_name)
                 logger.info("Attempting to install from extra index")
