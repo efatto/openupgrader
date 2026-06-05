@@ -1,7 +1,7 @@
 "19.0":
   - python_version: "3.12.11"
   - pip_requirements:
-      - git+https://github.com/OCA/openupgradelib.git@master#egg=openupgradelib
+      - openupgradelib@git+https://github.com/OCA/openupgradelib.git@master#egg=openupgradelib
       - odoorpc
       - pysftp
       - PyYAML
@@ -23,10 +23,8 @@
 "18.0":
   - python_version: "3.12.11"
   - pip_requirements:
-      - git+https://github.com/OCA/openupgradelib.git@master#egg=openupgradelib
       - odoorpc
-      - pysftp
-      - PyYAML
+      - openupgradelib@git+https://github.com/OCA/openupgradelib.git@master#egg=openupgradelib
       - packaging
   - odoo: "https://github.com/OCA/OCB.git 18.0"
   - odoo_pip_requirements:
@@ -49,11 +47,14 @@
 "17.0":
   - python_version: "3.10.12"
   - pip_requirements:
-      - setuptools<70
-      - git+https://github.com/OCA/openupgradelib.git@master#egg=openupgradelib
+      - Werkzeug==2.0.2
+      - lxml==4.9.3
+      - gevent==22.10.2
+      - greenlet==2.0.2
+      - docutils==0.18.1
       - odoorpc
-      - pysftp
-      - PyYAML
+      - openupgradelib@git+https://github.com/OCA/openupgradelib.git@master#egg=openupgradelib
+      - setuptools<70
   - odoo: "https://github.com/OCA/OCB.git 17.0"
   - odoo_pip_requirements:
       - module_change_auto_install
@@ -73,11 +74,14 @@
 "16.0":
   - python_version: "3.10.12"
   - pip_requirements:
-      - setuptools<70
-      - git+https://github.com/OCA/openupgradelib.git@master#egg=openupgradelib
+      - Werkzeug==2.0.2
+      - docutils==0.18.1
+      - gevent==22.10.2
+      - greenlet==2.0.2
+      - lxml==4.9.3
       - odoorpc
-      - pysftp
-      - PyYAML
+      - openupgradelib@git+https://github.com/OCA/openupgradelib.git@master#egg=openupgradelib
+      - setuptools<70
   - odoo: "https://github.com/OCA/OCB.git 16.0"
   - odoo_pip_requirements:
       - module_change_auto_install
@@ -98,11 +102,11 @@
 "15.0":
   - python_version: "3.8.16"
   - pip_requirements:
-      - setuptools<70
-      - git+https://github.com/OCA/openupgradelib.git@master#egg=openupgradelib
+      - XlsxWriter==3.2.9
       - odoorpc
-      - pysftp
-      - PyYAML
+      - openupgradelib@git+https://github.com/OCA/openupgradelib.git@master#egg=openupgradelib
+      - setuptools<70
+      - urllib3==1.24.3
   - odoo: "https://github.com/OCA/OCB.git 15.0"
   - odoo_pip_requirements:
       - module_change_auto_install
@@ -121,11 +125,11 @@
 "14.0":
   - python_version: "3.8.16"
   - pip_requirements:
-      - setuptools<70
-      - git+https://github.com/OCA/openupgradelib.git@master#egg=openupgradelib
+      - XlsxWriter==3.2.9
       - odoorpc
-      - pysftp
-      - PyYAML
+      - openupgradelib@git+https://github.com/OCA/openupgradelib.git@master#egg=openupgradelib
+      - setuptools<70
+      - urllib3==1.24.3
   - odoo: "https://github.com/OCA/OCB.git 14.0"
   - odoo_pip_requirements:
       - module_change_auto_install
