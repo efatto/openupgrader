@@ -63,15 +63,6 @@ class OpenupgraderMigration(models.Model):
     verify_ssl = fields.Boolean()
     address = fields.Char("Odoo URL")
     local = fields.Boolean("Odoo is in local network")
-    disabled_cron_ids_set = fields.Char(
-        string="Disabled ir cron ids set",
-    )
-    disabled_ir_mail_server_ids_set = fields.Char(
-        string="Disabled mail server ids",
-    )
-    disabled_fetchmail_server_ids_set = fields.Char(
-        string="Disabled fechmail server ids",
-    )
     db_port = fields.Char(
         string="Database port",
         default=lambda self: config.get("db_port") != "False"
@@ -804,7 +795,6 @@ class OpenupgraderMigration(models.Model):
                 "type": "ir.actions.client",
                 "tag": "reload",
             }
-        self.set_mail_server_and_cron_state_to(active=False)
         # odoo service is stopped automatically at the end of the update process
         return self.start_odoo(self.current_config_id, update=True)
 
@@ -814,8 +804,6 @@ class OpenupgraderMigration(models.Model):
         # do pre-upgrade stuff
         if self.odoo_running_state == "running":
             self.show_message_odoo_running()
-        # Disable at every version cron and mail servers
-        self.set_mail_server_and_cron_state_to(active=False)
         before_sql = self.current_config_id.sql_before_migration_command_ids
         self.sql_fixes(before_sql)
         before_python = self.current_config_id.python_before_migration_command_ids
@@ -831,129 +819,6 @@ class OpenupgraderMigration(models.Model):
                 now = fields.Datetime.now()
                 log_file.write(f"\n\nReady for migration at {now}")
 
-    def set_mail_server_and_cron_state_to(self, active):  # noqa C901
-        conn_vars = self._get_db_connection_variables()
-        # if active:
-        #     # re-enable cron after the migration
-        #     ir_cron_ids = self.disabled_cron_ids_set
-        #     ir_mail_server_ids = self.disabled_ir_mail_server_ids_set
-        #     fetchmail_server_ids = self.disabled_fetchmail_server_ids_set
-        if not active:
-            ir_cron_ids = []
-            if self.current_config_id == self.from_config_id:
-                # get cron from current instance
-                # disable cron before migrating the instance
-                ir_crons = self.env["ir.cron"].search([])
-                ir_cron_ids = set(ir_crons.ids)
-            else:
-                # get cron from migrated database
-                sql = (
-                    f"SELECT id FROM ir_cron WHERE active = "
-                    f"{'false' if active else 'true'};"
-                )
-                process = Popen(
-                    [
-                        f"{conn_vars} && "
-                        f'psql -d {self.env.cr.dbname}_migrate -c "{sql}"'
-                    ],
-                    shell=True,
-                    stdout=PIPE,
-                )
-                has_stdout = True
-                while has_stdout:
-                    one_line_output = process.stdout.readline()
-                    if one_line_output:
-                        try:
-                            ir_cron_ids.append(int(one_line_output.split()[0]))
-                        except (ValueError, IndexError):
-                            continue
-                    else:
-                        has_stdout = False
-                ir_cron_ids = set(ir_cron_ids)
-            if ir_cron_ids:
-                if self.disabled_cron_ids_set:
-                    disabled_cron_ids_set = safe_eval(self.disabled_cron_ids_set)
-                    disabled_cron_ids_set.update(ir_cron_ids)
-                    self.disabled_cron_ids_set = str(disabled_cron_ids_set)
-                else:
-                    self.disabled_cron_ids_set = str(ir_cron_ids)
-            ir_mail_server_ids = self.env["ir.mail_server"].search([])
-            if ir_mail_server_ids:
-                if self.disabled_ir_mail_server_ids_set:
-                    old_ids_set = safe_eval(self.disabled_ir_mail_server_ids_set)
-                    old_ids_set.update(set(ir_mail_server_ids.ids))
-                    self.disabled_ir_mail_server_ids_set = str(old_ids_set)
-                else:
-                    self.disabled_ir_mail_server_ids_set = str(
-                        set(ir_mail_server_ids.ids)
-                    )
-            fetchmail_server_ids = self.env["fetchmail.server"].search(
-                [("state", "=", "done")]
-            )
-            if fetchmail_server_ids:
-                if self.disabled_fetchmail_server_ids_set:
-                    disabled_fetchmail_server_ids_set = safe_eval(
-                        self.disabled_fetchmail_server_ids_set
-                    )
-                    disabled_fetchmail_server_ids_set.update(
-                        set(fetchmail_server_ids.ids)
-                    )
-                    self.disabled_fetchmail_server_ids_set = str(
-                        disabled_fetchmail_server_ids_set
-                    )
-                else:
-                    self.disabled_fetchmail_server_ids_set = str(
-                        set(fetchmail_server_ids.ids)
-                    )
-        if self.disabled_cron_ids_set:
-            cron_ids = safe_eval(self.disabled_cron_ids_set)
-            if len(cron_ids) == 1:
-                sql_filter = f" = {cron_ids.pop()}"
-            else:
-                sql_filter = f" in {tuple(cron_ids)}"
-            sql = (
-                f"UPDATE ir_cron SET active = {'true' if active else 'false'} "
-                f"WHERE id {sql_filter};"
-            )
-            logger.info(f"Setting cron active to {active} for id {sql_filter}")
-            Popen(
-                [f"{conn_vars} && " f'psql -d {self.env.cr.dbname}_migrate -c "{sql}"'],
-                shell=True,
-            )
-        if self.disabled_ir_mail_server_ids_set:
-            mail_ids = safe_eval(self.disabled_ir_mail_server_ids_set)
-            if len(mail_ids) == 1:
-                sql_filter = f" = {mail_ids.pop()}"
-            else:
-                sql_filter = f" in {tuple(mail_ids)}"
-            sql = (
-                f"UPDATE ir_mail_server SET active = {'true' if active else 'false'} "
-                f"WHERE id {sql_filter};"
-            )
-            logger.info(f"Setting mail server active to {active} for id {sql_filter}")
-            Popen(
-                [f"{conn_vars} && " f'psql -d {self.env.cr.dbname}_migrate -c "{sql}"'],
-                shell=True,
-            )
-        if self.disabled_fetchmail_server_ids_set:
-            fetchmail_ids = safe_eval(self.disabled_fetchmail_server_ids_set)
-            if len(fetchmail_ids) == 1:
-                sql_filter = f" = {fetchmail_ids.pop()}"
-            else:
-                sql_filter = f" in {tuple(fetchmail_ids)}"
-            sql = (
-                f"UPDATE fetchmail_server SET state = '{'done' if active else 'draft'}'"
-                f" WHERE id {sql_filter};"
-            )
-            logger.info(
-                f"Setting fetchmail server to "
-                f"'{'done' if active else 'draft'}' for id {sql_filter}"
-            )
-            Popen(
-                [f"{conn_vars} && " f'psql -d {self.env.cr.dbname}_migrate -c "{sql}"'],
-                shell=True,
-            )
-
     def button_draft(self):
         self.env.ref("openupgrader.cron_openugrader_do_auto_migration").active = False
         self.button_check_odoo_migrated_running_state()
@@ -968,9 +833,6 @@ class OpenupgraderMigration(models.Model):
                 os.remove(sql_file_path)
         self.current_config_id = False
         self.next_config_id = False
-        self.disabled_cron_ids_set = False
-        self.disabled_ir_mail_server_ids_set = False
-        self.disabled_fetchmail_server_ids_set = False
         self.uninstalled_modules = False
         self.uninstallable_modules = False
         self.button_clean_logs()
@@ -1305,14 +1167,6 @@ class OpenupgraderMigration(models.Model):
                 logger.error(
                     f"Error executing python command: {python_command.name}. Error: {e}"
                 )
-
-    def post_migration(self):
-        pass
-        # re-enable mail servers and clean db
-        # This method is not used, do by hand after migration confirmation
-        # self.set_mail_server_and_cron_state_to(active=False)
-        # this method has not been ported from the initial version
-        # self.database_cleanup()
 
     def install_repo(self, remote_repo, version_name, repo_path=None):
         if repo_path is None:

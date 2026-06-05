@@ -143,9 +143,6 @@
                             <group>
                                 <field name="uninstalled_modules" />
                                 <field name="uninstallable_modules" />
-                                <field name="disabled_cron_ids_set" />
-                                <field name="disabled_ir_mail_server_ids_set" />
-                                <field name="disabled_fetchmail_server_ids_set" />
                             </group>
                         </page>
                         <page string="Logs">

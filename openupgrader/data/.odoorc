@@ -38,6 +38,7 @@ pg_path = None
 pidfile = None
 proxy_mode = False
 reportgz = False
+running_env = migr
 screencasts = None
 screenshots = /tmp/odoo_tests
 server_wide_modules = base,web
