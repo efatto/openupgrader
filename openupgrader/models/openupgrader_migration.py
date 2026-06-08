@@ -277,10 +277,10 @@ class OpenupgraderMigration(models.Model):
                                 warning_log += w_text
         return critical_log, error_log, warning_log
 
-    def odoo_connect(self):
+    def odoo_connect(self, config_id):
         if self._get_odoo_process_state() == "stopped":
             # start current config odoo if not running
-            self.start_odoo(self.current_config_id)
+            self.start_odoo(config_id)
         if self.db_name and self.db_user and self.db_password:
             try:
                 client = odoorpc.ODOO(
@@ -291,6 +291,8 @@ class OpenupgraderMigration(models.Model):
                 )
             except Exception as e:
                 logger.info("Connection to Odoo failed for %s!" % str(e))
+                # try stop-restart odoo as it is unresponsive
+                self.start_odoo(config_id)
                 return None
             try:
                 client.login(
@@ -979,7 +981,7 @@ class OpenupgraderMigration(models.Model):
                             self.start_odoo(self.current_config_id)
                             for module in modules:
                                 res = self.install_uninstall_module(
-                                    module, install=False
+                                    module, self.current_config_id, install=False
                                 )
                                 if module not in obsolete_modules:
                                     if res:
@@ -1211,7 +1213,7 @@ class OpenupgraderMigration(models.Model):
 
     def auto_install_modules(self, config_id):
         self.start_odoo(config_id)
-        odoo_client = self.odoo_connect()
+        odoo_client = self.odoo_connect(config_id)
         if not odoo_client:
             return
         module_obj = odoo_client.env["ir.module.module"]
@@ -1256,7 +1258,7 @@ class OpenupgraderMigration(models.Model):
             modules_to_uninstall.extend(before_ids)
 
         for module in modules_to_uninstall:
-            self.install_uninstall_module(module.name, install=False)
+            self.install_uninstall_module(module.name, config_id, install=False)
 
         self.button_stop_odoo()
 
@@ -1294,7 +1296,7 @@ class OpenupgraderMigration(models.Model):
     def delete_old_modules(self, config_id):
         if config_id.module_to_delete_after_migration_ids:
             self.start_odoo(config_id)
-            odoo_client = self.odoo_connect()
+            odoo_client = self.odoo_connect(config_id)
             if not odoo_client:
                 return
             module_obj = odoo_client.env["ir.module.module"]
@@ -1318,7 +1320,7 @@ class OpenupgraderMigration(models.Model):
             ]
         else:
             state = ["to remove", "to install"]
-        odoo_client = self.odoo_connect()
+        odoo_client = self.odoo_connect(config_id)
         if not odoo_client:
             return
         module_obj = odoo_client.env["ir.module.module"]
@@ -1517,12 +1519,12 @@ class OpenupgraderMigration(models.Model):
                     )
                     not_installable_modules.append(name)
 
-    def install_uninstall_module(self, module_name, install=True):
+    def install_uninstall_module(self, module_name, config_id, install=True):
         logger.info(
             f"{'Installing' if install else 'Uninstalling'} module %s in Odoo."
             % module_name
         )
-        odoo_client = self.odoo_connect()
+        odoo_client = self.odoo_connect(config_id)
         if not odoo_client:
             return False
         module_obj = odoo_client.env["ir.module.module"]
@@ -1563,6 +1565,12 @@ class OpenupgraderMigration(models.Model):
                                     5,
                                 )
                             )
+                            if _(
+                                "One or more of the selected modules have already been "
+                                "uninstalled, if you believe this to be an error, you "
+                                "may try again later or contact support."
+                            ) in str(e):
+                                try_number = 5
                             time.sleep(10)
             return modules
         else:

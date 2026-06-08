@@ -149,7 +149,9 @@ class OpenUpgrader(SavepointCase):
                 self.from_config_id, [initial_module]
             )
             openupgrader_migration.start_odoo(self.from_config_id)
-            openupgrader_migration.install_uninstall_module(initial_module)
+            openupgrader_migration.install_uninstall_module(
+                initial_module, self.from_config_id
+            )
             openupgrader_migration.button_stop_odoo()
             self._check_installed_module(openupgrader_migration, initial_module)
         for config_id in [
