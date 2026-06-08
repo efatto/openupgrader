@@ -278,6 +278,9 @@ class OpenupgraderMigration(models.Model):
         return critical_log, error_log, warning_log
 
     def odoo_connect(self):
+        if self._get_odoo_process_state() == "stopped":
+            # start current config odoo if not running
+            self.start_odoo(self.current_config_id)
         if self.db_name and self.db_user and self.db_password:
             try:
                 client = odoorpc.ODOO(
