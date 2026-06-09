@@ -884,26 +884,81 @@ class OpenupgraderMigration(models.Model):
 
     def button_uninstall_missing_modules(self):
         if self.is_migration_done and self.to_uninstall_modules:
+            modules_to_remove = safe_eval(self.to_uninstall_modules)
+            if not modules_to_remove:
+                return
+            modules_to_remove = list(set(modules_to_remove))
+            conn_vars = self._get_db_connection_variables()
+            # Use tuple to format the SQL query safely for the IN clause
+            modules_tuple = tuple(modules_to_remove)
+            if len(modules_tuple) == 1:
+                in_clause = "('%s')" % modules_tuple[0]
+            else:
+                in_clause = str(modules_tuple)
+
+            sql_command = (
+                f"UPDATE ir_module_module "
+                f"SET state = 'to remove' "
+                f"WHERE name in {in_clause};"
+            )
+            # Use run to be sure it's finished before starting Odoo
+            logger.info(f"Setting modules to be uninstalled: {modules_to_remove}.")
+            run(
+                [
+                    f"{conn_vars} && psql -d {self.env.cr.dbname}_migrate -c "
+                    f'"{sql_command}"'
+                ],
+                shell=True,
+            )
+
+            logger.info("Start Odoo to uninstall modules.")
+            # start_odoo with update=True will wait for Odoo to stop
+            self.start_odoo(self.current_config_id, update=True)
+
+            # Verification via SQL
+            check_sql = (
+                f"SELECT name, state FROM ir_module_module "
+                f"WHERE name in {in_clause};"
+            )
+            result = run(
+                [
+                    f"{conn_vars} && psql -d {self.env.cr.dbname}_migrate -c "
+                    f"\"{check_sql}\" -t -A -F ','"
+                ],
+                shell=True,
+                stdout=PIPE,
+                stderr=PIPE,
+                text=True,
+            )
+
             uninstalled_modules = []
             uninstallable_modules = []
-            modules_to_process = safe_eval(self.to_uninstall_modules)
-            # Process modules in chunks of 15
-            for i in range(0, len(modules_to_process), 15):
-                chunk = modules_to_process[i : i + 15]
-                self.start_odoo(self.current_config_id)
-                for module in chunk:
-                    res = self.install_uninstall_module(
-                        module, self.current_config_id, install=False
-                    )
-                    if res:
-                        uninstalled_modules.append(module)
+            if result.returncode == 0:
+                # Output format: name,state
+                lines = result.stdout.strip().split("\n")
+                found_modules = {}
+                for line in lines:
+                    if line:
+                        parts = line.split(",")
+                        if len(parts) == 2:
+                            name, state = parts
+                            found_modules[name] = state
+
+                for m in modules_to_remove:
+                    state = found_modules.get(m)
+                    if state == "uninstalled":
+                        uninstalled_modules.append(m)
                     else:
-                        uninstallable_modules.append(module)
-                self.button_stop_odoo()
+                        uninstallable_modules.append(m)
+            else:
+                logger.error(f"Error checking module states: {result.stderr}")
+
             if uninstalled_modules:
                 self.uninstalled_modules = str(uninstalled_modules)
             if uninstallable_modules:
                 self.uninstallable_modules = str(uninstallable_modules)
+
+            self.button_stop_odoo()
 
     def _cron_migration(self):
         logger.info("Starting OpenUpgrader auto-migration cron")
