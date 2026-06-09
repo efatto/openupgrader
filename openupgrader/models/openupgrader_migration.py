@@ -104,7 +104,7 @@ class OpenupgraderMigration(models.Model):
     dump_each_version_database = fields.Boolean(
         default=True,
         help="If enabled, each migration version will be dumped to a file "
-        "with name 'database.{version_name}.sql' after migration and "
+        "with name 'database.{version_name}.dump' after migration and "
         "after the execution of the methods to auto install and "
         "uninstall modules and do sql fixes.",
     )
@@ -663,7 +663,7 @@ class OpenupgraderMigration(models.Model):
             "migrated" if migrated else "original",
             version_name,
         )
-        destination_path = os.path.join(self.folder, f"database.{version_name}.sql")
+        destination_path = os.path.join(self.folder, f"database.{version_name}.dump")
         conn_vars = self._get_db_connection_variables()
         process = Popen(
             [
@@ -712,9 +712,9 @@ class OpenupgraderMigration(models.Model):
             ],
             shell=True,
         ).wait()
-        # Dump and restore db by sql file as it's the faster way to do it
+        # Dump and restore db by dump file as it's the faster way to do it
         dump_file_sql = os.path.join(
-            self.folder, f"database.{self.current_config_id.name}.sql"
+            self.folder, f"database.{self.current_config_id.name}.dump"
         )
         if not config_id:
             # not a restore done by hand, so create a new dump
@@ -833,7 +833,7 @@ class OpenupgraderMigration(models.Model):
         for config_id in [self.current_config_id, self.next_config_id]:
             sql_file_path = os.path.join(
                 self.folder,
-                f"database.{config_id.name}.sql",
+                f"database.{config_id.name}.dump",
             )
             if os.path.isfile(sql_file_path):
                 os.remove(sql_file_path)
