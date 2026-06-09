@@ -958,8 +958,6 @@ class OpenupgraderMigration(models.Model):
             if uninstallable_modules:
                 self.uninstallable_modules = str(uninstallable_modules)
 
-            self.button_stop_odoo()
-
     def _cron_migration(self):
         logger.info("Starting OpenUpgrader auto-migration cron")
         try:
