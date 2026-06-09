@@ -144,6 +144,7 @@ class OpenupgraderMigration(models.Model):
     migration_critical_log = fields.Text(string="Migration criticals in log")
     migration_warning_log = fields.Text(string="Migration warnings in log")
     migration_error_log = fields.Text(string="Migration errors in log")
+    to_uninstall_modules = fields.Text(string="Modules to be uninstalled")
     uninstalled_modules = fields.Text(string="Uninstalled modules")
     uninstallable_modules = fields.Text(string="Uninstallable modules")
     config_file = fields.Binary(string="Config file (yml)")
@@ -881,11 +882,28 @@ class OpenupgraderMigration(models.Model):
             self.env.ref("openupgrader.cron_openugrader_do_auto_migration").name,
         )
 
-    def _final_step(self):
-        if self.is_migration_done:
-            self.state = "done"
-            self._uninstall_missing_modules()
-            self.flush()
+    def button_uninstall_missing_modules(self):
+        if self.is_migration_done and self.to_uninstall_modules:
+            uninstalled_modules = []
+            uninstallable_modules = []
+            modules_to_process = safe_eval(self.to_uninstall_modules)
+            # Process modules in chunks of 15
+            for i in range(0, len(modules_to_process), 15):
+                chunk = modules_to_process[i : i + 15]
+                self.start_odoo(self.current_config_id)
+                for module in chunk:
+                    res = self.install_uninstall_module(
+                        module, self.current_config_id, install=False
+                    )
+                    if res:
+                        uninstalled_modules.append(module)
+                    else:
+                        uninstallable_modules.append(module)
+                self.button_stop_odoo()
+            if uninstalled_modules:
+                self.uninstalled_modules = str(uninstalled_modules)
+            if uninstallable_modules:
+                self.uninstallable_modules = str(uninstallable_modules)
 
     def _cron_migration(self):
         logger.info("Starting OpenUpgrader auto-migration cron")
@@ -950,7 +968,7 @@ class OpenupgraderMigration(models.Model):
 
         logger.info("OpenUpgrader auto-migration cron finished")
 
-    def _uninstall_missing_modules(self):
+    def _update_to_uninstall_modules(self):
         odoo_log = self._get_log_path(
             self.folder,
             self.current_config_id.name,
@@ -969,30 +987,18 @@ class OpenupgraderMigration(models.Model):
                         safe_eval(openupgrader_config.obsolete_modules)
                     )
                 obsolete_modules = set(obsolete_modules)
-            uninstalled_modules = []
-            uninstallable_modules = []
+            to_uninstall_modules = []
             with open(odoo_log, "r") as f:
                 for log_line in f.readlines():
                     if "Some modules have inconsistent states" in log_line:
-                        # Uninstall missing modules if final version
+                        # Set modules to be uninstalled if missing in the final version
                         match = re.search(r"\[.*\]", log_line)
                         if match:
                             modules = safe_eval(match[0])
-                            self.start_odoo(self.current_config_id)
                             for module in modules:
-                                res = self.install_uninstall_module(
-                                    module, self.current_config_id, install=False
-                                )
                                 if module not in obsolete_modules:
-                                    if res:
-                                        uninstalled_modules.append(module)
-                                    else:
-                                        uninstallable_modules.append(module)
-                            self.button_stop_odoo()
-            if uninstalled_modules:
-                self.uninstalled_modules = str(uninstalled_modules)
-            if uninstallable_modules:
-                self.uninstallable_modules = str(uninstallable_modules)
+                                    to_uninstall_modules.append(module)
+            self.to_uninstall_modules = str(to_uninstall_modules)
 
     def _do_after_migration(self):
         logger.info(
@@ -1011,8 +1017,6 @@ class OpenupgraderMigration(models.Model):
         )
         if self.dump_each_version_database:
             self.button_dump_current_database()
-        # force save to avoid cache issues
-        # self.flush(['current_config_id', 'next_config_id'])
         if self.is_migration_done:
             from_n = self.from_config_id.name
             to_n = self.to_config_id.name
@@ -1020,7 +1024,7 @@ class OpenupgraderMigration(models.Model):
                 "Migration completed from version %s to version %s", from_n, to_n
             )
             self.state = "done"
-            self._final_step()
+            self._update_to_uninstall_modules()
 
     def button_do_migration(self):
         self.button_refresh_odoo_running_state()

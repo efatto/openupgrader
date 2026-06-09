@@ -140,7 +140,13 @@
                     </group>
                     <notebook>
                         <page string="Migration info">
+                            <button
+                                name="button_uninstall_missing_modules"
+                                type="object"
+                                string="Uninstall missing modules"
+                            />
                             <group>
+                                <field name="to_uninstall_modules" />
                                 <field name="uninstalled_modules" />
                                 <field name="uninstallable_modules" />
                             </group>
