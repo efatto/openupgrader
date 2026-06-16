@@ -762,6 +762,7 @@ class OpenupgraderMigration(models.Model):
         self.dump_database(self.current_config_id.name, migrated=True)
 
     def button_restore_last_database(self):
+        self.env.ref("openupgrader.cron_openugrader_do_auto_migration").active = False
         self._restore(force=True)
 
     def button_restore(self):
