@@ -8,7 +8,6 @@
   - odoo: "https://github.com/OCA/OCB.git 19.0"
   - odoo_pip_requirements:
       - module_change_auto_install
-  - sql_update_commands: ""
   - after_migration_to_this_version_sql_command: ""
   - before_migration_to_next_version_sql_command: ""
   - after_migration_to_this_version_python_command: ""
@@ -29,7 +28,6 @@
   - odoo: "https://github.com/OCA/OCB.git 18.0"
   - odoo_pip_requirements:
       - module_change_auto_install
-  - sql_update_commands: ""
   - after_migration_to_this_version_sql_command: ""
   - before_migration_to_next_version_sql_command: ""
   - after_migration_to_this_version_python_command: ""
@@ -58,7 +56,6 @@
   - odoo: "https://github.com/OCA/OCB.git 17.0"
   - odoo_pip_requirements:
       - module_change_auto_install
-  - sql_update_commands: ""
   - after_migration_to_this_version_sql_command: ""
   - before_migration_to_next_version_sql_command:
       - ALTER TABLE purchase_order DROP COLUMN IF EXISTS project_id;
@@ -85,7 +82,6 @@
   - odoo: "https://github.com/OCA/OCB.git 16.0"
   - odoo_pip_requirements:
       - module_change_auto_install
-  - sql_update_commands: ""
   - after_migration_to_this_version_sql_command: ""
   - before_migration_to_next_version_sql_command: ""
   - after_migration_to_this_version_python_command: ""
@@ -110,7 +106,6 @@
   - odoo: "https://github.com/OCA/OCB.git 15.0"
   - odoo_pip_requirements:
       - module_change_auto_install
-  - sql_update_commands: ""
   - after_migration_to_this_version_sql_command: ""
   - before_migration_to_next_version_sql_command: ""
   - after_migration_to_this_version_python_command: ""
@@ -133,7 +128,6 @@
   - odoo: "https://github.com/OCA/OCB.git 14.0"
   - odoo_pip_requirements:
       - module_change_auto_install
-  - sql_update_commands: ""
   - after_migration_to_this_version_sql_command: ""
   - before_migration_to_next_version_sql_command: ""
   - after_migration_to_this_version_python_command: ""
