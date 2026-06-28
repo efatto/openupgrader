@@ -140,26 +140,34 @@
                     </group>
                     <notebook>
                         <page string="Migration info">
-                            <button
-                                name="button_update_list_uninstallable_modules"
-                                type="object"
-                                string="Update list uninstallable or missing modules"
-                            />
-                            <button
-                                name="button_uninstall_missing_modules"
-                                type="object"
-                                string="Uninstall missing modules"
-                            />
+                            <group>
+                                <button
+                                    name="button_update_list_uninstallable_modules"
+                                    type="object"
+                                    string="Update list uninstallable or missing modules"
+                                />
+                            </group>
+                            <group>
+                                <button
+                                    name="button_uninstall_missing_modules"
+                                    type="object"
+                                    string="Uninstall missing modules"
+                                />
+                            </group>
                             <group>
                                 <field name="to_uninstall_modules" />
+                            </group>
+                            <group>
                                 <field name="uninstalled_modules" />
                                 <field name="uninstallable_modules" />
                             </group>
-                            <button
-                                name="button_uninstall_obsolete_modules"
-                                type="object"
-                                string="Uninstall missing modules"
-                            />
+                            <group>
+                                <button
+                                    name="button_uninstall_obsolete_modules"
+                                    type="object"
+                                    string="Uninstall missing modules"
+                                />
+                            </group>
                             <group>
                                 <field name="to_uninstall_obsolete_modules" />
                             </group>
