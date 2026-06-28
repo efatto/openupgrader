@@ -150,6 +150,14 @@
                                 <field name="uninstalled_modules" />
                                 <field name="uninstallable_modules" />
                             </group>
+                            <button
+                                name="button_uninstall_obsolete_modules"
+                                type="object"
+                                string="Uninstall missing modules"
+                            />
+                            <group>
+                                <field name="to_uninstall_obsolete_modules" />
+                            </group>
                         </page>
                         <page string="Logs">
                             <button

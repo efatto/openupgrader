@@ -145,6 +145,9 @@ class OpenupgraderMigration(models.Model):
     migration_warning_log = fields.Text(string="Migration warnings in log")
     migration_error_log = fields.Text(string="Migration errors in log")
     to_uninstall_modules = fields.Text(string="Modules to be uninstalled")
+    to_uninstall_obsolete_modules = fields.Text(
+        string="Obsolete modules to be uninstalled"
+    )
     uninstalled_modules = fields.Text(string="Uninstalled modules")
     uninstallable_modules = fields.Text(string="Uninstallable modules")
     config_file = fields.Binary(string="Config file (yml)")
@@ -884,8 +887,19 @@ class OpenupgraderMigration(models.Model):
         )
 
     def button_uninstall_missing_modules(self):
-        if self.is_migration_done and self.to_uninstall_modules:
-            modules_to_remove = safe_eval(self.to_uninstall_modules)
+        self._uninstall_modules(modules_type="missing")
+
+    def button_uninstall_obsolete_modules(self):
+        self._uninstall_modules(modules_type="obsolete")
+
+    def _uninstall_modules(self, modules_type):
+        if self.is_migration_done:
+            if modules_type == "missing":
+                modules_to_remove = safe_eval(self.to_uninstall_modules)
+            elif modules_type == "obsolete":
+                modules_to_remove = safe_eval(self.to_uninstall_obsolete_modules)
+            else:
+                return
             if not modules_to_remove:
                 return
             modules_to_remove = list(set(modules_to_remove))
@@ -1029,6 +1043,8 @@ class OpenupgraderMigration(models.Model):
         )
         if os.path.isfile(odoo_log):
             obsolete_modules = []
+            to_uninstall_modules = []
+            to_uninstall_obsolete_modules = []
             openupgrader_configs = self.env["openupgrader.config"].search(
                 [
                     ("obsolete_modules", "!=", False),
@@ -1041,7 +1057,6 @@ class OpenupgraderMigration(models.Model):
                         safe_eval(openupgrader_config.obsolete_modules)
                     )
                 obsolete_modules = set(obsolete_modules)
-            to_uninstall_modules = []
             with open(odoo_log, "r") as f:
                 for log_line in f.readlines():
                     if "Some modules have inconsistent states" in log_line:
@@ -1052,7 +1067,10 @@ class OpenupgraderMigration(models.Model):
                             for module in modules:
                                 if module not in obsolete_modules:
                                     to_uninstall_modules.append(module)
+                                else:
+                                    to_uninstall_obsolete_modules.append(module)
             self.to_uninstall_modules = str(to_uninstall_modules)
+            self.to_uninstall_obsolete_modules = str(to_uninstall_obsolete_modules)
 
     def _do_after_migration(self):
         logger.info(
