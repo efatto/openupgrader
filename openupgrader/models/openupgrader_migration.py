@@ -886,6 +886,9 @@ class OpenupgraderMigration(models.Model):
             self.env.ref("openupgrader.cron_openugrader_do_auto_migration").name,
         )
 
+    def button_update_list_uninstallable_modules(self):
+        self._update_to_uninstall_modules()
+
     def button_uninstall_missing_modules(self):
         self._uninstall_modules(modules_type="missing")
 

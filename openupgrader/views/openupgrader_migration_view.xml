@@ -141,6 +141,11 @@
                     <notebook>
                         <page string="Migration info">
                             <button
+                                name="button_update_list_uninstallable_modules"
+                                type="object"
+                                string="Update list uninstallable or missing modules"
+                            />
+                            <button
                                 name="button_uninstall_missing_modules"
                                 type="object"
                                 string="Uninstall missing modules"
