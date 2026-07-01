@@ -165,7 +165,7 @@
                                 <button
                                     name="button_uninstall_obsolete_modules"
                                     type="object"
-                                    string="Uninstall missing modules"
+                                    string="Uninstall obsolete modules"
                                 />
                             </group>
                             <group>
