@@ -1182,7 +1182,7 @@ class OpenupgraderMigration(models.Model):
                     "CRITICAL": "restore_failed",
                     "Ready for migration": "ready_for_migration",
                     "Modules loaded": "migrated"
-                    if self.current_config_id == self.to_config_id
+                    if self.current_config_id == self.to_config_id == ou_config
                     else "updated",
                 }
                 state, found = self._parse_log_file(
