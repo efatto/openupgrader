@@ -1092,17 +1092,21 @@ class OpenupgraderMigration(models.Model):
         return found_modules_by_state
 
     def _do_after_migration(self):
+        next_config = self.next_config_id
+        if not next_config:
+            # migration should be done, enable re-try last after migration stuff
+            next_config = self.current_config_id
         logger.info(
             f"Migration done from version {self.current_config_id.name} "
-            f"to version {self.next_config_id.name}"
+            f"to version {next_config.name}"
         )
         # do after migration stuff
-        self.auto_install_modules(self.next_config_id)
-        self.uninstall_modules(self.next_config_id, after_migration=True)
+        self.auto_install_modules(next_config)
+        self.uninstall_modules(next_config, after_migration=True)
         self.sql_fixes(self.current_config_id.sql_after_migration_command_ids)
         self.python_fixes(self.current_config_id.python_after_migration_command_ids)
         # move version to the next step
-        self.current_config_id = self.next_config_id
+        self.current_config_id = next_config
         self.next_config_id = self.env["openupgrader.config"].search(
             [("name", "=", str(float(self.current_config_id.name) + 1))], limit=1
         )
