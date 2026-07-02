@@ -390,33 +390,70 @@ class OpenupgraderMigration(models.Model):
             % version_name
         )
 
-    def start_odoo(self, config_id, update=False, migrate=False, extra_command=""):
+    def start_odoo(
+        self,
+        config_id,
+        update=False,
+        migrate=False,
+        extra_command="",
+        try_install_missing_pip_module=True,
+    ):
         """
         :param config_id: Odoo config_id to start (8.0, 9.0, 10.0, ...)
         :param update: if True odoo will be updated with -u all and stopped
         :param migrate: if True odoo will be migrated with --stop
         :param extra_command: command that will be passed after executable
+        :param try_install_missing_pip_module: if True odoo will try to install missing
+         pip module
         :return: null
         """
         self.flush()
         if not config_id:
             raise ValidationError(_("Missing odoo version to start"))
         if update:
-            self._start_odoo_thread(config_id, update, migrate, extra_command)
+            self._start_odoo_thread(
+                config_id,
+                update,
+                migrate,
+                extra_command,
+                try_install_missing_pip_module,
+            )
         else:
-            self._start_odoo(config_id, update, migrate, extra_command)
+            self._start_odoo(
+                config_id,
+                update,
+                migrate,
+                extra_command,
+                try_install_missing_pip_module,
+            )
 
     def _start_odoo_thread(
-        self, config_id, update=False, migrate=False, extra_command=""
+        self,
+        config_id,
+        update=False,
+        migrate=False,
+        extra_command="",
+        try_install_missing_pip_module=True,
     ):
         with api.Environment.manage():
             new_cr = self.pool.cursor()
             self = self.with_env(self.env(cr=new_cr))
-            self._start_odoo(config_id, update, migrate, extra_command)
+            self._start_odoo(
+                config_id,
+                update,
+                migrate,
+                extra_command,
+                try_install_missing_pip_module,
+            )
             new_cr.close()
 
     def _start_odoo(  # noqa C901
-        self, config_id, update=False, migrate=False, extra_command=""
+        self,
+        config_id,
+        update=False,
+        migrate=False,
+        extra_command="",
+        try_install_missing_pip_module=True,
     ):
         logger.info(
             f"Starting Odoo with options: version={config_id.name}, "
@@ -510,7 +547,7 @@ class OpenupgraderMigration(models.Model):
                         continue
                     if out and out != " ":
                         # try to install missing module with pip on-the-fly
-                        if any(
+                        if try_install_missing_pip_module and any(
                             x in out
                             for x in [
                                 "Some modules have inconsistent states",
@@ -886,95 +923,67 @@ class OpenupgraderMigration(models.Model):
             self.env.ref("openupgrader.cron_openugrader_do_auto_migration").name,
         )
 
-    def button_update_list_uninstallable_modules(self):
-        self._update_to_uninstall_modules()
-
     def button_uninstall_missing_modules(self):
-        self._uninstall_modules(modules_type="missing")
-
-    def button_uninstall_obsolete_modules(self):
-        self._uninstall_modules(modules_type="obsolete")
-
-    def _uninstall_modules(self, modules_type):
         if self.is_migration_done:
-            if modules_type == "missing":
-                modules_to_remove = safe_eval(self.to_uninstall_modules)
-            elif modules_type == "obsolete":
-                modules_to_remove = safe_eval(self.to_uninstall_obsolete_modules)
-            else:
-                return
-            if not modules_to_remove:
-                return
-            modules_to_remove = list(set(modules_to_remove))
+            modules_to_remove = list(
+                set(
+                    safe_eval(self.to_uninstall_modules)
+                    + safe_eval(self.to_uninstall_obsolete_modules)
+                )
+            )
+            sql_commands = [
+                (
+                    "DELETE FROM ir_module_module "
+                    "WHERE state in ('to install', 'to upgrade');"
+                ),
+            ]
             conn_vars = self._get_db_connection_variables()
             # Use tuple to format the SQL query safely for the IN clause
-            modules_tuple = tuple(modules_to_remove)
-            if len(modules_tuple) == 1:
-                in_clause = "('%s')" % modules_tuple[0]
-            else:
-                in_clause = str(modules_tuple)
+            if modules_to_remove:
+                modules_tuple = tuple(modules_to_remove)
+                if len(modules_tuple) == 1:
+                    in_clause = "('%s')" % modules_tuple[0]
+                else:
+                    in_clause = str(modules_tuple)
 
-            sql_command = (
-                f"UPDATE ir_module_module "
-                f"SET state = 'to remove' "
-                f"WHERE name in {in_clause};"
-            )
+                sql_commands.append(
+                    (
+                        f"UPDATE ir_module_module SET state = 'to remove' "
+                        f"WHERE name in {in_clause} "
+                        f"AND state not in ('uninstalled', 'to remove');"
+                    ),
+                )
             # Use run to be sure it's finished before starting Odoo
             logger.info(f"Setting modules to be uninstalled: {modules_to_remove}.")
-            run(
-                [
-                    f"{conn_vars} && psql -d {self.env.cr.dbname}_migrate -c "
-                    f'"{sql_command}"'
-                ],
-                shell=True,
-            )
+            for sql_command in sql_commands:
+                run(
+                    [
+                        f"{conn_vars} && psql -d {self.env.cr.dbname}_migrate -c "
+                        f'"{sql_command}"'
+                    ],
+                    shell=True,
+                )
 
             logger.info("Start Odoo to uninstall modules.")
             # start_odoo with update=True will wait for Odoo to stop
-            self.start_odoo(self.current_config_id, update=True)
+            self.start_odoo(
+                self.current_config_id,
+                update=True,
+                try_install_missing_pip_module=False,
+            )
 
             # Verification via SQL
-            check_sql = (
-                f"SELECT name, state FROM ir_module_module "
-                f"WHERE name in {in_clause};"
-            )
-            result = run(
-                [
-                    f"{conn_vars} && psql -d {self.env.cr.dbname}_migrate -c "
-                    f"\"{check_sql}\" -t -A -F ','"
-                ],
-                shell=True,
-                stdout=PIPE,
-                stderr=PIPE,
-                text=True,
-            )
+            found_modules_by_state = self._verify_module_states()
 
-            uninstalled_modules = []
-            uninstallable_modules = []
-            if result.returncode == 0:
-                # Output format: name,state
-                lines = result.stdout.strip().split("\n")
-                found_modules = {}
-                for line in lines:
-                    if line:
-                        parts = line.split(",")
-                        if len(parts) == 2:
-                            name, state = parts
-                            found_modules[name] = state
-
-                for m in modules_to_remove:
-                    state = found_modules.get(m)
-                    if state == "uninstalled":
-                        uninstalled_modules.append(m)
-                    else:
-                        uninstallable_modules.append(m)
-            else:
-                logger.error(f"Error checking module states: {result.stderr}")
-
-            if uninstalled_modules:
-                self.uninstalled_modules = str(uninstalled_modules)
+            if found_modules_by_state["uninstalled"]:
+                self.uninstalled_modules = found_modules_by_state["uninstalled"]
+            uninstallable_modules = [
+                x
+                for x in modules_to_remove
+                if x not in found_modules_by_state["uninstalled"]
+            ]
             if uninstallable_modules:
-                self.uninstallable_modules = str(uninstallable_modules)
+                self.uninstallable_modules = uninstallable_modules
 
     def _cron_migration(self):
         logger.info("Starting OpenUpgrader auto-migration cron")
@@ -1039,41 +1048,60 @@ class OpenupgraderMigration(models.Model):
 
         logger.info("OpenUpgrader auto-migration cron finished")
 
-    def _update_to_uninstall_modules(self):
-        odoo_log = self._get_log_path(
-            self.folder,
-            self.current_config_id.name,
+    def _verify_module_states(self):
+        # get obsolete modules from openupgrader configs
+        obsolete_modules = []
+        openupgrader_configs = self.env["openupgrader.config"].search(
+            [
+                ("obsolete_modules", "!=", False),
+                ("openupgrader_migration_id", "=", self.id),
+            ]
         )
-        if os.path.isfile(odoo_log):
-            obsolete_modules = []
-            to_uninstall_modules = []
-            to_uninstall_obsolete_modules = []
-            openupgrader_configs = self.env["openupgrader.config"].search(
-                [
-                    ("obsolete_modules", "!=", False),
-                    ("openupgrader_migration_id", "=", self.id),
-                ]
-            )
-            if openupgrader_configs:
-                for openupgrader_config in openupgrader_configs:
-                    obsolete_modules.extend(
-                        safe_eval(openupgrader_config.obsolete_modules)
-                    )
-                obsolete_modules = set(obsolete_modules)
-            with open(odoo_log, "r") as f:
-                for log_line in f.readlines():
-                    if "Some modules have inconsistent states" in log_line:
-                        # Set modules to be uninstalled if missing in the final version
-                        match = re.search(r"\[.*\]", log_line)
-                        if match:
-                            modules = safe_eval(match[0])
-                            for module in modules:
-                                if module not in obsolete_modules:
-                                    to_uninstall_modules.append(module)
-                                else:
-                                    to_uninstall_obsolete_modules.append(module)
-            self.to_uninstall_modules = str(to_uninstall_modules)
-            self.to_uninstall_obsolete_modules = str(to_uninstall_obsolete_modules)
+        if openupgrader_configs:
+            for openupgrader_config in openupgrader_configs:
+                obsolete_modules.extend(safe_eval(openupgrader_config.obsolete_modules))
+            obsolete_modules = set(obsolete_modules)
+        # get modules' state from db
+        found_modules_by_state = {
+            "to upgrade": [],
+            "to remove": [],
+            "to install": [],
+            "to remove obsolete": [],
+            "uninstalled": [],
+            "uninstallable": [],
+            "installed": [],
+        }
+        conn_vars = self._get_db_connection_variables()
+        sql_command = (
+            "SELECT name, state FROM ir_module_module "
+            "WHERE state in ('to upgrade', 'to remove', 'to install');"
+        )
+        result = run(
+            [
+                f"{conn_vars} && psql -d {self.env.cr.dbname}_migrate -c "
+                f"\"{sql_command}\" -t -A -F ','"
+            ],
+            shell=True,
+            stdout=PIPE,
+            stderr=PIPE,
+            text=True,
+        )
+
+        if result.returncode == 0:
+            # Output format: name,state
+            lines = result.stdout.strip().split("\n")
+            for line in lines:
+                if line:
+                    parts = line.split(",")
+                    if len(parts) == 2:
+                        module, state = parts
+                        found_modules_by_state[state].append(module)
+                        if module in obsolete_modules:
+                            found_modules_by_state["to remove obsolete"].append(module)
+        else:
+            logger.error(f"Error checking module states: {result.stderr}")
+
+        return found_modules_by_state
 
     def _do_after_migration(self):
         logger.info(
@@ -1188,7 +1216,8 @@ class OpenupgraderMigration(models.Model):
 
         return migration_state, current_version
 
-    def _parse_log_file(self, log_path, patterns, default_state):
+    @staticmethod
+    def _parse_log_file(log_path, patterns, default_state):
         """
         Helper to parse a log file for specific patterns.
         :param log_path: path to the log file
@@ -1296,8 +1325,6 @@ class OpenupgraderMigration(models.Model):
         if not odoo_client:
             return
         module_obj = odoo_client.env["ir.module.module"]
-        if config_id.name == "12.0":
-            self.remove_modules(config_id, "upgrade")
         # force recompute of installed modules for the current version
         config_id._compute_module_installed_ids()
         for module in config_id.module_auto_install_ids:
@@ -1325,9 +1352,6 @@ class OpenupgraderMigration(models.Model):
         self, config_id, before_migration=False, after_migration=False
     ):
         self.start_odoo(config_id)
-        if config_id.name == "12.0":
-            self.remove_modules(config_id, "upgrade")
-
         modules_to_uninstall = []
         if after_migration:
             after_ids = config_id.module_to_uninstall_after_migration_ids
@@ -1391,32 +1415,6 @@ class OpenupgraderMigration(models.Model):
                 if module_id:
                     module_id.unlink()
             self.button_stop_odoo()
-
-    def remove_modules(self, config_id, module_state=""):
-        if module_state == "upgrade":
-            state = [
-                "to upgrade",
-            ]
-        else:
-            state = ["to remove", "to install"]
-        odoo_client = self.odoo_connect(config_id)
-        if not odoo_client:
-            return
-        module_obj = odoo_client.env["ir.module.module"]
-        modules = module_obj.browse(module_obj.search([("state", "in", state)]))
-        msg_modules = ""
-        msg_modules_after = ""
-        if modules:
-            msg_modules = str([x.name for x in modules])
-        for module in modules:
-            module.button_uninstall_cancel()
-        modules_after = module_obj.browse(
-            module_obj.search([("state", "=", "to upgrade")])
-        )
-        if modules_after:
-            msg_modules_after = str([x.name for x in modules_after])
-        logger.info("Modules present before the removal: %s" % msg_modules)
-        logger.info("Modules present after the removal: %s" % msg_modules_after)
 
     def _check_oca_authorship(self, pkg_name, release):
         """

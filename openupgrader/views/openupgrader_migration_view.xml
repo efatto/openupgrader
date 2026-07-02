@@ -142,34 +142,17 @@
                         <page string="Migration info">
                             <group>
                                 <button
-                                    name="button_update_list_uninstallable_modules"
-                                    type="object"
-                                    string="Update list uninstallable or missing modules"
-                                />
-                            </group>
-                            <group>
-                                <button
                                     name="button_uninstall_missing_modules"
                                     type="object"
                                     string="Uninstall missing modules"
+                                    confirm="Are you sure you want to uninstall missing modules? This action delete permanently datas of these modules and cannot be undone."
                                 />
                             </group>
                             <group>
                                 <field name="to_uninstall_modules" />
-                            </group>
-                            <group>
+                                <field name="to_uninstall_obsolete_modules" />
                                 <field name="uninstalled_modules" />
                                 <field name="uninstallable_modules" />
-                            </group>
-                            <group>
-                                <button
-                                    name="button_uninstall_obsolete_modules"
-                                    type="object"
-                                    string="Uninstall obsolete modules"
-                                />
-                            </group>
-                            <group>
-                                <field name="to_uninstall_obsolete_modules" />
                             </group>
                         </page>
                         <page string="Logs">
