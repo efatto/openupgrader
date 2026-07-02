@@ -1093,7 +1093,7 @@ class OpenupgraderMigration(models.Model):
 
     def _do_after_migration(self):
         next_config = self.next_config_id
-        if not next_config:
+        if not next_config and self.to_config_id == self.current_config_id:
             # migration should be done, enable re-try last after migration stuff
             next_config = self.current_config_id
         logger.info(
