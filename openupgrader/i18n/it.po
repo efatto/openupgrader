@@ -928,11 +928,6 @@ msgid "Uninstallable modules"
 msgstr "Moduli non disinstallabili"
 
 #. module: openupgrader
-#: model:ir.model.fields,field_description:openupgrader.field_openupgrader_migration__uninstalled_modules
-msgid "Uninstalled modules"
-msgstr "Moduli disinstallati"
-
-#. module: openupgrader
 #: model_terms:ir.ui.view,arch_db:openupgrader.view_openupgrader_migration_form
 msgid "Update Error Logs"
 msgstr "Log degli errori di aggiornamento"

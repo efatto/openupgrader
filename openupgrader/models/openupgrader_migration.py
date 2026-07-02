@@ -876,7 +876,6 @@ class OpenupgraderMigration(models.Model):
                 os.remove(sql_file_path)
         self.current_config_id = False
         self.next_config_id = False
-        self.uninstalled_modules = False
         self.uninstallable_modules = False
         self.button_clean_logs()
         self.state = "draft"
