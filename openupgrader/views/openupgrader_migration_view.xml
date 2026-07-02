@@ -150,8 +150,6 @@
                             </group>
                             <group>
                                 <field name="to_uninstall_modules" />
-                                <field name="to_uninstall_obsolete_modules" />
-                                <field name="uninstalled_modules" />
                                 <field name="uninstallable_modules" />
                             </group>
                         </page>

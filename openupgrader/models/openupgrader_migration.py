@@ -145,10 +145,6 @@ class OpenupgraderMigration(models.Model):
     migration_warning_log = fields.Text(string="Migration warnings in log")
     migration_error_log = fields.Text(string="Migration errors in log")
     to_uninstall_modules = fields.Text(string="Modules to be uninstalled")
-    to_uninstall_obsolete_modules = fields.Text(
-        string="Obsolete modules to be uninstalled"
-    )
-    uninstalled_modules = fields.Text(string="Uninstalled modules")
     uninstallable_modules = fields.Text(string="Uninstallable modules")
     config_file = fields.Binary(string="Config file (yml)")
     config_file_name = fields.Char(string="Config file name")
@@ -925,12 +921,7 @@ class OpenupgraderMigration(models.Model):
 
     def button_uninstall_missing_modules(self):
         if self.is_migration_done:
-            modules_to_remove = list(
-                set(
-                    safe_eval(self.to_uninstall_modules)
-                    + safe_eval(self.to_uninstall_obsolete_modules)
-                )
-            )
+            modules_to_remove = list(set(safe_eval(self.to_uninstall_modules)))
             sql_commands = [
                 (
                     "DELETE FROM ir_module_module "
