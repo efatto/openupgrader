@@ -65,7 +65,7 @@
                     <button
                         name="button_prepare_for_migration"
                         type="object"
-                        attrs="{'invisible': ['|', ('next_config_id', '=', False), ('is_migration_done', '=', True)]}"
+                        attrs="{'invisible': ['|', ('next_config_id', '=', False), ('state', '=', 'done')]}"
                         string="3: prepare migration"
                         help="Do some useful stuff before migration"
                     />
@@ -79,7 +79,7 @@
                     <button
                         name="button_do_migration"
                         type="object"
-                        attrs="{'invisible': [('next_config_id', '=', False)]}"
+                        attrs="{'invisible': ['|', ('state', '=', 'ready_for_migration'), ('next_config_id', '=', False)]}"
                         string="4: migrate (if the process has failed)"
                     />
                     <button

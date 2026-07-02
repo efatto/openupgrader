@@ -261,7 +261,9 @@ class OpenupgraderConfig(models.Model):
         comodel_name="auto.install.module",
         inverse_name="openupgrade_config_id",
         string="Auto install modules",
-        help="List of modules to install if there is another module installed",
+        help="List of modules to install if there is another module installed.\n"
+        "This list is auto filled with modules from openupgrade apriori.py and "
+        "custom list in openupgrader yml configuration file if uploaded.",
         copy=False,
     )
     module_to_delete_after_migration_ids = fields.Many2many(
@@ -835,8 +837,8 @@ class OpenupgraderConfig(models.Model):
                             )
                         ]
             if recipe.get("delete"):
-                delete = recipe.get("delete")
-                for module in delete:
+                modules_to_delete = recipe.get("delete")
+                for module in modules_to_delete:
                     module_id = self.env["module.name"].search(
                         [
                             ("name", "=", module),

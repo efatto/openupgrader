@@ -975,8 +975,6 @@ class OpenupgraderMigration(models.Model):
             # Verification via SQL
             found_modules_by_state = self._verify_module_states()
 
-            if found_modules_by_state["uninstalled"]:
-                self.uninstalled_modules = found_modules_by_state["uninstalled"]
             uninstallable_modules = [
                 x
                 for x in modules_to_remove
@@ -1127,7 +1125,6 @@ class OpenupgraderMigration(models.Model):
                 "Migration completed from version %s to version %s", from_n, to_n
             )
             self.state = "done"
-            self._update_to_uninstall_modules()
 
     def button_do_migration(self):
         self.button_refresh_odoo_running_state()
@@ -1193,7 +1190,9 @@ class OpenupgraderMigration(models.Model):
                 patterns = {
                     "CRITICAL": "restore_failed",
                     "Ready for migration": "ready_for_migration",
-                    "Modules loaded": "updated",
+                    "Modules loaded": "migrated"
+                    if self.current_config_id == self.to_config_id
+                    else "updated",
                 }
                 state, found = self._parse_log_file(
                     update_log, patterns, default_state="updating"
@@ -1344,8 +1343,16 @@ class OpenupgraderMigration(models.Model):
                 if module_toinstall:
                     module_toinstall_id = module_obj.browse(module_toinstall)
                     if module_toinstall_id:
-                        logging.info(f"Installing module: {module_toinstall_id.name}")
-                        module_toinstall_id.button_immediate_install()
+                        try:
+                            logging.info(
+                                f"Installing module: {module_toinstall_id.name}"
+                            )
+                            module_toinstall_id.button_immediate_install()
+                        except Exception as e:
+                            logging.error(
+                                f"Error installing module {module_toinstall_id.name}:"
+                                f" {e}"
+                            )
         self.button_stop_odoo()
 
     def uninstall_modules(
