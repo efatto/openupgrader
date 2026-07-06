@@ -920,7 +920,8 @@ class OpenupgraderMigration(models.Model):
 
     def button_uninstall_missing_modules(self):
         if self.is_migration_done:
-            modules_to_remove = list(set(safe_eval(self.to_uninstall_modules)))
+            modules_to_remove = ()
+            self.uninstallable_modules = False
             sql_commands = [
                 (
                     "DELETE FROM ir_module_module "
@@ -929,12 +930,12 @@ class OpenupgraderMigration(models.Model):
             ]
             conn_vars = self._get_db_connection_variables()
             # Use tuple to format the SQL query safely for the IN clause
-            if modules_to_remove:
-                modules_tuple = tuple(modules_to_remove)
-                if len(modules_tuple) == 1:
-                    in_clause = "('%s')" % modules_tuple[0]
+            if self.to_uninstall_modules:
+                modules_to_remove = tuple(set(safe_eval(self.to_uninstall_modules)))
+                if len(modules_to_remove) == 1:
+                    in_clause = "('%s')" % modules_to_remove[0]
                 else:
-                    in_clause = str(modules_tuple)
+                    in_clause = str(modules_to_remove)
 
                 sql_commands.append(
                     (
@@ -943,8 +944,8 @@ class OpenupgraderMigration(models.Model):
                         f"AND state not in ('uninstalled', 'to remove');"
                     ),
                 )
+                logger.info(f"Setting modules to be uninstalled: {modules_to_remove}.")
             # Use run to be sure it's finished before starting Odoo
-            logger.info(f"Setting modules to be uninstalled: {modules_to_remove}.")
             for sql_command in sql_commands:
                 run(
                     [
@@ -965,13 +966,14 @@ class OpenupgraderMigration(models.Model):
             # Verification via SQL
             found_modules_by_state = self._verify_module_states()
 
-            uninstallable_modules = [
-                x
-                for x in modules_to_remove
-                if x not in found_modules_by_state["uninstalled"]
-            ]
-            if uninstallable_modules:
-                self.uninstallable_modules = uninstallable_modules
+            if modules_to_remove:
+                uninstallable_modules = [
+                    x
+                    for x in modules_to_remove
+                    if x not in found_modules_by_state["uninstalled"]
+                ]
+                if uninstallable_modules:
+                    self.uninstallable_modules = uninstallable_modules
 
     def _cron_migration(self):
         logger.info("Starting OpenUpgrader auto-migration cron")
