@@ -17,8 +17,6 @@
   - obsolete: ""
   - uninstall_after_migration_to_this_version: ""
   - uninstall_before_migration_to_next_version: ""
-  - found_to_check: ""
-  - uninstall_as_not_exist: ""
 "18.0":
   - python_version: "3.12.11"
   - pip_requirements:
@@ -38,10 +36,6 @@
   - obsolete: ""
   - uninstall_after_migration_to_this_version: ""
   - uninstall_before_migration_to_next_version: ""
-  - found_to_check:
-      - none
-  - uninstall_as_not_exist:
-      - none
 "17.0":
   - python_version: "3.10.12"
   - pip_requirements:
@@ -66,8 +60,6 @@
   - obsolete: ""
   - uninstall_after_migration_to_this_version: ""
   - uninstall_before_migration_to_next_version: ""
-  - found_to_check: ""
-  - uninstall_as_not_exist: ""
 "16.0":
   - python_version: "3.10.12"
   - pip_requirements:
@@ -93,8 +85,6 @@
       - l10n_it_ricevute_bancarie
   - uninstall_after_migration_to_this_version: ""
   - uninstall_before_migration_to_next_version: ""
-  - found_to_check: ""
-  - uninstall_as_not_exist: ""
 "15.0":
   - python_version: "3.8.16"
   - pip_requirements:
@@ -115,8 +105,6 @@
   - obsolete: ""
   - uninstall_after_migration_to_this_version: ""
   - uninstall_before_migration_to_next_version: ""
-  - found_to_check: ""
-  - uninstall_as_not_exist: ""
 "14.0":
   - python_version: "3.8.16"
   - pip_requirements:
@@ -137,5 +125,3 @@
   - obsolete: ""
   - uninstall_after_migration_to_this_version: ""
   - uninstall_before_migration_to_next_version: ""
-  - found_to_check: ""
-  - uninstall_as_not_exist: ""
