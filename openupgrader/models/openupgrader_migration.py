@@ -146,6 +146,7 @@ class OpenupgraderMigration(models.Model):
     migration_error_log = fields.Text(string="Migration errors in log")
     to_uninstall_modules = fields.Text(string="Modules to be uninstalled")
     uninstallable_modules = fields.Text(string="Uninstallable modules")
+    uninstalled_modules_not_obsolete = fields.Text(string="Uninstalled modules not obsolete")
     config_file = fields.Binary(string="Config file (yml)")
     config_file_name = fields.Char(string="Config file name")
 
@@ -877,6 +878,7 @@ class OpenupgraderMigration(models.Model):
         self.current_config_id = False
         self.next_config_id = False
         self.uninstallable_modules = False
+        self.uninstalled_modules_not_obsolete = False
         self.button_clean_logs()
         self.state = "draft"
 
@@ -920,8 +922,26 @@ class OpenupgraderMigration(models.Model):
 
     def button_uninstall_missing_modules(self):
         if self.is_migration_done:
+            conn_vars = self._get_db_connection_variables()
             modules_to_remove = ()
             self.uninstallable_modules = False
+            found_modules_by_state = self._verify_module_states()
+            obsolete_modules_to_remove = found_modules_by_state.get(
+                "to remove obsolete", [])
+            modules_in_wrong_states = found_modules_by_state.get(
+                "to upgrade", []) + found_modules_by_state.get(
+                "to remove", []) + found_modules_by_state.get(
+                "to install", [])
+            to_uninstall_modules = str(
+                set(sorted(modules_in_wrong_states)))
+            self.to_uninstall_modules = to_uninstall_modules
+            modules_not_to_uninstall = [
+                x for x in modules_in_wrong_states
+                if x not in obsolete_modules_to_remove
+            ]
+            if modules_not_to_uninstall:
+                self.uninstalled_modules_not_obsolete = str(
+                    set(sorted(modules_not_to_uninstall)))
             sql_commands = [
                 (
                     "DELETE FROM ir_module_module "
@@ -933,10 +953,9 @@ class OpenupgraderMigration(models.Model):
                     "(SELECT CONCAT('module_', name) FROM ir_module_module);"
                 ),
             ]
-            conn_vars = self._get_db_connection_variables()
             # Use tuple to format the SQL query safely for the IN clause
-            if self.to_uninstall_modules:
-                modules_to_remove = tuple(set(safe_eval(self.to_uninstall_modules)))
+            if to_uninstall_modules:
+                modules_to_remove = tuple(set(safe_eval(to_uninstall_modules)))
                 if len(modules_to_remove) == 1:
                     in_clause = "('%s')" % modules_to_remove[0]
                 else:

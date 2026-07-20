@@ -151,6 +151,7 @@
                             <group>
                                 <field name="to_uninstall_modules" />
                                 <field name="uninstallable_modules" />
+                                <field name="uninstalled_modules_not_obsolete" />
                             </group>
                         </page>
                         <page string="Logs">
