@@ -927,6 +927,11 @@ class OpenupgraderMigration(models.Model):
                     "DELETE FROM ir_module_module "
                     "WHERE state in ('to install', 'to upgrade');"
                 ),
+                (
+                    "DELETE FROM ir_model_data WHERE model = 'ir.module.module' "
+                    "AND name NOT IN "
+                    "(SELECT CONCAT('module_', name) FROM ir_module_module);"
+                ),
             ]
             conn_vars = self._get_db_connection_variables()
             # Use tuple to format the SQL query safely for the IN clause
