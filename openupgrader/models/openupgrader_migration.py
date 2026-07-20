@@ -928,20 +928,15 @@ class OpenupgraderMigration(models.Model):
             found_modules_by_state = self._verify_module_states()
             obsolete_modules_to_remove = found_modules_by_state.get(
                 "to remove obsolete", [])
-            modules_in_wrong_states = found_modules_by_state.get(
-                "to upgrade", []) + found_modules_by_state.get(
-                "to remove", []) + found_modules_by_state.get(
-                "to install", [])
-            to_uninstall_modules = str(
-                set(sorted(modules_in_wrong_states)))
-            self.to_uninstall_modules = to_uninstall_modules
-            modules_not_to_uninstall = [
-                x for x in modules_in_wrong_states
+            pending_modules = found_modules_by_state.get("pending", [])
+            self.to_uninstall_modules = str(sorted(set(pending_modules)))
+            missing_modules = [
+                x for x in pending_modules
                 if x not in obsolete_modules_to_remove
             ]
-            if modules_not_to_uninstall:
+            if missing_modules:
                 self.uninstalled_modules_not_obsolete = str(
-                    set(sorted(modules_not_to_uninstall)))
+                    sorted(set(missing_modules)))
             sql_commands = [
                 (
                     "DELETE FROM ir_module_module "
@@ -954,8 +949,8 @@ class OpenupgraderMigration(models.Model):
                 ),
             ]
             # Use tuple to format the SQL query safely for the IN clause
-            if to_uninstall_modules:
-                modules_to_remove = tuple(set(safe_eval(to_uninstall_modules)))
+            if pending_modules:
+                modules_to_remove = tuple(pending_modules)
                 if len(modules_to_remove) == 1:
                     in_clause = "('%s')" % modules_to_remove[0]
                 else:
@@ -994,10 +989,10 @@ class OpenupgraderMigration(models.Model):
                 uninstallable_modules = [
                     x
                     for x in modules_to_remove
-                    if x not in found_modules_by_state["uninstalled"]
+                    if x in found_modules_by_state["pending"]
                 ]
                 if uninstallable_modules:
-                    self.uninstallable_modules = uninstallable_modules
+                    self.uninstallable_modules = sorted(set(uninstallable_modules))
 
     def _cron_migration(self):
         logger.info("Starting OpenUpgrader auto-migration cron")
@@ -1080,6 +1075,7 @@ class OpenupgraderMigration(models.Model):
             "to upgrade": [],
             "to remove": [],
             "to install": [],
+            "pending": [],
             "to remove obsolete": [],
             "uninstalled": [],
             "uninstallable": [],
@@ -1112,6 +1108,10 @@ class OpenupgraderMigration(models.Model):
                         found_modules_by_state[state].append(module)
                         if module in obsolete_modules:
                             found_modules_by_state["to remove obsolete"].append(module)
+            found_modules_by_state["pending"] = found_modules_by_state.get(
+                "to upgrade", []) + found_modules_by_state.get(
+                "to remove", []) + found_modules_by_state.get(
+                "to install", [])
         else:
             logger.error(f"Error checking module states: {result.stderr}")
 
