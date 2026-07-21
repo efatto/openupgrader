@@ -986,13 +986,64 @@ class OpenupgraderMigration(models.Model):
             found_modules_by_state = self._verify_module_states()
 
             if modules_to_remove:
+                modules_removed = modules_to_remove
                 uninstallable_modules = [
                     x
                     for x in modules_to_remove
                     if x in found_modules_by_state["pending"]
                 ]
                 if uninstallable_modules:
+                    modules_removed -= set(uninstallable_modules)
                     self.uninstallable_modules = sorted(set(uninstallable_modules))
+                self.remove_modules_views_menus(modules_removed)
+
+    def remove_modules_views_menus(self, modules):
+        if not modules:
+            return
+        conn_vars = self._get_db_connection_variables()
+        sql_commands = [
+            (
+            """
+            WITH RECURSIVE views_to_delete AS (
+                SELECT v.id
+                FROM ir_ui_view v
+                JOIN ir_model_data imd
+                    ON imd.model = 'ir.ui.view'
+                   AND imd.res_id = v.id
+                   AND imd.module = ANY(ARRAY%s)
+                UNION ALL
+                SELECT v.id
+                FROM ir_ui_view v
+                JOIN views_to_delete vtd ON v.inherit_id = vtd.id
+            ),
+            deleted_imd AS (
+                DELETE FROM ir_model_data
+                WHERE model = 'ir.ui.view'
+                  AND res_id IN (SELECT id FROM views_to_delete)
+            )
+            DELETE FROM ir_ui_view
+            WHERE id IN (SELECT id FROM views_to_delete)
+            """ % list(modules)
+            ),
+            (
+            """
+            DELETE from ir_model_data
+            WHERE id IN (
+                SELECT res_id FROM ir_model_data
+                WHERE model = 'ir.ui.menu'
+                AND module = ANY(%s)
+            )
+            """ % list(modules)
+            ),
+        ]
+        for sql_command in sql_commands:
+            run(
+                [
+                    f"{conn_vars} && psql -d {self.env.cr.dbname}_migrate -c "
+                    f'"{sql_command}"'
+                ],
+                shell=True,
+            )
 
     def _cron_migration(self):
         logger.info("Starting OpenUpgrader auto-migration cron")
