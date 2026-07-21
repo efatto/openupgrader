@@ -145,6 +145,7 @@ class OpenupgraderMigration(models.Model):
     migration_warning_log = fields.Text(string="Migration warnings in log")
     migration_error_log = fields.Text(string="Migration errors in log")
     to_uninstall_modules = fields.Text(string="Modules to be uninstalled")
+    uninstalled_modules = fields.Text(string="Uninstalled modules")
     uninstallable_modules = fields.Text(string="Uninstallable modules")
     uninstalled_modules_not_obsolete = fields.Text(string="Uninstalled modules not obsolete")
     config_file = fields.Binary(string="Config file (yml)")
@@ -995,6 +996,8 @@ class OpenupgraderMigration(models.Model):
                 if uninstallable_modules:
                     modules_removed -= set(uninstallable_modules)
                     self.uninstallable_modules = sorted(set(uninstallable_modules))
+                    self.uninstalled_modules = sorted(set(modules_removed))
+                    self.to_uninstall_modules = False
                 self.remove_modules_views_menus(modules_removed)
 
     def remove_modules_views_menus(self, modules):
