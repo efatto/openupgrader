@@ -147,7 +147,9 @@ class OpenupgraderMigration(models.Model):
     to_uninstall_modules = fields.Text(string="Modules to be uninstalled")
     uninstalled_modules = fields.Text(string="Uninstalled modules")
     uninstallable_modules = fields.Text(string="Uninstallable modules")
-    uninstalled_modules_not_obsolete = fields.Text(string="Uninstalled modules not obsolete")
+    uninstalled_modules_not_obsolete = fields.Text(
+        string="Uninstalled modules not obsolete"
+    )
     config_file = fields.Binary(string="Config file (yml)")
     config_file_name = fields.Char(string="Config file name")
 
@@ -928,16 +930,17 @@ class OpenupgraderMigration(models.Model):
             self.uninstallable_modules = False
             found_modules_by_state = self._verify_module_states()
             obsolete_modules_to_remove = found_modules_by_state.get(
-                "to remove obsolete", [])
+                "to remove obsolete", []
+            )
             pending_modules = found_modules_by_state.get("pending", [])
             self.to_uninstall_modules = str(sorted(set(pending_modules)))
             missing_modules = [
-                x for x in pending_modules
-                if x not in obsolete_modules_to_remove
+                x for x in pending_modules if x not in obsolete_modules_to_remove
             ]
             if missing_modules:
                 self.uninstalled_modules_not_obsolete = str(
-                    sorted(set(missing_modules)))
+                    sorted(set(missing_modules))
+                )
             sql_commands = [
                 (
                     "DELETE FROM ir_module_module "
@@ -1006,7 +1009,7 @@ class OpenupgraderMigration(models.Model):
         conn_vars = self._get_db_connection_variables()
         sql_commands = [
             (
-            """
+                """
             WITH RECURSIVE views_to_delete AS (
                 SELECT v.id
                 FROM ir_ui_view v
@@ -1026,17 +1029,19 @@ class OpenupgraderMigration(models.Model):
             )
             DELETE FROM ir_ui_view
             WHERE id IN (SELECT id FROM views_to_delete)
-            """ % list(modules)
+            """
+                % list(modules)
             ),
             (
-            """
+                """
             DELETE from ir_model_data
             WHERE id IN (
                 SELECT res_id FROM ir_model_data
                 WHERE model = 'ir.ui.menu'
                 AND module = ANY(ARRAY%s)
             )
-            """ % list(modules)
+            """
+                % list(modules)
             ),
         ]
         for sql_command in sql_commands:
@@ -1162,10 +1167,11 @@ class OpenupgraderMigration(models.Model):
                         found_modules_by_state[state].append(module)
                         if module in obsolete_modules:
                             found_modules_by_state["to remove obsolete"].append(module)
-            found_modules_by_state["pending"] = found_modules_by_state.get(
-                "to upgrade", []) + found_modules_by_state.get(
-                "to remove", []) + found_modules_by_state.get(
-                "to install", [])
+            found_modules_by_state["pending"] = (
+                found_modules_by_state.get("to upgrade", [])
+                + found_modules_by_state.get("to remove", [])
+                + found_modules_by_state.get("to install", [])
+            )
         else:
             logger.error(f"Error checking module states: {result.stderr}")
 
