@@ -1034,7 +1034,7 @@ class OpenupgraderMigration(models.Model):
             WHERE id IN (
                 SELECT res_id FROM ir_model_data
                 WHERE model = 'ir.ui.menu'
-                AND module = ANY(%s)
+                AND module = ANY(ARRAY%s)
             )
             """ % list(modules)
             ),
