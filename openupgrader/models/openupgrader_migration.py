@@ -996,8 +996,8 @@ class OpenupgraderMigration(models.Model):
                 if uninstallable_modules:
                     modules_removed -= set(uninstallable_modules)
                     self.uninstallable_modules = sorted(set(uninstallable_modules))
-                    self.uninstalled_modules = sorted(set(modules_removed))
-                    self.to_uninstall_modules = False
+                self.uninstalled_modules = sorted(set(modules_removed))
+                self.to_uninstall_modules = False
                 self.remove_modules_views_menus(modules_removed)
 
     def remove_modules_views_menus(self, modules):
