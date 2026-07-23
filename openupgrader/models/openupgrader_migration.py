@@ -144,7 +144,7 @@ class OpenupgraderMigration(models.Model):
     migration_critical_log = fields.Text(string="Migration criticals in log")
     migration_warning_log = fields.Text(string="Migration warnings in log")
     migration_error_log = fields.Text(string="Migration errors in log")
-    to_uninstall_modules = fields.Text(string="Modules to be uninstalled")
+    pending_modules = fields.Text(string="Modules to be uninstalled")
     uninstalled_modules = fields.Text(string="Uninstalled modules")
     uninstallable_modules = fields.Text(string="Uninstallable modules")
     uninstalled_modules_not_obsolete = fields.Text(
@@ -880,6 +880,7 @@ class OpenupgraderMigration(models.Model):
                 os.remove(sql_file_path)
         self.current_config_id = False
         self.next_config_id = False
+        self.pending_modules = False
         self.uninstallable_modules = False
         self.uninstalled_modules_not_obsolete = False
         self.button_clean_logs()
@@ -923,17 +924,22 @@ class OpenupgraderMigration(models.Model):
             self.env.ref("openupgrader.cron_openugrader_do_auto_migration").name,
         )
 
-    def button_uninstall_missing_modules(self):
+    def button_refresh_pending_modules(self):
+        found_modules_by_state = self._verify_module_states()
+        pending_modules = found_modules_by_state.get("pending", [])
+        self.pending_modules = str(sorted(set(pending_modules)))
+
+    def button_uninstall_pending_modules(self):
         if self.is_migration_done:
             conn_vars = self._get_db_connection_variables()
             modules_to_remove = ()
             self.uninstallable_modules = False
+            self.button_refresh_pending_modules()
             found_modules_by_state = self._verify_module_states()
+            pending_modules = found_modules_by_state.get("pending", [])
             obsolete_modules_to_remove = found_modules_by_state.get(
                 "to remove obsolete", []
             )
-            pending_modules = found_modules_by_state.get("pending", [])
-            self.to_uninstall_modules = str(sorted(set(pending_modules)))
             missing_modules = [
                 x for x in pending_modules if x not in obsolete_modules_to_remove
             ]
@@ -1000,7 +1006,12 @@ class OpenupgraderMigration(models.Model):
                     modules_removed -= set(uninstallable_modules)
                     self.uninstallable_modules = sorted(set(uninstallable_modules))
                 self.uninstalled_modules = sorted(set(modules_removed))
-                self.to_uninstall_modules = False
+                current_pending_modules = [
+                    x
+                    for x in pending_modules
+                    if x in found_modules_by_state.get("pending", [])
+                ]
+                self.pending_modules = str(sorted(set(current_pending_modules)))
                 self.remove_modules_views_menus(modules_removed)
 
     def remove_modules_views_menus(self, modules):
