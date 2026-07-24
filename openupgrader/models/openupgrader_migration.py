@@ -4,25 +4,28 @@ import logging
 import os
 import re
 import shutil
-import signal
-import ssl
-import sys
 import time
 from pathlib import Path
 from subprocess import PIPE, Popen, run
-from urllib.request import HTTPSHandler, Request, urlopen
+from urllib.request import Request, urlopen
 
 import odoorpc
 import psutil
-from odoorpc.rpc import CookieJar, HTTPCookieProcessor, build_opener
 
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError, ValidationError
-from odoo.modules import get_module_resource
 from odoo.tools import config
 from odoo.tools.safe_eval import safe_eval
 
 from .openupgrader_config import _get_env_for_subprocess
+from .tools import (
+    _get_log_path,
+    _get_migration_logs,
+    _get_odoo_pids,
+    _get_opener,
+    _set_odoorc,
+    _stop_pid,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -169,11 +172,6 @@ class OpenupgraderMigration(models.Model):
             record.is_migration_done = record.current_config_id == record.to_config_id
 
     @staticmethod
-    def _get_log_path(folder, version_name, migrate=False):
-        log_name = "migrate" if migrate else "update"
-        return Path(folder) / f"openupgrade{version_name}" / f"{log_name}.log"
-
-    @staticmethod
     def show_message_odoo_running():
         return {
             "type": "ir.actions.client",
@@ -223,8 +221,8 @@ class OpenupgraderMigration(models.Model):
                 migration_critical_log,
                 migration_error_log,
                 migration_warning_log,
-            ) = self._get_migration_logs(
-                self._get_log_path(self.folder, openupgrader_config.name, migrate=True)
+            ) = _get_migration_logs(
+                _get_log_path(self.folder, openupgrader_config.name, migrate=True)
             )
             self.migration_critical_log += (
                 f"### MIGRATION CRITICAL LOG V. {openupgrader_config.name}\n"
@@ -242,8 +240,8 @@ class OpenupgraderMigration(models.Model):
                 update_critical_log,
                 update_error_log,
                 update_warning_log,
-            ) = self._get_migration_logs(
-                self._get_log_path(self.folder, openupgrader_config.name)
+            ) = _get_migration_logs(
+                _get_log_path(self.folder, openupgrader_config.name)
             )
             self.update_critical_log += (
                 f"### UPDATE CRITICAL LOG V. {openupgrader_config.name}\n"
@@ -258,29 +256,6 @@ class OpenupgraderMigration(models.Model):
             )
             self.update_warning_log += update_warning_log
 
-    @staticmethod
-    def _get_migration_logs(log_file):
-        critical_log = " "
-        error_log = " "
-        warning_log = " "
-        if os.path.isfile(log_file):
-            with open(log_file, "r") as f:
-                for r in f.readlines():
-                    if r and r != "":
-                        if "CRITICAL" in r:
-                            c_text = r.split("CRITICAL")[1]
-                            if c_text and c_text not in critical_log:
-                                critical_log += c_text
-                        if "ERROR" in r:
-                            e_text = r.split("ERROR")[1]
-                            if e_text and e_text not in error_log:
-                                error_log += e_text
-                        if "WARNING" in r:
-                            w_text = r.split("WARNING")[1]
-                            if w_text and w_text not in warning_log:
-                                warning_log += w_text
-        return critical_log, error_log, warning_log
-
     def odoo_connect(self, config_id):
         if self._get_odoo_process_state() == "stopped":
             # start current config odoo if not running
@@ -291,7 +266,7 @@ class OpenupgraderMigration(models.Model):
                     host="localhost",
                     protocol="jsonrpc",
                     port=self.xmlrpc_port,
-                    opener=self._get_opener(verify_ssl=False),
+                    opener=_get_opener(verify_ssl=False),
                 )
             except Exception as e:
                 logger.info("Connection to Odoo failed for %s!" % str(e))
@@ -323,60 +298,6 @@ class OpenupgraderMigration(models.Model):
                 "instance. Please fill them and try again."
             )
         )
-
-    @staticmethod
-    def _get_opener(verify_ssl=True, sessions=True):
-        handlers = []
-        if not verify_ssl:
-            if (sys.version_info[0] == 2 and sys.version_info >= (2, 7, 9)) or (
-                sys.version_info[0] == 3 and sys.version_info >= (3, 2, 0)
-            ):
-                context = ssl.create_default_context()
-                context.check_hostname = False
-                context.verify_mode = ssl.CERT_NONE
-                handlers.append(HTTPSHandler(context=context))
-            else:
-                logger.info(
-                    "verify_ssl could not be established for this "
-                    "python version: %s" % sys.version
-                )
-        if sessions:
-            handlers.append(HTTPCookieProcessor(CookieJar()))
-        opener = build_opener(*handlers)
-        return opener
-
-    @staticmethod
-    def _set_odoorc(folder, config_id):
-        odoorc_path = os.path.join(folder, ".odoorc")
-        if not os.path.isfile(odoorc_path):
-            odoorc_basic_path = get_module_resource("openupgrader", "data", ".odoorc")
-            shutil.copyfile(odoorc_basic_path, odoorc_path)
-            if float(config_id.name) > 15:
-                sed_cmd = f"sed -i 's/longpolling/gevent/g' {odoorc_path}"
-                Popen(sed_cmd, shell=True)
-            # todo move disabled modules to configuration
-            not_auto_install_list = [
-                "partner_autocomplete",
-                "iap",
-                "mail_bot",
-                "account_edi_facturx",
-                "account_edi_ubl",
-                "l10n_it_stock_ddt",
-            ]
-            if float(config_id.name) <= 14:
-                not_auto_install_list.extend(
-                    [
-                        "account_edi",
-                        "l10n_it_edi",
-                    ]
-                )
-            mod_not_install = (
-                f"modules_auto_install_disabled = {','.join(not_auto_install_list)}"
-            )
-            Popen(
-                [f"echo {mod_not_install} >> {odoorc_path}"],
-                shell=True,
-            ).wait()
 
     def button_start_odoo(self):
         self.start_odoo(config_id=self.current_config_id)
@@ -477,7 +398,7 @@ class OpenupgraderMigration(models.Model):
             if version_float < 14
             else f"{folder}/repos/odoo/odoo-bin"
         )
-        self._set_odoorc(folder, config_id)
+        _set_odoorc(folder, config_id)
         addons_path = f"{folder}/repos/odoo/addons"
         if version_float < 14:
             addons_path = f"{folder}/odoo/addons"
@@ -511,9 +432,9 @@ class OpenupgraderMigration(models.Model):
                 os.makedirs(data_dir)
             bash_command += f"--data-dir={data_dir} "
         if migrate:
-            odoo_log = self._get_log_path(self.folder, version_name, migrate=True)
+            odoo_log = _get_log_path(self.folder, version_name, migrate=True)
         else:
-            odoo_log = self._get_log_path(self.folder, version_name)
+            odoo_log = _get_log_path(self.folder, version_name)
         if update:
             bash_command += "-u all --stop "
         if not os.path.isfile(odoo_log):
@@ -611,48 +532,13 @@ class OpenupgraderMigration(models.Model):
             self.button_check_odoo_migrated_running_state()
         time.sleep(2)
 
-    def _stop_pid(self, pid=False):
-        if pid:
-            try:
-                os.kill(pid, signal.SIGTERM)
-                time.sleep(5)
-            except OSError:
-                time.sleep(10)
-                try:
-                    os.kill(pid, signal.SIGKILL)
-                except OSError as e:
-                    logger.info("Error %s in killing pid: %s " % (e, pid))
-        self.odoo_running_state = "stopped"
-        logger.info("Odoo migration instance stopped.")
-
-    def _get_odoo_pids(self):
-        pids = []
-        db_name = self.env.cr.dbname
-        commands = [
-            f"pgrep -a python | grep {db_name}_migrate",
-            f"pgrep -a postgres | grep {db_name}_migrate",
-        ]
-        for command in commands:
-            process = Popen(
-                command,
-                shell=True,
-                stdout=PIPE,
-            )
-            has_stdout = True
-            while has_stdout:
-                one_line_output = process.stdout.readline()
-                if one_line_output:
-                    pids.append(int(one_line_output.split()[0]))
-                else:
-                    has_stdout = False
-        return pids
-
     def button_stop_odoo(self):
-        pids = self._get_odoo_pids()
+        pids = _get_odoo_pids(self.env.cr.dbname)
         for pid in pids:
-            self._stop_pid(pid)
+            _stop_pid(pid)
+        self.odoo_running_state = "stopped"
 
-    def restore_filestore(self, from_config_id, to_config_id):
+    def restore_filestore(self):
         # restore filestore always from initial folder to default migration folder
         migrated_folder = self.get_filestore_path()
         if os.path.isdir(migrated_folder):
@@ -667,7 +553,7 @@ class OpenupgraderMigration(models.Model):
         logger.info(
             "Filestore restored from original version %s folder %s to %s."
             % (
-                from_config_id.name,
+                self.current_config_id.name,
                 initial_folder,
                 migrated_folder,
             )
@@ -826,7 +712,7 @@ class OpenupgraderMigration(models.Model):
             # restore is needed only when we migrate the first version, after the db is
             # already present in the postgresql cluster
             if self.migrate_filestore:
-                self.restore_filestore(self.current_config_id, self.current_config_id)
+                self.restore_filestore()
             self.restore_db()
         if force:
             self.restore_db(self.current_config_id)
@@ -861,7 +747,7 @@ class OpenupgraderMigration(models.Model):
         if not self.is_migration_done:
             # write in update log "Ready for migration" to check later
             self.state = "ready_for_migration"
-            log_path = self._get_log_path(self.folder, self.current_config_id.name)
+            log_path = _get_log_path(self.folder, self.current_config_id.name)
             with open(log_path, "w") as log_file:
                 now = fields.Datetime.now()
                 log_file.write(f"\n\nReady for migration at {now}")
@@ -1258,7 +1144,7 @@ class OpenupgraderMigration(models.Model):
 
     def _get_odoo_process_state(self):
         """Check if any Odoo process is currently running."""
-        odoo_pids = self._get_odoo_pids()
+        odoo_pids = _get_odoo_pids(self.env.cr.dbname)
         for odoo_pid in odoo_pids:
             if psutil.pid_exists(odoo_pid):
                 return "running"
@@ -1276,7 +1162,7 @@ class OpenupgraderMigration(models.Model):
         ou_configs = self.env["openupgrader.config"].search([], order="name DESC")
         for ou_config in ou_configs:
             # 1. Check update log (usually follows migration)
-            update_log = self._get_log_path(self.folder, ou_config.name)
+            update_log = _get_log_path(self.folder, ou_config.name)
             if os.path.isfile(update_log):
                 patterns = {
                     "CRITICAL": "restore_failed",
@@ -1292,7 +1178,7 @@ class OpenupgraderMigration(models.Model):
                     return state, ou_config
 
             # 2. Check migration log
-            migrate_log = self._get_log_path(self.folder, ou_config.name, migrate=True)
+            migrate_log = _get_log_path(self.folder, ou_config.name, migrate=True)
             if os.path.isfile(migrate_log):
                 patterns = {
                     "CRITICAL": "failed",
