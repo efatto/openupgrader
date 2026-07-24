@@ -741,7 +741,6 @@ class OpenupgraderMigration(models.Model):
         before_python = self.current_config_id.python_before_migration_command_ids
         self.python_fixes(before_python)
         self.uninstall_modules(self.current_config_id, before_migration=True)
-        # self.delete_not_installed_module_views()
         self.delete_old_modules(self.current_config_id)
         if not self.is_migration_done:
             # write in update log "Ready for migration" to check later
@@ -939,6 +938,15 @@ class OpenupgraderMigration(models.Model):
             """
                 % list(modules)
             ),
+            (
+                """
+            DELETE FROM ir_ui_view
+            WHERE inherit_id IS NOT NULL
+            AND inherit_id NOT IN (
+                SELECT id FROM ir_ui_view
+            )
+            """,
+            )
         ]
         for sql_command in sql_commands:
             run(
@@ -948,6 +956,10 @@ class OpenupgraderMigration(models.Model):
                 ],
                 shell=True,
             )
+        logger.info(
+            f"Delete via sql menu and views linked to modules {modules} and all views "
+            f"that have an unexisting inherit."
+        )
 
     def _cron_migration(self):
         logger.info("Starting OpenUpgrader auto-migration cron")
@@ -1340,36 +1352,6 @@ class OpenupgraderMigration(models.Model):
 
         self.button_stop_odoo()
 
-    # def delete_not_installed_module_views(self):
-    #     conn_vars = self._get_db_connection_variables()
-    #     sql_commands = [
-    #         """
-    #         DELETE FROM ir_act_window_view WHERE view_id NOT IN (
-    #         SELECT res_id FROM ir_model_data
-    #         WHERE model='ir.ui.view'
-    #         AND module IN (
-    #         SELECT name FROM ir_module_module WHERE state='installed'));
-    #         """,
-    #         """
-    #         DELETE FROM ir_ui_view WHERE id NOT IN (
-    #         SELECT res_id FROM ir_model_data
-    #         WHERE model='ir.ui.view'
-    #         AND module IN (
-    #         SELECT name FROM ir_module_module WHERE state='installed'));
-    #         """,
-    #     ]
-    #     logger.info(
-    #         "Delete via sql all views and act_windows that aren't linked to an "
-    #         "installed module."
-    #     )
-    #     for sql_command in sql_commands:
-    #         Popen(
-    #             [
-    #                 f"{conn_vars} && "
-    #                 f'psql -d {self.env.cr.dbname}_migrate -c "{sql_command}"'
-    #             ],
-    #             shell=True,
-    #         )
 
     def delete_old_modules(self, config_id):
         if config_id.module_to_delete_after_migration_ids:
