@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 import shutil
@@ -7,8 +8,9 @@ import sys
 import time
 from pathlib import Path
 from subprocess import PIPE, Popen
-from urllib.request import HTTPSHandler
+from urllib.request import HTTPSHandler, Request, urlopen
 
+import psutil
 from odoorpc.rpc import CookieJar, HTTPCookieProcessor, build_opener
 
 from odoo.modules import get_module_resource
@@ -35,6 +37,15 @@ def _get_opener(verify_ssl=True, sessions=True):
         handlers.append(HTTPCookieProcessor(CookieJar()))
     opener = build_opener(*handlers)
     return opener
+
+
+def _get_odoo_process_state(dbname):
+    """Check if any Odoo process is currently running."""
+    odoo_pids = _get_odoo_pids(dbname)
+    for odoo_pid in odoo_pids:
+        if psutil.pid_exists(odoo_pid):
+            return "running"
+    return "stopped"
 
 
 def _set_odoorc(folder, config_id):
@@ -133,3 +144,40 @@ def _stop_pid(pid=False):
             except OSError as e:
                 logger.info("Error %s in killing pid: %s " % (e, pid))
     logger.info("Odoo migration instance stopped.")
+
+
+def _check_oca_authorship(pkg_name, release):
+    """
+    Verify if the package on PyPI is owned by the 'OCA' user.
+    """
+    url = f"https://pypi.org/pypi/{pkg_name}/json"
+    try:
+        req = Request(url)
+        # Use a short timeout to avoid blocking migration for too long
+        with urlopen(req, timeout=10) as response:
+            if response.status == 200:
+                data = json.loads(response.read().decode())
+                ownership = data.get("ownership", {})
+                roles = ownership.get("roles", [])
+                releases = data.get("releases", {})
+                for role_info in roles:
+                    if (
+                        role_info.get("user") == "OCA"
+                        and role_info.get("role") == "Owner"
+                        and release[:4] in [r[:4] for r in releases]
+                    ):
+                        return True
+        logger.warning(
+            "Package %s found on PyPI but not owned by OCA or not with release %s. "
+            "Authorship check failed.",
+            pkg_name,
+            release,
+        )
+    except Exception as e:
+        logger.error(
+            "Error verifying OCA authorship for %s release %s: %s",
+            pkg_name,
+            release,
+            e,
+        )
+    return False

@@ -1,5 +1,4 @@
 import io
-import json
 import logging
 import os
 import re
@@ -7,10 +6,8 @@ import shutil
 import time
 from pathlib import Path
 from subprocess import PIPE, Popen, run
-from urllib.request import Request, urlopen
 
 import odoorpc
-import psutil
 
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError, ValidationError
@@ -19,9 +16,11 @@ from odoo.tools.safe_eval import safe_eval
 
 from .openupgrader_config import _get_env_for_subprocess
 from .tools import (
+    _check_oca_authorship,
     _get_log_path,
     _get_migration_logs,
     _get_odoo_pids,
+    _get_odoo_process_state,
     _get_opener,
     _set_odoorc,
     _stop_pid,
@@ -257,7 +256,7 @@ class OpenupgraderMigration(models.Model):
             self.update_warning_log += update_warning_log
 
     def odoo_connect(self, config_id):
-        if self._get_odoo_process_state() == "stopped":
+        if _get_odoo_process_state(self.env.cr.dbname) == "stopped":
             # start current config odoo if not running
             self.start_odoo(config_id)
         if self.db_name and self.db_user and self.db_password:
@@ -1141,14 +1140,6 @@ class OpenupgraderMigration(models.Model):
         odoo_running_state, _m, _c = self._get_odoo_running_state()
         self.odoo_running_state = odoo_running_state
 
-    def _get_odoo_process_state(self):
-        """Check if any Odoo process is currently running."""
-        odoo_pids = _get_odoo_pids(self.env.cr.dbname)
-        for odoo_pid in odoo_pids:
-            if psutil.pid_exists(odoo_pid):
-                return "running"
-        return "stopped"
-
     def _get_migration_state_from_logs(self):
         """
         Scan log files to determine current migration state and version.
@@ -1217,7 +1208,7 @@ class OpenupgraderMigration(models.Model):
         Get the running state of Odoo and the current migration state.
         :return: Tuple of (odoo_running_state, migration_state, current_version)
         """
-        odoo_running_state = self._get_odoo_process_state()
+        odoo_running_state = _get_odoo_process_state(self.env.cr.dbname)
 
         if odoo_running_state == "running":
             logger.info("Odoo is already running")
@@ -1368,42 +1359,6 @@ class OpenupgraderMigration(models.Model):
                     module_id.unlink()
             self.button_stop_odoo()
 
-    def _check_oca_authorship(self, pkg_name, release):
-        """
-        Verify if the package on PyPI is owned by the 'OCA' user.
-        """
-        url = f"https://pypi.org/pypi/{pkg_name}/json"
-        try:
-            req = Request(url)
-            # Use a short timeout to avoid blocking migration for too long
-            with urlopen(req, timeout=10) as response:
-                if response.status == 200:
-                    data = json.loads(response.read().decode())
-                    ownership = data.get("ownership", {})
-                    roles = ownership.get("roles", [])
-                    releases = data.get("releases", {})
-                    for role_info in roles:
-                        if (
-                            role_info.get("user") == "OCA"
-                            and role_info.get("role") == "Owner"
-                            and release[:4] in [r[:4] for r in releases]
-                        ):
-                            return True
-            logger.warning(
-                "Package %s found on PyPI but not owned by OCA or not with release %s. "
-                "Authorship check failed.",
-                pkg_name,
-                release,
-            )
-        except Exception as e:
-            logger.error(
-                "Error verifying OCA authorship for %s release %s: %s",
-                pkg_name,
-                release,
-                e,
-            )
-        return False
-
     def install_pip_modules(self, config_id, module_names):  # noqa C901
         if not isinstance(module_names, list):
             module_names = [module_names]
@@ -1475,7 +1430,7 @@ class OpenupgraderMigration(models.Model):
             if not installed_from_extra:
                 # Priority 2: OCA (standard index)
                 # Verify authorship before installing from standard index
-                if self._check_oca_authorship(base_pkg_name, config_id.name):
+                if _check_oca_authorship(base_pkg_name, config_id.name):
                     # Ensure we use ONLY standard index even if UV_INDEX is set
                     env_standard = subprocess_env.copy()
                     if "UV_INDEX" in env_standard:
