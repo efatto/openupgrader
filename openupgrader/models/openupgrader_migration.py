@@ -765,6 +765,7 @@ class OpenupgraderMigration(models.Model):
         self.current_config_id = False
         self.next_config_id = False
         self.pending_modules = False
+        self.uninstalled_modules = False
         self.uninstallable_modules = False
         self.uninstalled_modules_not_obsolete = False
         self.button_clean_logs()
