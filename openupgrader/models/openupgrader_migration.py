@@ -741,7 +741,8 @@ class OpenupgraderMigration(models.Model):
         before_python = self.current_config_id.python_before_migration_command_ids
         self.python_fixes(before_python)
         self.uninstall_modules(self.current_config_id, before_migration=True)
-        self.delete_not_installed_module_views()
+        self.remove_not_installed_module_views()
+        self.remove_assets()
         self.delete_old_modules(self.current_config_id)
         if not self.is_migration_done:
             # write in update log "Ready for migration" to check later
@@ -1344,7 +1345,7 @@ class OpenupgraderMigration(models.Model):
 
         self.button_stop_odoo()
 
-    def delete_not_installed_module_views(self):
+    def remove_not_installed_module_views(self):
         conn_vars = self._get_db_connection_variables()
         sql_commands = [
             """
@@ -1365,6 +1366,49 @@ class OpenupgraderMigration(models.Model):
         logger.info(
             "Delete via sql all views and act_windows that aren't linked to an "
             "installed module."
+        )
+        for sql_command in sql_commands:
+            Popen(
+                [
+                    f"{conn_vars} && "
+                    f'psql -d {self.env.cr.dbname}_migrate -c "{sql_command}"'
+                ],
+                shell=True,
+            )
+
+    def remove_assets(self):
+        conn_vars = self._get_db_connection_variables()
+        views_list = [
+            'portal._assets_primary_variables',
+            'web._assets_primary_variables',
+            'website._assets_primary_variables',
+        ]
+        sql_commands = [
+            (
+                """
+            WITH RECURSIVE views_to_delete AS (
+                SELECT v.id
+                FROM ir_ui_view v
+                WHERE key = ANY(ARRAY%s)
+                UNION ALL
+                SELECT v.id
+                FROM ir_ui_view v
+                JOIN views_to_delete vtd ON v.inherit_id = vtd.id
+            ),
+            deleted_imd AS (
+                DELETE FROM ir_model_data
+                WHERE model = 'ir.ui.view'
+                  AND res_id IN (SELECT id FROM views_to_delete)
+            )
+            DELETE FROM ir_ui_view
+            WHERE id IN (SELECT id FROM views_to_delete)
+            """
+                % list(views_list)
+            ),
+        ]
+        logger.info(
+            "Delete via sql web, website and portal views inherited by to-be-removed "
+            "views."
         )
         for sql_command in sql_commands:
             Popen(
