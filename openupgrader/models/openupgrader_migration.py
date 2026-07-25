@@ -938,15 +938,6 @@ class OpenupgraderMigration(models.Model):
             """
                 % list(modules)
             ),
-            (
-                """
-            DELETE FROM ir_ui_view
-            WHERE inherit_id IS NOT NULL
-            AND inherit_id NOT IN (
-                SELECT id FROM ir_ui_view
-            )
-            """,
-            )
         ]
         for sql_command in sql_commands:
             run(
@@ -957,8 +948,7 @@ class OpenupgraderMigration(models.Model):
                 shell=True,
             )
         logger.info(
-            f"Delete via sql menu and views linked to modules {modules} and all views "
-            f"that have an unexisting inherit."
+            f"Delete via sql menu and views linked to modules {modules}."
         )
 
     def _cron_migration(self):
