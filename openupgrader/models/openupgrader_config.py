@@ -296,6 +296,7 @@ class OpenupgraderConfig(models.Model):
     )
     obsolete_modules = fields.Text()
     core_modules = fields.Text()
+    not_autoinstallable_modules = fields.Text()
 
     @staticmethod
     def _extract_package_name(requirement):
@@ -851,6 +852,9 @@ class OpenupgraderConfig(models.Model):
             if recipe.get("obsolete"):
                 obsolete = recipe.get("obsolete")
                 self.obsolete_modules = str(set(obsolete))
+            if recipe.get("not_autoinstallable_modules"):
+                not_autoinstallable_modules = recipe.get("not_autoinstallable_modules")
+                self.not_autoinstallable_modules = str(set(not_autoinstallable_modules))
             if recipe.get("uninstall_after_migration_to_this_version"):
                 uninstall_after = recipe.get(
                     "uninstall_after_migration_to_this_version"

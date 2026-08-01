@@ -163,6 +163,9 @@
                             <group string="Obsolete modules">
                                 <field name="obsolete_modules" />
                             </group>
+                            <group string="Not autoinstallable modules">
+                                <field name="not_autoinstallable_modules" />
+                            </group>
                             <group string="Core modules">
                                 <field name="core_modules" />
                             </group>

@@ -17,6 +17,7 @@
   - obsolete: ""
   - uninstall_after_migration_to_this_version: ""
   - uninstall_before_migration_to_next_version: ""
+  - not_autoinstallable_modules: ""
 "18.0":
   - python_version: "3.12.11"
   - pip_requirements:
@@ -36,6 +37,12 @@
   - obsolete: ""
   - uninstall_after_migration_to_this_version: ""
   - uninstall_before_migration_to_next_version: ""
+  - not_autoinstallable_modules:
+      - account_edi_facturx
+      - account_edi_ubl
+      - iap
+      - mail_bot
+      - partner_autocomplete
 "17.0":
   - python_version: "3.10.12"
   - pip_requirements:
@@ -60,6 +67,12 @@
   - obsolete: ""
   - uninstall_after_migration_to_this_version: ""
   - uninstall_before_migration_to_next_version: ""
+  - not_autoinstallable_modules:
+      - account_edi_facturx
+      - account_edi_ubl
+      - iap
+      - mail_bot
+      - partner_autocomplete
 "16.0":
   - python_version: "3.10.12"
   - pip_requirements:
@@ -85,6 +98,14 @@
       - l10n_it_ricevute_bancarie
   - uninstall_after_migration_to_this_version: ""
   - uninstall_before_migration_to_next_version: ""
+  - not_autoinstallable_modules:
+      - account_edi
+      - account_edi_facturx
+      - account_edi_ubl
+      - iap
+      - l10n_it_edi
+      - mail_bot
+      - partner_autocomplete
 "15.0":
   - python_version: "3.8.16"
   - pip_requirements:
@@ -105,6 +126,14 @@
   - obsolete: ""
   - uninstall_after_migration_to_this_version: ""
   - uninstall_before_migration_to_next_version: ""
+  - not_autoinstallable_modules:
+      - account_edi
+      - account_edi_facturx
+      - account_edi_ubl
+      - iap
+      - l10n_it_edi
+      - mail_bot
+      - partner_autocomplete
 "14.0":
   - python_version: "3.8.16"
   - pip_requirements:
@@ -125,3 +154,11 @@
   - obsolete: ""
   - uninstall_after_migration_to_this_version: ""
   - uninstall_before_migration_to_next_version: ""
+  - not_autoinstallable_modules:
+      - account_edi
+      - account_edi_facturx
+      - account_edi_ubl
+      - iap
+      - l10n_it_edi
+      - mail_bot
+      - partner_autocomplete

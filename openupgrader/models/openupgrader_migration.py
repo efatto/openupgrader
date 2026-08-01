@@ -152,6 +152,9 @@ class OpenupgraderMigration(models.Model):
     uninstalled_modules_not_obsolete = fields.Text(
         string="Uninstalled modules not obsolete"
     )
+    not_autoinstallable_modules = fields.Text(
+        string="Modules set as not autoinstallable"
+    )
     config_file = fields.Binary(string="Config file (yml)")
     config_file_name = fields.Char(string="Config file name")
 

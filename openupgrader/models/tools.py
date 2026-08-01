@@ -14,6 +14,7 @@ import psutil
 from odoorpc.rpc import CookieJar, HTTPCookieProcessor, build_opener
 
 from odoo.modules import get_module_resource
+from odoo.tools import safe_eval
 
 logger = logging.getLogger(__name__)
 
@@ -57,21 +58,7 @@ def _set_odoorc(folder, config_id):
             sed_cmd = f"sed -i 's/longpolling/gevent/g' {odoorc_path}"
             Popen(sed_cmd, shell=True)
         # todo move disabled modules to configuration
-        not_auto_install_list = [
-            "partner_autocomplete",
-            "iap",
-            "mail_bot",
-            "account_edi_facturx",
-            "account_edi_ubl",
-            "l10n_it_stock_ddt",
-        ]
-        if float(config_id.name) <= 14:
-            not_auto_install_list.extend(
-                [
-                    "account_edi",
-                    "l10n_it_edi",
-                ]
-            )
+        not_auto_install_list = safe_eval(config_id.not_autoinstallable_modules)
         mod_not_install = (
             f"modules_auto_install_disabled = {','.join(not_auto_install_list)}"
         )
