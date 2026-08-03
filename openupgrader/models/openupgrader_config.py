@@ -466,8 +466,8 @@ class OpenupgraderConfig(models.Model):
             venv_path = os.path.join(
                 openupgrader_migration.folder, f"openupgrade{self.name}"
             )
-            _set_odoorc(venv_path, self)
             subprocess_env = _create_python_venv(venv_path, self.python_version)
+            _set_odoorc(venv_path, self)
             openupgrade_path = os.path.join(venv_path, "odoo")
             odoo_path = (
                 openupgrade_path
