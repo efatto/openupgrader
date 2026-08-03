@@ -22,7 +22,6 @@ from .tools import (
     _get_odoo_pids,
     _get_odoo_process_state,
     _get_opener,
-    _set_odoorc,
     _stop_pid,
 )
 
@@ -400,7 +399,6 @@ class OpenupgraderMigration(models.Model):
             if version_float < 14
             else f"{folder}/repos/odoo/odoo-bin"
         )
-        _set_odoorc(folder, config_id)
         addons_path = f"{folder}/repos/odoo/addons"
         if version_float < 14:
             addons_path = f"{folder}/odoo/addons"
@@ -1301,10 +1299,8 @@ class OpenupgraderMigration(models.Model):
         for module in config_id.module_auto_install_ids:
             module_to_check = module.name
             module_to_install_name = module.module_to_install_name
-
-            # Use search with limit=1 for efficiency
             if module_obj.search(
-                [("name", "=", module_to_check), ("state", "=", "installed")], limit=1
+                [("name", "=", module_to_check), ("state", "=", "installed")],
             ):
                 # uv pip install module as possibly absent
                 self.install_pip_modules(config_id, module_to_install_name)

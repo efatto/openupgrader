@@ -11,6 +11,8 @@ import yaml
 from odoo import _, api, fields, models, release
 from odoo.exceptions import ValidationError
 
+from .tools import _set_odoorc
+
 logger = logging.getLogger(__name__)
 
 
@@ -260,7 +262,7 @@ class OpenupgraderConfig(models.Model):
     module_auto_install_ids = fields.One2many(
         comodel_name="auto.install.module",
         inverse_name="openupgrade_config_id",
-        string="Auto install modules",
+        string="Auto installed modules after migration",
         help="List of modules to install if there is another module installed.\n"
         "This list is auto filled with modules from openupgrade apriori.py and "
         "custom list in openupgrader yml configuration file if uploaded.",
@@ -464,6 +466,7 @@ class OpenupgraderConfig(models.Model):
             venv_path = os.path.join(
                 openupgrader_migration.folder, f"openupgrade{self.name}"
             )
+            _set_odoorc(venv_path, self)
             subprocess_env = _create_python_venv(venv_path, self.python_version)
             openupgrade_path = os.path.join(venv_path, "odoo")
             odoo_path = (

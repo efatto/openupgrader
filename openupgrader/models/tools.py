@@ -51,21 +51,20 @@ def _get_odoo_process_state(dbname):
 
 def _set_odoorc(folder, config_id):
     odoorc_path = os.path.join(folder, ".odoorc")
-    if not os.path.isfile(odoorc_path):
-        odoorc_basic_path = get_module_resource("openupgrader", "data", ".odoorc")
-        shutil.copyfile(odoorc_basic_path, odoorc_path)
-        if float(config_id.name) > 15:
-            sed_cmd = f"sed -i 's/longpolling/gevent/g' {odoorc_path}"
-            Popen(sed_cmd, shell=True)
-        # todo move disabled modules to configuration
-        not_auto_install_list = safe_eval(config_id.not_autoinstallable_modules)
-        mod_not_install = (
-            f"modules_auto_install_disabled = {','.join(not_auto_install_list)}"
-        )
-        Popen(
-            [f"echo {mod_not_install} >> {odoorc_path}"],
-            shell=True,
-        ).wait()
+    odoorc_basic_path = get_module_resource("openupgrader", "data", ".odoorc")
+    shutil.copyfile(odoorc_basic_path, odoorc_path)
+    if float(config_id.name) > 15:
+        sed_cmd = f"sed -i 's/longpolling/gevent/g' {odoorc_path}"
+        Popen(sed_cmd, shell=True)
+    # todo move disabled modules to configuration
+    not_auto_install_list = safe_eval(config_id.not_autoinstallable_modules)
+    mod_not_install = (
+        f"modules_auto_install_disabled = {','.join(not_auto_install_list)}"
+    )
+    Popen(
+        [f"echo {mod_not_install} >> {odoorc_path}"],
+        shell=True,
+    ).wait()
 
 
 def _get_migration_logs(log_file):
