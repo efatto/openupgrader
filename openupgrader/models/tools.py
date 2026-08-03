@@ -14,7 +14,7 @@ import psutil
 from odoorpc.rpc import CookieJar, HTTPCookieProcessor, build_opener
 
 from odoo.modules import get_module_resource
-from odoo.tools import safe_eval
+from odoo.tools.safe_eval import safe_eval
 
 logger = logging.getLogger(__name__)
 
