@@ -312,7 +312,7 @@ class OpenupgraderMigration(models.Model):
             % version_name
         )
 
-    def start_odoo(
+    def start_odoo(  # noqa C901
         self,
         config_id,
         update=False,
@@ -332,51 +332,6 @@ class OpenupgraderMigration(models.Model):
         self.flush()
         if not config_id:
             raise ValidationError(_("Missing odoo version to start"))
-        if update:
-            self._start_odoo_thread(
-                config_id,
-                update,
-                migrate,
-                extra_command,
-                try_install_missing_pip_module,
-            )
-        else:
-            self._start_odoo(
-                config_id,
-                update,
-                migrate,
-                extra_command,
-                try_install_missing_pip_module,
-            )
-
-    def _start_odoo_thread(
-        self,
-        config_id,
-        update=False,
-        migrate=False,
-        extra_command="",
-        try_install_missing_pip_module=True,
-    ):
-        with api.Environment.manage():
-            new_cr = self.pool.cursor()
-            self = self.with_env(self.env(cr=new_cr))
-            self._start_odoo(
-                config_id,
-                update,
-                migrate,
-                extra_command,
-                try_install_missing_pip_module,
-            )
-            new_cr.close()
-
-    def _start_odoo(  # noqa C901
-        self,
-        config_id,
-        update=False,
-        migrate=False,
-        extra_command="",
-        try_install_missing_pip_module=True,
-    ):
         logger.info(
             f"Starting Odoo with options: version={config_id.name}, "
             f"update={update}, migrate={migrate}, commands={extra_command}"
@@ -1136,6 +1091,7 @@ class OpenupgraderMigration(models.Model):
         if not self.is_migration_done:
             self.state = migration_state
         self.odoo_running_state = odoo_running_state
+        self.flush()
 
     def button_check_odoo_migrated_running_state(self):
         """Minimal refresh of Odoo running state only."""
