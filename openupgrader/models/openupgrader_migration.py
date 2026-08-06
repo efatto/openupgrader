@@ -1543,7 +1543,8 @@ class OpenupgraderMigration(models.Model):
         if not odoo_client:
             return False
         module_obj = odoo_client.env["ir.module.module"]
-        module_obj.update_list()
+        # module_obj.update_list()
+        # removed as this changes the modules' state from 'to upgrade' to 'installed'
         to_remove_modules = module_obj.search([("state", "=", "to remove")])
         for module_to_remove_id in to_remove_modules:
             module_obj.browse(module_to_remove_id).button_uninstall_cancel()
