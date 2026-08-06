@@ -253,12 +253,6 @@
                                             type="object"
                                             string="Check migration running state"
                                         />
-                                        <p />
-                                        <button
-                                            name="button_refresh_odoo_running_state"
-                                            type="object"
-                                            string="Refresh migration state"
-                                        />
                                     </group>
                                 </group>
                             </group>

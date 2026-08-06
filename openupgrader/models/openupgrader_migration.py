@@ -173,7 +173,7 @@ class OpenupgraderMigration(models.Model):
             record.is_migration_done = record.current_config_id == record.to_config_id
 
     @staticmethod
-    def show_message_odoo_running():
+    def show_message_odoo_running_and_return():
         return {
             "type": "ir.actions.client",
             "tag": "display_notification",
@@ -653,9 +653,13 @@ class OpenupgraderMigration(models.Model):
 
     def _restore(self, force=False):
         self.ensure_one()
-        self.button_check_odoo_migrated_running_state()
-        if self.odoo_running_state == "running":
-            self.show_message_odoo_running()
+        (
+            odoo_running_state,
+            _migration_state,
+            _current_version,
+        ) = self._get_odoo_running_state()
+        if odoo_running_state == "running":
+            self.show_message_odoo_running_and_return()
         self.button_clean_logs()
         if not self.current_config_id:
             self.current_config_id = self.from_config_id
@@ -675,10 +679,14 @@ class OpenupgraderMigration(models.Model):
 
     def button_update_current_config(self):
         self.ensure_one()
-        self.button_refresh_odoo_running_state()
-        if self.odoo_running_state == "running":
-            self.show_message_odoo_running()
-        if self.state == "updated":
+        (
+            odoo_running_state,
+            migration_state,
+            _current_version,
+        ) = self._get_odoo_running_state()
+        if odoo_running_state == "running":
+            self.show_message_odoo_running_and_return()
+        if migration_state == "updated":
             return {
                 "type": "ir.actions.client",
                 "tag": "reload",
@@ -687,11 +695,15 @@ class OpenupgraderMigration(models.Model):
         return self.start_odoo(self.current_config_id, update=True)
 
     def button_prepare_for_migration(self):
-        self.ensure_one()
-        self.button_refresh_odoo_running_state()
         # do pre-upgrade stuff
-        if self.odoo_running_state == "running":
-            self.show_message_odoo_running()
+        self.ensure_one()
+        (
+            odoo_running_state,
+            migration_state,
+            current_version,
+        ) = self._get_odoo_running_state()
+        if odoo_running_state == "running":
+            self.show_message_odoo_running_and_return()
         before_sql = self.current_config_id.sql_before_migration_command_ids
         self.sql_fixes(before_sql)
         before_python = self.current_config_id.python_before_migration_command_ids
@@ -710,9 +722,13 @@ class OpenupgraderMigration(models.Model):
 
     def button_draft(self):
         self.env.ref("openupgrader.cron_openugrader_do_auto_migration").active = False
-        self.button_check_odoo_migrated_running_state()
-        if self.odoo_running_state == "running":
-            self.show_message_odoo_running()
+        (
+            odoo_running_state,
+            _migration_state,
+            _current_version,
+        ) = self._get_odoo_running_state()
+        if odoo_running_state == "running":
+            self.show_message_odoo_running_and_return()
         for config_id in [self.current_config_id, self.next_config_id]:
             sql_file_path = os.path.join(
                 self.folder,
@@ -744,11 +760,14 @@ class OpenupgraderMigration(models.Model):
         self.button_stop_odoo()
         self.button_draft()
         self.button_restore()
-        while self.state != "restored":
-            time.sleep(2)
-        while self.state != "updated":
+        migration_state = self.state
+        while migration_state != "updated":
             self.button_update_current_config()
-            time.sleep(5)
+            (
+                _odoo_running_state,
+                migration_state,
+                _current_version,
+            ) = self._get_odoo_running_state()
         self.button_prepare_for_migration()
         self.env.ref("openupgrader.cron_openugrader_do_auto_migration").write(
             {
@@ -938,7 +957,19 @@ class OpenupgraderMigration(models.Model):
                         f"Skipping."
                     )
                     continue
-
+                # It the migration is done and the version is not yet moved to the next
+                # one, do after migration stuff and set to the next version
+                if (
+                    migration_state == "migrated"
+                    and current_version
+                    and migration.current_config_id
+                    and current_version != migration.current_config_id
+                    and migration.to_config_id != migration.current_config_id
+                ):
+                    migration._do_after_migration()
+                    continue
+                # If the migration instance is stopped and updated or migrated, prepare
+                # for the next version migration
                 if migration_state in ["updated", "migrated"]:
                     logger.info(
                         f"Migration for {migration.db_name} is "
@@ -1060,38 +1091,19 @@ class OpenupgraderMigration(models.Model):
             self.state = "done"
 
     def button_do_migration(self):
-        self.button_refresh_odoo_running_state()
-        if self.odoo_running_state == "running":
-            self.show_message_odoo_running()
-        if self.state in ["migrated", "done"]:
-            return {
-                "type": "ir.actions.client",
-                "tag": "reload",
-            }
-        return self.start_odoo(self.next_config_id, update=True, migrate=True)
-
-    def button_refresh_odoo_running_state(self):
-        """
-        Refresh the running state of Odoo and the migration state.
-        If a migration is completed, perform post-migration tasks.
-        """
-        self.ensure_one()
         (
             odoo_running_state,
             migration_state,
             current_version,
         ) = self._get_odoo_running_state()
-
-        if current_version and self.current_config_id:
-            if migration_state == "migrated":
-                # Se la migrazione è completata, esegue i compiti post-migrazione
-                # e imposta la versione successiva da migrare.
-                self._do_after_migration()
-
-        if not self.is_migration_done:
-            self.state = migration_state
-        self.odoo_running_state = odoo_running_state
-        self.flush()
+        if odoo_running_state == "running":
+            self.show_message_odoo_running_and_return()
+        if migration_state in ["migrated", "done"]:
+            return {
+                "type": "ir.actions.client",
+                "tag": "reload",
+            }
+        return self.start_odoo(self.next_config_id, update=True, migrate=True)
 
     def button_check_odoo_migrated_running_state(self):
         """Minimal refresh of Odoo running state only."""
