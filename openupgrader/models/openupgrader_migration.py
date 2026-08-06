@@ -1124,7 +1124,11 @@ class OpenupgraderMigration(models.Model):
     def button_check_odoo_migrated_running_state(self):
         """Minimal refresh of Odoo running state only."""
         self.ensure_one()
-        odoo_running_state, _m, _c = self._get_odoo_running_state()
+        (
+            odoo_running_state,
+            _migration_state,
+            _current_version,
+        ) = self._get_odoo_running_state()
         self.odoo_running_state = odoo_running_state
 
     def _get_migration_state_from_logs(self):

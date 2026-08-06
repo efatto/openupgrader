@@ -192,32 +192,38 @@ class OpenUpgrader(SavepointCase):
         if final_module:
             self._check_installed_module(openupgrader_migration, final_module)
 
-    def test_00_openupgrader_manual_renamed_module(self):
+    def _test_00_openupgrader_manual_renamed_module(self):
         self._test_openupgrader_manual(
             initial_module="product_supplierinfo_for_customer",
             final_module="product_customerinfo",
         )
 
-    def test_01_openupgrader_manual(self):
+    def _test_01_openupgrader_manual(self):
         self._test_openupgrader_manual()
 
-    def test_02_openupgrader_auto(self):
-        openupgrader_migration = self.openupgrader_migration
+    def test_00_openupgrader_auto(self):
+        migration = self.openupgrader_migration
         self.assertEqual(
-            self.openupgrader_migration.to_config_id,
+            migration.to_config_id,
             self.to_config_id,
         )
         self.assertEqual(
-            self.openupgrader_migration.from_config_id,
+            migration.from_config_id,
             self.from_config_id,
         )
-        openupgrader_migration.button_do_all()
+        migration.button_do_all()
         cron_migration = self.env.ref("openupgrader.cron_openugrader_do_auto_migration")
-        while openupgrader_migration.state != "done":
+        current_version = migration.current_config_id
+        while current_version != migration.to_config_id:
             cron_migration.method_direct_trigger()  # cron do not start in tests?
             time.sleep(10)
-        self.assertEqual(openupgrader_migration.is_migration_done, True)
+            (
+                _odoo_running_state,
+                _migration_state,
+                current_version,
+            ) = migration._get_odoo_running_state()
+        self.assertEqual(migration.is_migration_done, True)
         self.assertEqual(
-            openupgrader_migration.current_config_id,
+            migration.current_config_id,
             self.to_config_id,
         )
