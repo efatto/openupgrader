@@ -966,11 +966,11 @@ class OpenupgraderMigration(models.Model):
                 # the next cron run.
                 if (
                     migration_state in ["migrating", "updating"]
-                    or odoo_running_state == "running"
+                    and odoo_running_state == "running"
                 ):
                     logger.info(
                         f"Migration for {migration.db_name} is currently "
-                        f"{migration_state} (Odoo {odoo_running_state}). "
+                        f"doing {migration_state} (Odoo is {odoo_running_state}). "
                         f"Skipping."
                     )
                     continue
