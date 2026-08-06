@@ -1156,7 +1156,7 @@ class OpenupgraderMigration(models.Model):
                     else "updated",
                 }
                 state, found = self._parse_log_file(
-                    update_log, patterns, default_state="updating"
+                    update_log, patterns, default_state=migration_state
                 )
                 if found:
                     return state, ou_config
@@ -1169,7 +1169,7 @@ class OpenupgraderMigration(models.Model):
                     "Modules loaded": "migrated",
                 }
                 state, found = self._parse_log_file(
-                    migrate_log, patterns, default_state="migrating"
+                    migrate_log, patterns, default_state=migration_state
                 )
                 if found:
                     return state, ou_config
