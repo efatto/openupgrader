@@ -718,7 +718,12 @@ class OpenupgraderMigration(models.Model):
             log_path = _get_log_path(self.folder, self.current_config_id.name)
             with open(log_path, "w") as log_file:
                 now = fields.Datetime.now()
-                log_file.write(f"\n\nReady for migration at {now}")
+                migration_message = (
+                    f"\n\nVersion {self.current_config_id.name} ready "
+                    f"for migration at {now}"
+                )
+                log_file.write(migration_message)
+                logger.info(migration_message)
 
     def button_draft(self):
         self.env.ref("openupgrader.cron_openugrader_do_auto_migration").active = False
@@ -768,7 +773,18 @@ class OpenupgraderMigration(models.Model):
                 migration_state,
                 _current_version,
             ) = self._get_odoo_running_state()
+            logger.info(
+                f"Waiting for update of initial version: {self.current_config_id.name}"
+            )
+        logger.info(
+            f"Update of current version {self.current_config_id.name} completed"
+        )
         self.button_prepare_for_migration()
+        self.flush()
+        logger.info(
+            f"Version {self.current_config_id.name} in state {migration_state} "
+            f"ready for migration"
+        )
         self.env.ref("openupgrader.cron_openugrader_do_auto_migration").write(
             {
                 "active": True,
