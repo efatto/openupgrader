@@ -1138,6 +1138,12 @@ class OpenupgraderMigration(models.Model):
         Scan log files to determine current migration state and version.
         Scans from newest version downwards to find last known state.
         """
+        # migration states:
+        # {
+        #     "restored": "restored",
+        #     "updating": "updating",
+        #     "migrated": "migrated",
+        # }
         migration_state = self.state
         current_version = self.from_config_id
 
@@ -1148,6 +1154,8 @@ class OpenupgraderMigration(models.Model):
             # update)
             update_log = _get_log_path(self.folder, ou_config.name)
             if os.path.isfile(update_log):
+                if migration_state == "restored":
+                    migration_state = "updating"
                 patterns = {
                     "CRITICAL": "restore_failed",
                     "Ready for migration": "ready_for_migration",
