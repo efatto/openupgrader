@@ -1140,8 +1140,13 @@ class OpenupgraderMigration(models.Model):
         """
         # migration states:
         # {
+        #     "restore_failed": "restore_failed",
+        #     "failed": "failed",
         #     "restored": "restored",
         #     "updating": "updating",
+        #     "updated": "updated",
+        #     "ready_for_migration": "ready_for_migration",
+        #     "migrating": "migrating",
         #     "migrated": "migrated",
         # }
         migration_state = self.state
@@ -1154,7 +1159,8 @@ class OpenupgraderMigration(models.Model):
             # update)
             update_log = _get_log_path(self.folder, ou_config.name)
             if os.path.isfile(update_log):
-                if migration_state == "restored":
+                if migration_state != "updated":
+                    # in this case the migration is not yet updated
                     migration_state = "updating"
                 patterns = {
                     "CRITICAL": "restore_failed",
@@ -1172,6 +1178,9 @@ class OpenupgraderMigration(models.Model):
             # 2. Check migration log
             migrate_log = _get_log_path(self.folder, ou_config.name, migrate=True)
             if os.path.isfile(migrate_log):
+                if migration_state != "migrated":
+                    # in this case the migration is not yet migrated
+                    migration_state = "migrating"
                 patterns = {
                     "CRITICAL": "failed",
                     "Modules loaded": "migrated",
