@@ -780,6 +780,7 @@ class OpenupgraderMigration(models.Model):
         logger.info(
             f"Update of current version {self.current_config_id.name} completed"
         )
+        self.state = "updated"
         self.button_prepare_for_migration()
         self.flush()
         logger.info(
@@ -1143,7 +1144,8 @@ class OpenupgraderMigration(models.Model):
         # Check versions in descending order to find the latest log
         ou_configs = self.env["openupgrader.config"].search([], order="name DESC")
         for ou_config in ou_configs:
-            # 1. Check update log (usually follows migration)
+            # 1. Check the update log (it follows migration except for the initial
+            # update)
             update_log = _get_log_path(self.folder, ou_config.name)
             if os.path.isfile(update_log):
                 patterns = {
