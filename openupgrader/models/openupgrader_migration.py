@@ -766,15 +766,16 @@ class OpenupgraderMigration(models.Model):
         self.button_draft()
         self.button_restore()
         migration_state = self.state
+        self.button_update_current_config()
         while migration_state != "updated":
-            self.button_update_current_config()
             (
                 _odoo_running_state,
                 migration_state,
                 _current_version,
             ) = self._get_odoo_running_state()
             logger.info(
-                f"Waiting for update of initial version: {self.current_config_id.name}"
+                f"Waiting for update of initial version: {self.current_config_id.name} "
+                f"in current migration state {migration_state}"
             )
         logger.info(
             f"Update of current version {self.current_config_id.name} completed"
