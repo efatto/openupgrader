@@ -321,14 +321,13 @@ class OpenupgraderConfig(models.Model):
     def get_migration_state_from_file(self):
         return self.openupgrader_migration_id.get_migration_state_from_file([self.name])
 
-    def update_migration_state_file(self, state, date_started=None, date_finished=None):
+    def update_migration_state_file(self, state, date_started=None):
         file_path = self.openupgrader_migration_id._default_migration_state_path()
         _update_migration_state_file(
             file_path,
             self.name,
             state,
             date_started,
-            date_finished,
         )
 
     def _create_db_backup(self, folder):

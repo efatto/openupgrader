@@ -176,7 +176,6 @@ def _init_migration_state_file(migration_state_path, config_names):
             "state": None,
             "date_started": None,
             "date_updated": None,
-            "date_finished": None,
         }
         for config_name in config_names
     }
@@ -187,7 +186,7 @@ def _init_migration_state_file(migration_state_path, config_names):
 
 
 def _update_migration_state_file(
-    migration_state_path, config_name, state, date_started=None, date_finished=None
+    migration_state_path, config_name, state, date_started=None
 ):
     with open(migration_state_path, "r") as f:
         try:
@@ -202,8 +201,6 @@ def _update_migration_state_file(
     migration_state_dict[config_name]["date_updated"] = datetime.now().strftime(
         "%Y-%m-%d %H:%M:%S"
     )
-    if date_finished:
-        migration_state_dict[config_name]["date_finished"] = date_finished
     with open(migration_state_path, "w") as f:
         json.dump(migration_state_dict, f, sort_keys=True, indent=2)
 
