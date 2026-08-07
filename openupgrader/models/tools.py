@@ -6,6 +6,7 @@ import signal
 import ssl
 import sys
 import time
+from datetime import datetime
 from pathlib import Path
 from subprocess import PIPE, Popen
 from urllib.request import HTTPSHandler, Request, urlopen
@@ -167,3 +168,52 @@ def _check_oca_authorship(pkg_name, release):
             e,
         )
     return False
+
+
+def _init_migration_state_file(migration_state_path, config_names):
+    migration_state_dict = {
+        config_name: {
+            "state": None,
+            "date_started": None,
+            "date_updated": None,
+            "date_finished": None,
+        }
+        for config_name in config_names
+    }
+    if os.path.isfile(migration_state_path):
+        os.remove(migration_state_path)
+    with open(migration_state_path, "w") as f:
+        json.dump(migration_state_dict, f, sort_keys=True, indent=2)
+
+
+def _update_migration_state_file(
+    migration_state_path, config_name, state, date_started=None, date_finished=None
+):
+    with open(migration_state_path, "r") as f:
+        try:
+            migration_state_dict = json.load(f)
+        except json.JSONDecodeError as _e:
+            migration_state_dict = {}
+        except Exception as _e:
+            migration_state_dict = {}
+    migration_state_dict[config_name]["state"] = state
+    if date_started:
+        migration_state_dict[config_name]["date_started"] = date_started
+    migration_state_dict[config_name]["date_updated"] = datetime.now().strftime(
+        "%Y-%m-%d %H:%M:%S"
+    )
+    if date_finished:
+        migration_state_dict[config_name]["date_finished"] = date_finished
+    with open(migration_state_path, "w") as f:
+        json.dump(migration_state_dict, f, sort_keys=True, indent=2)
+
+
+def _get_migration_state_from_file(migration_state_path, config_names):
+    with open(migration_state_path, "r") as f:
+        migration_state_dict = json.load(f)
+        for config_name in sorted(config_names, reverse=True):
+            if migration_state_dict.get(config_name) and migration_state_dict[
+                config_name
+            ].get("state"):
+                return migration_state_dict[config_name]["state"], config_name
+    return None, None

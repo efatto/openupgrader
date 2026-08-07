@@ -19,9 +19,11 @@ from .tools import (
     _check_oca_authorship,
     _get_log_path,
     _get_migration_logs,
+    _get_migration_state_from_file,
     _get_odoo_pids,
     _get_odoo_process_state,
     _get_opener,
+    _init_migration_state_file,
     _stop_pid,
 )
 
@@ -197,6 +199,41 @@ class OpenupgraderMigration(models.Model):
         if not os.path.isdir(folder):
             os.makedirs(folder)
         return folder
+
+    @api.model
+    def _default_migration_state_path(self):
+        """Default to ``migration_state.json`` file inside current home folder."""
+        file_path = os.path.join(
+            self._default_folder(),
+            "migration_state.json",
+        )
+        if not os.path.isfile(file_path):
+            _init_migration_state_file(
+                file_path,
+                self.env["openupgrader.config"].search([]).mapped("name"),
+            )
+        return file_path
+
+    def get_migration_state_from_file(self, config_name=None):
+        return _get_migration_state_from_file(
+            self._default_migration_state_path(),
+            config_name
+            or self.env["openupgrader.config"]
+            .search([("openupgrader_migration_id", "=", self.id)])
+            .mapped("name"),
+        )
+
+    def init_migration_state_file(self):
+        _init_migration_state_file(
+            self._default_migration_state_path(),
+            self.env["openupgrader.config"]
+            .search(
+                [
+                    ("openupgrader_migration_id", "=", self.id),
+                ]
+            )
+            .mapped("name"),
+        )
 
     def _get_db_connection_variables(self):
         return (
@@ -405,7 +442,11 @@ class OpenupgraderMigration(models.Model):
                 bash_command,
             )
         )
-
+        if migrate:
+            config_id.update_migration_state_file(
+                "migrating",
+                date_started=fields.Datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            )
         with io.open(odoo_log, "wb") as writer, io.open(odoo_log, "rb") as reader:
             process = Popen(
                 bash_command,
@@ -667,6 +708,10 @@ class OpenupgraderMigration(models.Model):
             self.next_config_id = self.env["openupgrader.config"].search(
                 [("name", "=", str(float(self.current_config_id.name) + 1))]
             )
+        self.current_config_id.update_migration_state_file(
+            "draft",
+            date_started=fields.Datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        )
         if self.from_config_id == self.current_config_id:
             # restore is needed only when we migrate the first version, after the db is
             # already present in the postgresql cluster
@@ -675,7 +720,7 @@ class OpenupgraderMigration(models.Model):
             self.restore_db()
         if force:
             self.restore_db(self.current_config_id)
-        self.state = "restored"
+        self.current_config_id.update_migration_state_file("restored")
 
     def button_update_current_config(self):
         self.ensure_one()
@@ -712,18 +757,7 @@ class OpenupgraderMigration(models.Model):
         self.remove_not_installed_module_views()
         self.remove_assets()
         self.delete_old_modules(self.current_config_id)
-        if not self.is_migration_done:
-            # write in update log "Ready for migration" to check later
-            self.state = "ready_for_migration"
-            log_path = _get_log_path(self.folder, self.current_config_id.name)
-            with open(log_path, "w") as log_file:
-                now = fields.Datetime.now()
-                migration_message = (
-                    f"\n\nVersion {self.current_config_id.name} ready "
-                    f"for migration at {now}"
-                )
-                log_file.write(migration_message)
-                logger.info(migration_message)
+        self.current_config_id.update_migration_state_file("ready_for_migration")
 
     def button_draft(self):
         self.env.ref("openupgrader.cron_openugrader_do_auto_migration").active = False
@@ -748,6 +782,7 @@ class OpenupgraderMigration(models.Model):
         self.uninstallable_modules = False
         self.uninstalled_modules_not_obsolete = False
         self.button_clean_logs()
+        self.init_migration_state_file()
         self.state = "draft"
 
     def button_recreate_all_env(self):
@@ -765,28 +800,25 @@ class OpenupgraderMigration(models.Model):
         self.button_stop_odoo()
         self.button_draft()
         self.button_restore()
-        migration_state = self.state
         self.button_update_current_config()
-        while migration_state != "updated":
-            (
-                _odoo_running_state,
-                migration_state,
-                _current_version,
-            ) = self._get_odoo_running_state()
-            logger.info(
-                f"Waiting for update of initial version: {self.current_config_id.name} "
-                f"in current migration state {migration_state}"
+        (
+            _odoo_running_state,
+            migration_state,
+            _current_version,
+        ) = self._get_odoo_running_state()
+        if migration_state != "updated":
+            raise ValidationError(
+                _(
+                    "Exiting as update of initial version %()s failed! "
+                    "Current migration state %()s"
+                )
+                % (self.current_config_id.name, migration_state)
             )
         logger.info(
             f"Update of current version {self.current_config_id.name} completed"
         )
-        self.state = "updated"
+        self.current_config_id.update_migration_state_file(migration_state)
         self.button_prepare_for_migration()
-        self.flush()
-        logger.info(
-            f"Version {self.current_config_id.name} in state {migration_state} "
-            f"ready for migration"
-        )
         self.env.ref("openupgrader.cron_openugrader_do_auto_migration").write(
             {
                 "active": True,
@@ -981,14 +1013,13 @@ class OpenupgraderMigration(models.Model):
                     migration_state == "migrated"
                     and current_version
                     and migration.current_config_id
-                    and current_version != migration.current_config_id
-                    and migration.to_config_id != migration.current_config_id
+                    and current_version != migration.current_config_id.name
                 ):
                     migration._do_after_migration()
                     continue
                 # If the migration instance is stopped and updated or migrated, prepare
                 # for the next version migration
-                if migration_state in ["updated", "migrated"]:
+                if migration_state in ["updated", "migrated", "ready_to_prepare"]:
                     logger.info(
                         f"Migration for {migration.db_name} is "
                         f"{migration_state}. Preparing for next step."
@@ -1100,6 +1131,7 @@ class OpenupgraderMigration(models.Model):
         )
         if self.dump_each_version_database:
             self.button_dump_current_database()
+        self.current_config_id.update_migration_state_file("ready_to_prepare")
         if self.is_migration_done:
             from_n = self.from_config_id.name
             to_n = self.to_config_id.name
@@ -1133,65 +1165,50 @@ class OpenupgraderMigration(models.Model):
         ) = self._get_odoo_running_state()
         self.odoo_running_state = odoo_running_state
 
-    def _get_migration_state_from_logs(self):
+    def _update_migration_state_from_logs(self):
         """
-        Scan log files to determine current migration state and version.
-        Scans from newest version downwards to find last known state.
+        Scan log files to determine the current migration state and version.
+        Scans from the newest version downwards to find the latest known state.
+        Save the result in the migration state file.
         """
-        # migration states:
-        # {
-        #     "restore_failed": "restore_failed",
-        #     "failed": "failed",
-        #     "restored": "restored",
-        #     "updating": "updating",
-        #     "updated": "updated",
-        #     "ready_for_migration": "ready_for_migration",
-        #     "migrating": "migrating",
-        #     "migrated": "migrated",
-        # }
-        migration_state = self.state
-        current_version = self.from_config_id
-
         # Check versions in descending order to find the latest log
         ou_configs = self.env["openupgrader.config"].search([], order="name DESC")
         for ou_config in ou_configs:
             # 1. Check the update log (it follows migration except for the initial
             # update)
+            migration_state, _config = ou_config.get_migration_state_from_file()
             update_log = _get_log_path(self.folder, ou_config.name)
             if os.path.isfile(update_log):
-                if migration_state != "updated":
-                    # in this case the migration is not yet updated
-                    migration_state = "updating"
                 patterns = {
                     "CRITICAL": "restore_failed",
-                    "Ready for migration": "ready_for_migration",
                     "Modules loaded": "migrated"
                     if self.current_config_id == self.to_config_id == ou_config
+                    else migration_state
+                    if migration_state in ["ready_for_migration", "ready_to_prepare"]
                     else "updated",
                 }
                 state, found = self._parse_log_file(
                     update_log, patterns, default_state=migration_state
                 )
                 if found:
-                    return state, ou_config
+                    ou_config.update_migration_state_file(state)
+                    continue
 
-            # 2. Check migration log
+            # 2. Check the migration log
             migrate_log = _get_log_path(self.folder, ou_config.name, migrate=True)
             if os.path.isfile(migrate_log):
-                if migration_state != "migrated":
-                    # in this case the migration is not yet migrated
-                    migration_state = "migrating"
                 patterns = {
                     "CRITICAL": "failed",
-                    "Modules loaded": "migrated",
+                    "Modules loaded": migration_state
+                    if migration_state == "ready_to_prepare"
+                    else "migrated",
                 }
                 state, found = self._parse_log_file(
                     migrate_log, patterns, default_state=migration_state
                 )
                 if found:
-                    return state, ou_config
-
-        return migration_state, current_version
+                    ou_config.update_migration_state_file(state)
+                    continue
 
     @staticmethod
     def _parse_log_file(log_path, patterns, default_state):
@@ -1225,7 +1242,8 @@ class OpenupgraderMigration(models.Model):
             logger.info("Odoo is already running")
             return odoo_running_state, self.state, self.from_config_id
 
-        migration_state, current_version = self._get_migration_state_from_logs()
+        self._update_migration_state_from_logs()
+        migration_state, current_version = self.get_migration_state_from_file()
         return odoo_running_state, migration_state, current_version
 
     def sql_fixes(self, sql_commands):
