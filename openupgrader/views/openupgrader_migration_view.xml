@@ -90,6 +90,12 @@
                         help="I feel lucky!"
                         attrs="{'invisible': [('state', '!=', 'draft')]}"
                     />
+                    <button
+                        name="button_stop_auto_migration"
+                        type="object"
+                        string="Stop auto-migration"
+                        attrs="{'invisible': [('state', '!=', 'auto')]}"
+                    />
                     <field
                         name="state"
                         widget="statusbar"

@@ -794,6 +794,22 @@ class OpenupgraderMigration(models.Model):
         for openupgrader_config in openupgrader_configs:
             openupgrader_config.button_recreate_venv()
 
+    def button_stop_auto_migration(self):
+        self.ensure_one()
+        cron = self.env.ref("openupgrader.cron_openugrader_do_auto_migration")
+        max_wait = 10
+        while cron.active and max_wait > 0:
+            try:
+                cron.active = False
+            except Exception:
+                time.sleep(30)
+                max_wait -= 1
+        if cron.active:
+            raise ValidationError(
+                _("Stop auto migration failed! Retry later.")
+            )
+        self.state = "draft" # TODO put the current migration state
+
     def button_do_all(self):
         #  0. set migration state to draft
         #  1. start migration with the restore of the db-filestore
