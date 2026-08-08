@@ -53,6 +53,7 @@
                         type="object"
                         string="2: update (if the process has failed)"
                         help="Update db of current version before migration"
+                        attrs="{'invisible': [('state', '=', 'auto')]}"
                     />
                     <button
                         name="button_prepare_for_migration"
@@ -65,7 +66,7 @@
                     <button
                         name="button_prepare_for_migration"
                         type="object"
-                        attrs="{'invisible': ['|', ('next_config_id', '=', False), ('state', '=', 'done')]}"
+                        attrs="{'invisible': ['|', ('next_config_id', '=', False), ('state', 'in', ['done', 'auto'])]}"
                         string="3: prepare migration"
                         help="Do some useful stuff before migration"
                     />
@@ -79,7 +80,7 @@
                     <button
                         name="button_do_migration"
                         type="object"
-                        attrs="{'invisible': ['|', ('state', '=', 'ready_for_migration'), ('next_config_id', '=', False)]}"
+                        attrs="{'invisible': ['|', ('state', 'in', ['auto', 'ready_for_migration']), ('next_config_id', '=', False)]}"
                         string="4: migrate (if the process has failed)"
                     />
                     <button
