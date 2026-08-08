@@ -135,6 +135,7 @@ class OpenupgraderMigration(models.Model):
             ("failed", "Failed"),
             ("migrating", "Migrating"),
             ("migrated", "Migrated"),
+            ("auto", "Auto Migrating"),
             ("done", "Done"),
         ],
         string="Migration state",
@@ -819,6 +820,7 @@ class OpenupgraderMigration(models.Model):
         )
         self.current_config_id.update_migration_state_file(migration_state)
         self.button_prepare_for_migration()
+        self.state = "auto"
         self.env.ref("openupgrader.cron_openugrader_do_auto_migration").write(
             {
                 "active": True,
@@ -1192,7 +1194,7 @@ class OpenupgraderMigration(models.Model):
                 )
                 if found:
                     ou_config.update_migration_state_file(state)
-                    continue
+                    break
 
             # 2. Check the migration log
             migrate_log = _get_log_path(self.folder, ou_config.name, migrate=True)
@@ -1208,7 +1210,7 @@ class OpenupgraderMigration(models.Model):
                 )
                 if found:
                     ou_config.update_migration_state_file(state)
-                    continue
+                    break
 
     @staticmethod
     def _parse_log_file(log_path, patterns, default_state):
