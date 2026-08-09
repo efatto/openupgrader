@@ -411,6 +411,7 @@ class OpenupgraderMigration(models.Model):
             f"--db_port={self.db_port} "
             f"--db_host={self.pg_host or ''} "
             f"--xmlrpc-port={self.xmlrpc_port} "
+            f"--max-cron-threads=0 "
             f"--limit-time-cpu=99000 "
             f"--limit-time-real=99000 "
             f"--limit-memory-soft=4147483648 "
@@ -1016,7 +1017,7 @@ class OpenupgraderMigration(models.Model):
                 # If it's running, we just skip this iteration and wait for
                 # the next cron run.
                 if (
-                    migration_state in ["migrating", "updating"]
+                    migration_state in ["migrating", "updating", "auto"]
                     and odoo_running_state == "running"
                 ):
                     logger.info(
