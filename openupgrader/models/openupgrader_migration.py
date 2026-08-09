@@ -827,10 +827,10 @@ class OpenupgraderMigration(models.Model):
         if migration_state != "updated":
             raise ValidationError(
                 _(
-                    "Exiting as update of initial version %()s failed! "
-                    "Current migration state %()s"
+                    "Exiting as update of initial version %(version)s failed! "
+                    "Current migration state %(state)s"
                 )
-                % (self.current_config_id.name, migration_state)
+                % dict(version=self.current_config_id.name, state=migration_state)
             )
         logger.info(
             f"Update of current version {self.current_config_id.name} completed"
