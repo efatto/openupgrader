@@ -131,6 +131,7 @@ class OpenupgraderMigration(models.Model):
     state = fields.Selection(
         selection=[
             ("draft", "Draft"),
+            ("started", "Started"),
             ("restore_failed", "Restore failed"),
             ("restored", "Restored"),
             ("updating", "Updating"),
@@ -718,10 +719,6 @@ class OpenupgraderMigration(models.Model):
             self.next_config_id = self.env["openupgrader.config"].search(
                 [("name", "=", str(float(self.current_config_id.name) + 1))]
             )
-        self.current_config_id.update_migration_state_file(
-            "draft",
-            date_started=fields.Datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        )
         if self.from_config_id == self.current_config_id:
             # restore is needed only when we migrate the first version, after the db is
             # already present in the postgresql cluster
@@ -730,8 +727,7 @@ class OpenupgraderMigration(models.Model):
             self.restore_db()
         if force:
             self.restore_db(self.current_config_id)
-            self.current_config_id.update_migration_state_file("restored")
-            self.state = "restored"
+        self.state = "restored"
         self.current_config_id.update_migration_state_file("restored")
 
     def button_update_current_config(self):
@@ -817,7 +813,8 @@ class OpenupgraderMigration(models.Model):
                 max_wait -= 1
         if cron.active:
             raise ValidationError(_("Stop auto migration failed! Retry later."))
-        self.state = "draft"  # TODO put the current migration state
+        self.state = "draft"  # TODO put the current migration state if possible
+        self.current_config_id.update_migration_state_file("draft")
 
     def button_do_all(self):
         #  0. set migration state to draft
@@ -826,13 +823,35 @@ class OpenupgraderMigration(models.Model):
         auto_migration_cron = self.env.ref(
             "openupgrader.cron_openugrader_do_auto_migration"
         )
-        self.button_stop_odoo()
-        self.button_draft()
-        self.button_restore()
         if self.is_ultimate_migration:
             self.env["ir.config_parameter"].sudo().set_param(
                 "ribbon.name", "MIGRATION<br/>in progress"
             )
+        self.button_stop_odoo()
+        self.button_draft()
+        # start migration with cron
+        self.state = "started"
+        self.from_config_id.update_migration_state_file(
+            state="started",
+            date_started=fields.Datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        )
+        auto_migration_cron.write(
+            {
+                "active": True,
+                "nextcall": fields.Datetime.now(),
+                "numbercall": -1,
+                "priority": 1,
+            }
+        )
+        logger.info(
+            "Cron %s activated.",
+            auto_migration_cron.name,
+        )
+        if self.is_ultimate_migration:
+            self.set_current_instance_env_to_migr_and_stop()
+
+    def _initiate_migration(self):
+        self.button_restore()
         self.button_update_current_config()
         (
             _odoo_running_state,
@@ -853,22 +872,6 @@ class OpenupgraderMigration(models.Model):
         self.current_config_id.update_migration_state_file(migration_state)
         self.button_prepare_for_migration()
         self.state = "auto"
-        auto_migration_cron.write(
-            {
-                "active": True,
-                "nextcall": fields.Datetime.now(),
-                "numbercall": -1,
-                "priority": 1,
-            }
-        )
-        # Forziamo l'attivazione immediata scrivendo direttamente in SQL
-        # se necessario, ma proviamo prima con l'ORM corretto.
-        logger.info(
-            "Cron %s activated.",
-            auto_migration_cron.name,
-        )
-        if self.is_ultimate_migration:
-            self.set_current_instance_env_to_migr_and_stop()
 
     def set_current_instance_env_to_migr_and_stop(self):
         odooconf_path = config.rcfile
@@ -1045,7 +1048,7 @@ class OpenupgraderMigration(models.Model):
                 # If it's running, we just skip this iteration and wait for
                 # the next cron run.
                 if (
-                    migration_state in ["migrating", "updating", "auto"]
+                    migration_state in ["migrating", "updating", "auto", "started"]
                     and odoo_running_state == "running"
                 ):
                     logger.info(
@@ -1054,6 +1057,8 @@ class OpenupgraderMigration(models.Model):
                         f"Skipping."
                     )
                     continue
+                if migration_state == "started":
+                    migration._initiate_migration()
                 # It the migration is done and the version is not yet moved to the next
                 # one, do after migration stuff and set to the next version
                 if (
