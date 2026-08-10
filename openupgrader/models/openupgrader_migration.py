@@ -1049,11 +1049,7 @@ class OpenupgraderMigration(models.Model):
 
                 # If it's running, we just skip this iteration and wait for
                 # the next cron run.
-                if migration_state == "started" or (
-                    migration_state
-                    in ["migrating", "updating", "auto", "starting", "started"]
-                    and odoo_running_state == "running"
-                ):
+                if odoo_running_state == "running":
                     logger.info(
                         f"Migration for {migration.db_name} is currently "
                         f"doing {migration_state} (Odoo is {odoo_running_state}). "
@@ -1062,6 +1058,7 @@ class OpenupgraderMigration(models.Model):
                     continue
                 if migration_state == "starting":
                     migration.start_migration()
+                    continue
                 # It the migration is done and the version is not yet moved to the next
                 # one, do after migration stuff and set to the next version
                 if (
@@ -1080,15 +1077,7 @@ class OpenupgraderMigration(models.Model):
                         f"{migration_state}. Preparing for next step."
                     )
                     migration.button_prepare_for_migration()
-
-                # Refresh state after preparation
-                (
-                    odoo_running_state,
-                    migration_state,
-                    current_version,
-                ) = migration._get_odoo_running_state()
-
-                if migration_state == "ready_for_migration":
+                elif migration_state == "ready_for_migration":
                     logger.info(f"Starting migration step for {migration.db_name}")
                     migration.button_do_migration()
                 elif migration_state == "done":
