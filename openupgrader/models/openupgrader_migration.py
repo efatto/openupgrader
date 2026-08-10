@@ -131,6 +131,7 @@ class OpenupgraderMigration(models.Model):
     state = fields.Selection(
         selection=[
             ("draft", "Draft"),
+            ("starting", "Starting"),
             ("started", "Started"),
             ("restore_failed", "Restore failed"),
             ("restored", "Restored"),
@@ -830,9 +831,9 @@ class OpenupgraderMigration(models.Model):
         self.button_stop_odoo()
         self.button_draft()
         # start migration with cron
-        self.state = "started"
+        self.state = "starting"
         self.from_config_id.update_migration_state_file(
-            state="started",
+            state="starting",
             date_started=fields.Datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         )
         auto_migration_cron.write(
@@ -850,7 +851,8 @@ class OpenupgraderMigration(models.Model):
         if self.is_ultimate_migration:
             self.set_current_instance_env_to_migr_and_stop()
 
-    def _initiate_migration(self):
+    def start_migration(self):
+        self.from_config_id.update_migration_state_file("started")
         self.button_restore()
         self.button_update_current_config()
         (
@@ -1047,8 +1049,9 @@ class OpenupgraderMigration(models.Model):
 
                 # If it's running, we just skip this iteration and wait for
                 # the next cron run.
-                if (
-                    migration_state in ["migrating", "updating", "auto", "started"]
+                if migration_state == "started" or (
+                    migration_state
+                    in ["migrating", "updating", "auto", "starting", "started"]
                     and odoo_running_state == "running"
                 ):
                     logger.info(
@@ -1057,8 +1060,8 @@ class OpenupgraderMigration(models.Model):
                         f"Skipping."
                     )
                     continue
-                if migration_state == "started":
-                    migration._initiate_migration()
+                if migration_state == "starting":
+                    migration.start_migration()
                 # It the migration is done and the version is not yet moved to the next
                 # one, do after migration stuff and set to the next version
                 if (
