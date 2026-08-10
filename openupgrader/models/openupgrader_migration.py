@@ -816,20 +816,23 @@ class OpenupgraderMigration(models.Model):
                 time.sleep(30)
                 max_wait -= 1
         if cron.active:
-            raise ValidationError(
-                _("Stop auto migration failed! Retry later.")
-            )
-        self.state = "draft" # TODO put the current migration state
+            raise ValidationError(_("Stop auto migration failed! Retry later."))
+        self.state = "draft"  # TODO put the current migration state
 
     def button_do_all(self):
         #  0. set migration state to draft
         #  1. start migration with the restore of the db-filestore
         #  2. activate the cron for the actual migration
         auto_migration_cron = self.env.ref(
-            "openupgrader.cron_openugrader_do_auto_migration")
+            "openupgrader.cron_openugrader_do_auto_migration"
+        )
         self.button_stop_odoo()
         self.button_draft()
         self.button_restore()
+        if self.is_ultimate_migration:
+            self.env["ir.config_parameter"].sudo().set_param(
+                "ribbon.name", "MIGRATION<br/>in progress"
+            )
         self.button_update_current_config()
         (
             _odoo_running_state,
@@ -864,12 +867,10 @@ class OpenupgraderMigration(models.Model):
             "Cron %s activated.",
             auto_migration_cron.name,
         )
-        self.flush()
         if self.is_ultimate_migration:
-            self.set_current_instance_env_to_migr_and_kill()
+            self.set_current_instance_env_to_migr_and_stop()
 
-    @staticmethod
-    def set_current_instance_env_to_migr_and_kill():
+    def set_current_instance_env_to_migr_and_stop(self):
         odooconf_path = config.rcfile
         config_parser = configparser.ConfigParser()
         config_parser.read(odooconf_path)
@@ -877,7 +878,8 @@ class OpenupgraderMigration(models.Model):
             config_parser["options"]["running_env"] = "migr"
         with open(odooconf_path, "w") as config_file:
             config_parser.write(config_file)
-        run(["pkill -f odoo"], shell=True)
+        self.env.cr.commit()  # pylint: disable=E8102
+        run(["pkill -9 -f odoo"], shell=True)
 
     def button_refresh_pending_modules(self):
         found_modules_by_state = self._verify_module_states()
