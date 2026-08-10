@@ -195,14 +195,15 @@ def _update_migration_state_file(
             migration_state_dict = {}
         except Exception as _e:
             migration_state_dict = {}
-    migration_state_dict[config_name]["state"] = state
-    if date_started:
-        migration_state_dict[config_name]["date_started"] = date_started
-    migration_state_dict[config_name]["date_updated"] = datetime.now().strftime(
-        "%Y-%m-%d %H:%M:%S"
-    )
-    with open(migration_state_path, "w") as f:
-        json.dump(migration_state_dict, f, sort_keys=True, indent=2)
+    if migration_state_dict and migration_state_dict.get(config_name):
+        migration_state_dict[config_name]["state"] = state
+        if date_started:
+            migration_state_dict[config_name]["date_started"] = date_started
+        migration_state_dict[config_name]["date_updated"] = datetime.now().strftime(
+            "%Y-%m-%d %H:%M:%S"
+        )
+        with open(migration_state_path, "w") as f:
+            json.dump(migration_state_dict, f, sort_keys=True, indent=2)
 
 
 def _get_migration_state_from_file(migration_state_path, config_names):
