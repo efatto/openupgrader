@@ -207,7 +207,12 @@ def _update_migration_state_file(
 
 def _get_migration_state_from_file(migration_state_path, config_names):
     with open(migration_state_path, "r") as f:
-        migration_state_dict = json.load(f)
+        try:
+            migration_state_dict = json.load(f)
+        except json.JSONDecodeError as _e:
+            migration_state_dict = {}
+        except Exception as _e:
+            migration_state_dict = {}
         for config_name in sorted(config_names, reverse=True):
             if migration_state_dict.get(config_name) and migration_state_dict[
                 config_name
