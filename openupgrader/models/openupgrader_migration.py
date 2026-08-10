@@ -99,6 +99,9 @@ class OpenupgraderMigration(models.Model):
         comodel_name="openupgrader.config",
         string="Next version to be migrated",
     )
+    is_ultimate_migration = fields.Boolean(
+        help="Indicates if this migration is the ultimate one",
+    )
     is_migration_done = fields.Boolean(
         compute="_compute_is_migration_done",
         store=True,
@@ -722,6 +725,8 @@ class OpenupgraderMigration(models.Model):
             self.restore_db()
         if force:
             self.restore_db(self.current_config_id)
+            self.current_config_id.update_migration_state_file("restored")
+            self.state = "restored"
         self.current_config_id.update_migration_state_file("restored")
 
     def button_update_current_config(self):

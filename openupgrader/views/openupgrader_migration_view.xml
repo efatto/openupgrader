@@ -126,6 +126,7 @@
                                 context="{'default_openupgrader_migration_id': active_id}"
                             />
                             <field name="migrate_filestore" />
+                            <field name="is_ultimate_migration" />
                             <field name="dump_each_version_database" />
                             <field name="folder" />
                             <field name="openupgrade_repo" />
