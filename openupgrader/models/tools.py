@@ -57,7 +57,6 @@ def _set_odoorc(folder, config_id):
     if float(config_id.name) > 15:
         sed_cmd = f"sed -i 's/longpolling/gevent/g' {odoorc_path}"
         Popen(sed_cmd, shell=True)
-    # todo move disabled modules to configuration
     not_auto_install_list = safe_eval(config_id.not_autoinstallable_modules)
     mod_not_install = (
         f"modules_auto_install_disabled = {','.join(not_auto_install_list)}"

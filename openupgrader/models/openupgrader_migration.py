@@ -1,3 +1,4 @@
+import configparser
 import io
 import logging
 import os
@@ -179,14 +180,18 @@ class OpenupgraderMigration(models.Model):
             record.is_migration_done = record.current_config_id == record.to_config_id
 
     @staticmethod
-    def show_message_odoo_running_and_return():
+    def show_message_odoo_running_and_return(title=None, message=None):
+        if title is None:
+            title = _("Odoo Migration is running!")
+        if message is None:
+            message = _("If you want to do this action anyway, force the stop.")
         return {
             "type": "ir.actions.client",
             "tag": "display_notification",
             "name": "OpenUpgrader Message",
             "params": {
-                "title": _("Odoo Migration is running!"),
-                "message": _("If you want to do this action anyway, force the stop."),
+                "title": title,
+                "message": message,
                 "type": "info",
                 "sticky": True,
             },
@@ -820,6 +825,8 @@ class OpenupgraderMigration(models.Model):
         #  0. set migration state to draft
         #  1. start migration with the restore of the db-filestore
         #  2. activate the cron for the actual migration
+        auto_migration_cron = self.env.ref(
+            "openupgrader.cron_openugrader_do_auto_migration")
         self.button_stop_odoo()
         self.button_draft()
         self.button_restore()
@@ -843,7 +850,7 @@ class OpenupgraderMigration(models.Model):
         self.current_config_id.update_migration_state_file(migration_state)
         self.button_prepare_for_migration()
         self.state = "auto"
-        self.env.ref("openupgrader.cron_openugrader_do_auto_migration").write(
+        auto_migration_cron.write(
             {
                 "active": True,
                 "nextcall": fields.Datetime.now(),
@@ -854,9 +861,23 @@ class OpenupgraderMigration(models.Model):
         # Forziamo l'attivazione immediata scrivendo direttamente in SQL
         # se necessario, ma proviamo prima con l'ORM corretto.
         logger.info(
-            "Cron %s activated and committed.",
-            self.env.ref("openupgrader.cron_openugrader_do_auto_migration").name,
+            "Cron %s activated.",
+            auto_migration_cron.name,
         )
+        self.flush()
+        if self.is_ultimate_migration:
+            self.set_current_instance_env_to_migr_and_kill()
+
+    @staticmethod
+    def set_current_instance_env_to_migr_and_kill():
+        odooconf_path = config.rcfile
+        config_parser = configparser.ConfigParser()
+        config_parser.read(odooconf_path)
+        if "options" in config_parser:
+            config_parser["options"]["running_env"] = "migr"
+        with open(odooconf_path, "w") as config_file:
+            config_parser.write(config_file)
+        run(["pkill -f odoo"], shell=True)
 
     def button_refresh_pending_modules(self):
         found_modules_by_state = self._verify_module_states()
