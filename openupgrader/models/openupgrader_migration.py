@@ -614,10 +614,9 @@ class OpenupgraderMigration(models.Model):
         # Stream output to a file written with the current user
         with open(globals_path, "w") as output_file:
             run(
-                f"{conn_vars} && sudo -u postgres pg_dumpall --globals-only",
+                f"pg_dumpall -U {self.pg_user} --globals-only",
                 stdout=output_file,
                 shell=True,
-                check=True,
             )
         return destination_path
 
