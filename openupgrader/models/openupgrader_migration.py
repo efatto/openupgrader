@@ -668,11 +668,6 @@ class OpenupgraderMigration(models.Model):
                 sql_file=dump_file_sql,
             )
         )
-        globals_path = os.path.join(self.folder, f"globals.{version_name}.sql")
-        run(
-            [f"{conn_vars} && sudo -u postgres psql -d postgres -f {globals_path}"],
-            shell=True,
-        )
         run(
             [
                 f"{conn_vars} && pg_restore {self.pg_options or ''} "
