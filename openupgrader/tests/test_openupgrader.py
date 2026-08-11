@@ -213,9 +213,11 @@ class OpenUpgrader(SavepointCase):
         )
         migration.button_do_all()
         cron_migration = self.env.ref("openupgrader.cron_openugrader_do_auto_migration")
-        current_version = migration.current_config_id
-        while current_version != migration.to_config_id:
-            cron_migration.method_direct_trigger()  # cron do not start in tests?
+        current_version = migration.current_config_id.name
+        while current_version != migration.to_config_id.name:
+            # Directly trigger the cron job to simulate the migration process, as cron
+            # are disabled in tests.
+            cron_migration.method_direct_trigger()
             time.sleep(10)
             (
                 _odoo_running_state,
