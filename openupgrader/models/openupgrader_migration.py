@@ -591,34 +591,41 @@ class OpenupgraderMigration(models.Model):
         initial_path = os.path.join("/", *path_parts)
         return initial_path
 
-    def dump_database(self, version_name, migrated=False):
+    def dump_database_and_globals(self, version_name, migrated=False):
         logger.info(
             "Dumping %s database for version %s",
             "migrated" if migrated else "original",
             version_name,
         )
         destination_path = os.path.join(self.folder, f"database.{version_name}.dump")
+        globals_path = os.path.join(self.folder, f"globals.{version_name}.sql")
         conn_vars = self._get_db_connection_variables()
-        process = Popen(
-            [
-                f"{conn_vars} && pg_dump {self.pg_options or ''} -Fc -O "
-                f"{self.env.cr.dbname}{'_migrate' if migrated else ''} "
-                f"> {destination_path}"
-            ],
+        run(
+            f"{conn_vars} && pg_dump {self.pg_options or ''} -Fc -O "
+            f"{self.env.cr.dbname}{'_migrate' if migrated else ''} "
+            f"> {destination_path}",
             shell=True,
         )
-        process.wait()
         logger.info(
             "%s database dumped for version %s",
             "Migrated" if migrated else "Original",
             version_name,
         )
+        # Stream output to a file written with the current user
+        with open(globals_path, "w") as output_file:
+            run(
+                f"{conn_vars} && sudo -u postgres pg_dumpall --globals-only",
+                stdout=output_file,
+                shell=True,
+                check=True,
+            )
         return destination_path
 
     def restore_db(self, config_id=False):
         self.button_stop_odoo()
         conn_vars = self._get_db_connection_variables()
         db_name = self.env.cr.dbname
+        version_name = self.current_config_id.name
         process = Popen(
             [
                 f"{conn_vars} && dropdb --if-exists {db_name}_migrate",
@@ -640,19 +647,17 @@ class OpenupgraderMigration(models.Model):
         if errors:
             raise UserError("\n".join(e for e in errors))
         db_migrate = f"{self.env.cr.dbname}_migrate"
-        Popen(
+        run(
             [
                 f"{conn_vars} && createdb {db_migrate}",
             ],
             shell=True,
-        ).wait()
-        # Dump and restore db by dump file as it's the faster way to do it
-        dump_file_sql = os.path.join(
-            self.folder, f"database.{self.current_config_id.name}.dump"
         )
+        # Dump and restore db by dump file as it's the faster way to do it
+        dump_file_sql = os.path.join(self.folder, f"database.{version_name}.dump")
         if not config_id:
             # not a restore done by hand, so create a new dump
-            dump_file_sql = self.dump_database(self.from_config_id.name)
+            dump_file_sql = self.dump_database_and_globals(self.from_config_id.name)
         if not os.path.isfile(dump_file_sql):
             raise UserError(_("Dump sql file %s not found!") % dump_file_sql)
         logger.info(
@@ -664,13 +669,18 @@ class OpenupgraderMigration(models.Model):
                 sql_file=dump_file_sql,
             )
         )
-        Popen(
+        globals_path = os.path.join(self.folder, f"globals.{version_name}.sql")
+        run(
+            [f"{conn_vars} && sudo -u postgres psql -d postgres -f {globals_path}"],
+            shell=True,
+        )
+        run(
             [
                 f"{conn_vars} && pg_restore {self.pg_options or ''} "
                 f"-d {self.env.cr.dbname}_migrate {dump_file_sql}"
             ],
             shell=True,
-        ).wait()
+        )
         if not config_id and not self.dump_each_version_database:
             # not a restore done by hand, so delete dump
             os.unlink(dump_file_sql)
@@ -693,7 +703,7 @@ class OpenupgraderMigration(models.Model):
                     os.unlink(log_path)
 
     def button_dump_current_database(self):
-        self.dump_database(self.current_config_id.name, migrated=True)
+        self.dump_database_and_globals(self.current_config_id.name, migrated=True)
 
     def button_restore_last_database(self):
         self.env.ref("openupgrader.cron_openugrader_do_auto_migration").active = False
