@@ -934,6 +934,8 @@ class OpenupgraderMigration(models.Model):
                     "DELETE FROM ir_module_module "
                     "WHERE state in ('to install', 'to upgrade');"
                 ),
+            )
+            sql_commands.append(
                 (
                     "DELETE FROM ir_model_data WHERE model = 'ir.module.module' "
                     "AND name NOT IN "
