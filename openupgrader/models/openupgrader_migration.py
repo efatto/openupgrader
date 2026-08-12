@@ -911,17 +911,7 @@ class OpenupgraderMigration(models.Model):
                 self.uninstalled_modules_not_obsolete = str(
                     sorted(set(missing_modules))
                 )
-            sql_commands = [
-                (
-                    "DELETE FROM ir_module_module "
-                    "WHERE state in ('to install', 'to upgrade');"
-                ),
-                (
-                    "DELETE FROM ir_model_data WHERE model = 'ir.module.module' "
-                    "AND name NOT IN "
-                    "(SELECT CONCAT('module_', name) FROM ir_module_module);"
-                ),
-            ]
+            sql_commands = []
             # Use tuple to format the SQL query safely for the IN clause
             if pending_modules:
                 modules_to_remove = tuple(pending_modules)
@@ -938,6 +928,18 @@ class OpenupgraderMigration(models.Model):
                     ),
                 )
                 logger.info(f"Setting modules to be uninstalled: {modules_to_remove}.")
+            # clean up ir_model_data and ir_model_model
+            sql_commands.append(
+                (
+                    "DELETE FROM ir_module_module "
+                    "WHERE state in ('to install', 'to upgrade');"
+                ),
+                (
+                    "DELETE FROM ir_model_data WHERE model = 'ir.module.module' "
+                    "AND name NOT IN "
+                    "(SELECT CONCAT('module_', name) FROM ir_module_module);"
+                ),
+            )
             # Use run to be sure it's finished before starting Odoo
             for sql_command in sql_commands:
                 run(
