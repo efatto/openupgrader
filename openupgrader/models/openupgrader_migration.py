@@ -105,7 +105,6 @@ class OpenupgraderMigration(models.Model):
     )
     is_migration_done = fields.Boolean(
         compute="_compute_is_migration_done",
-        store=True,
     )
     migrate_filestore = fields.Boolean(default=True)
     dump_each_version_database = fields.Boolean(
@@ -176,7 +175,6 @@ class OpenupgraderMigration(models.Model):
                 openupgrader_config.action_load_config()
         return res
 
-    @api.depends("current_config_id", "to_config_id")
     def _compute_is_migration_done(self):
         for record in self:
             record.is_migration_done = record.current_config_id == record.to_config_id

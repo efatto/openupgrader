@@ -30,7 +30,6 @@
         <field name="arch" type="xml">
             <form string="OpenUpgrader Migration">
                 <header>
-                    <field name="is_migration_done" invisible="1" />
                     <button name="button_draft" type="object" string="Set to draft" />
                     <button
                         name="button_restore"
@@ -59,7 +58,7 @@
                         name="button_prepare_for_migration"
                         type="object"
                         class="oe_highlight"
-                        attrs="{'invisible': ['|', '|', ('state', 'not in', ['updated', 'migrated']), ('next_config_id', '=', False), ('is_migration_done', '=', True)]}"
+                        attrs="{'invisible': ['|', '|', ('state', 'not in', ['updated', 'migrated']), ('next_config_id', '=', False), ('state', '=', 'done')]}"
                         string="3: prepare migration"
                         help="Do some useful stuff before migration"
                     />
