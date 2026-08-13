@@ -1013,12 +1013,9 @@ class OpenupgraderMigration(models.Model):
             ),
             (
                 """
-            DELETE from ir_model_data
-            WHERE id IN (
-                SELECT res_id FROM ir_model_data
-                WHERE model = 'ir.ui.menu'
-                AND module = ANY(ARRAY%s)
-            )
+            DELETE FROM ir_model_data
+            WHERE model = 'ir.ui.menu'
+            AND module = ANY(ARRAY%s)
             """
                 % list(modules)
             ),
