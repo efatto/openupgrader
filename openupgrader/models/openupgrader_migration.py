@@ -964,7 +964,7 @@ class OpenupgraderMigration(models.Model):
             found_modules_by_state = self._verify_module_states()
 
             if modules_to_remove:
-                modules_removed = modules_to_remove
+                modules_removed = set(modules_to_remove)
                 uninstallable_modules = [
                     x
                     for x in modules_to_remove
@@ -973,7 +973,7 @@ class OpenupgraderMigration(models.Model):
                 if uninstallable_modules:
                     modules_removed -= set(uninstallable_modules)
                     self.uninstallable_modules = sorted(set(uninstallable_modules))
-                self.uninstalled_modules = sorted(set(modules_removed))
+                self.uninstalled_modules = sorted(modules_removed)
                 current_pending_modules = [
                     x
                     for x in pending_modules
