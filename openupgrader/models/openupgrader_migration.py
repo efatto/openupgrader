@@ -153,7 +153,7 @@ class OpenupgraderMigration(models.Model):
     migration_critical_log = fields.Text(string="Migration criticals in log")
     migration_warning_log = fields.Text(string="Migration warnings in log")
     migration_error_log = fields.Text(string="Migration errors in log")
-    pending_modules = fields.Text(string="Modules to be uninstalled")
+    pending_modules = fields.Text(string="Pending modules set as uninstalled")
     uninstalled_modules = fields.Text(string="Uninstalled modules")
     uninstallable_modules = fields.Text(string="Uninstallable modules")
     uninstalled_modules_not_obsolete = fields.Text(
@@ -979,7 +979,21 @@ class OpenupgraderMigration(models.Model):
                     for x in pending_modules
                     if x in found_modules_by_state.get("pending", [])
                 ]
-                self.pending_modules = str(sorted(set(current_pending_modules)))
+                # set current pending modules as uninstalled
+                if current_pending_modules:
+                    self.pending_modules = str(sorted(set(current_pending_modules)))
+                    sql_command = """
+                        UPDATE ir_module_module
+                        SET state='uninstalled'
+                        WHERE name IN %s
+                    """ % list(current_pending_modules)
+                    run(
+                        [
+                            f"{conn_vars} && psql -d {self.env.cr.dbname}_migrate -c "
+                            f'"{sql_command}"'
+                        ],
+                        shell=True,
+                    )
                 self.remove_modules_views_menus(modules_removed)
 
     def remove_modules_views_menus(self, modules):
