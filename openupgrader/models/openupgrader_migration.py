@@ -378,9 +378,12 @@ class OpenupgraderMigration(models.Model):
         self.flush()
         if not config_id:
             raise ValidationError(_("Missing odoo version to start"))
+        if self.is_ultimate_migration:
+            try_install_missing_pip_module = False
         logger.info(
             f"Starting Odoo with options: version={config_id.name}, "
-            f"update={update}, migrate={migrate}, commands={extra_command}"
+            f"update={update}, migrate={migrate}, commands={extra_command}, "
+            f"try_install_missing_pip_module={try_install_missing_pip_module}"
         )
         version_name = config_id.name
         version_float = float(version_name)
