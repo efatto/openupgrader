@@ -1386,7 +1386,7 @@ class OpenupgraderMigration(models.Model):
         module_obj = odoo_client.env["ir.module.module"]
         # force recompute of installed modules for the current version
         config_id._compute_module_installed_ids()
-        for module in config_id.module_auto_install_ids:
+        for module in config_id.module_auto_install_ids | config_id.renamed_module_ids:
             module_to_check = module.name
             module_to_install_name = module.module_to_install_name
             if module_obj.search(

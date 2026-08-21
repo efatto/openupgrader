@@ -918,9 +918,7 @@ class OpenupgraderConfig(models.Model):
                                 },
                             )
                         ]
-            if recipe.get(
-                "auto_install"
-            ):
+            if recipe.get("auto_install"):
                 auto_install = recipe.get("auto_install")
                 for i, module in enumerate(auto_install):
                     module_name = module.split()[0]
