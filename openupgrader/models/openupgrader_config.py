@@ -415,10 +415,12 @@ class OpenupgraderConfig(models.Model):
         return res
 
     @api.depends(
-        "name", "module_auto_install_ids", "renamed_module_ids",
-        "module_to_uninstall_before_migration_ids"
+        "name",
+        "module_auto_install_ids",
+        "renamed_module_ids",
+        "module_to_uninstall_before_migration_ids",
     )
-    def _compute_module_installed_ids(self):
+    def _compute_module_installed_ids(self):  # noqa: C901
         for config in self:
             if config.name:
                 if config.name == release.version:
@@ -523,7 +525,7 @@ class OpenupgraderConfig(models.Model):
             shutil.rmtree(venv_folder, ignore_errors=True)
         self.button_create_venv()
 
-    def button_create_venv(self):
+    def button_create_venv(self):  # noqa: C901
         self.ensure_one()
         openupgrader_migration = self.openupgrader_migration_id
         odoo_is_openupgrade = self.odoo_is_openupgrade
