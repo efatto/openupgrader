@@ -13,6 +13,7 @@
   - after_migration_to_this_version_python_command: ""
   - before_migration_to_next_version_python_command: ""
   - auto_install: ""
+  - renamed_modules: ""
   - delete: ""
   - obsolete: ""
   - uninstall_after_migration_to_this_version: ""
@@ -33,6 +34,7 @@
   - before_migration_to_next_version_python_command: ""
   - auto_install:
       - account_invoice_single_tax account_tax_one_vat
+  - renamed_modules: ""
   - delete: ""
   - obsolete: ""
   - uninstall_after_migration_to_this_version: ""
@@ -63,6 +65,7 @@
   - after_migration_to_this_version_python_command: ""
   - before_migration_to_next_version_python_command: ""
   - auto_install: ""
+  - renamed_modules: ""
   - delete: ""
   - obsolete: ""
   - uninstall_after_migration_to_this_version: ""
@@ -93,6 +96,7 @@
   - before_migration_to_next_version_python_command: ""
   - auto_install:
       - base auditlog
+  - renamed_modules: ""
   - delete: ""
   - obsolete:
       - l10n_it_ricevute_bancarie
@@ -122,6 +126,7 @@
   - after_migration_to_this_version_python_command: ""
   - before_migration_to_next_version_python_command: ""
   - auto_install: ""
+  - renamed_modules: ""
   - delete: ""
   - obsolete: ""
   - uninstall_after_migration_to_this_version: ""
@@ -150,6 +155,7 @@
   - after_migration_to_this_version_python_command: ""
   - before_migration_to_next_version_python_command: ""
   - auto_install: ""
+  - renamed_modules: ""
   - delete: ""
   - obsolete: ""
   - uninstall_after_migration_to_this_version: ""

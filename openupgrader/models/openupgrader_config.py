@@ -10,6 +10,7 @@ import yaml
 
 from odoo import _, api, fields, models, release
 from odoo.exceptions import ValidationError
+from odoo.tools.safe_eval import safe_eval
 
 from .tools import (
     _set_odoorc,
@@ -91,9 +92,11 @@ class AutoInstallModule(models.Model):
 
     name = fields.Text(string="Technical Name of Installed Module", required=True)
     sequence = fields.Integer(string="SQL Sequence")
-    openupgrade_config_id = fields.Many2one(
+    auto_openupgrade_config_id = fields.Many2one(
         comodel_name="openupgrader.config",
-        ondelete="cascade",
+    )
+    rename_openupgrade_config_id = fields.Many2one(
+        comodel_name="openupgrader.config",
     )
     module_to_install_name = fields.Text(
         string="Technical Name of Module To Install",
@@ -264,9 +267,18 @@ class OpenupgraderConfig(models.Model):
     )
     module_auto_install_ids = fields.One2many(
         comodel_name="auto.install.module",
-        inverse_name="openupgrade_config_id",
+        inverse_name="auto_openupgrade_config_id",
         string="Auto installed modules after migration",
         help="List of modules to install if there is another module installed.\n"
+        "This list is auto filled with modules from openupgrade apriori.py and "
+        "custom list in openupgrader yml configuration file if uploaded.",
+        copy=False,
+    )
+    renamed_module_ids = fields.One2many(
+        comodel_name="auto.install.module",
+        inverse_name="rename_openupgrade_config_id",
+        string="Renamed modules",
+        help="List of modules to rename if there is another module installed.\n"
         "This list is auto filled with modules from openupgrade apriori.py and "
         "custom list in openupgrader yml configuration file if uploaded.",
         copy=False,
@@ -408,37 +420,69 @@ class OpenupgraderConfig(models.Model):
     def _compute_module_installed_ids(self):
         for config in self:
             if config.name:
-                # get current installed modules
-                installed_modules = self.env["ir.module.module"].search(
-                    [
-                        ("state", "in", ["installed", "to upgrade"]),
-                    ]
-                )
-                module_installed_ids = self.env["module.name"]
-                for module in installed_modules:
-                    module_names = module.mapped("name")
-                    if module.dependencies_id:
-                        module_names += module.dependencies_id.mapped("depend_id.name")
-                    for module_name in module_names:
-                        module_id = self._search_create_module(module_name)
-                        module_installed_ids |= module_id
                 if config.name == release.version:
-                    # This is the initial version, so we install all the installed
-                    # modules
-                    new_module_installed_ids = module_installed_ids
+                    # get current installed modules as this is the initial version
+                    # n.b. we can go through all the dependencies of the installed
+                    # modules as it is the working instance
+                    installed_modules = self.env["ir.module.module"].search(
+                        [
+                            ("state", "in", ["installed", "to upgrade"]),
+                        ]
+                    )
+                    new_module_installed_ids = self.env["module.name"]
+                    for module in installed_modules:
+                        module_names = module.mapped("name")
+                        if module.dependencies_id:
+                            module_names += module.dependencies_id.mapped(
+                                "depend_id.name"
+                            )
+                        for module_name in module_names:
+                            module_id = self._search_create_module(module_name)
+                            new_module_installed_ids |= module_id
                 else:
                     new_module_installed = []
-                    new_module_installed_ids = self.env["module.name"]
+                    previous_config = self.search(
+                        [("name", "=", str(float(config.name) - 1))]
+                    )
+                    new_module_installed_ids = previous_config.module_installed_ids
+                    # Add modules renamed or auto-installed in previous version
+                    for renamed_module in previous_config.renamed_module_ids:
+                        if renamed_module.name in new_module_installed_ids.mapped(
+                            "name"
+                        ):
+                            new_module_installed_ids |= self._search_create_module(
+                                renamed_module.module_to_install_name
+                            )
+                    for auto_install_module in previous_config.module_auto_install_ids:
+                        if auto_install_module.name in new_module_installed_ids.mapped(
+                            "name"
+                        ):
+                            new_module_installed_ids |= self._search_create_module(
+                                auto_install_module.module_to_install_name
+                            )
+                    new_module_installed_ids -= (
+                        previous_config.module_to_uninstall_after_migration_ids
+                    )
+                    new_module_installed_ids -= (
+                        previous_config.module_to_delete_after_migration_ids
+                    )
+                    new_module_installed_ids -= (
+                        previous_config.module_to_uninstall_before_migration_ids
+                    )
+                    new_module_installed_ids = new_module_installed_ids.filtered(
+                        lambda m, pc=previous_config: m.name
+                        not in safe_eval(pc.obsolete_modules)
+                    )
                     # add new modules to install
                     for module_auto_install in config.module_auto_install_ids:
-                        if module_auto_install.name in module_installed_ids.mapped(
+                        if module_auto_install.name in new_module_installed_ids.mapped(
                             "name"
                         ):
                             new_module_installed.append(
                                 module_auto_install.module_to_install_name
                             )
                     # add current modules except modules to uninstall before migration
-                    for module in module_installed_ids.mapped("name"):
+                    for module in new_module_installed_ids.mapped("name"):
                         if (
                             module
                             not in config.module_to_uninstall_before_migration_ids.mapped(  # noqa
@@ -446,7 +490,6 @@ class OpenupgraderConfig(models.Model):
                             )
                         ):
                             new_module_installed.append(module)
-                    # todo exclude modules uninstalled in the previous version
                     for module_name in new_module_installed:
                         module_id = self._search_create_module(module_name)
                         new_module_installed_ids |= module_id
@@ -608,13 +651,19 @@ class OpenupgraderConfig(models.Model):
             self.python_after_migration_command_ids = False
             self.python_before_migration_command_ids = False
             self.module_auto_install_ids = False
+            self.renamed_module_ids = False
             self.module_to_delete_after_migration_ids = False
             self.module_to_uninstall_after_migration_ids = False
             self.module_to_uninstall_before_migration_ids = False
             recipe_data = recipes[version_name]
         else:
             # add only apriori_py data to existing records
-            recipe_data = [{"auto_install": []}]
+            recipe_data = [
+                {
+                    "auto_install": [],
+                    "renamed_modules": [],
+                }
+            ]
         apriori_py_path = os.path.join(
             self.openupgrader_migration_id.folder,
             f"openupgrade{self.name}",
@@ -624,7 +673,6 @@ class OpenupgraderConfig(models.Model):
         )
         if os.path.isfile(apriori_py_path):
             # append auto_install modules from OpenUpgrade apriori.py
-
             spec = importlib.util.spec_from_file_location("apriori", apriori_py_path)
             if spec and spec.loader:
                 apriori_mod = importlib.util.module_from_spec(spec)
@@ -641,25 +689,27 @@ class OpenupgraderConfig(models.Model):
                     if renamed_modules:
                         for renamed_module, target_module in renamed_modules.items():
                             if isinstance(recipe_data, list):
-                                auto_install_found = False
+                                renamed_modules_found = False
                                 obsolete_found = False
                                 for recipe in recipe_data:
-                                    if "auto_install" in recipe.keys():
-                                        if not isinstance(recipe["auto_install"], list):
-                                            recipe["auto_install"] = []
-                                        recipe["auto_install"].append(
+                                    if "renamed_modules" in recipe.keys():
+                                        if not isinstance(
+                                            recipe["renamed_modules"], list
+                                        ):
+                                            recipe["renamed_modules"] = []
+                                        recipe["renamed_modules"].append(
                                             f"{renamed_module} {target_module}"
                                         )
-                                        auto_install_found = True
+                                        renamed_modules_found = True
                                     if "obsolete" in recipe.keys():
                                         if not isinstance(recipe["obsolete"], list):
                                             recipe["obsolete"] = []
                                         recipe["obsolete"].append(renamed_module)
                                         obsolete_found = True
-                                if not auto_install_found:
+                                if not renamed_modules_found:
                                     recipe_data.append(
                                         {
-                                            "auto_install": [
+                                            "renamed_modules": [
                                                 f"{renamed_module} {target_module}"
                                             ],
                                         }
@@ -673,7 +723,7 @@ class OpenupgraderConfig(models.Model):
                             else:
                                 recipe_data.append(
                                     {
-                                        "auto_install": [
+                                        "renamed_modules": [
                                             f"{renamed_module} {target_module}"
                                         ],
                                         "obsolete": [renamed_module],
@@ -684,6 +734,7 @@ class OpenupgraderConfig(models.Model):
                         for merged_module, target_module in merged_modules.items():
                             if isinstance(recipe_data, list):
                                 auto_install_found = False
+                                obsolete_found = False
                                 for recipe in recipe_data:
                                     if "auto_install" in recipe.keys():
                                         if not isinstance(recipe["auto_install"], list):
@@ -692,6 +743,11 @@ class OpenupgraderConfig(models.Model):
                                             f"{merged_module} {target_module}"
                                         )
                                         auto_install_found = True
+                                    if "obsolete" in recipe.keys():
+                                        if not isinstance(recipe["obsolete"], list):
+                                            recipe["obsolete"] = []
+                                        recipe["obsolete"].append(merged_module)
+                                        obsolete_found = True
                                 if not auto_install_found:
                                     recipe_data.append(
                                         {
@@ -700,12 +756,19 @@ class OpenupgraderConfig(models.Model):
                                             ]
                                         }
                                     )
+                                if not obsolete_found:
+                                    recipe_data.append(
+                                        {
+                                            "obsolete": [merged_module],
+                                        }
+                                    )
                             else:
                                 recipe_data.append(
                                     {
                                         "auto_install": [
                                             f"{merged_module} {target_module}"
-                                        ]
+                                        ],
+                                        "obsolete": [merged_module],
                                     }
                                 )
         if isinstance(recipe_data, dict):
@@ -832,7 +895,32 @@ class OpenupgraderConfig(models.Model):
                     if command
                     not in self.python_before_migration_command_ids.mapped("name")
                 ]
-            if recipe.get("auto_install"):
+            if recipe.get("renamed_modules"):
+                renamed_modules = recipe.get("renamed_modules")
+                for i, module in enumerate(renamed_modules):
+                    module_name = module.split()[0]
+                    module_to_install_name = module.split()[1]
+                    if not module_name or not module_to_install_name:
+                        continue
+                    if all(
+                        m.name != module_name
+                        and m.module_to_install_name != module_to_install_name
+                        for m in self.renamed_module_ids
+                    ):
+                        self.renamed_module_ids = [
+                            (
+                                0,
+                                0,
+                                {
+                                    "name": module_name,
+                                    "sequence": i,
+                                    "module_to_install_name": module_to_install_name,
+                                },
+                            )
+                        ]
+            if recipe.get(
+                "auto_install"
+            ):
                 auto_install = recipe.get("auto_install")
                 for i, module in enumerate(auto_install):
                     module_name = module.split()[0]

@@ -12,6 +12,7 @@
                 <field name="python_after_migration_command_ids" />
                 <field name="python_before_migration_command_ids" />
                 <field name="module_auto_install_ids" />
+                <field name="renamed_module_ids" />
                 <field name="module_to_delete_after_migration_ids" />
                 <field name="module_to_uninstall_after_migration_ids" />
                 <field name="module_to_uninstall_before_migration_ids" />
@@ -135,6 +136,13 @@
                         <page string="Modules Management">
                             <group string="Auto-install modules">
                                 <field name="module_auto_install_ids">
+                                    <tree editable="top">
+                                        <field name="sequence" widget="handle" />
+                                        <field name="name" />
+                                        <field name="module_to_install_name" />
+                                    </tree>
+                                </field>
+                                <field name="renamed_module_ids">
                                     <tree editable="top">
                                         <field name="sequence" widget="handle" />
                                         <field name="name" />
