@@ -415,7 +415,8 @@ class OpenupgraderConfig(models.Model):
         return res
 
     @api.depends(
-        "name", "module_auto_install_ids", "module_to_uninstall_before_migration_ids"
+        "name", "module_auto_install_ids", "renamed_module_ids",
+        "module_to_uninstall_before_migration_ids"
     )
     def _compute_module_installed_ids(self):
         for config in self:
@@ -480,6 +481,14 @@ class OpenupgraderConfig(models.Model):
                         ):
                             new_module_installed.append(
                                 module_auto_install.module_to_install_name
+                            )
+                    # add new modules to install
+                    for renamed_module in config.renamed_module_ids:
+                        if renamed_module.name in new_module_installed_ids.mapped(
+                            "name"
+                        ):
+                            new_module_installed.append(
+                                renamed_module.module_to_install_name
                             )
                     # add current modules except modules to uninstall before migration
                     for module in new_module_installed_ids.mapped("name"):
@@ -628,6 +637,12 @@ class OpenupgraderConfig(models.Model):
                     auto_install.module_to_install_name
                     for auto_install in self.module_auto_install_ids
                     if auto_install.name in self.module_installed_ids.mapped("name")
+                ]
+            if self.renamed_module_ids:
+                odoo_modules_to_install_via_pip += [
+                    renamed_module.module_to_install_name
+                    for renamed_module in self.renamed_module_ids
+                    if renamed_module.name in self.renamed_module_ids.mapped("name")
                 ]
             openupgrader_migration.install_pip_modules(
                 self, odoo_modules_to_install_via_pip
