@@ -1441,10 +1441,6 @@ class OpenupgraderMigration(models.Model):
             SELECT name FROM ir_module_module WHERE state='installed'));
             """,
             """
-            DELETE FROM ir_act_window
-            WHERE res_model NOT IN (SELECT model FROM ir_model);
-            """,
-            """
             DELETE FROM ir_ui_view WHERE type <> 'qweb' AND id NOT IN (
             SELECT res_id FROM ir_model_data
             WHERE model='ir.ui.view'
