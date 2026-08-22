@@ -472,10 +472,11 @@ class OpenupgraderConfig(models.Model):
                     new_module_installed_ids -= (
                         previous_config.module_to_uninstall_before_migration_ids
                     )
-                    new_module_installed_ids = new_module_installed_ids.filtered(
-                        lambda m, pc=previous_config: m.name
-                        not in safe_eval(pc.obsolete_modules)
-                    )
+                    if previous_config.obsolete_modules:
+                        new_module_installed_ids = new_module_installed_ids.filtered(
+                            lambda m, pc=previous_config: m.name
+                            not in safe_eval(pc.obsolete_modules)
+                        )
                     # add new modules to install
                     for module_auto_install in config.module_auto_install_ids:
                         if module_auto_install.name in new_module_installed_ids.mapped(
