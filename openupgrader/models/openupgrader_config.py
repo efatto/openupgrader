@@ -68,11 +68,17 @@ def _create_python_venv(venv_path, py_version):
     if not os.path.isfile(uv_path):
         raise ValidationError(_("uv is not installed, please install it first!"))
     commands = []
-    if not os.path.isfile(os.path.join(venv_path, "pyproject.toml")):
+    pyprojecttoml_path = os.path.join(venv_path, "pyproject.toml")
+    if not os.path.isfile(pyprojecttoml_path):
         commands.append(
             f"uv init --directory {venv_path} --python 'python=={py_version}'"
         )
     if not os.path.isfile(os.path.join(venv_path, ".venv", "bin")):
+        if os.path.isfile(pyprojecttoml_path):
+            os.remove(pyprojecttoml_path)
+            commands.append(
+                f"uv init --directory {venv_path} --python 'python=={py_version}'"
+            )
         commands.append(f"uv venv --clear --python {py_version}")
     if commands:
         for command in commands:
