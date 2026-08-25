@@ -74,11 +74,6 @@ def _create_python_venv(venv_path, py_version):
             f"uv init --directory {venv_path} --python 'python=={py_version}'"
         )
     if not os.path.isfile(os.path.join(venv_path, ".venv", "bin")):
-        if os.path.isfile(pyprojecttoml_path):
-            os.remove(pyprojecttoml_path)
-            commands.append(
-                f"uv init --directory {venv_path} --python 'python=={py_version}'"
-            )
         commands.append(f"uv venv --clear --python {py_version}")
     if commands:
         for command in commands:
@@ -633,6 +628,7 @@ class OpenupgraderConfig(models.Model):
                 for name in self.pip_requirement_ids.mapped("name")
             ]
             if odoo_is_openupgrade:
+                # old version until v. 14
                 for c in [
                     f"uv pip install -r {odoo_path}/requirements.txt",
                     f"uv pip install -e {openupgrade_path}",
