@@ -170,18 +170,34 @@ def _check_oca_authorship(pkg_name, release):
 
 
 def _init_migration_state_file(migration_state_path, config_names):
-    migration_state_dict = {
-        config_name: {
-            "env_state": None,
-            "env_update_date": None,
-            "state": None,
-            "date_started": None,
-            "date_updated": None,
-        }
-        for config_name in config_names
-    }
     if os.path.isfile(migration_state_path):
-        os.remove(migration_state_path)
+        with open(migration_state_path, "r") as f:
+            try:
+                migration_state_dict = json.load(f)
+            except json.JSONDecodeError as _e:
+                migration_state_dict = {}
+            except Exception as _e:
+                migration_state_dict = {}
+        for config_name in config_names:
+            if config_name not in migration_state_dict:
+                migration_state_dict[config_name] = {
+                    "state": None,
+                    "date_started": None,
+                    "date_updated": None,
+                }
+            else:
+                migration_state_dict[config_name]["state"] = None
+                migration_state_dict[config_name]["date_started"] = None
+                migration_state_dict[config_name]["date_updated"] = None
+    else:
+        migration_state_dict = {
+            config_name: {
+                "state": None,
+                "date_started": None,
+                "date_updated": None,
+            }
+            for config_name in config_names
+        }
     with open(migration_state_path, "w") as f:
         json.dump(migration_state_dict, f, sort_keys=True, indent=2)
 
@@ -202,13 +218,13 @@ def _update_migration_state_file(
         except Exception as _e:
             migration_state_dict = {}
     if migration_state_dict and migration_state_dict.get(config_name):
-        if state:
+        if state is not None:
             migration_state_dict[config_name]["state"] = state
-        if date_started:
+        if date_started is not None:
             migration_state_dict[config_name]["date_started"] = date_started
-        if env_state:
+        if env_state is not None:
             migration_state_dict[config_name]["env_state"] = env_state
-        if env_update_date:
+        if env_update_date is not None:
             migration_state_dict[config_name]["env_update_date"] = env_update_date
         migration_state_dict[config_name]["date_updated"] = datetime.now().strftime(
             "%Y-%m-%d %H:%M:%S"
