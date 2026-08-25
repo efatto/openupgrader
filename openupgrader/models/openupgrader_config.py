@@ -73,7 +73,7 @@ def _create_python_venv(venv_path, py_version):
             f"uv init --directory {venv_path} --python 'python=={py_version}'"
         )
     if not os.path.isfile(os.path.join(venv_path, ".venv", "bin")):
-        commands.append(f"uv venv --python {py_version}")
+        commands.append(f"uv venv --clear --python {py_version}")
     if commands:
         for command in commands:
             subprocess.Popen(
