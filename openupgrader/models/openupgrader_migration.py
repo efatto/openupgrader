@@ -1395,12 +1395,12 @@ class OpenupgraderMigration(models.Model):
                 ],
                 check=False,
             )
-
-        run(
-            ["git", "pull", "origin", version_name, "--rebase"],
-            cwd=repo_path,
-            check=False,
-        )
+        else:
+            run(
+                ["git", "pull", "origin", version_name, "--rebase"],
+                cwd=repo_path,
+                check=False,
+            )
 
     def auto_install_modules(self, config_id):
         self.start_odoo(config_id)
