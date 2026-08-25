@@ -799,6 +799,14 @@ class OpenupgraderMigration(models.Model):
         self.init_migration_state_file()
         self.state = "draft"
 
+    def button_create_all_env(self):
+        self.ensure_one()
+        openupgrader_configs = self.env["openupgrader.config"].search(
+            [("openupgrader_migration_id", "=", self.id)]
+        )
+        for openupgrader_config in openupgrader_configs:
+            openupgrader_config.create_venv()
+
     def button_recreate_all_env(self):
         self.ensure_one()
         openupgrader_configs = self.env["openupgrader.config"].search(

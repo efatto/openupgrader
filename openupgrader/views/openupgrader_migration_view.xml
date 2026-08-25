@@ -200,10 +200,17 @@
                                     string="Environment management"
                                 >
                                     <button
+                                        name="button_create_all_env"
+                                        type="object"
+                                        string="Create all environments"
+                                    />
+                                    <p />
+                                    <button
                                         name="button_recreate_all_env"
                                         type="object"
                                         string="Recreate all environments"
                                     />
+                                    <p />
                                     <button
                                         name="button_update_all_env"
                                         type="object"
