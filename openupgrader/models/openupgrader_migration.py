@@ -807,6 +807,14 @@ class OpenupgraderMigration(models.Model):
         for openupgrader_config in openupgrader_configs:
             openupgrader_config.button_recreate_venv()
 
+    def button_update_all_env(self):
+        self.ensure_one()
+        openupgrader_configs = self.env["openupgrader.config"].search(
+            [("openupgrader_migration_id", "=", self.id)]
+        )
+        for openupgrader_config in openupgrader_configs:
+            openupgrader_config.button_update_venv()
+
     def button_stop_auto_migration(self):
         self.ensure_one()
         cron = self.env.ref("openupgrader.cron_openugrader_do_auto_migration")
@@ -1240,7 +1248,11 @@ class OpenupgraderMigration(models.Model):
         for ou_config in ou_configs:
             # 1. Check the update log (it follows migration except for the initial
             # update)
-            migration_state, _config = ou_config.get_migration_state_from_file()
+            (
+                migration_state,
+                _env_state,
+                _config,
+            ) = ou_config.get_migration_state_from_file()
             update_log = _get_log_path(self.folder, ou_config.name)
             if os.path.isfile(update_log):
                 patterns = {
@@ -1307,7 +1319,11 @@ class OpenupgraderMigration(models.Model):
             return odoo_running_state, self.state, self.from_config_id
 
         self._update_migration_state_from_logs()
-        migration_state, current_version = self.get_migration_state_from_file()
+        (
+            migration_state,
+            _env_state,
+            current_version,
+        ) = self.get_migration_state_from_file()
         return odoo_running_state, migration_state, current_version
 
     def sql_fixes(self, sql_commands):

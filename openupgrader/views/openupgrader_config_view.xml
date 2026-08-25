@@ -38,7 +38,7 @@
             <form string="OpenUpgrader Configuration">
                 <header>
                     <button
-                        name="button_create_venv"
+                        name="button_update_venv"
                         type="object"
                         string="Create or update virtualenv"
                     />

@@ -333,13 +333,21 @@ class OpenupgraderConfig(models.Model):
     def get_migration_state_from_file(self):
         return self.openupgrader_migration_id.get_migration_state_from_file([self.name])
 
-    def update_migration_state_file(self, state, date_started=None):
+    def update_migration_state_file(
+        self,
+        state=None,
+        env_state=None,
+        env_update_date=None,
+        date_started=None,
+    ):
         file_path = self.openupgrader_migration_id._default_migration_state_path()
         _update_migration_state_file(
             file_path,
             self.name,
-            state,
-            date_started,
+            state=state,
+            date_started=date_started,
+            env_state=env_state,
+            env_update_date=env_update_date,
         )
 
     def _create_db_backup(self, folder):
@@ -524,10 +532,23 @@ class OpenupgraderConfig(models.Model):
         )
         if os.path.isdir(venv_folder):
             shutil.rmtree(venv_folder, ignore_errors=True)
-        self.button_create_venv()
+            self.update_migration_state_file(
+                env_state="draft",
+            )
+        self.create_venv()
 
-    def button_create_venv(self):  # noqa: C901
+    def button_update_venv(self):
         self.ensure_one()
+        self.update_migration_state_file(
+            env_state="updating",
+        )
+        self.create_venv()
+
+    def create_venv(self):  # noqa: C901
+        self.ensure_one()
+        _migration_state, env_state, _version = self.get_migration_state_from_file()
+        if env_state == "updated":
+            return
         openupgrader_migration = self.openupgrader_migration_id
         odoo_is_openupgrade = self.odoo_is_openupgrade
         # Odoo is OpenUpgrade until v. 13.0, from v. 14.0 Odoo is in ./<version/odoo
@@ -649,6 +670,10 @@ class OpenupgraderConfig(models.Model):
                 ]
             openupgrader_migration.install_pip_modules(
                 self, odoo_modules_to_install_via_pip
+            )
+            self.update_migration_state_file(
+                env_state="updated",
+                env_update_date=fields.Datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             )
 
     @api.model_create_multi

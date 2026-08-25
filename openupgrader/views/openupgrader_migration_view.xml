@@ -204,6 +204,11 @@
                                         type="object"
                                         string="Recreate all environments"
                                     />
+                                    <button
+                                        name="button_update_all_env"
+                                        type="object"
+                                        string="Update all environments"
+                                    />
                                 </group>
                                 <group colspan="2" col="1" string="Dump utilities">
                                     <button
