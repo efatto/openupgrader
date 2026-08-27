@@ -28,7 +28,7 @@ OpenUpgrader
 
 This module automates OpenUpgrade to do the migration process from Odoo itself in an easy way.
 
-It directly migrates the current Odoo, using auto_backup module to export the resulting migrated instance, to be restored in the usual way.
+It directly migrates the current Odoo, using direct backup on server instance or with auto_backup module to export the resulting migrated instance, to be restored in the usual way.
 
 **Table of contents**
 
@@ -43,12 +43,12 @@ The menu is in Configuration/Settings:
 .. image:: https://raw.githubusercontent.com/efatto/openupgrader/14.0/openupgrader/static/description/menu.png
     :alt: Menu
 
-Which provides two rows: the OpenUpgrader Migration is used to manage the migration process:
+Which provides two menus: the OpenUpgrader Migration, used to manage the migration process:
 
 .. image:: https://raw.githubusercontent.com/efatto/openupgrader/14.0/openupgrader/static/description/migration.png
     :alt: Migration
 
-The second row is the OpenUpgrader Configuration, which is used to configure specific parameters for every version of Odoo included in the process. So in a migration from 14.0 to 16.0, we need to create three configuration: 14.0, 15.0 and 16.0
+The OpenUpgrader Configuration, used to configure specific parameters for every version of Odoo included in the process. In a migration from 14.0 to 16.0, we need to create three configuration: 14.0, 15.0 and 16.0.
 
 .. image:: https://raw.githubusercontent.com/efatto/openupgrader/14.0/openupgrader/static/description/configuration.png
     :alt: Configuration
@@ -87,19 +87,25 @@ The configuration can be filled with these values:
 
 The migration process is as follows:
 
+#. Create a OpenUpgrader Migration instance.
 #. Create an OpenUpgrader Configuration for every version included in the migration process (this process can be automated with a yml file, see demo data)
-#. Create the OpenUpgrader Migration with requested data of the database to migrate and the initial and target version of the migration
-#. Use the `Restore` button to copy database and filestore in the virtualenv
-#. Use the `Update` button to update copied database to current modules state
-#. As an alternative to `Restore` and `Update` buttons, use `Restore and Update` button
-#. Prepare the migration with the extra configuration option with the `Prepare migration` button
-#. Do the migration with the `Migrate` button
-#. Repeat the `Prepare migration` and `Migrate` methods for every successive version
+#. Set in the created OpenUpgrader Migration the requested data of the database to migrate and the initial and target version of the migration
+
+  #. Use the `Auto migration` button, or, alternatively,
+  #. Use the manual process as follow:
+
+    #. Use the `Restore` button to copy database and filestore in the virtualenv
+    #. Use the `Update` button to update copied database to current modules state
+    #. As an alternative to `Restore` and `Update` buttons, use `Restore and Update` button
+    #. Prepare the migration with the extra configuration option with the `Prepare migration` button
+    #. Do the migration with the `Migrate` button
+    #. Repeat the `Prepare migration` and `Migrate` methods for every successive version
 
 Notes:
 
 #. Every instance of the migrated Odoo with virtualenv and log of the migration process is saved in configured folder or ~/odoo_migration/<database>/
 #. If the migration stops for some reasons, it can be corrected and retried with the `migrate` button, as normally in Odoo
+#. It is possible to restart from any intermediate version, if the option `Dump each database version` is filled, by setting the current migrated version to the desired version an clicking on `Restore last dump of database` button
 
 POSSIBLE IMPROVEMENTS
 
