@@ -525,11 +525,7 @@ class OpenupgraderConfig(models.Model):
             else:
                 config.module_installed_ids = False
 
-    def button_recreate_venv(self):
-        self.ensure_one()
-        self.create_venv(recreate=True)
-
-    def reset_venv(self):
+    def button_delete_env(self):
         # Remove the folder and re-create a clean virtual environment
         venv_folder = os.path.join(
             self.openupgrader_migration_id.folder, f"openupgrade{self.name}"
@@ -540,17 +536,8 @@ class OpenupgraderConfig(models.Model):
                 env_state="draft",
             )
 
-    def button_update_venv(self):
+    def button_create_env(self):  # noqa: C901
         self.ensure_one()
-        self.update_migration_state_file(
-            env_state="updating",
-        )
-        self.create_venv()
-
-    def create_venv(self, recreate=False):  # noqa: C901
-        self.ensure_one()
-        if recreate:
-            self.reset_venv()
         _migration_state, env_state, _version = self.get_migration_state_from_file()
         if env_state == "updated":
             return

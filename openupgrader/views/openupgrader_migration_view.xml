@@ -200,15 +200,16 @@
                                     string="Environment management"
                                 >
                                     <button
-                                        name="button_create_all_env"
+                                        name="button_create_all_envs"
                                         type="object"
                                         string="Create all environments"
                                     />
                                     <p />
                                     <button
-                                        name="button_recreate_all_env"
+                                        name="button_delete_all_envs"
                                         type="object"
-                                        string="Recreate all environments"
+                                        string="Delete all environments"
+                                        help="Optionally do before create envs, to recreate a clean virtualenv after removing some libraries"
                                     />
                                 </group>
                                 <group colspan="2" col="1" string="Dump utilities">

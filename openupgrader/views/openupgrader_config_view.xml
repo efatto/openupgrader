@@ -38,15 +38,15 @@
             <form string="OpenUpgrader Configuration">
                 <header>
                     <button
-                        name="button_update_venv"
+                        name="button_create_env"
                         type="object"
-                        string="Create or update virtualenv"
+                        string="Create virtualenv"
                     />
                     <button
-                        name="button_recreate_venv"
+                        name="button_delete_env"
                         type="object"
-                        string="Re-create virtualenv"
-                        help="To recreate a clean virtualenv after removing some libraries"
+                        string="Delete virtualenv"
+                        help="Optionally do before create env, to recreate a clean virtualenv after removing some libraries"
                     />
                 </header>
                 <sheet string="OpenUpgrader Configuration">

@@ -800,30 +800,22 @@ class OpenupgraderMigration(models.Model):
         self.init_migration_state_file()
         self.state = "draft"
 
-    def button_create_all_env(self):
+    def button_create_all_envs(self):
         self.ensure_one()
         openupgrader_configs = self.env["openupgrader.config"].search(
             [("openupgrader_migration_id", "=", self.id)]
         )
         for openupgrader_config in openupgrader_configs:
-            openupgrader_config.create_venv()
+            openupgrader_config.button_create_env()
 
-    def button_recreate_all_env(self):
+    def button_delete_all_envs(self):
         self.ensure_one()
         self.init_migration_state_file(reset_env=True)
         openupgrader_configs = self.env["openupgrader.config"].search(
             [("openupgrader_migration_id", "=", self.id)]
         )
         for openupgrader_config in openupgrader_configs:
-            openupgrader_config.create_venv(recreate=True)
-
-    # def button_update_all_env(self):
-    #     self.ensure_one()
-    #     openupgrader_configs = self.env["openupgrader.config"].search(
-    #         [("openupgrader_migration_id", "=", self.id)]
-    #     )
-    #     for openupgrader_config in openupgrader_configs:
-    #         openupgrader_config.button_update_venv()
+            openupgrader_config.button_delete_env()
 
     def button_stop_auto_migration(self):
         self.ensure_one()
