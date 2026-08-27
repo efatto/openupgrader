@@ -210,6 +210,24 @@ def _update_migration_state_file(
     env_state=None,
     env_update_date=None,
 ):
+    """
+    Update the migration state file with the given parameters.
+
+    :param migration_state_path: Path to the migration state file.
+    :param config_name: Name of the configuration.
+    :param state: New state for the configuration. Possible values are:
+        - "draft"
+        - "restored"
+        - "starting"
+        - "started"
+        - "ready_for_migration"
+        - "ready_to_prepare"
+        - "failed"
+    :param date_started: New date_started for the configuration.
+    :param env_state: New env_state for the configuration.
+    :param env_update_date: New env_update_date for the configuration.
+    :return: None
+    """
     with open(migration_state_path, "r") as f:
         try:
             migration_state_dict = json.load(f)
