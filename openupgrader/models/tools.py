@@ -169,7 +169,7 @@ def _check_oca_authorship(pkg_name, release):
     return False
 
 
-def _init_migration_state_file(migration_state_path, config_names):
+def _init_migration_state_file(migration_state_path, config_names, reset_env=False):
     if os.path.isfile(migration_state_path):
         with open(migration_state_path, "r") as f:
             try:
@@ -185,16 +185,36 @@ def _init_migration_state_file(migration_state_path, config_names):
                     "date_started": None,
                     "date_updated": None,
                 }
+                if reset_env:
+                    migration_state_dict[config_name].update(
+                        {
+                            "env_state": None,
+                            "env_update_date": None,
+                        }
+                    )
             else:
-                migration_state_dict[config_name]["state"] = None
-                migration_state_dict[config_name]["date_started"] = None
-                migration_state_dict[config_name]["date_updated"] = None
+                migration_state_dict[config_name].update(
+                    {
+                        "state": None,
+                        "date_started": None,
+                        "date_updated": None,
+                    }
+                )
+                if reset_env:
+                    migration_state_dict[config_name].update(
+                        {
+                            "env_state": None,
+                            "env_update_date": None,
+                        }
+                    )
     else:
         migration_state_dict = {
             config_name: {
                 "state": None,
                 "date_started": None,
                 "date_updated": None,
+                "env_state": None,
+                "env_update_date": None,
             }
             for config_name in config_names
         }

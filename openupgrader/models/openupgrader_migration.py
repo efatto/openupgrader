@@ -232,7 +232,7 @@ class OpenupgraderMigration(models.Model):
             .mapped("name"),
         )
 
-    def init_migration_state_file(self):
+    def init_migration_state_file(self, reset_env=False):
         _init_migration_state_file(
             self._default_migration_state_path(),
             self.env["openupgrader.config"]
@@ -242,6 +242,7 @@ class OpenupgraderMigration(models.Model):
                 ]
             )
             .mapped("name"),
+            reset_env=reset_env,
         )
 
     def _get_db_connection_variables(self):
@@ -809,19 +810,20 @@ class OpenupgraderMigration(models.Model):
 
     def button_recreate_all_env(self):
         self.ensure_one()
+        self.init_migration_state_file(reset_env=True)
         openupgrader_configs = self.env["openupgrader.config"].search(
             [("openupgrader_migration_id", "=", self.id)]
         )
         for openupgrader_config in openupgrader_configs:
-            openupgrader_config.button_recreate_venv()
+            openupgrader_config.create_venv(recreate=True)
 
-    def button_update_all_env(self):
-        self.ensure_one()
-        openupgrader_configs = self.env["openupgrader.config"].search(
-            [("openupgrader_migration_id", "=", self.id)]
-        )
-        for openupgrader_config in openupgrader_configs:
-            openupgrader_config.button_update_venv()
+    # def button_update_all_env(self):
+    #     self.ensure_one()
+    #     openupgrader_configs = self.env["openupgrader.config"].search(
+    #         [("openupgrader_migration_id", "=", self.id)]
+    #     )
+    #     for openupgrader_config in openupgrader_configs:
+    #         openupgrader_config.button_update_venv()
 
     def button_stop_auto_migration(self):
         self.ensure_one()
