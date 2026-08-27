@@ -953,7 +953,7 @@ class OpenupgraderConfig(models.Model):
                         continue
                     if all(
                         m.name != module_name
-                        and m.module_to_install_name != module_to_install_name
+                        or m.module_to_install_name != module_to_install_name
                         for m in self.renamed_module_ids
                     ):
                         self.renamed_module_ids = [
@@ -976,7 +976,7 @@ class OpenupgraderConfig(models.Model):
                         continue
                     if all(
                         m.name != module_name
-                        and m.module_to_install_name != module_to_install_name
+                        or m.module_to_install_name != module_to_install_name
                         for m in self.module_auto_install_ids
                     ):
                         self.module_auto_install_ids = [
