@@ -315,6 +315,15 @@ class OpenupgraderConfig(models.Model):
     obsolete_modules = fields.Text()
     core_modules = fields.Text()
     not_autoinstallable_modules = fields.Text()
+    env_state = fields.Selection(
+        selection=[
+            ("draft", "Draft"),
+            ("updating", "Updating"),
+            ("updated", "Updated"),
+        ],
+        default="draft",
+    )
+    env_update_date = fields.Datetime()
 
     @staticmethod
     def _extract_package_name(requirement):
@@ -525,21 +534,36 @@ class OpenupgraderConfig(models.Model):
             else:
                 config.module_installed_ids = False
 
+    def button_update_env(self):
+        self.ensure_one()
+        self.env_state = "updating"
+        self.update_migration_state_file(
+            env_state="updating",
+        )
+        self.button_create_env()
+
+    def button_recreate_env(self):
+        self.ensure_one()
+        self.button_delete_env()
+        self.button_create_env()
+
     def button_delete_env(self):
         # Remove the folder and re-create a clean virtual environment
+        self.ensure_one()
         venv_folder = os.path.join(
             self.openupgrader_migration_id.folder, f"openupgrade{self.name}"
         )
         if os.path.isdir(venv_folder):
             shutil.rmtree(venv_folder, ignore_errors=True)
+            self.env_state = "draft"
             self.update_migration_state_file(
                 env_state="draft",
             )
 
     def button_create_env(self):  # noqa: C901
         self.ensure_one()
-        _migration_state, env_state, _version = self.get_migration_state_from_file()
-        if env_state == "updated":
+        # _migration_state, env_state, _version = self.get_migration_state_from_file()
+        if self.env_state == "updated":
             return
         openupgrader_migration = self.openupgrader_migration_id
         odoo_is_openupgrade = self.odoo_is_openupgrade
@@ -664,9 +688,16 @@ class OpenupgraderConfig(models.Model):
             openupgrader_migration.install_pip_modules(
                 self, odoo_modules_to_install_via_pip
             )
+            env_update_date = fields.Datetime.now()
+            self.write(
+                {
+                    "env_state": "updated",
+                    "env_update_date": env_update_date,
+                }
+            )
             self.update_migration_state_file(
                 env_state="updated",
-                env_update_date=fields.Datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                env_update_date=env_update_date.strftime("%Y-%m-%d %H:%M:%S"),
             )
 
     @api.model_create_multi

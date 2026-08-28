@@ -42,11 +42,25 @@
                         type="object"
                         string="Create virtualenv"
                     />
+                    <p />
+                    <button
+                        name="button_update_env"
+                        type="object"
+                        string="Update virtualenv"
+                    />
+                    <p />
+                    <button
+                        name="button_recreate_env"
+                        type="object"
+                        string="Recreate virtualenv"
+                        help="Delete and recreate virtualenv"
+                    />
+                    <p />
                     <button
                         name="button_delete_env"
                         type="object"
                         string="Delete virtualenv"
-                        help="Optionally do before create env, to recreate a clean virtualenv after removing some libraries"
+                        help="Optionally to do before create env, to recreate a clean virtualenv after removing some libraries"
                     />
                 </header>
                 <sheet string="OpenUpgrader Configuration">
