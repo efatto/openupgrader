@@ -1145,7 +1145,6 @@ class OpenupgraderConfig(models.Model):
 
                 if process.returncode != 0:
                     if any("no solution found" in log_text for log_text in log_texts):
-                        not_installable_modules.append(name)
                         logger.info(
                             "Module %s not found with uv pip installer: %s"
                             % (
@@ -1154,7 +1153,6 @@ class OpenupgraderConfig(models.Model):
                             )
                         )
                     elif any("pkg_resources" in log_text for log_text in log_texts):
-                        not_installable_modules.append(name)
                         err_log = "\n".join(log_text for log_text in log_texts)
                         logger.info(
                             "Module %s not installable for setuptools error: %s",
@@ -1174,27 +1172,23 @@ class OpenupgraderConfig(models.Model):
                         "standard index" % name
                     )
 
-        # after installation from OCA to install dependencies, install from extra index,
-        # if set, to get possible newer versions or extra modules
-        if extra_index_url:
-            for name in modules_to_install:
-                base_pkg_name = f"odoo{release_val}-addon-{name}"
-                pkg_name = f"{base_pkg_name}{version_val}"
-                if modules_to_install[name] == "installed_from_oca":
-                    index_args = (
-                        f"--index {extra_index_url} "
-                        "--default-index https://pypi.org/simple "
-                        "--index-strategy unsafe-best-match"
-                    )
+            # Install from the extra index after the OCA attempt, while allowing
+            # dependencies to be resolved from standard PyPI.
+            if extra_index_url:
+                installed_from_oca = (
+                    modules_to_install[name] == "installed_from_oca"
+                )
+                index_args = (
+                    f"--index {extra_index_url} "
+                    "--default-index https://pypi.org/simple "
+                    "--index-strategy unsafe-best-match"
+                )
+                if installed_from_oca:
                     logger.info(
                         "Checking the extra index for a newer version of %s",
                         name,
                     )
                 else:
-                    index_args = (
-                        f"--default-index {extra_index_url} "
-                        "--index-strategy first-index"
-                    )
                     logger.info(
                         "OCA package not found; installing from extra index for %s",
                         name,
@@ -1216,18 +1210,21 @@ class OpenupgraderConfig(models.Model):
                         "Failed to install module %s from extra index",
                         name,
                     )
-                elif modules_to_install[name] == "installed_from_oca":
-                    logger.info(
-                        "Odoo module %s updated successfully from the extra index "
-                        "after installation from standard index",
-                        name,
-                    )
                 else:
-                    logger.info(
-                        "Odoo module %s installed successfully from the extra index",
-                        name,
-                    )
-        for name in modules_to_install:
+                    modules_to_install[name] = "installed_from_extra"
+                    if installed_from_oca:
+                        logger.info(
+                            "Odoo module %s updated successfully from the extra "
+                            "index after installation from standard index",
+                            name,
+                        )
+                    else:
+                        logger.info(
+                            "Odoo module %s installed successfully from the extra "
+                            "index",
+                            name,
+                        )
+
             if modules_to_install[name] == "not_installed":
                 logger.error(
                     "Module %s not installable for %s",
