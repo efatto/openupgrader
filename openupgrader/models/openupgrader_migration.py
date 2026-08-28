@@ -17,7 +17,6 @@ from odoo.tools.safe_eval import safe_eval
 
 from .openupgrader_config import _get_env_for_subprocess
 from .tools import (
-    _check_oca_authorship,
     _get_log_path,
     _get_migration_logs,
     _get_migration_state_from_file,

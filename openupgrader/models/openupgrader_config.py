@@ -4,7 +4,7 @@ import importlib.util
 import logging
 import os
 import shutil
-from subprocess import Popen, PIPE, run
+from subprocess import PIPE, Popen, run
 
 import yaml
 
@@ -13,9 +13,9 @@ from odoo.exceptions import ValidationError
 from odoo.tools.safe_eval import safe_eval
 
 from .tools import (
+    _check_oca_authorship,
     _set_odoorc,
     _update_migration_state_file,
-    _check_oca_authorship,
 )
 
 logger = logging.getLogger(__name__)
@@ -686,9 +686,7 @@ class OpenupgraderConfig(models.Model):
                     for renamed_module in self.renamed_module_ids
                     if renamed_module.name in self.renamed_module_ids.mapped("name")
                 ]
-            self.install_pip_modules(
-                odoo_modules_to_install_via_pip
-            )
+            self.install_pip_modules(odoo_modules_to_install_via_pip)
             env_update_date = fields.Datetime.now()
             self.write(
                 {
@@ -1076,7 +1074,8 @@ class OpenupgraderConfig(models.Model):
         logger.info("Installing Odoo modules with pip: %s" % str(module_names))
         odoo_version_int = int(self.name.split(".")[0])
         venv_path = os.path.join(
-            self.openupgrader_migration_id.folder, f"openupgrade{self.name}")
+            self.openupgrader_migration_id.folder, f"openupgrade{self.name}"
+        )
         subprocess_env = _get_env_for_subprocess(venv_path, self.python_version)
         # try to install with pip and log error if it fails
         not_installable_modules = []
@@ -1102,8 +1101,8 @@ class OpenupgraderConfig(models.Model):
             name: "not_installed"
             for name in module_names
             if name not in core_modules
-               and name not in obsolete_modules
-               and name not in uninstall_before_names
+            and name not in obsolete_modules
+            and name not in uninstall_before_names
         }
         for name in modules_to_install:
             # all pip servers used are safe, do not ignore any package found
@@ -1193,7 +1192,8 @@ class OpenupgraderConfig(models.Model):
                     )
                 else:
                     index_args = (
-                        f"--default-index {extra_index_url} " "--index-strategy first-index"
+                        f"--default-index {extra_index_url} "
+                        "--index-strategy first-index"
                     )
                     logger.info(
                         "OCA package not found; installing from extra index for %s",
@@ -1230,7 +1230,8 @@ class OpenupgraderConfig(models.Model):
         for name in modules_to_install:
             if modules_to_install[name] == "not_installed":
                 logger.error(
-                    "Module %s not",
+                    "Module %s not installable for %s",
                     name,
+                    self.name,
                 )
                 not_installable_modules.append(name)

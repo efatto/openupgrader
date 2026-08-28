@@ -145,9 +145,7 @@ class OpenUpgrader(SavepointCase):
         openupgrader_migration.button_update_current_config()
         openupgrader_migration.button_update_current_config()
         if initial_module:
-            self.from_config_id.install_pip_modules(
-                [initial_module]
-            )
+            self.from_config_id.install_pip_modules([initial_module])
             openupgrader_migration.start_odoo(self.from_config_id)
             openupgrader_migration.install_uninstall_module(
                 initial_module, self.from_config_id
