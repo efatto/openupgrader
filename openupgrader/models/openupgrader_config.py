@@ -4,7 +4,7 @@ import importlib.util
 import logging
 import os
 import shutil
-import subprocess
+from subprocess import Popen, PIPE, run
 
 import yaml
 
@@ -15,6 +15,7 @@ from odoo.tools.safe_eval import safe_eval
 from .tools import (
     _set_odoorc,
     _update_migration_state_file,
+    _check_oca_authorship,
 )
 
 logger = logging.getLogger(__name__)
@@ -58,13 +59,13 @@ def _create_python_venv(venv_path, py_version):
     subprocess_env = _get_env_for_subprocess(venv_path, py_version)
     # Copy some pip configuration files that could exist in local to the python venv
     if not os.path.isdir(venv_path):
-        subprocess.Popen([f"mkdir -p {venv_path}"], shell=True).wait()
+        run([f"mkdir -p {venv_path}"], shell=True)
     uv_path = os.path.join(os.path.expanduser("~"), ".local", "bin", "uv")
     if not os.path.isfile(uv_path):
-        subprocess.Popen(
+        run(
             "curl -LsSf https://astral.sh/uv/install.sh | sh",
             shell=True,
-        ).wait()
+        )
     if not os.path.isfile(uv_path):
         raise ValidationError(_("uv is not installed, please install it first!"))
     commands = []
@@ -77,12 +78,12 @@ def _create_python_venv(venv_path, py_version):
         commands.append(f"uv venv --clear --python {py_version}")
     if commands:
         for command in commands:
-            subprocess.Popen(
+            run(
                 command,
                 shell=True,
                 cwd=venv_path,
                 env=subprocess_env,
-            ).wait()
+            )
     return subprocess_env
 
 
@@ -582,20 +583,20 @@ class OpenupgraderConfig(models.Model):
                 else (os.path.join(venv_path, "repos", "odoo"))
             )
             if not os.path.isdir(openupgrade_path):
-                subprocess.Popen(
+                run(
                     [
                         f"git clone --single-branch --depth 1 -b {self.name} "
                         f"{openupgrader_migration.openupgrade_repo} odoo"
                     ],
                     cwd=venv_path,
                     shell=True,
-                ).wait()
+                )
             else:
-                subprocess.Popen(
+                run(
                     [f"git pull origin {self.name} --rebase"],
                     cwd=openupgrade_path,
                     shell=True,
-                ).wait()
+                )
 
             if not odoo_is_openupgrade:
                 # install odoo repo separately
@@ -655,12 +656,12 @@ class OpenupgraderConfig(models.Model):
 
             # exclude odoo core modules
             for command in commands:
-                subprocess.Popen(
+                run(
                     command,
                     cwd=venv_path,
                     shell=True,
                     env=subprocess_env,
-                ).wait()
+                )
 
             core_modules = self._get_core_modules(odoo_path)
             self.core_modules = str(set(core_modules))
@@ -685,8 +686,8 @@ class OpenupgraderConfig(models.Model):
                     for renamed_module in self.renamed_module_ids
                     if renamed_module.name in self.renamed_module_ids.mapped("name")
                 ]
-            openupgrader_migration.install_pip_modules(
-                self, odoo_modules_to_install_via_pip
+            self.install_pip_modules(
+                odoo_modules_to_install_via_pip
             )
             env_update_date = fields.Datetime.now()
             self.write(
@@ -1067,3 +1068,169 @@ class OpenupgraderConfig(models.Model):
                 logger.info(exc)
             return repos
         return None
+
+    def install_pip_modules(self, module_names):  # noqa C901
+        self.ensure_one()
+        if not isinstance(module_names, list):
+            module_names = [module_names]
+        logger.info("Installing Odoo modules with pip: %s" % str(module_names))
+        odoo_version_int = int(self.name.split(".")[0])
+        venv_path = os.path.join(
+            self.openupgrader_migration_id.folder, f"openupgrade{self.name}")
+        subprocess_env = _get_env_for_subprocess(venv_path, self.python_version)
+        # try to install with pip and log error if it fails
+        not_installable_modules = []
+        if not self.obsolete_modules:
+            obsolete_modules = []
+        else:
+            obsolete_modules = safe_eval(self.obsolete_modules)
+        if not self.core_modules:
+            core_modules = []
+        else:
+            core_modules = safe_eval(self.core_modules)
+        uninstall_before = self.module_to_uninstall_before_migration_ids
+        uninstall_before_names = uninstall_before.mapped("name")
+        extra_index_url = subprocess_env.get("UV_INDEX")
+        pip_env = subprocess_env.copy()
+        # Avoid conflicts between UV_INDEX and --default-index.
+        pip_env.pop("UV_INDEX", None)
+        release_val = odoo_version_int if odoo_version_int < 15 else ""
+        version_val = f"=={self.name}.*" if odoo_version_int >= 15 else ""
+        # exclude module if present in self obsolete modules,
+        # core modules or to be uninstalled before migration
+        modules_to_install = {
+            name: "not_installed"
+            for name in module_names
+            if name not in core_modules
+               and name not in obsolete_modules
+               and name not in uninstall_before_names
+        }
+        for name in modules_to_install:
+            # all pip servers used are safe, do not ignore any package found
+            base_pkg_name = f"odoo{release_val}-addon-{name}"
+            pkg_name = f"{base_pkg_name}{version_val}"
+            # Always install the base OCA version when it is available.
+            oca_package_found = _check_oca_authorship(
+                base_pkg_name,
+                self.name,
+            )
+
+            if oca_package_found:
+                # Ensure we use ONLY standard index even if UV_INDEX is set
+                command = (
+                    "uv pip install --default-index "
+                    "https://pypi.org/simple "
+                    "--index-strategy unsafe-best-match --upgrade "
+                    "--prerelease=allow {pkg}"
+                ).format(pkg=pkg_name)
+                logger.info(
+                    "Installing Odoo module from standard index: %s",
+                    command,
+                )
+                process = Popen(
+                    command,
+                    cwd=venv_path,
+                    shell=True,
+                    stderr=PIPE,
+                    env=pip_env,
+                )
+                stderr = process.communicate()[1]
+                log_texts = []
+                if stderr:
+                    for log_line in stderr.splitlines():
+                        try:
+                            log_l = log_line.decode().lower()
+                            log_texts.append(log_l)
+                        except UnicodeDecodeError:
+                            continue
+
+                if process.returncode != 0:
+                    if any("no solution found" in log_text for log_text in log_texts):
+                        not_installable_modules.append(name)
+                        logger.info(
+                            "Module %s not found with uv pip installer: %s"
+                            % (
+                                name,
+                                "\n".join(log_text for log_text in log_texts),
+                            )
+                        )
+                    elif any("pkg_resources" in log_text for log_text in log_texts):
+                        not_installable_modules.append(name)
+                        err_log = "\n".join(log_text for log_text in log_texts)
+                        logger.info(
+                            "Module %s not installable for setuptools " "error: %s",
+                            name,
+                            err_log,
+                        )
+                    else:
+                        logger.warning(
+                            "Failed to install module %s from standard index: %s",
+                            name,
+                            "\n".join(log_text for log_text in log_texts),
+                        )
+                else:
+                    modules_to_install[name] = "installed_from_oca"
+                    logger.info(
+                        "Odoo module %s installed successfully from "
+                        "standard index" % name
+                    )
+
+        # after installation from OCA to install dependencies, install from extra index,
+        # if set, to get possible newer versions or extra modules
+        if extra_index_url:
+            for name in modules_to_install:
+                base_pkg_name = f"odoo{release_val}-addon-{name}"
+                pkg_name = f"{base_pkg_name}{version_val}"
+                if modules_to_install[name] == "installed_from_oca":
+                    index_args = (
+                        f"--index {extra_index_url} "
+                        "--default-index https://pypi.org/simple "
+                        "--index-strategy unsafe-best-match"
+                    )
+                    logger.info(
+                        "Checking the extra index for a newer version of %s",
+                        name,
+                    )
+                else:
+                    index_args = (
+                        f"--default-index {extra_index_url} " "--index-strategy first-index"
+                    )
+                    logger.info(
+                        "OCA package not found; installing from extra index for %s",
+                        name,
+                    )
+
+                command = (
+                    f"uv pip install {index_args} --upgrade "
+                    f"--prerelease=allow {pkg_name}"
+                )
+                process = Popen(
+                    command,
+                    cwd=venv_path,
+                    shell=True,
+                    env=pip_env,
+                )
+                process.wait()
+                if process.returncode != 0:
+                    logger.warning(
+                        "Failed to install module %s from extra index",
+                        name,
+                    )
+                elif modules_to_install[name] == "installed_from_oca":
+                    logger.info(
+                        "Odoo module %s updated successfully from the extra index "
+                        "after installation from standard index",
+                        name,
+                    )
+                else:
+                    logger.info(
+                        "Odoo module %s installed successfully from the extra index",
+                        name,
+                    )
+        for name in modules_to_install:
+            if modules_to_install[name] == "not_installed":
+                logger.error(
+                    "Module %s not",
+                    name,
+                )
+                not_installable_modules.append(name)

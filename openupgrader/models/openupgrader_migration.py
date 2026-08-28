@@ -511,7 +511,7 @@ class OpenupgraderMigration(models.Model):
                                     logger.info(
                                         f"Installing missing modules {str(modules)}"
                                     )
-                                    self.install_pip_modules(config_id, modules)
+                                    config_id.install_pip_modules(modules)
                                 except ValueError:
                                     logger.info(
                                         f"Unable to list modules to install via pip "
@@ -1411,7 +1411,7 @@ class OpenupgraderMigration(models.Model):
                 [("name", "=", module_to_check), ("state", "=", "installed")],
             ):
                 # uv pip install module as possibly absent
-                self.install_pip_modules(config_id, module_to_install_name)
+                config_id.install_pip_modules(module_to_install_name)
                 module_obj.update_list()
                 module_toinstall = module_obj.search(
                     [("name", "=", module_to_install_name)], limit=1
@@ -1541,171 +1541,6 @@ class OpenupgraderMigration(models.Model):
                 if module_id:
                     module_id.unlink()
             self.button_stop_odoo()
-
-    def install_pip_modules(self, config_id, module_names):  # noqa C901
-        if not isinstance(module_names, list):
-            module_names = [module_names]
-        logger.info("Installing Odoo modules with pip: %s" % str(module_names))
-        self.ensure_one()
-        odoo_version_int = int(config_id.name.split(".")[0])
-        venv_path = os.path.join(self.folder, f"openupgrade{config_id.name}")
-        subprocess_env = _get_env_for_subprocess(venv_path, config_id.python_version)
-        # try to install with pip and log error if it fails
-        not_installable_modules = []
-        if not config_id.obsolete_modules:
-            obsolete_modules = []
-        else:
-            obsolete_modules = safe_eval(config_id.obsolete_modules)
-        if not config_id.core_modules:
-            core_modules = []
-        else:
-            core_modules = safe_eval(config_id.core_modules)
-        uninstall_before = config_id.module_to_uninstall_before_migration_ids
-        uninstall_before_names = uninstall_before.mapped("name")
-        extra_index_url = subprocess_env.get("UV_INDEX")
-        pip_env = subprocess_env.copy()
-        # Avoid conflicts between UV_INDEX and --default-index.
-        pip_env.pop("UV_INDEX", None)
-        release_val = odoo_version_int if odoo_version_int < 15 else ""
-        version_val = f"=={config_id.name}.*" if odoo_version_int >= 15 else ""
-        # exclude module if present in config_id obsolete modules,
-        # core modules or to be uninstalled before migration
-        modules_to_install = {
-            name: "not_installed"
-            for name in module_names
-            if name not in core_modules
-            and name not in obsolete_modules
-            and name not in uninstall_before_names
-        }
-        for name in modules_to_install:
-            # all pip servers used are safe, do not ignore any package found
-            base_pkg_name = f"odoo{release_val}-addon-{name}"
-            pkg_name = f"{base_pkg_name}{version_val}"
-            # Always install the base OCA version when it is available.
-            oca_package_found = _check_oca_authorship(
-                base_pkg_name,
-                config_id.name,
-            )
-
-            if oca_package_found:
-                # Ensure we use ONLY standard index even if UV_INDEX is set
-                command = (
-                    "uv pip install --default-index "
-                    "https://pypi.org/simple "
-                    "--index-strategy unsafe-best-match --upgrade "
-                    "--prerelease=allow {pkg}"
-                ).format(pkg=pkg_name)
-                logger.info(
-                    "Installing Odoo module from standard index: %s",
-                    command,
-                )
-                process = Popen(
-                    command,
-                    cwd=venv_path,
-                    shell=True,
-                    stderr=PIPE,
-                    env=pip_env,
-                )
-                stderr = process.communicate()[1]
-                log_texts = []
-                if stderr:
-                    for log_line in stderr.splitlines():
-                        try:
-                            log_l = log_line.decode().lower()
-                            log_texts.append(log_l)
-                        except UnicodeDecodeError:
-                            continue
-
-                if process.returncode != 0:
-                    if any("no solution found" in log_text for log_text in log_texts):
-                        not_installable_modules.append(name)
-                        logger.info(
-                            "Module %s not found with uv pip installer: %s"
-                            % (
-                                name,
-                                "\n".join(log_text for log_text in log_texts),
-                            )
-                        )
-                    elif any("pkg_resources" in log_text for log_text in log_texts):
-                        not_installable_modules.append(name)
-                        err_log = "\n".join(log_text for log_text in log_texts)
-                        logger.info(
-                            "Module %s not installable for setuptools " "error: %s",
-                            name,
-                            err_log,
-                        )
-                    else:
-                        logger.warning(
-                            "Failed to install module %s from standard index: %s",
-                            name,
-                            "\n".join(log_text for log_text in log_texts),
-                        )
-                else:
-                    modules_to_install[name] = "installed_from_oca"
-                    logger.info(
-                        "Odoo module %s installed successfully from "
-                        "standard index" % name
-                    )
-
-        # after installation from OCA to install dependencies, install from extra index,
-        # if set, to get possible newer versions or extra modules
-        if extra_index_url:
-            for name in modules_to_install:
-                base_pkg_name = f"odoo{release_val}-addon-{name}"
-                pkg_name = f"{base_pkg_name}{version_val}"
-                if modules_to_install[name] == "installed_from_oca":
-                    index_args = (
-                        f"--index {extra_index_url} "
-                        "--default-index https://pypi.org/simple "
-                        "--index-strategy unsafe-best-match"
-                    )
-                    logger.info(
-                        "Checking the extra index for a newer version of %s",
-                        name,
-                    )
-                else:
-                    index_args = (
-                        f"--default-index {extra_index_url} " "--index-strategy first-index"
-                    )
-                    logger.info(
-                        "OCA package not found; installing from extra index for %s",
-                        name,
-                    )
-
-                command = (
-                    f"uv pip install {index_args} --upgrade "
-                    f"--prerelease=allow {pkg_name}"
-                )
-                process = Popen(
-                    command,
-                    cwd=venv_path,
-                    shell=True,
-                    env=pip_env,
-                )
-                process.wait()
-                if process.returncode != 0:
-                    logger.warning(
-                        "Failed to install module %s from extra index",
-                        name,
-                    )
-                elif modules_to_install[name] == "installed_from_oca":
-                    logger.info(
-                        "Odoo module %s updated successfully from the extra index "
-                        "after installation from standard index",
-                        name,
-                    )
-                else:
-                    logger.info(
-                        "Odoo module %s installed successfully from the extra index",
-                        name,
-                    )
-        for name in modules_to_install:
-            if modules_to_install[name] == "not_installed":
-                logger.error(
-                    "Module %s not",
-                    name,
-                )
-                not_installable_modules.append(name)
 
     def install_uninstall_module(self, module_name, config_id, install=True):
         logger.info(
