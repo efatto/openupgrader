@@ -684,7 +684,7 @@ class OpenupgraderConfig(models.Model):
                 odoo_modules_to_install_via_pip += [
                     renamed_module.module_to_install_name
                     for renamed_module in self.renamed_module_ids
-                    if renamed_module.name in self.renamed_module_ids.mapped("name")
+                    if renamed_module.name in self.module_installed_ids.mapped("name")
                 ]
             self.install_pip_modules(odoo_modules_to_install_via_pip)
             env_update_date = fields.Datetime.now()
@@ -1157,7 +1157,7 @@ class OpenupgraderConfig(models.Model):
                         not_installable_modules.append(name)
                         err_log = "\n".join(log_text for log_text in log_texts)
                         logger.info(
-                            "Module %s not installable for setuptools " "error: %s",
+                            "Module %s not installable for setuptools error: %s",
                             name,
                             err_log,
                         )
