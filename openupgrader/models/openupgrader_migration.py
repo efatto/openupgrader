@@ -1647,51 +1647,58 @@ class OpenupgraderMigration(models.Model):
                         "standard index" % name
                     )
 
-        # after installation from OCA to install dependencies, install from extra index
-        # to get possible newer versions or extra modules
-        for name in modules_to_install:
-            base_pkg_name = f"odoo{release_val}-addon-{name}"
-            pkg_name = f"{base_pkg_name}{version_val}"
-            if modules_to_install[name] == "installed_from_oca":
-                index_args = (
-                    f"--index {extra_index_url} "
-                    "--default-index https://pypi.org/simple "
-                    "--index-strategy unsafe-best-match"
-                )
-                logger.info("Checking the extra index for a newer version")
-            else:
-                index_args = (
-                    f"--default-index {extra_index_url} " "--index-strategy first-index"
-                )
-                logger.info("OCA package not found; installing from extra index")
+        # after installation from OCA to install dependencies, install from extra index,
+        # if set, to get possible newer versions or extra modules
+        if extra_index_url:
+            for name in modules_to_install:
+                base_pkg_name = f"odoo{release_val}-addon-{name}"
+                pkg_name = f"{base_pkg_name}{version_val}"
+                if modules_to_install[name] == "installed_from_oca":
+                    index_args = (
+                        f"--index {extra_index_url} "
+                        "--default-index https://pypi.org/simple "
+                        "--index-strategy unsafe-best-match"
+                    )
+                    logger.info(
+                        "Checking the extra index for a newer version of %s",
+                        name,
+                    )
+                else:
+                    index_args = (
+                        f"--default-index {extra_index_url} " "--index-strategy first-index"
+                    )
+                    logger.info(
+                        "OCA package not found; installing from extra index for %s",
+                        name,
+                    )
 
-            command = (
-                f"uv pip install {index_args} --upgrade "
-                f"--prerelease=allow {pkg_name}"
-            )
-            process = Popen(
-                command,
-                cwd=venv_path,
-                shell=True,
-                env=pip_env,
-            )
-            process.wait()
-            if process.returncode != 0:
-                logger.warning(
-                    "Failed to install module %s from extra index",
-                    name,
+                command = (
+                    f"uv pip install {index_args} --upgrade "
+                    f"--prerelease=allow {pkg_name}"
                 )
-            elif modules_to_install[name] == "installed_from_oca":
-                logger.info(
-                    "Odoo module %s updated successfully from the extra index "
-                    "after installation from standard index",
-                    name,
+                process = Popen(
+                    command,
+                    cwd=venv_path,
+                    shell=True,
+                    env=pip_env,
                 )
-            else:
-                logger.info(
-                    "Odoo module %s installed successfully from the extra index",
-                    name,
-                )
+                process.wait()
+                if process.returncode != 0:
+                    logger.warning(
+                        "Failed to install module %s from extra index",
+                        name,
+                    )
+                elif modules_to_install[name] == "installed_from_oca":
+                    logger.info(
+                        "Odoo module %s updated successfully from the extra index "
+                        "after installation from standard index",
+                        name,
+                    )
+                else:
+                    logger.info(
+                        "Odoo module %s installed successfully from the extra index",
+                        name,
+                    )
         for name in modules_to_install:
             if modules_to_install[name] == "not_installed":
                 logger.error(
