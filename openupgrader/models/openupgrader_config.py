@@ -1105,7 +1105,7 @@ class OpenupgraderConfig(models.Model):
             and name not in uninstall_before_names
         }
         for name in modules_to_install:
-            # all pip servers used are safe, do not ignore any package found
+            # pypi standard server is not safe, get from it only OCA's author packages
             base_pkg_name = f"odoo{release_val}-addon-{name}"
             pkg_name = f"{base_pkg_name}{version_val}"
             # Always install the base OCA version when it is available.
@@ -1115,15 +1115,14 @@ class OpenupgraderConfig(models.Model):
             )
 
             if oca_package_found:
-                # Ensure we use ONLY standard index even if UV_INDEX is set
+                # Install the best version available from the standard or extra index
                 command = (
-                    "uv pip install --default-index "
-                    "https://pypi.org/simple "
+                    "uv pip install "
                     "--index-strategy unsafe-best-match --upgrade "
                     "--prerelease=allow {pkg}"
                 ).format(pkg=pkg_name)
                 logger.info(
-                    "Installing Odoo module from standard index: %s",
+                    "Installing Odoo OCA module: %s",
                     command,
                 )
                 process = Popen(
@@ -1131,7 +1130,7 @@ class OpenupgraderConfig(models.Model):
                     cwd=venv_path,
                     shell=True,
                     stderr=PIPE,
-                    env=pip_env,
+                    env=subprocess_env,
                 )
                 stderr = process.communicate()[1]
                 log_texts = []
@@ -1166,36 +1165,28 @@ class OpenupgraderConfig(models.Model):
                             "\n".join(log_text for log_text in log_texts),
                         )
                 else:
-                    modules_to_install[name] = "installed_from_oca"
+                    modules_to_install[name] = "installed_oca"
                     logger.info(
                         "Odoo module %s installed successfully from "
-                        "standard index" % name
+                        "standard index: %s",
+                        name,
+                        "\n".join(log_text for log_text in log_texts),
                     )
 
             # Install from the extra index after the OCA attempt, while allowing
             # dependencies to be resolved from standard PyPI.
-            if extra_index_url:
-                installed_from_oca = (
-                    modules_to_install[name] == "installed_from_oca"
+            installed_oca = modules_to_install[name] == "installed_oca"
+            if extra_index_url and not installed_oca:
+                logger.info(
+                    "OCA package not found; installing from extra index for %s",
+                    name,
                 )
-                index_args = (
-                    f"--index {extra_index_url} "
-                    "--default-index https://pypi.org/simple "
-                    "--index-strategy unsafe-best-match"
-                )
-                if installed_from_oca:
-                    logger.info(
-                        "Checking the extra index for a newer version of %s",
-                        name,
-                    )
-                else:
-                    logger.info(
-                        "OCA package not found; installing from extra index for %s",
-                        name,
-                    )
 
+                # Install the requested package without dependencies first, so a
+                # non-OCA package can never fall back to standard PyPI.
                 command = (
-                    f"uv pip install {index_args} --upgrade "
+                    f"uv pip install --default-index {extra_index_url} "
+                    "--no-deps --upgrade "
                     f"--prerelease=allow {pkg_name}"
                 )
                 process = Popen(
@@ -1211,17 +1202,31 @@ class OpenupgraderConfig(models.Model):
                         name,
                     )
                 else:
-                    modules_to_install[name] = "installed_from_extra"
-                    if installed_from_oca:
-                        logger.info(
-                            "Odoo module %s updated successfully from the extra "
-                            "index after installation from standard index",
+                    # The requested package is already installed from the extra
+                    # index. Without --upgrade, uv keeps that version while it
+                    # resolves and installs its dependencies from either index.
+                    command = (
+                        f"uv pip install "
+                        "--index-strategy unsafe-best-match "
+                        f"--prerelease=allow {pkg_name}"
+                    )
+                    process = Popen(
+                        command,
+                        cwd=venv_path,
+                        shell=True,
+                        env=subprocess_env,
+                    )
+                    process.wait()
+                    if process.returncode != 0:
+                        logger.warning(
+                            "Failed to install dependencies for module %s",
                             name,
                         )
                     else:
+                        modules_to_install[name] = "installed_from_extra"
                         logger.info(
                             "Odoo module %s installed successfully from the extra "
-                            "index",
+                            "index with its dependencies",
                             name,
                         )
 
