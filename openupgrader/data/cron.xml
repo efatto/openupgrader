@@ -2,7 +2,7 @@
 <odoo noupdate="0">
 
     <record id="cron_openugrader_do_auto_migration" model="ir.cron">
-        <field name="name">OpenUpgrader - do all the migration automatically</field>
+        <field name="name">OpenUpgrader - do the migration automatically</field>
         <field name="interval_number">2</field>
         <field name="interval_type">minutes</field>
         <field name="numbercall">-1</field>

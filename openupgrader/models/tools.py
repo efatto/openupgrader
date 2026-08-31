@@ -257,7 +257,7 @@ def _update_migration_state_file(
             migration_state_dict = {}
     if migration_state_dict and migration_state_dict.get(config_name):
         if state is not None:
-            migration_state_dict[config_name]["state"] = state
+            migration_state_dict[config_name]["state"] = None if not state else state
         if date_started is not None:
             migration_state_dict[config_name]["date_started"] = date_started
         if env_state is not None:

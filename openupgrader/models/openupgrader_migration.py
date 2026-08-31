@@ -680,14 +680,17 @@ class OpenupgraderMigration(models.Model):
             # not a restore done by hand, so delete dump
             os.unlink(dump_file_sql)
 
-    def button_clean_logs(self):
+    def button_clean_logs(self, config_id=None):
         self.migration_critical_log = " "
         self.migration_error_log = " "
         self.migration_warning_log = " "
         self.update_critical_log = " "
         self.update_error_log = " "
         self.update_warning_log = " "
-        for config_id in self.env["openupgrader.config"].search([]):
+        config_domain = []
+        if config_id:
+            config_domain = [("name", ">", config_id.name)]
+        for config_id in self.env["openupgrader.config"].search(config_domain):
             for log_name in ["migrate", "update"]:
                 log_path = (
                     Path(self.folder)
@@ -711,6 +714,7 @@ class OpenupgraderMigration(models.Model):
 
     def _restore(self, force=False):
         self.ensure_one()
+        state = "restored"
         (
             odoo_running_state,
             _migration_state,
@@ -718,7 +722,11 @@ class OpenupgraderMigration(models.Model):
         ) = self._get_odoo_running_state()
         if odoo_running_state == "running":
             self.show_message_odoo_running_and_return()
-        self.button_clean_logs()
+        if force:
+            self.button_clean_logs(self.current_config_id)
+            state = "migrated"
+        else:
+            self.button_clean_logs()
         if not self.current_config_id:
             self.current_config_id = self.from_config_id
         if not self.next_config_id:
@@ -733,8 +741,12 @@ class OpenupgraderMigration(models.Model):
             self.restore_db()
         if force:
             self.restore_db(self.current_config_id)
-        self.state = "restored"
-        self.current_config_id.update_migration_state_file("restored")
+        self.state = state
+        self.current_config_id.update_migration_state_file(state)
+        for op_config in self.env["openupgrader.config"].search(
+            [("name", ">", self.current_config_id.name)]
+        ):
+            op_config.update_migration_state_file(state=False)
 
     def button_update_current_config(self):
         self.ensure_one()
@@ -831,7 +843,7 @@ class OpenupgraderMigration(models.Model):
         self.state = "draft"  # TODO put the current migration state if possible
         self.current_config_id.update_migration_state_file("draft")
 
-    def button_do_all(self):
+    def button_do_auto_migration(self):
         #  0. set migration state to draft
         #  1. start migration with the restore of the db-filestore
         #  2. activate the cron for the actual migration
@@ -865,7 +877,14 @@ class OpenupgraderMigration(models.Model):
         if self.is_ultimate_migration:
             self.set_current_instance_env_to_migr_and_stop()
 
-    def start_migration(self):
+    def button_continue_auto_migration(self):
+        auto_migration_cron = self.env.ref(
+            "openupgrader.cron_openugrader_do_auto_migration"
+        )
+        auto_migration_cron.active = True
+        self.state = "auto"
+
+    def start_initial_migration(self):
         self.from_config_id.update_migration_state_file("started")
         self.button_restore()
         self.button_update_current_config()
@@ -898,7 +917,7 @@ class OpenupgraderMigration(models.Model):
         with open(odooconf_path, "w") as config_file:
             config_parser.write(config_file)
         self.env.cr.commit()  # pylint: disable=E8102
-        run(["pkill -9 -f odoo"], shell=True)
+        run(["pkill -9 -f odoo-bin"], shell=True)
 
     def button_refresh_pending_modules(self):
         found_modules_by_state = self._verify_module_states()
@@ -1086,7 +1105,7 @@ class OpenupgraderMigration(models.Model):
                     )
                     continue
                 if migration_state == "starting":
-                    migration.start_migration()
+                    migration.start_initial_migration()
                     continue
                 # It the migration is done and the version is not yet moved to the next
                 # one, do after migration stuff and set to the next version
@@ -1113,8 +1132,9 @@ class OpenupgraderMigration(models.Model):
                     logger.info(f"Migration for {migration.db_name} completed.")
                 else:
                     logger.info(
-                        f"Migration for {migration.db_name} in state "
-                        f"{migration_state}. No action taken."
+                        f"Migration for {migration.db_name} in version "
+                        f"{current_version} in state {migration_state}. "
+                        f"No action taken."
                     )
         except Exception:
             logger.exception("Error in OpenUpgrader auto-migration cron")

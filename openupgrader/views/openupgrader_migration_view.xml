@@ -83,7 +83,7 @@
                         string="4: migrate (if the process has failed)"
                     />
                     <button
-                        name="button_do_all"
+                        name="button_do_auto_migration"
                         type="object"
                         string="Do auto-migration"
                         help="I feel lucky!"
@@ -94,6 +94,12 @@
                         type="object"
                         string="Stop auto-migration"
                         attrs="{'invisible': [('state', '!=', 'auto')]}"
+                    />
+                    <button
+                        name="button_continue_auto_migration"
+                        type="object"
+                        string="Continue auto-migration"
+                        attrs="{'invisible': [('state', '!=', 'migrated')]}"
                     />
                     <field
                         name="state"

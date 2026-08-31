@@ -209,7 +209,7 @@ class OpenUpgrader(SavepointCase):
             migration.from_config_id,
             self.from_config_id,
         )
-        migration.button_do_all()
+        migration.button_do_auto_migration()
         cron_migration = self.env.ref("openupgrader.cron_openugrader_do_auto_migration")
         current_version = migration.current_config_id.name
         while current_version != migration.to_config_id.name:
