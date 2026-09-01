@@ -1138,6 +1138,10 @@ class OpenupgraderMigration(models.Model):
                     migration.button_do_migration()
                 elif migration_state == "done":
                     logger.info(f"Migration for {migration.db_name} completed.")
+                elif migration_state == "migrating":
+                    logger.info(f"Migration for {migration.db_name} is migrating but "
+                                f"not running, so try to restart it.")
+                    migration.button_do_migration()
                 else:
                     logger.info(
                         f"Migration for {migration.db_name} in version "
