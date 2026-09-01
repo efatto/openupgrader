@@ -917,7 +917,15 @@ class OpenupgraderMigration(models.Model):
         with open(odooconf_path, "w") as config_file:
             config_parser.write(config_file)
         self.env.cr.commit()  # pylint: disable=E8102
-        run(["pkill -9 -f odoo-bin"], shell=True)
+        for process_pattern in ("odoo-bin", "odoo"):
+            process = run(
+                ["pgrep", "-f", process_pattern],
+                stdout=PIPE,
+                stderr=PIPE,
+            )
+            if process.returncode == 0:
+                run(["pkill", "-9", "-f", process_pattern])
+                break
 
     def button_refresh_pending_modules(self):
         found_modules_by_state = self._verify_module_states()
