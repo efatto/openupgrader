@@ -932,7 +932,7 @@ class OpenupgraderMigration(models.Model):
         pending_modules = found_modules_by_state.get("pending", [])
         self.pending_modules = str(sorted(set(pending_modules)))
 
-    def button_uninstall_pending_modules(self):
+    def button_set_pending_modules_to_remove(self):
         if self.is_migration_done:
             conn_vars = self._get_db_connection_variables()
             self.uninstallable_modules = False
@@ -978,6 +978,8 @@ class OpenupgraderMigration(models.Model):
             # commands
             self.env.cr.commit()  # pylint: disable=E8102
 
+    def button_uninstall_pending_modules(self):
+        if self.is_migration_done:
             logger.info("Start Odoo to uninstall modules.")
             # start_odoo with update=True will wait for Odoo to stop
             self.start_odoo(

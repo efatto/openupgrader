@@ -155,19 +155,23 @@
                         <page string="Migration info">
                             <group>
                                 <button
+                                    name="button_set_pending_modules_to_remove"
+                                    type="object"
+                                    string="Set pending modules to remove"
+                                    help="Action to set the pending modules to be remove."
+                                />
+                                <button
                                     name="button_uninstall_pending_modules"
                                     type="object"
                                     string="Uninstall missing modules"
                                     confirm="Are you sure you want to uninstall missing modules? This action delete permanently datas of these modules and cannot be undone."
                                 />
-                                <p />
                                 <button
                                     name="button_set_pending_modules_uninstalled"
                                     type="object"
                                     string="Set pending modules as uninstalled"
                                     help="Action to set the pending modules as uninstalled after trying to uninstall them."
                                 />
-                                <p />
                                 <button
                                     name="button_refresh_pending_modules"
                                     type="object"
