@@ -1244,9 +1244,8 @@ class OpenupgraderMigration(models.Model):
 
     def _do_end_migration(self):
         self._set_pending_modules_to_remove()
-        # TODO update odoo with modules to be removed doen't end, so avoid it
-        # self._uninstall_pending_modules()
-        # self._set_pending_modules_uninstalled()
+        self._uninstall_pending_modules()
+        self._set_pending_modules_uninstalled()
 
     def button_do_migration(self):
         (
