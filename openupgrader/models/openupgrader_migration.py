@@ -990,6 +990,9 @@ class OpenupgraderMigration(models.Model):
                     ],
                     shell=True,
                 )
+            # commit the changes to the database before starting Odoo, else it will be
+            # stalled
+            self.env.cr.commit()  # pylint: disable=E8102
 
             logger.info("Start Odoo to uninstall modules.")
             # start_odoo with update=True will wait for Odoo to stop
