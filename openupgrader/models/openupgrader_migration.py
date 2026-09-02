@@ -933,40 +933,84 @@ class OpenupgraderMigration(models.Model):
         pending_modules = found_modules_by_state.get("pending", [])
         self.pending_modules = str(sorted(set(pending_modules)))
 
-    def button_set_pending_modules_to_remove(self):
-        if self.is_migration_done:
-            conn_vars = self._get_db_connection_variables()
-            self.uninstallable_modules = False
-            found_modules_by_state = self._verify_module_states()
-            pending_modules = found_modules_by_state.get("pending", [])
-            obsolete_modules_to_remove = found_modules_by_state.get(
-                "to remove obsolete", []
-            )
-            missing_modules = [
-                x for x in pending_modules if x not in obsolete_modules_to_remove
-            ]
-            if missing_modules:
-                self.uninstalled_modules_not_obsolete = str(
-                    sorted(set(missing_modules))
-                )
-            sql_commands = []
-            # Use tuple to format the SQL query safely for the IN clause
-            if pending_modules:
-                pending_modules = tuple(pending_modules)
-                if len(pending_modules) == 1:
-                    in_clause = "('%s')" % pending_modules[0]
-                else:
-                    in_clause = str(pending_modules)
+    def _set_pending_modules_to_remove(self):
+        conn_vars = self._get_db_connection_variables()
+        self.uninstallable_modules = False
+        found_modules_by_state = self._verify_module_states()
+        pending_modules = found_modules_by_state.get("pending", [])
+        obsolete_modules_to_remove = found_modules_by_state.get(
+            "to remove obsolete", []
+        )
+        missing_modules = [
+            x for x in pending_modules if x not in obsolete_modules_to_remove
+        ]
+        if missing_modules:
+            self.uninstalled_modules_not_obsolete = str(sorted(set(missing_modules)))
+        sql_commands = []
+        # Use tuple to format the SQL query safely for the IN clause
+        if pending_modules:
+            pending_modules = tuple(pending_modules)
+            if len(pending_modules) == 1:
+                in_clause = "('%s')" % pending_modules[0]
+            else:
+                in_clause = str(pending_modules)
 
-                sql_commands.append(
-                    (
-                        f"UPDATE ir_module_module SET state = 'to remove' "
-                        f"WHERE name in {in_clause} "
-                        f"AND state not in ('uninstalled', 'to remove');"
-                    ),
-                )
-                logger.info(f"Setting modules to be uninstalled: {pending_modules}.")
-            for sql_command in sql_commands:
+            sql_commands.append(
+                (
+                    f"UPDATE ir_module_module SET state = 'to remove' "
+                    f"WHERE name in {in_clause} "
+                    f"AND state not in ('uninstalled', 'to remove');"
+                ),
+            )
+            logger.info(f"Setting modules to be uninstalled: {pending_modules}.")
+        for sql_command in sql_commands:
+            run(
+                [
+                    f"{conn_vars} && psql -d {self.env.cr.dbname}_migrate -c "
+                    f'"{sql_command}"'
+                ],
+                shell=True,
+            )
+
+    def _uninstall_pending_modules(self, config_id):
+        self.start_odoo(config_id)
+        logger.info("Start Odoo to uninstall modules.")
+        # start_odoo with update=True will wait for Odoo to stop
+        self.start_odoo(
+            self.current_config_id,
+            update=True,
+            try_install_missing_pip_module=False,
+        )
+        self.button_stop_odoo()
+
+    def _set_pending_modules_uninstalled(self):
+        conn_vars = self._get_db_connection_variables()
+        # Verification via SQL
+        found_modules_by_state = self._verify_module_states()
+        pending_modules = found_modules_by_state.get("pending", [])
+
+        if pending_modules:
+            modules_removed = set(pending_modules)
+            uninstallable_modules = [
+                x for x in pending_modules if x in found_modules_by_state["pending"]
+            ]
+            if uninstallable_modules:
+                modules_removed -= set(uninstallable_modules)
+                self.uninstallable_modules = sorted(set(uninstallable_modules))
+            self.uninstalled_modules = sorted(modules_removed)
+            current_pending_modules = [
+                x
+                for x in pending_modules
+                if x in found_modules_by_state.get("pending", [])
+            ]
+            # set current pending modules as uninstalled
+            if current_pending_modules:
+                self.pending_modules = str(sorted(set(current_pending_modules)))
+                sql_command = """
+                    UPDATE ir_module_module
+                    SET state='uninstalled'
+                    WHERE name IN %s
+                """ % list(current_pending_modules)
                 run(
                     [
                         f"{conn_vars} && psql -d {self.env.cr.dbname}_migrate -c "
@@ -974,54 +1018,7 @@ class OpenupgraderMigration(models.Model):
                     ],
                     shell=True,
                 )
-
-    def button_uninstall_pending_modules(self):
-        if self.is_migration_done:
-            logger.info("Start Odoo to uninstall modules.")
-            # start_odoo with update=True will wait for Odoo to stop
-            self.start_odoo(
-                self.current_config_id,
-                update=True,
-                try_install_missing_pip_module=False,
-            )
-
-    def button_set_pending_modules_uninstalled(self):
-        if self.is_migration_done:
-            conn_vars = self._get_db_connection_variables()
-            # Verification via SQL
-            found_modules_by_state = self._verify_module_states()
-            pending_modules = found_modules_by_state.get("pending", [])
-
-            if pending_modules:
-                modules_removed = set(pending_modules)
-                uninstallable_modules = [
-                    x for x in pending_modules if x in found_modules_by_state["pending"]
-                ]
-                if uninstallable_modules:
-                    modules_removed -= set(uninstallable_modules)
-                    self.uninstallable_modules = sorted(set(uninstallable_modules))
-                self.uninstalled_modules = sorted(modules_removed)
-                current_pending_modules = [
-                    x
-                    for x in pending_modules
-                    if x in found_modules_by_state.get("pending", [])
-                ]
-                # set current pending modules as uninstalled
-                if current_pending_modules:
-                    self.pending_modules = str(sorted(set(current_pending_modules)))
-                    sql_command = """
-                        UPDATE ir_module_module
-                        SET state='uninstalled'
-                        WHERE name IN %s
-                    """ % list(current_pending_modules)
-                    run(
-                        [
-                            f"{conn_vars} && psql -d {self.env.cr.dbname}_migrate -c "
-                            f'"{sql_command}"'
-                        ],
-                        shell=True,
-                    )
-                self.remove_modules_views_menus(modules_removed)
+            self.remove_modules_views_menus(modules_removed)
 
     def remove_modules_views_menus(self, modules):
         if not modules:
@@ -1124,14 +1121,18 @@ class OpenupgraderMigration(models.Model):
                 elif migration_state == "ready_for_migration":
                     logger.info(f"Starting migration step for {migration.db_name}")
                     migration.button_do_migration()
-                elif migration_state == "done":
-                    logger.info(f"Migration for {migration.db_name} completed.")
                 elif migration_state == "migrating":
                     logger.info(
                         f"Migration for {migration.db_name} is migrating but "
                         f"not running, so try to restart it."
                     )
                     migration.button_do_migration()
+                elif migration_state == "done" or self.is_migration_done:
+                    logger.info(
+                        f"Migration for {migration.db_name} to version "
+                        f"{current_version} is completed. Uninstalling pending modules."
+                    )
+                    migration._do_end_migration()
                 else:
                     logger.info(
                         f"Migration for {migration.db_name} in version "
@@ -1234,6 +1235,11 @@ class OpenupgraderMigration(models.Model):
                 "Migration completed from version %s to version %s", from_n, to_n
             )
             self.state = "done"
+
+    def _do_end_migration(self):
+        self._set_pending_modules_to_remove()
+        self._uninstall_pending_modules()
+        self._set_pending_modules_uninstalled()
 
     def button_do_migration(self):
         (
