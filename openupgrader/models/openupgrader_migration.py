@@ -533,7 +533,8 @@ class OpenupgraderMigration(models.Model):
                 "Odoo migration instance v. %s should be updated and stopped."
                 % version_name
             )
-        if extra_command:
+        if extra_command != "":
+            logger.info(f"Executing extra command: {extra_command}")
             # extra command presumes Odoo will stop automatically like update
             process.wait()
         if not update:
