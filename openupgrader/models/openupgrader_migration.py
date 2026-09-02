@@ -935,9 +935,7 @@ class OpenupgraderMigration(models.Model):
     def button_uninstall_pending_modules(self):
         if self.is_migration_done:
             conn_vars = self._get_db_connection_variables()
-            modules_to_remove = ()
             self.uninstallable_modules = False
-            self.button_refresh_pending_modules()
             found_modules_by_state = self._verify_module_states()
             pending_modules = found_modules_by_state.get("pending", [])
             obsolete_modules_to_remove = found_modules_by_state.get(
@@ -953,11 +951,11 @@ class OpenupgraderMigration(models.Model):
             sql_commands = []
             # Use tuple to format the SQL query safely for the IN clause
             if pending_modules:
-                modules_to_remove = tuple(pending_modules)
-                if len(modules_to_remove) == 1:
-                    in_clause = "('%s')" % modules_to_remove[0]
+                pending_modules = tuple(pending_modules)
+                if len(pending_modules) == 1:
+                    in_clause = "('%s')" % pending_modules[0]
                 else:
-                    in_clause = str(modules_to_remove)
+                    in_clause = str(pending_modules)
 
                 sql_commands.append(
                     (
@@ -966,22 +964,7 @@ class OpenupgraderMigration(models.Model):
                         f"AND state not in ('uninstalled', 'to remove');"
                     ),
                 )
-                logger.info(f"Setting modules to be uninstalled: {modules_to_remove}.")
-            # clean up ir_model_data and ir_model_model
-            # sql_commands.append(
-            #     (
-            #         "DELETE FROM ir_module_module "
-            #         "WHERE state in ('to install', 'to upgrade');"
-            #     ),
-            # )
-            # sql_commands.append(
-            #     (
-            #         "DELETE FROM ir_model_data WHERE model = 'ir.module.module' "
-            #         "AND name NOT IN "
-            #         "(SELECT CONCAT('module_', name) FROM ir_module_module);"
-            #     ),
-            # )
-            # Use run to be sure it's finished before starting Odoo
+                logger.info(f"Setting modules to be uninstalled: {pending_modules}.")
             for sql_command in sql_commands:
                 run(
                     [
@@ -991,7 +974,7 @@ class OpenupgraderMigration(models.Model):
                     shell=True,
                 )
             # commit the changes to the database before starting Odoo, else it will be
-            # stalled
+            # stalled, as run() is done, but PostgreSQL is still processing the commands
             self.env.cr.commit()  # pylint: disable=E8102
 
             logger.info("Start Odoo to uninstall modules.")
@@ -1002,15 +985,17 @@ class OpenupgraderMigration(models.Model):
                 try_install_missing_pip_module=False,
             )
 
+    def button_set_pending_modules_uninstalled(self):
+        if self.is_migration_done:
+            conn_vars = self._get_db_connection_variables()
             # Verification via SQL
             found_modules_by_state = self._verify_module_states()
+            pending_modules = found_modules_by_state.get("pending", [])
 
-            if modules_to_remove:
-                modules_removed = set(modules_to_remove)
+            if pending_modules:
+                modules_removed = set(pending_modules)
                 uninstallable_modules = [
-                    x
-                    for x in modules_to_remove
-                    if x in found_modules_by_state["pending"]
+                    x for x in pending_modules if x in found_modules_by_state["pending"]
                 ]
                 if uninstallable_modules:
                     modules_removed -= set(uninstallable_modules)
@@ -1142,8 +1127,10 @@ class OpenupgraderMigration(models.Model):
                 elif migration_state == "done":
                     logger.info(f"Migration for {migration.db_name} completed.")
                 elif migration_state == "migrating":
-                    logger.info(f"Migration for {migration.db_name} is migrating but "
-                                f"not running, so try to restart it.")
+                    logger.info(
+                        f"Migration for {migration.db_name} is migrating but "
+                        f"not running, so try to restart it."
+                    )
                     migration.button_do_migration()
                 else:
                     logger.info(
