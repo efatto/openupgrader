@@ -966,17 +966,13 @@ class OpenupgraderMigration(models.Model):
                 )
                 logger.info(f"Setting modules to be uninstalled: {pending_modules}.")
             for sql_command in sql_commands:
-                Popen(
+                run(
                     [
                         f"{conn_vars} && psql -d {self.env.cr.dbname}_migrate -c "
                         f'"{sql_command}"'
                     ],
                     shell=True,
-                ).wait()
-            # commit the changes to the database before starting Odoo, else it will be
-            # stalled, as Popen() is done, but PostgreSQL is still processing the
-            # commands
-            self.env.cr.commit()  # pylint: disable=E8102
+                )
 
     def button_uninstall_pending_modules(self):
         if self.is_migration_done:
