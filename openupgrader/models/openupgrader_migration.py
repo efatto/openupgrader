@@ -971,7 +971,7 @@ class OpenupgraderMigration(models.Model):
                 ],
                 shell=True,
             )
-            sql = f"SELECT name FROM ir_module_module WHERE state = 'to remove'"
+            sql = "SELECT name FROM ir_module_module WHERE state = 'to remove'"
             process = run(
                 [f'{conn_vars} && psql -d {self.env.cr.dbname}_migrate -c "{sql}"'],
                 shell=True,
@@ -994,7 +994,7 @@ class OpenupgraderMigration(models.Model):
         )
 
     def _set_pending_modules_uninstalled(self):
-        logger.info(f"Set pending modules as uninstalled.")
+        logger.info("Set pending modules as uninstalled.")
         conn_vars = self._get_db_connection_variables()
         # Verification via SQL
         found_modules_by_state = self._verify_module_states()
@@ -1030,7 +1030,8 @@ class OpenupgraderMigration(models.Model):
                     shell=True,
                 )
                 logger.info(
-                    f"Pending modules set as uninstalled {self.pending_modules}.")
+                    f"Pending modules set as uninstalled {self.pending_modules}."
+                )
             self.remove_modules_views_menus(modules_removed)
 
     def remove_modules_views_menus(self, modules):
@@ -1140,14 +1141,16 @@ class OpenupgraderMigration(models.Model):
                         f"not running, so try to restart it."
                     )
                     migration.button_do_migration()
-                elif migration_state == "done" or self.is_migration_done:
+                if migration_state == "done" or self.is_migration_done:
                     found_modules_by_state = self._verify_module_states()
                     pending_modules = found_modules_by_state.get("pending", [])
                     if pending_modules:
                         logger.info(
                             f"Migration for {migration.db_name} to version "
                             f"{current_version} is completed. Set pending modules "
-                            f"to be removed during the restoring process."
+                            f"to be removed during the restoring process. This method "
+                            f"could be called many times by cron, until all pending "
+                            f"modules are removed or set as 'uninstalled'."
                         )
                         migration._do_end_migration()
                 else:
