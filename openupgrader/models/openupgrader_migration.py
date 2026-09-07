@@ -983,9 +983,7 @@ class OpenupgraderMigration(models.Model):
             if process.returncode != 0:
                 logger.info(f"ERROR setting modules to be removed: {process.stderr}")
 
-    def _uninstall_pending_modules(self, config_id):
-        self.start_odoo(config_id)
-        logger.info("Start Odoo to uninstall modules.")
+    def _uninstall_pending_modules(self):
         # start_odoo with update=True will wait for Odoo to stop
         self.start_odoo(
             self.current_config_id,
@@ -1092,18 +1090,17 @@ class OpenupgraderMigration(models.Model):
                 done_migrations = self.env["openupgrader.migration"].search(
                     [("state", "=", "done")]
                 )
-                if done_migrations:
-                    for done_migration in done_migrations:
-                        found_modules_by_state = self._verify_module_states()
-                        pending_modules = found_modules_by_state.get("pending", [])
-                        if pending_modules:
-                            logger.info(
-                                f"Set pending modules for {done_migration.db_name} "
-                                f"to be removed during the restoring process. This method "
-                                f"could be called many times by cron, until all pending "
-                                f"modules are removed or set as 'uninstalled'."
-                        )
-                        done_migration._do_end_migration()
+                for done_migration in done_migrations:
+                    found_modules_by_state = self._verify_module_states()
+                    pending_modules = found_modules_by_state.get("pending", [])
+                    if pending_modules:
+                        logger.info(
+                            f"Set pending modules for {done_migration.db_name} "
+                            f"to be removed during the restoring process. This method "
+                            f"could be called many times by cron, until all pending "
+                            f"modules are removed or set as 'uninstalled'."
+                    )
+                    done_migration._do_end_migration()
                 logger.info("No pending migrations found for cron.")
             for migration in migrations:
                 logger.info(
@@ -1260,6 +1257,7 @@ class OpenupgraderMigration(models.Model):
             self.state = "done"
 
     def _do_end_migration(self):
+        self.ensure_one()
         self._set_pending_modules_to_remove()
         self._uninstall_pending_modules()
         self._set_pending_modules_uninstalled()
