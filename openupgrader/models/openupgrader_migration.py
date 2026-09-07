@@ -1092,15 +1092,16 @@ class OpenupgraderMigration(models.Model):
                 done_migrations = self.env["openupgrader.migration"].search(
                     [("state", "=", "done")]
                 )
-                for done_migration in done_migrations:
-                    found_modules_by_state = self._verify_module_states()
-                    pending_modules = found_modules_by_state.get("pending", [])
-                    if pending_modules:
-                        logger.info(
-                            f"Set pending modules for {done_migration.db_name} "
-                            f"to be removed during the restoring process. This method "
-                            f"could be called many times by cron, until all pending "
-                            f"modules are removed or set as 'uninstalled'."
+                if done_migrations:
+                    for done_migration in done_migrations:
+                        found_modules_by_state = self._verify_module_states()
+                        pending_modules = found_modules_by_state.get("pending", [])
+                        if pending_modules:
+                            logger.info(
+                                f"Set pending modules for {done_migration.db_name} "
+                                f"to be removed during the restoring process. This method "
+                                f"could be called many times by cron, until all pending "
+                                f"modules are removed or set as 'uninstalled'."
                         )
                         done_migration._do_end_migration()
                 logger.info("No pending migrations found for cron.")
