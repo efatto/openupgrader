@@ -971,6 +971,17 @@ class OpenupgraderMigration(models.Model):
                 ],
                 shell=True,
             )
+            sql = f"SELECT name FROM ir_module_module WHERE state = 'to remove'"
+            process = run(
+                [f'{conn_vars} && psql -d {self.env.cr.dbname}_migrate -c "{sql}"'],
+                shell=True,
+                stdout=PIPE,
+                stderr=PIPE,
+                text=True,
+            )
+            logger.info(f"Current modules to be removed: {process.stdout}")
+            if process.returncode != 0:
+                logger.info(f"ERROR setting modules to be removed: {process.stderr}")
 
     def _uninstall_pending_modules(self, config_id):
         self.start_odoo(config_id)
