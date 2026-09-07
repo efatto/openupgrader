@@ -1089,6 +1089,20 @@ class OpenupgraderMigration(models.Model):
                 [("state", "not in", ["failed", "restore_failed", "done"])]
             )
             if not migrations:
+                done_migrations = self.env["openupgrader.migration"].search(
+                    [("state", "=", "done")]
+                )
+                for done_migration in done_migrations:
+                    found_modules_by_state = self._verify_module_states()
+                    pending_modules = found_modules_by_state.get("pending", [])
+                    if pending_modules:
+                        logger.info(
+                            f"Set pending modules for {done_migration.db_name} "
+                            f"to be removed during the restoring process. This method "
+                            f"could be called many times by cron, until all pending "
+                            f"modules are removed or set as 'uninstalled'."
+                        )
+                        done_migration._do_end_migration()
                 logger.info("No pending migrations found for cron.")
             for migration in migrations:
                 logger.info(
@@ -1141,18 +1155,6 @@ class OpenupgraderMigration(models.Model):
                         f"not running, so try to restart it."
                     )
                     migration.button_do_migration()
-                if migration_state == "done" or self.is_migration_done:
-                    found_modules_by_state = self._verify_module_states()
-                    pending_modules = found_modules_by_state.get("pending", [])
-                    if pending_modules:
-                        logger.info(
-                            f"Migration for {migration.db_name} to version "
-                            f"{current_version} is completed. Set pending modules "
-                            f"to be removed during the restoring process. This method "
-                            f"could be called many times by cron, until all pending "
-                            f"modules are removed or set as 'uninstalled'."
-                        )
-                        migration._do_end_migration()
                 else:
                     logger.info(
                         f"Migration for {migration.db_name} in version "
