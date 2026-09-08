@@ -1099,8 +1099,10 @@ class OpenupgraderMigration(models.Model):
                             f"to be removed during the restoring process. This method "
                             f"could be called many times by cron, until all pending "
                             f"modules are removed or set as 'uninstalled'."
-                    )
-                    done_migration._do_end_migration()
+                        )
+                        done_migration._do_end_migration()
+                    logger.info("No pending modules found in done migrations, this "
+                                "cron should be de-activated.")
                 logger.info("No pending migrations found for cron.")
             for migration in migrations:
                 logger.info(
