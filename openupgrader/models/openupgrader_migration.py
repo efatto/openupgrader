@@ -962,15 +962,21 @@ class OpenupgraderMigration(models.Model):
                     f"AND state not in ('uninstalled', 'to remove');"
                 ),
             )
-            logger.info(f"Setting modules to be uninstalled: {pending_modules}.")
+            logger.info(f"Setting modules to be uninstalled: {in_clause}.")
         for sql_command in sql_commands:
-            run(
+            process = run(
                 [
                     f"{conn_vars} && psql -d {self.env.cr.dbname}_migrate -c "
                     f'"{sql_command}"'
                 ],
                 shell=True,
+                stdout=PIPE,
+                stderr=PIPE,
+                text=True,
+                check=True,
             )
+            if process.returncode != 0:
+                logger.info(f"ERROR setting modules to be uninstalled: {process.stderr}")
             sql = "SELECT name FROM ir_module_module WHERE state = 'to remove'"
             process = run(
                 [f'{conn_vars} && psql -d {self.env.cr.dbname}_migrate -c "{sql}"'],
@@ -978,6 +984,7 @@ class OpenupgraderMigration(models.Model):
                 stdout=PIPE,
                 stderr=PIPE,
                 text=True,
+                check=True,
             )
             logger.info(f"Current modules to be removed: {process.stdout}")
             if process.returncode != 0:
@@ -1264,7 +1271,7 @@ class OpenupgraderMigration(models.Model):
         self.ensure_one()
         self._set_pending_modules_to_remove()
         self._uninstall_pending_modules()
-        self._set_pending_modules_uninstalled()
+        # self._set_pending_modules_uninstalled()
 
     def button_do_migration(self):
         (
