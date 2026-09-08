@@ -1091,7 +1091,7 @@ class OpenupgraderMigration(models.Model):
                     [("state", "=", "done")]
                 )
                 for done_migration in done_migrations:
-                    found_modules_by_state = self._verify_module_states()
+                    found_modules_by_state = done_migration._verify_module_states()
                     pending_modules = found_modules_by_state.get("pending", [])
                     if pending_modules:
                         logger.info(
