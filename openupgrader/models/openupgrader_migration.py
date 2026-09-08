@@ -246,7 +246,7 @@ class OpenupgraderMigration(models.Model):
 
     def _get_db_connection_variables(self):
         return (
-            f"export PGPORT={self.db_port} && "
+            f"export PGPORT={self.db_port or ''} && "
             f"export PGHOST={self.pg_host or ''} && "
             f"export PGUSER={self.pg_user or ''} && "
             f"export PGPASSWORD="
