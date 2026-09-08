@@ -1101,8 +1101,10 @@ class OpenupgraderMigration(models.Model):
                             f"modules are removed or set as 'uninstalled'."
                         )
                         done_migration._do_end_migration()
-                    logger.info("No pending modules found in done migrations, this "
-                                "cron should be de-activated.")
+                    else:
+                        logger.info(
+                            "No pending modules found in done migrations, this "
+                            "cron should be de-activated.")
                 logger.info("No pending migrations found for cron.")
             for migration in migrations:
                 logger.info(
@@ -1382,14 +1384,11 @@ class OpenupgraderMigration(models.Model):
         # do not change quote order as it will change the way the sql command is
         # interpreted!
         logger.info("Doing custom sql commands.")
+        conn_vars = self._get_db_connection_variables()
         for sql_command in sql_commands:
             run(
                 [
-                    f"export PGPORT={self.db_port} && "
-                    f"export PGHOST={self.pg_host or ''} && "
-                    f"export PGUSER={self.pg_user} && export "
-                    f"PGPASSWORD={self.pg_password_var or self.pg_password or ''} && "
-                    f"psql -d {self.env.cr.dbname}_migrate "
+                    f"{conn_vars} && psql -d {self.env.cr.dbname}_migrate "
                     f'-c "{sql_command.name}"',
                 ],
                 shell=True,
