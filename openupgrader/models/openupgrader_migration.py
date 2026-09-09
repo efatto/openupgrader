@@ -934,8 +934,10 @@ class OpenupgraderMigration(models.Model):
         self.pending_modules = str(sorted(set(pending_modules)))
 
     def _set_pending_modules_to_remove(self):
+        # ensure no pending queries are running
+        self.flush()
         conn_vars = self._get_db_connection_variables()
-        self.uninstallable_modules = False
+        # self.uninstallable_modules = False
         found_modules_by_state = self._verify_module_states()
         pending_modules = found_modules_by_state.get("pending", [])
         obsolete_modules_to_remove = found_modules_by_state.get(
