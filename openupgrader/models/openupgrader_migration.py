@@ -946,8 +946,8 @@ class OpenupgraderMigration(models.Model):
         missing_modules = [
             x for x in pending_modules if x not in obsolete_modules_to_remove
         ]
-        if missing_modules:
-            self.uninstalled_modules_not_obsolete = str(sorted(set(missing_modules)))
+        # if missing_modules:
+        #     self.uninstalled_modules_not_obsolete = str(sorted(set(missing_modules)))
         sql_commands = []
         # Use tuple to format the SQL query safely for the IN clause
         if pending_modules:
