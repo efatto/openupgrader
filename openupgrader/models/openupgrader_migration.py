@@ -978,7 +978,9 @@ class OpenupgraderMigration(models.Model):
                 check=True,
             )
             if process.returncode != 0:
-                logger.info(f"ERROR setting modules to be uninstalled: {process.stderr}")
+                logger.info(
+                    f"ERROR setting modules to be uninstalled: {process.stderr}"
+                )
             sql = "SELECT name FROM ir_module_module WHERE state = 'to remove'"
             process = run(
                 [f'{conn_vars} && psql -d {self.env.cr.dbname}_migrate -c "{sql}"'],
@@ -994,7 +996,7 @@ class OpenupgraderMigration(models.Model):
 
     def _uninstall_pending_modules(self):
         # start_odoo with update=True will wait for Odoo to stop
-        self.env.cr.commit()  # TODO check if really needed
+        # self.env.cr.commit()  # TODO check if really needed
         self.start_odoo(
             self.current_config_id,
             update=True,
@@ -1114,7 +1116,8 @@ class OpenupgraderMigration(models.Model):
                     else:
                         logger.info(
                             "No pending modules found in done migrations, this "
-                            "cron should be de-activated.")
+                            "cron should be de-activated."
+                        )
                 logger.info("No pending migrations found for cron.")
             for migration in migrations:
                 logger.info(
@@ -1469,7 +1472,7 @@ class OpenupgraderMigration(models.Model):
             if module_obj.search(
                 [("name", "=", module_to_check), ("state", "=", "installed")],
             ):
-                # uv pip install module as possibly absent
+                # install pip package as possibly absent
                 config_id.install_pip_modules(module_to_install_name)
                 module_obj.update_list()
                 module_toinstall = module_obj.search(
