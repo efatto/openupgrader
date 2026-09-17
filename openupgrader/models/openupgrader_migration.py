@@ -1273,7 +1273,7 @@ class OpenupgraderMigration(models.Model):
         self.ensure_one()
         self._set_pending_modules_to_remove()
         self._uninstall_pending_modules()
-        # self._set_pending_modules_uninstalled()
+        self.button_dump_current_database()
 
     def button_do_migration(self):
         (
