@@ -934,10 +934,7 @@ class OpenupgraderMigration(models.Model):
         self.pending_modules = str(sorted(set(pending_modules)))
 
     def _set_pending_modules_to_remove(self):
-        # ensure no pending queries are running
-        self.flush()
         conn_vars = self._get_db_connection_variables()
-        # self.uninstallable_modules = False
         found_modules_by_state = self._verify_module_states()
         pending_modules = found_modules_by_state.get("pending", [])
         obsolete_modules_to_remove = found_modules_by_state.get(
@@ -946,8 +943,11 @@ class OpenupgraderMigration(models.Model):
         missing_modules = [
             x for x in pending_modules if x not in obsolete_modules_to_remove
         ]
-        # if missing_modules:
-        #     self.uninstalled_modules_not_obsolete = str(sorted(set(missing_modules)))
+        self.uninstallable_modules = False
+        if missing_modules:
+            self.uninstalled_modules_not_obsolete = str(sorted(set(missing_modules)))
+        # ensure no pending queries are running before doing sql commands
+        self.flush()
         sql_commands = []
         # Use tuple to format the SQL query safely for the IN clause
         if pending_modules:
@@ -994,6 +994,7 @@ class OpenupgraderMigration(models.Model):
 
     def _uninstall_pending_modules(self):
         # start_odoo with update=True will wait for Odoo to stop
+        self.env.cr.commit()  # TODO check if really needed
         self.start_odoo(
             self.current_config_id,
             update=True,
