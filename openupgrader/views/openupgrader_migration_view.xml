@@ -99,7 +99,7 @@
                         name="button_continue_auto_migration"
                         type="object"
                         string="Continue auto-migration"
-                        attrs="{'invisible': [('state', '!=', 'migrated')]}"
+                        attrs="{'invisible': [('state', 'not in', ['draft','migrated'])]}"
                     />
                     <field
                         name="state"
