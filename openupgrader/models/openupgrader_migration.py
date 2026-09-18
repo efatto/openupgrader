@@ -841,8 +841,10 @@ class OpenupgraderMigration(models.Model):
                 max_wait -= 1
         if cron.active:
             raise ValidationError(_("Stop auto migration failed! Retry later."))
+        self.button_stop_odoo()
         self.state = "draft"  # TODO put the current migration state if possible
-        self.current_config_id.update_migration_state_file("draft")
+        # reset next config migration state in json file
+        self.next_config_id.update_migration_state_file(state=False)
 
     def button_do_auto_migration(self):
         #  0. set migration state to draft
