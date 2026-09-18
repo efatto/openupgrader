@@ -845,6 +845,7 @@ class OpenupgraderMigration(models.Model):
         self.state = "draft"  # TODO put the current migration state if possible
         # reset next config migration state in json file
         self.next_config_id.update_migration_state_file(state=False)
+        self.button_clean_logs(config_id=self.next_config_id)
 
     def button_do_auto_migration(self):
         #  0. set migration state to draft
