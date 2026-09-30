@@ -203,7 +203,7 @@
                                     <button
                                         name="button_create_all_envs"
                                         type="object"
-                                        string="Create all environments"
+                                        string="Create all environments if not present. If they already exist, they will be skipped."
                                     />
                                     <p />
                                     <button
