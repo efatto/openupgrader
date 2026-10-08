@@ -1141,8 +1141,9 @@ class OpenupgraderConfig(models.Model):
                 command = (
                     "uv pip install "
                     "--index-strategy unsafe-best-match --upgrade "
-                    "--no-deps --prerelease=allow {pkg}"
-                ).format(pkg=pkg_name)
+                    "--no-deps --reinstall-package {base} "
+                    "--prerelease=allow {pkg}"
+                ).format(base=base_pkg_name, pkg=pkg_name)
                 logger.info(
                     "Installing Odoo OCA module: %s",
                     command,
@@ -1207,6 +1208,7 @@ class OpenupgraderConfig(models.Model):
                 command = (
                     f"uv pip install --default-index {extra_index_url} "
                     "--no-deps --upgrade "
+                    f"--reinstall-package {base_pkg_name} "
                     f"--prerelease=allow {pkg_name}"
                 )
                 process = Popen(
