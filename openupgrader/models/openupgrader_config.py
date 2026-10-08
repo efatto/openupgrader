@@ -14,6 +14,7 @@ from odoo.tools.safe_eval import safe_eval
 
 from .tools import (
     _check_oca_authorship,
+    _get_retry_number_from_migration_state_file,
     _set_odoorc,
     _update_migration_state_file,
 )
@@ -350,6 +351,7 @@ class OpenupgraderConfig(models.Model):
         env_state=None,
         env_update_date=None,
         date_started=None,
+        retry_number=None,
     ):
         file_path = self.openupgrader_migration_id._default_migration_state_path()
         _update_migration_state_file(
@@ -359,7 +361,23 @@ class OpenupgraderConfig(models.Model):
             date_started=date_started,
             env_state=env_state,
             env_update_date=env_update_date,
+            retry_number=retry_number,
         )
+
+    def get_uninstall_modules_retry_number(self):
+        """Get the number of retries done to uninstall pending modules."""
+        file_path = self.openupgrader_migration_id._default_migration_state_path()
+        return _get_retry_number_from_migration_state_file(file_path, self.name)
+
+    def increment_uninstall_modules_retry_number(self):
+        """Increment and persist the retry number for pending modules removal."""
+        retry_number = self.get_uninstall_modules_retry_number() + 1
+        self.update_migration_state_file(retry_number=retry_number)
+        return retry_number
+
+    def reset_uninstall_modules_retry_number(self):
+        """Reset the retry number for pending modules removal."""
+        self.update_migration_state_file(retry_number=0)
 
     def _create_db_backup(self, folder):
         self.ensure_one()

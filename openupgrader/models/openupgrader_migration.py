@@ -29,6 +29,11 @@ from .tools import (
 
 logger = logging.getLogger(__name__)
 
+# Maximum number of attempts used to uninstall pending modules by restarting
+# Odoo with ``update=True``. The current attempt number is persisted in the
+# migration state file as ``retry_number``.
+MAX_UNINSTALL_MODULES_RETRY = 5
+
 
 class OpenupgraderMigration(models.Model):
     _name = "openupgrader.migration"
@@ -949,6 +954,10 @@ class OpenupgraderMigration(models.Model):
         self.uninstallable_modules = False
         if missing_modules:
             self.uninstalled_modules_not_obsolete = str(sorted(set(missing_modules)))
+        if not pending_modules and self.current_config_id:
+            # Nothing left to uninstall: reset the retry counter stored in the
+            # migration state file.
+            self.current_config_id.reset_uninstall_modules_retry_number()
         # ensure no pending queries are running before doing sql commands
         self.flush()
         sql_commands = []
@@ -1000,6 +1009,24 @@ class OpenupgraderMigration(models.Model):
     def _uninstall_pending_modules(self):
         # start_odoo with update=True will wait for Odoo to stop
         # self.env.cr.commit()  # TODO check if really needed
+        retry_number = self.current_config_id.get_uninstall_modules_retry_number()
+        if retry_number >= MAX_UNINSTALL_MODULES_RETRY:
+            logger.warning(
+                "Maximum number of retries (%s) reached while trying to uninstall "
+                "pending modules for version %s. Skipping uninstallation.",
+                MAX_UNINSTALL_MODULES_RETRY,
+                self.current_config_id.name,
+            )
+            return
+        # Persist the retry number in the migration state file before starting
+        # Odoo, so that a failed/crashed attempt is taken into account as well.
+        retry_number = self.current_config_id.increment_uninstall_modules_retry_number()
+        logger.info(
+            "Uninstalling pending modules for version %s (attempt %s/%s).",
+            self.current_config_id.name,
+            retry_number,
+            MAX_UNINSTALL_MODULES_RETRY,
+        )
         self.start_odoo(
             self.current_config_id,
             update=True,

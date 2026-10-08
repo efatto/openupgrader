@@ -184,6 +184,7 @@ def _init_migration_state_file(migration_state_path, config_names, reset_env=Fal
                     "state": None,
                     "date_started": None,
                     "date_updated": None,
+                    "retry_number": 0,
                 }
                 if reset_env:
                     migration_state_dict[config_name].update(
@@ -198,6 +199,7 @@ def _init_migration_state_file(migration_state_path, config_names, reset_env=Fal
                         "state": None,
                         "date_started": None,
                         "date_updated": None,
+                        "retry_number": 0,
                     }
                 )
                 if reset_env:
@@ -215,6 +217,7 @@ def _init_migration_state_file(migration_state_path, config_names, reset_env=Fal
                 "date_updated": None,
                 "env_state": None,
                 "env_update_date": None,
+                "retry_number": 0,
             }
             for config_name in config_names
         }
@@ -229,6 +232,7 @@ def _update_migration_state_file(
     date_started=None,
     env_state=None,
     env_update_date=None,
+    retry_number=None,
 ):
     """
     Update the migration state file with the given parameters.
@@ -246,6 +250,7 @@ def _update_migration_state_file(
     :param date_started: New date_started for the configuration.
     :param env_state: New env_state for the configuration.
     :param env_update_date: New env_update_date for the configuration.
+    :param retry_number: New number of retries done for the configuration.
     :return: None
     """
     with open(migration_state_path, "r") as f:
@@ -264,11 +269,30 @@ def _update_migration_state_file(
             migration_state_dict[config_name]["env_state"] = env_state
         if env_update_date is not None:
             migration_state_dict[config_name]["env_update_date"] = env_update_date
+        if retry_number is not None:
+            migration_state_dict[config_name]["retry_number"] = retry_number
         migration_state_dict[config_name]["date_updated"] = datetime.now().strftime(
             "%Y-%m-%d %H:%M:%S"
         )
         with open(migration_state_path, "w") as f:
             json.dump(migration_state_dict, f, sort_keys=True, indent=2)
+
+
+def _get_retry_number_from_migration_state_file(migration_state_path, config_name):
+    """Get the number of retries stored in the migration state file.
+
+    :param migration_state_path: Path to the migration state file.
+    :param config_name: Name of the configuration.
+    :return: The stored retry number, defaulting to 0 when not found.
+    """
+    with open(migration_state_path, "r") as f:
+        try:
+            migration_state_dict = json.load(f)
+        except Exception as _e:
+            migration_state_dict = {}
+        if migration_state_dict and migration_state_dict.get(config_name):
+            return migration_state_dict[config_name].get("retry_number", 0) or 0
+    return 0
 
 
 def _get_migration_state_from_file(migration_state_path, config_names):
