@@ -1006,9 +1006,10 @@ class OpenupgraderMigration(models.Model):
             if process.returncode != 0:
                 logger.info(f"ERROR setting modules to be removed: {process.stderr}")
 
-    def _uninstall_pending_modules(self):
-        # start_odoo with update=True will wait for Odoo to stop
-        # self.env.cr.commit()  # TODO check if really needed
+    def get_pending_modules(self):
+        self._set_pending_modules_to_remove()
+        found_modules_by_state = self._verify_module_states()
+        pending_modules = found_modules_by_state.get("pending", [])
         retry_number = self.current_config_id.get_uninstall_modules_retry_number()
         if retry_number >= MAX_UNINSTALL_MODULES_RETRY:
             logger.warning(
@@ -1017,21 +1018,33 @@ class OpenupgraderMigration(models.Model):
                 MAX_UNINSTALL_MODULES_RETRY,
                 self.current_config_id.name,
             )
-            return
-        # Persist the retry number in the migration state file before starting
-        # Odoo, so that a failed/crashed attempt is taken into account as well.
-        retry_number = self.current_config_id.increment_uninstall_modules_retry_number()
-        logger.info(
-            "Uninstalling pending modules for version %s (attempt %s/%s).",
-            self.current_config_id.name,
-            retry_number,
-            MAX_UNINSTALL_MODULES_RETRY,
-        )
-        self.start_odoo(
-            self.current_config_id,
-            update=True,
-            try_install_missing_pip_module=False,
-        )
+            return []
+        return pending_modules
+
+    def uninstall_pending_modules(self):
+        # start_odoo with update=True will wait for Odoo to stop
+        pending_modules = self.get_pending_modules()
+        if pending_modules:
+            # Persist the retry number in the migration state file before starting
+            # Odoo, so that a failed/crashed attempt is taken into account as well.
+            retry_number = self.current_config_id.increment_uninstall_modules_retry_number()
+            logger.info(
+                "Uninstalling pending modules for version %s (attempt %s/%s).",
+                self.current_config_id.name,
+                retry_number,
+                MAX_UNINSTALL_MODULES_RETRY,
+            )
+            logger.info(
+                f"Set pending modules for {self.db_name} "
+                f"to be removed during the restoring process. This method "
+                f"could be called many times by cron, until all pending "
+                f"modules are removed or set as 'uninstalled'."
+            )
+            self.start_odoo(
+                self.current_config_id,
+                update=True,
+                try_install_missing_pip_module=False,
+            )
 
     def _set_pending_modules_uninstalled(self):
         logger.info("Set pending modules as uninstalled.")
@@ -1133,17 +1146,11 @@ class OpenupgraderMigration(models.Model):
                     [("state", "=", "done")]
                 )
                 for done_migration in done_migrations:
-                    found_modules_by_state = done_migration._verify_module_states()
-                    pending_modules = found_modules_by_state.get("pending", [])
+                    pending_modules = done_migration.get_pending_modules()
                     if pending_modules:
-                        logger.info(
-                            f"Set pending modules for {done_migration.db_name} "
-                            f"to be removed during the restoring process. This method "
-                            f"could be called many times by cron, until all pending "
-                            f"modules are removed or set as 'uninstalled'."
-                        )
-                        done_migration._do_end_migration()
+                        done_migration.uninstall_pending_modules()
                     else:
+                        done_migration._do_end_migration()
                         logger.info(
                             "No pending modules found in done migrations, this "
                             "cron should be de-activated."
@@ -1305,8 +1312,6 @@ class OpenupgraderMigration(models.Model):
 
     def _do_end_migration(self):
         self.ensure_one()
-        self._set_pending_modules_to_remove()
-        self._uninstall_pending_modules()
         self.button_dump_current_database()
 
     def button_do_migration(self):
