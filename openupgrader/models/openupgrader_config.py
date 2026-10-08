@@ -1233,12 +1233,13 @@ class OpenupgraderConfig(models.Model):
 
             # Install the dependencies now that the requested package is
             # already installed. Without --upgrade, uv keeps the installed
-            # version while resolving and installing its dependencies, giving
-            # priority to the extra index and falling back to standard PyPI.
+            # version while resolving dependencies. The default first-index
+            # strategy, with the extra index passed as UV_INDEX, tries the
+            # extra index first and falls back to standard PyPI only for the
+            # packages the extra index does not provide.
             if installed:
                 command = (
                     "uv pip install "
-                    "--index-strategy unsafe-best-match "
                     f"--prerelease=allow {pkg_name}"
                 )
                 process = Popen(
