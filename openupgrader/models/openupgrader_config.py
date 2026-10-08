@@ -1132,12 +1132,16 @@ class OpenupgraderConfig(models.Model):
                 self.name,
             )
 
+            installed = False
             if oca_package_found:
-                # Install the best version available from the standard or extra index
+                # Install the base version without dependencies first. With
+                # unsafe-best-match the extra index wins over standard PyPI
+                # when it provides a version equal or greater, so an OCA
+                # package is primarily installed from the extra index.
                 command = (
                     "uv pip install "
                     "--index-strategy unsafe-best-match --upgrade "
-                    "--prerelease=allow {pkg}"
+                    "--no-deps --prerelease=allow {pkg}"
                 ).format(pkg=pkg_name)
                 logger.info(
                     "Installing Odoo OCA module: %s",
@@ -1183,6 +1187,7 @@ class OpenupgraderConfig(models.Model):
                             "\n".join(log_text for log_text in log_texts),
                         )
                 else:
+                    installed = True
                     modules_to_install[name] = "installed_oca"
                     logger.info(
                         "Odoo module %s installed successfully from "
@@ -1191,17 +1196,14 @@ class OpenupgraderConfig(models.Model):
                         "\n".join(log_text for log_text in log_texts),
                     )
 
-            # Install from the extra index after the OCA attempt, while allowing
-            # dependencies to be resolved from standard PyPI.
-            installed_oca = modules_to_install[name] == "installed_oca"
-            if extra_index_url and not installed_oca:
+            # Fall back to the extra index: install the requested package
+            # without dependencies first, so a non-OCA package can never
+            # fall back to standard PyPI.
+            if extra_index_url and not installed:
                 logger.info(
                     "OCA package not found; installing from extra index for %s",
                     name,
                 )
-
-                # Install the requested package without dependencies first, so a
-                # non-OCA package can never fall back to standard PyPI.
                 command = (
                     f"uv pip install --default-index {extra_index_url} "
                     "--no-deps --upgrade "
@@ -1220,33 +1222,41 @@ class OpenupgraderConfig(models.Model):
                         name,
                     )
                 else:
-                    # The requested package is already installed from the extra
-                    # index. Without --upgrade, uv keeps that version while it
-                    # resolves and installs its dependencies from either index.
-                    command = (
-                        f"uv pip install "
-                        "--index-strategy unsafe-best-match "
-                        f"--prerelease=allow {pkg_name}"
+                    installed = True
+                    modules_to_install[name] = "installed_from_extra"
+                    logger.info(
+                        "Odoo module %s installed successfully from the extra index",
+                        name,
                     )
-                    process = Popen(
-                        command,
-                        cwd=venv_path,
-                        shell=True,
-                        env=subprocess_env,
+
+            # Install the dependencies now that the requested package is
+            # already installed. Without --upgrade, uv keeps the installed
+            # version while resolving and installing its dependencies, giving
+            # priority to the extra index and falling back to standard PyPI.
+            if installed:
+                command = (
+                    "uv pip install "
+                    "--index-strategy unsafe-best-match "
+                    f"--prerelease=allow {pkg_name}"
+                )
+                process = Popen(
+                    command,
+                    cwd=venv_path,
+                    shell=True,
+                    env=subprocess_env,
+                )
+                process.wait()
+                if process.returncode != 0:
+                    modules_to_install[name] = "not_installed"
+                    logger.warning(
+                        "Failed to install dependencies for module %s",
+                        name,
                     )
-                    process.wait()
-                    if process.returncode != 0:
-                        logger.warning(
-                            "Failed to install dependencies for module %s",
-                            name,
-                        )
-                    else:
-                        modules_to_install[name] = "installed_from_extra"
-                        logger.info(
-                            "Odoo module %s installed successfully from the extra "
-                            "index with its dependencies",
-                            name,
-                        )
+                else:
+                    logger.info(
+                        "Odoo module %s installed with its dependencies",
+                        name,
+                    )
 
             if modules_to_install[name] == "not_installed":
                 logger.error(
