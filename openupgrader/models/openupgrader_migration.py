@@ -823,7 +823,13 @@ class OpenupgraderMigration(models.Model):
             [("openupgrader_migration_id", "=", self.id)]
         )
         for openupgrader_config in openupgrader_configs:
-            openupgrader_config.button_create_env()
+            try:
+                openupgrader_config.button_create_env()
+            except Exception:
+                logger.exception(
+                    "Error creating environment for version %s",
+                    openupgrader_config.name,
+                )
 
     def button_delete_all_envs(self):
         self.ensure_one()
