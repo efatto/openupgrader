@@ -583,8 +583,8 @@ class OpenupgraderConfig(models.Model):
 
     def button_create_env(self):  # noqa: C901
         self.ensure_one()
-        # _migration_state, env_state, _version = self.get_migration_state_from_file()
-        if self.env_state == "updated":
+        _migration_state, env_state, _version = self.get_migration_state_from_file()
+        if env_state == "updated" or self.env_state == "updated":
             return
         openupgrader_migration = self.openupgrader_migration_id
         odoo_is_openupgrade = self.odoo_is_openupgrade
