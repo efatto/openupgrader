@@ -1,8 +1,10 @@
 import base64
 import configparser
+import glob
 import importlib.util
 import logging
 import os
+import re
 import shutil
 from subprocess import PIPE, Popen, run
 
@@ -1085,6 +1087,179 @@ class OpenupgraderConfig(models.Model):
             return repos
         return None
 
+    @staticmethod
+    def _get_venv_site_packages(venv_path, py_version):
+        env_folder = os.path.join(venv_path, ".venv")
+        short_version = ".".join(py_version.split(".")[:2])
+        candidates = [
+            os.path.join(env_folder, "lib", f"python{short_version}", "site-packages"),
+            os.path.join(
+                env_folder, "lib64", f"python{short_version}", "site-packages"
+            ),
+        ]
+        for candidate in candidates:
+            if os.path.isdir(candidate):
+                return candidate
+        matches = glob.glob(
+            os.path.join(env_folder, "lib*", "python*", "site-packages")
+        )
+        return matches[0] if matches else None
+
+    @staticmethod
+    def _canonicalize_package_name(name):
+        return re.sub(r"[-_.]+", "-", name).lower()
+
+    def _get_installed_versions(self, site_packages):
+        try:
+            from importlib import metadata as importlib_metadata
+        except ImportError:  # pragma: no cover
+            import importlib_metadata
+
+        versions = {}
+        for dist in importlib_metadata.distributions(path=[site_packages]):
+            try:
+                name = dist.metadata["Name"]
+                version = dist.metadata["Version"]
+            except Exception:  # noqa: BLE001
+                continue
+            if name and version:
+                versions[self._canonicalize_package_name(name)] = version
+        return versions
+
+    @staticmethod
+    def _get_pip_compile_index_options(extra_index_url):
+        """Return the index options used to resolve dependencies.
+
+        When a private index is configured it is used together with PyPI in a
+        single resolution so that newer versions or modules available only on
+        the private index (and their own private dependencies) are resolved,
+        while PyPI still provides public dependencies the private index can
+        not satisfy (for example ``pymssql<=2.2.5``). ``unsafe-best-match``
+        selects the highest version satisfying the requirements across all
+        indexes. PyPI only is kept as a fallback for when the private index is
+        not reachable.
+        """
+        if extra_index_url:
+            return [
+                f"--default-index {extra_index_url} "
+                "--index https://pypi.org/simple "
+                "--index-strategy unsafe-best-match",
+                "--default-index https://pypi.org/simple",
+            ]
+        return ["--default-index https://pypi.org/simple"]
+
+    def _get_odoo_stub_override(self, venv_path):
+        """Create a local stub ``odoo`` package used as a compile override.
+
+        Odoo is installed from source in editable mode and is not published on
+        PyPI, so ``uv pip compile`` can not resolve the ``odoo`` requirement of
+        the OCA addons. A minimal local package named ``odoo`` is referenced as
+        an override and excluded from the compiled output, so the real Odoo is
+        never installed nor replaced.
+        """
+        stub_path = os.path.join(venv_path, ".openupgrader_odoo_stub")
+        os.makedirs(stub_path, exist_ok=True)
+        with open(os.path.join(stub_path, "pyproject.toml"), "w") as stub_file:
+            stub_file.write('[project]\nname = "odoo"\nversion = "0.0.0"\n')
+        overrides_path = os.path.join(venv_path, ".openupgrader_overrides.txt")
+        with open(overrides_path, "w") as overrides_file:
+            overrides_file.write(f"odoo @ file://{stub_path}\n")
+        return overrides_path
+
+    def _get_odoo_requirements_file(self, venv_path):
+        """Return the Odoo requirements used as compile constraints if any."""
+        if self.odoo_is_openupgrade:
+            odoo_path = os.path.join(venv_path, "odoo")
+        else:
+            odoo_path = os.path.join(venv_path, "repos", "odoo")
+        requirements_path = os.path.join(odoo_path, "requirements.txt")
+        return requirements_path if os.path.isfile(requirements_path) else None
+
+    def _compile_requirements(self, seed_lines, venv_path, extra_index_url, pip_env):
+        """Resolve ``seed_lines`` into a pinned requirements file.
+
+        The resolution is first attempted with the Odoo requirements as
+        constraints, in order to keep the dependency set consistent with the
+        installed environment, and without constraints as a fallback.
+        """
+        in_path = os.path.join(venv_path, ".openupgrader_dependencies.in")
+        pins_path = os.path.join(venv_path, ".openupgrader_dependencies.txt")
+        with open(in_path, "w") as seed_file:
+            seed_file.write("\n".join(seed_lines) + "\n")
+        overrides_path = self._get_odoo_stub_override(venv_path)
+        constraints = self._get_odoo_requirements_file(venv_path)
+        if constraints:
+            constraint_options = [f"--constraints {constraints}", ""]
+        else:
+            constraint_options = [""]
+        short_version = ".".join(self.python_version.split(".")[:2])
+        for index_options in self._get_pip_compile_index_options(extra_index_url):
+            for constraint_option in constraint_options:
+                parts = [
+                    "uv pip compile --quiet",
+                    f"--python-version {short_version}",
+                    f"--overrides {overrides_path}",
+                    "--no-emit-package odoo",
+                ]
+                if constraint_option:
+                    parts.append(constraint_option)
+                parts.append(index_options)
+                parts.append(f"-o {pins_path} {in_path}")
+                command = " ".join(parts)
+                if os.path.isfile(pins_path):
+                    os.remove(pins_path)
+                process = Popen(
+                    command,
+                    cwd=venv_path,
+                    shell=True,
+                    stdout=PIPE,
+                    stderr=PIPE,
+                    env=pip_env,
+                )
+                _stdout, stderr = process.communicate()
+                if process.returncode == 0:
+                    return pins_path, index_options
+                logger.info(
+                    "Unable to resolve dependencies with '%s': %s",
+                    command,
+                    stderr.decode().strip() if stderr else "",
+                )
+        logger.warning("Unable to resolve dependencies for %s", seed_lines)
+        return None, None
+
+    def _install_missing_dependencies(
+        self, root_names, venv_path, extra_index_url, pip_env
+    ):
+        """Resolve and install the Python dependencies of ``root_names``.
+
+        The dependency closure of the installed addons is resolved with
+        ``uv pip compile`` and the resulting pinned set is installed with
+        ``uv pip install --no-deps``. Resolving first yields a consistent set
+        of versions, while installing with ``--no-deps`` ensures the private
+        index can not shadow a dependency such as ``pymssql<=2.2.5``.
+        """
+        site_packages = self._get_venv_site_packages(venv_path, self.python_version)
+        if not site_packages:
+            logger.warning(
+                "Unable to find site-packages in %s, skipping dependencies",
+                venv_path,
+            )
+            return False
+        installed_versions = self._get_installed_versions(site_packages)
+        seed_lines = []
+        for name in root_names:
+            version = installed_versions.get(self._canonicalize_package_name(name))
+            seed_lines.append(f"{name}=={version}" if version else name)
+        pins_path, index_options = self._compile_requirements(
+            seed_lines, venv_path, extra_index_url, pip_env
+        )
+        if not pins_path:
+            return False
+        command = f"uv pip install --no-deps {index_options} -r {pins_path}"
+        process = Popen(command, cwd=venv_path, shell=True, env=pip_env)
+        process.wait()
+        return process.returncode == 0
+
     def install_pip_modules(self, module_names):  # noqa C901
         self.ensure_one()
         if not isinstance(module_names, list):
@@ -1233,33 +1408,22 @@ class OpenupgraderConfig(models.Model):
                         "\n".join(log_text for log_text in log_texts),
                     )
 
-            # Install the dependencies now that the requested package is
-            # already installed. Without --upgrade, uv keeps the installed
-            # version while resolving dependencies. The default first-index
-            # strategy, with the extra index passed as UV_INDEX, tries the
-            # extra index first and falls back to standard PyPI only for the
-            # packages the extra index does not provide.
+            # Resolve the dependencies of the just installed distribution with
+            # uv pip compile and install the pinned result with --no-deps. This
+            # avoids the private index shadowing a dependency (e.g.
+            # pymssql<=2.2.5) and gives a consistent set of versions.
             if installed:
-                command = (
-                    "uv pip install "
-                    f"--prerelease=allow {pkg_name}"
-                )
-                process = Popen(
-                    command,
-                    cwd=venv_path,
-                    shell=True,
-                    env=subprocess_env,
-                )
-                process.wait()
-                if process.returncode != 0:
-                    modules_to_install[name] = "not_installed"
-                    logger.warning(
-                        "Failed to install dependencies for module %s",
+                if self._install_missing_dependencies(
+                    [base_pkg_name], venv_path, extra_index_url, pip_env
+                ):
+                    logger.info(
+                        "Odoo module %s installed with its dependencies",
                         name,
                     )
                 else:
-                    logger.info(
-                        "Odoo module %s installed with its dependencies",
+                    modules_to_install[name] = "not_installed"
+                    logger.warning(
+                        "Failed to install dependencies for module %s",
                         name,
                     )
 
