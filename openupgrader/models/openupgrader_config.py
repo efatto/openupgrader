@@ -2,6 +2,7 @@ import base64
 import configparser
 import glob
 import importlib.util
+import json
 import logging
 import os
 import re
@@ -24,6 +25,19 @@ from .tools import (
 logger = logging.getLogger(__name__)
 
 
+def _get_pip_extra_index_url():
+    """Return the private pip index URL from the env or from pip.conf."""
+    pip_extra_index_url = os.environ.get("PIP_EXTRA_INDEX_URL")
+    if not pip_extra_index_url:
+        pip_conf_path = os.path.join(os.path.expanduser("~"), ".pip", "pip.conf")
+        if os.path.isfile(pip_conf_path):
+            config = configparser.ConfigParser()
+            config.read(pip_conf_path)
+            if config.has_option("global", "extra-index-url"):
+                pip_extra_index_url = config.get("global", "extra-index-url")
+    return pip_extra_index_url
+
+
 def _get_env_for_subprocess(folder, py_version):
     env_for_subprocess = os.environ.copy()
     env_folder = os.path.join(folder, ".venv")
@@ -31,13 +45,7 @@ def _get_env_for_subprocess(folder, py_version):
     env_for_subprocess["UV_PROJECT_ENVIRONMENT"] = env_folder
     env_for_subprocess["PYTHONPATH"] = os.path.join(env_folder, "bin", "python")
     # If there is a PIP_EXTRA_INDEX_URL in local env, put in the pyenv
-    pip_extra_index_url = os.environ.get("PIP_EXTRA_INDEX_URL")
-    if not pip_extra_index_url:
-        pip_conf_path = os.path.join(os.path.expanduser("~"), ".pip", "pip.conf")
-        if os.path.isfile(pip_conf_path):
-            config = configparser.ConfigParser()
-            config.read(pip_conf_path)
-            pip_extra_index_url = config.get("global", "extra-index-url")
+    pip_extra_index_url = _get_pip_extra_index_url()
     if pip_extra_index_url:
         env_for_subprocess["UV_INDEX"] = pip_extra_index_url
     env_for_subprocess["PATH"] = ":".join(
@@ -344,6 +352,143 @@ class OpenupgraderConfig(models.Model):
             .lower()
         )
 
+    @staticmethod
+    def _toml_string(value):
+        """Encode a value as a TOML basic string (JSON escaping is valid)."""
+        return json.dumps(value)
+
+    @staticmethod
+    def _read_requirements_file(requirements_path):
+        """Return the package requirement lines of a requirements file."""
+        requirements = []
+        if not requirements_path or not os.path.isfile(requirements_path):
+            return requirements
+        with open(requirements_path, "r") as req_file:
+            for line in req_file:
+                line = line.split("#")[0].strip()
+                # keep package requirements only, skip pip options (--index-url,
+                # -r, ...)
+                if not line or line.startswith("-"):
+                    continue
+                requirements.append(line)
+        return requirements
+
+    def _get_addon_requirements_path(self, venv_path):
+        return os.path.join(venv_path, ".openupgrader_addons.txt")
+
+    def _get_addon_requirements(self, venv_path):
+        """Return the pip requirements of the addons installed in the env."""
+        path = self._get_addon_requirements_path(venv_path)
+        if not os.path.isfile(path):
+            return []
+        with open(path, "r") as addon_file:
+            return [line.strip() for line in addon_file if line.strip()]
+
+    def _record_addon_requirements(self, venv_path, requirements):
+        """Persist addon requirements so they survive a plain ``uv sync``."""
+        existing = set(self._get_addon_requirements(venv_path))
+        new_requirements = [
+            requirement
+            for requirement in requirements
+            if requirement and requirement not in existing
+        ]
+        if not new_requirements:
+            return
+        with open(self._get_addon_requirements_path(venv_path), "a") as addon_file:
+            addon_file.write("\n".join(new_requirements) + "\n")
+
+    def _write_uv_pyproject(self, venv_path, odoo_path):
+        """Write a complete ``pyproject.toml`` so ``uv sync`` can manage the env.
+
+        ``uv init`` only creates a stub project without dependencies, so a
+        plain ``uv sync`` would remove every installed package. The project is
+        made self contained by declaring the OpenUpgrade/Odoo requirements, the
+        configured pip requirements, the addons installed in the environment
+        and Odoo itself (from its local checkout) as dependencies.
+        """
+        openupgrade_path = os.path.join(venv_path, "odoo")
+        openupgrade_requirements = self._read_requirements_file(
+            os.path.join(openupgrade_path, "requirements.txt")
+        )
+        odoo_requirements = self._read_requirements_file(
+            os.path.join(odoo_path, "requirements.txt")
+        )
+        pip_requirements = self.pip_requirement_ids.mapped("name") or []
+        # keep the first occurrence of a requirement and let the explicitly
+        # configured pip requirements win over the requirements files
+        seen_requirements = set()
+        dependencies = []
+        for requirement in (
+            pip_requirements
+            + openupgrade_requirements
+            + odoo_requirements
+            + self._get_addon_requirements(venv_path)
+        ):
+            package_name = self._extract_package_name(requirement)
+            if package_name and package_name not in seen_requirements:
+                seen_requirements.add(package_name)
+                dependencies.append(requirement)
+        # Odoo is installed in editable mode from its local checkout: it is not
+        # published on PyPI, so its version can not be resolved from an index
+        dependencies.append("odoo")
+        # Override the versions coming from the requirements files to avoid
+        # libraries mismatch, the same way the old uv pip install did.
+        pip_requirements_names = {
+            self._extract_package_name(requirement) for requirement in pip_requirements
+        }
+        override_dependencies = [
+            requirement
+            for requirement in odoo_requirements
+            if self._extract_package_name(requirement) not in pip_requirements_names
+        ]
+        override_dependencies.extend(pip_requirements)
+        lines = [
+            "[project]",
+            "name = %s" % self._toml_string("openupgrade%s" % self.name),
+            'version = "0.1.0"',
+            "requires-python = %s" % self._toml_string(">=%s" % self.python_version),
+            "dependencies = [",
+        ]
+        for dependency in dependencies:
+            lines.append("    %s," % self._toml_string(dependency))
+        lines.append("]")
+        lines.append("")
+        lines.append("[tool.uv]")
+        # the project itself is not a package, only its dependencies matter
+        lines.append("package = false")
+        if override_dependencies:
+            lines.append("override-dependencies = [")
+            for dependency in override_dependencies:
+                lines.append("    %s," % self._toml_string(dependency))
+            lines.append("]")
+        if _get_pip_extra_index_url():
+            # combine the private index and PyPI in a single resolution, as
+            # done by uv pip compile
+            lines.append('index-strategy = "unsafe-best-match"')
+        lines.append("")
+        lines.append("[tool.uv.sources]")
+        lines.append(
+            "odoo = { path = %s, editable = true }"
+            % self._toml_string(os.path.relpath(odoo_path, venv_path))
+        )
+        with open(os.path.join(venv_path, "pyproject.toml"), "w") as pyproject_file:
+            pyproject_file.write("\n".join(lines) + "\n")
+        return dependencies
+
+    def _sync_uv_env(self, venv_path, subprocess_env=None):
+        """Create/update the virtualenv from the project ``pyproject.toml``."""
+        if subprocess_env is None:
+            subprocess_env = _get_env_for_subprocess(venv_path, self.python_version)
+        process = run(
+            "uv sync",
+            cwd=venv_path,
+            shell=True,
+            env=subprocess_env,
+        )
+        if process.returncode != 0:
+            logger.warning("uv sync failed in %s", venv_path)
+        return process
+
     def get_migration_state_from_file(self):
         return self.openupgrader_migration_id.get_migration_state_from_file([self.name])
 
@@ -625,63 +770,11 @@ class OpenupgraderConfig(models.Model):
                     self.odoo_repo_id.remote_branch or self.name,
                     odoo_path,
                 )
-            pip_requirements = self.pip_requirement_ids.mapped("name") or []
-            uv_override_deps = []
-            # we need to keep the name of the package to avoid duplicates
-            # from odoo_requirements_file
-            pip_requirements_names = [
-                self._extract_package_name(r) for r in pip_requirements
-            ]
-            odoo_requirements_file = os.path.join(odoo_path, "requirements.txt")
-            if os.path.isfile(odoo_requirements_file):
-                with open(odoo_requirements_file, "r") as req_file:
-                    for line in req_file:
-                        line = line.split("#")[0].strip()
-                        if not line:
-                            continue
-                        # check if the package is already in pip_requirements
-                        package_name = self._extract_package_name(line)
-                        if package_name not in pip_requirements_names:
-                            uv_override_deps.append(line)
-            uv_override_deps.extend(pip_requirements)
-
-            if uv_override_deps:
-                if (
-                    "tool.uv"
-                    not in open(os.path.join(venv_path, "pyproject.toml")).read()
-                ):
-                    logger.info("Fixing libraries mismatch in Odoo requirements.txt")
-                    with open(os.path.join(venv_path, "pyproject.toml"), "a") as f:
-                        f.write("[tool.uv]\n")
-                        f.write(f"override-dependencies = {str(uv_override_deps)} ")
-                        f.close()
-            commands = [
-                "uv pip install '%s'" % name
-                for name in self.pip_requirement_ids.mapped("name")
-            ]
-            if odoo_is_openupgrade:
-                # old version until v. 14
-                for c in [
-                    f"uv pip install -r {odoo_path}/requirements.txt",
-                    f"uv pip install -e {openupgrade_path}",
-                ]:
-                    commands.append(c)
-            else:
-                for c in [
-                    f"uv pip install -r {openupgrade_path}/requirements.txt",
-                    f"uv pip install -r {odoo_path}/requirements.txt",
-                    f"uv pip install -e {odoo_path}",
-                ]:
-                    commands.append(c)
-
-            # exclude odoo core modules
-            for command in commands:
-                run(
-                    command,
-                    cwd=venv_path,
-                    shell=True,
-                    env=subprocess_env,
-                )
+            # Turn the environment into a proper uv project (dependencies,
+            # local Odoo source and version overrides) and install it with
+            # ``uv sync`` so that running ``uv sync`` again keeps it coherent.
+            self._write_uv_pyproject(venv_path, odoo_path)
+            self._sync_uv_env(venv_path, subprocess_env)
 
             core_modules = self._get_core_modules(odoo_path)
             self.core_modules = str(set(core_modules))
@@ -707,6 +800,9 @@ class OpenupgraderConfig(models.Model):
                     if renamed_module.name in self.module_installed_ids.mapped("name")
                 ]
             self.install_pip_modules(odoo_modules_to_install_via_pip)
+            # Include the addons installed with uv pip in the project and
+            # refresh the environment so a plain ``uv sync`` keeps them.
+            self._sync_uv_env(venv_path, subprocess_env)
             env_update_date = fields.Datetime.now()
             self.write(
                 {
@@ -718,6 +814,31 @@ class OpenupgraderConfig(models.Model):
                 env_state="updated",
                 env_update_date=env_update_date.strftime("%Y-%m-%d %H:%M:%S"),
             )
+
+    def button_sync_env(self):
+        """Synchronize the virtualenv with the project dependencies.
+
+        Runs ``uv sync`` against the environment created by
+        :meth:`button_create_env`, so that the installed packages match the
+        project ``pyproject.toml``.
+        """
+        self.ensure_one()
+        venv_path = os.path.join(
+            self.openupgrader_migration_id.folder, f"openupgrade{self.name}"
+        )
+        if not os.path.isdir(os.path.join(venv_path, ".venv", "bin")):
+            # no environment yet, create it from scratch
+            self.button_create_env()
+            return
+        subprocess_env = _get_env_for_subprocess(venv_path, self.python_version)
+        openupgrade_path = os.path.join(venv_path, "odoo")
+        odoo_path = (
+            openupgrade_path
+            if self.odoo_is_openupgrade
+            else os.path.join(venv_path, "repos", "odoo")
+        )
+        self._write_uv_pyproject(venv_path, odoo_path)
+        self._sync_uv_env(venv_path, subprocess_env)
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -1434,3 +1555,22 @@ class OpenupgraderConfig(models.Model):
                     self.name,
                 )
                 not_installable_modules.append(name)
+        # Persist the installed addon requirements so they become part of the
+        # project and are not removed by a plain ``uv sync``, then refresh the
+        # lock file so the environment stays consistent with it.
+        self._record_addon_requirements(
+            venv_path,
+            [
+                f"odoo{release_val}-addon-{name}{version_val}"
+                for name, state in modules_to_install.items()
+                if state != "not_installed"
+            ],
+        )
+        openupgrade_path = os.path.join(venv_path, "odoo")
+        odoo_path = (
+            openupgrade_path
+            if self.odoo_is_openupgrade
+            else os.path.join(venv_path, "repos", "odoo")
+        )
+        self._write_uv_pyproject(venv_path, odoo_path)
+        return modules_to_install

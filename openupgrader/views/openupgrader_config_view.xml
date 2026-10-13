@@ -38,6 +38,12 @@
             <form string="OpenUpgrader Configuration">
                 <header>
                     <button
+                        name="button_sync_env"
+                        type="object"
+                        string="Sync virtualenv"
+                        help="Install the Python dependencies with uv sync"
+                    />
+                    <button
                         name="button_recreate_env"
                         type="object"
                         string="Recreate virtualenv"

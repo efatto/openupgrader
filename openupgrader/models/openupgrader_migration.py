@@ -1033,7 +1033,9 @@ class OpenupgraderMigration(models.Model):
         if pending_modules:
             # Persist the retry number in the migration state file before starting
             # Odoo, so that a failed/crashed attempt is taken into account as well.
-            retry_number = self.current_config_id.increment_uninstall_modules_retry_number()
+            retry_number = (
+                self.current_config_id.increment_uninstall_modules_retry_number()
+            )
             logger.info(
                 "Uninstalling pending modules for version %s (attempt %s/%s).",
                 self.current_config_id.name,
