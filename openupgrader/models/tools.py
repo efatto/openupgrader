@@ -260,22 +260,34 @@ def _update_migration_state_file(
             migration_state_dict = {}
         except Exception as _e:
             migration_state_dict = {}
-    if migration_state_dict and migration_state_dict.get(config_name):
-        if state is not None:
-            migration_state_dict[config_name]["state"] = None if not state else state
-        if date_started is not None:
-            migration_state_dict[config_name]["date_started"] = date_started
-        if env_state is not None:
-            migration_state_dict[config_name]["env_state"] = env_state
-        if env_update_date is not None:
-            migration_state_dict[config_name]["env_update_date"] = env_update_date
-        if retry_number is not None:
-            migration_state_dict[config_name]["retry_number"] = retry_number
-        migration_state_dict[config_name]["date_updated"] = datetime.now().strftime(
-            "%Y-%m-%d %H:%M:%S"
-        )
-        with open(migration_state_path, "w") as f:
-            json.dump(migration_state_dict, f, sort_keys=True, indent=2)
+    # Ensure the config entry always exists, so that a configuration added after the
+    # file was first created can still record its state (e.g. env_state="updated").
+    migration_state_dict.setdefault(
+        config_name,
+        {
+            "state": None,
+            "date_started": None,
+            "date_updated": None,
+            "env_state": None,
+            "env_update_date": None,
+            "retry_number": 0,
+        },
+    )
+    if state is not None:
+        migration_state_dict[config_name]["state"] = None if not state else state
+    if date_started is not None:
+        migration_state_dict[config_name]["date_started"] = date_started
+    if env_state is not None:
+        migration_state_dict[config_name]["env_state"] = env_state
+    if env_update_date is not None:
+        migration_state_dict[config_name]["env_update_date"] = env_update_date
+    if retry_number is not None:
+        migration_state_dict[config_name]["retry_number"] = retry_number
+    migration_state_dict[config_name]["date_updated"] = datetime.now().strftime(
+        "%Y-%m-%d %H:%M:%S"
+    )
+    with open(migration_state_path, "w") as f:
+        json.dump(migration_state_dict, f, sort_keys=True, indent=2)
 
 
 def _get_retry_number_from_migration_state_file(migration_state_path, config_name):
@@ -300,10 +312,11 @@ def _get_migration_state_from_file(migration_state_path, config_names):
 
     :param migration_state_path: Path to the migration state file.
     :param config_names: List of config names or a single config name. When called with
-    a single config name, it returns its state, env_state, and config name. When called
-    with a list, it returns the latter config state, env_state, and name.
+    a list, it returns the latest config state, env_state, and name.
     :return: Tuple of state, env_state, and config name.
     """
+    if isinstance(config_names, str):
+        config_names = [config_names]
     state = None
     env_state = None
     config = None
