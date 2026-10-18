@@ -461,7 +461,7 @@ class OpenupgraderMigration(models.Model):
                 "migrating",
                 date_started=fields.Datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             )
-        with io.open(odoo_log, "wb") as writer, io.open(odoo_log, "rb") as reader:
+        with open(odoo_log, "wb") as writer, open(odoo_log, "rb") as reader:
             process = Popen(
                 bash_command,
                 cwd=folder,
@@ -1360,9 +1360,9 @@ class OpenupgraderMigration(models.Model):
         """
         state_path = self._default_migration_state_path()
         configs = []
-        for config in (self.next_config_id, self.current_config_id):
-            if config and config not in configs:
-                configs.append(config)
+        for loop_config in (self.next_config_id, self.current_config_id):
+            if loop_config and loop_config not in configs:
+                configs.append(loop_config)
         for ou_config in configs:
             entry = _get_migration_state_entry_from_file(state_path, ou_config.name)
             migration_state = entry.get("state")
