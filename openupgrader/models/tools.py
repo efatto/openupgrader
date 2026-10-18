@@ -134,7 +134,13 @@ def _stop_pid(pid=False):
 
 def _check_oca_authorship(pkg_name, release):
     """
-    Verify if the package on PyPI is owned by the 'OCA' user.
+    Verify that the package on PyPI is an OCA package exposing ``release``.
+
+    The public PyPI JSON API does not consistently expose the legacy
+    ``ownership`` data anymore, so the author/maintainer fields and the project
+    URLs pointing to the OCA GitHub organisation are used as a fallback. This
+    prevents genuine OCA packages (and therefore their Odoo modules) from being
+    silently skipped during a migration.
     """
     url = f"https://pypi.org/pypi/{pkg_name}/json"
     try:
@@ -143,16 +149,54 @@ def _check_oca_authorship(pkg_name, release):
         with urlopen(req, timeout=10) as response:
             if response.status == 200:
                 data = json.loads(response.read().decode())
-                ownership = data.get("ownership", {})
-                roles = ownership.get("roles", [])
                 releases = data.get("releases", {})
-                for role_info in roles:
+                if release[:4] not in [r[:4] for r in releases]:
+                    logger.warning(
+                        "Package %s found on PyPI but without a %s release.",
+                        pkg_name,
+                        release[:4],
+                    )
+                    return False
+                # legacy ownership metadata
+                ownership = data.get("ownership", {})
+                for role_info in ownership.get("roles", []):
                     if (
                         role_info.get("user") == "OCA"
                         and role_info.get("role") == "Owner"
-                        and release[:4] in [r[:4] for r in releases]
                     ):
                         return True
+                # author / maintainer / project url metadata
+                info = data.get("info", {})
+                author_values = " ".join(
+                    str(info.get(key) or "")
+                    for key in (
+                        "author",
+                        "author_email",
+                        "maintainer",
+                        "maintainer_email",
+                        "home_page",
+                        "project_url",
+                        "download_url",
+                    )
+                )
+                project_urls = info.get("project_urls") or {}
+                author_values += " " + " ".join(
+                    str(value) for value in project_urls.values()
+                )
+                normalized = author_values.lower()
+                tokens = (
+                    normalized.replace("/", " ")
+                    .replace("(", " ")
+                    .replace(")", " ")
+                    .replace(",", " ")
+                    .split()
+                )
+                if (
+                    "odoo community association" in normalized
+                    or "github.com/oca/" in normalized
+                    or "oca" in tokens
+                ):
+                    return True
         logger.warning(
             "Package %s found on PyPI but not owned by OCA or not with release %s. "
             "Authorship check failed.",
@@ -167,6 +211,20 @@ def _check_oca_authorship(pkg_name, release):
             e,
         )
     return False
+
+
+def _get_migration_state_entry_from_file(migration_state_path, config_name):
+    """Return the stored state entry for ``config_name`` (or an empty dict).
+
+    The entry contains ``state``, ``date_started`` and the other values written
+    by :func:`_update_migration_state_file`.
+    """
+    try:
+        with open(migration_state_path, "r") as f:
+            migration_state_dict = json.load(f)
+    except (OSError, ValueError):
+        return {}
+    return migration_state_dict.get(config_name) or {}
 
 
 def _init_migration_state_file(migration_state_path, config_names, reset_env=False):
