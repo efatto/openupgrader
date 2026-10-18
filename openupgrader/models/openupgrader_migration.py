@@ -1,10 +1,10 @@
 import configparser
-import io
 import logging
 import os
 import re
 import shutil
 import time
+from datetime import datetime
 from pathlib import Path
 from subprocess import PIPE, Popen, run
 
@@ -19,6 +19,7 @@ from .openupgrader_config import _get_env_for_subprocess
 from .tools import (
     _get_log_path,
     _get_migration_logs,
+    _get_migration_state_entry_from_file,
     _get_migration_state_from_file,
     _get_odoo_pids,
     _get_odoo_process_state,
@@ -179,6 +180,7 @@ class OpenupgraderMigration(models.Model):
                 openupgrader_config.action_load_config()
         return res
 
+    @api.depends("current_config_id", "to_config_id")
     def _compute_is_migration_done(self):
         for record in self:
             record.is_migration_done = record.current_config_id == record.to_config_id
@@ -401,13 +403,7 @@ class OpenupgraderMigration(models.Model):
             load = "base,web"
         if version_float > 13:
             load += ",openupgrade_framework,module_change_auto_install"
-        executable = (
-            f"{folder}/odoo/openerp-server"
-            if version_float < 10
-            else f"{folder}/odoo/odoo-bin"
-            if version_float < 14
-            else f"{folder}/repos/odoo/odoo-bin"
-        )
+        executable = config_id._get_odoo_executable(folder)
         addons_path = f"{folder}/repos/odoo/addons"
         if version_float < 14:
             addons_path = f"{folder}/odoo/addons"
@@ -695,7 +691,9 @@ class OpenupgraderMigration(models.Model):
         self.update_warning_log = " "
         config_domain = []
         if config_id:
-            config_domain = [("name", ">", config_id.name)]
+            # include the given configuration too, so that a failed step whose
+            # logs are cleaned before a retry is not detected as failed again
+            config_domain = [("name", ">=", config_id.name)]
         for config_id in self.env["openupgrader.config"].search(config_domain):
             for log_name in ["migrate", "update"]:
                 log_path = (
@@ -1310,7 +1308,9 @@ class OpenupgraderMigration(models.Model):
         if self.dump_each_version_database:
             self.button_dump_current_database()
         self.current_config_id.update_migration_state_file("ready_to_prepare")
-        if self.is_migration_done:
+        # compare the fields directly: is_migration_done is a computed field
+        # whose cache could have been filled before current_config_id was moved
+        if self.current_config_id == self.to_config_id:
             from_n = self.from_config_id.name
             to_n = self.to_config_id.name
             logger.info(
@@ -1349,20 +1349,44 @@ class OpenupgraderMigration(models.Model):
 
     def _update_migration_state_from_logs(self):
         """
-        Scan log files to determine the current migration state and version.
-        Scans from the newest version downwards to find the latest known state.
-        Save the result in the migration state file.
+        Scan the log files of the steps currently in progress to determine the
+        current migration state and version, and save it in the state file.
+
+        Only the current and next configurations are inspected so that a stale
+        log of a later step cannot resurrect an already handled state. Only the
+        lines written after the step was last started (``date_started``) are
+        taken into account, so a recovered failure does not mark the step as
+        failed again.
         """
-        # Check versions in descending order to find the latest log
-        ou_configs = self.env["openupgrader.config"].search([], order="name DESC")
-        for ou_config in ou_configs:
-            # 1. Check the update log (it follows migration except for the initial
-            # update)
-            (
-                migration_state,
-                _env_state,
-                _config,
-            ) = ou_config.get_migration_state_from_file()
+        state_path = self._default_migration_state_path()
+        configs = []
+        for config in (self.next_config_id, self.current_config_id):
+            if config and config not in configs:
+                configs.append(config)
+        for ou_config in configs:
+            entry = _get_migration_state_entry_from_file(state_path, ou_config.name)
+            migration_state = entry.get("state")
+            min_timestamp = entry.get("date_started")
+            # 1. Check the migration log of the version being migrated
+            if self.next_config_id and ou_config == self.next_config_id:
+                migrate_log = _get_log_path(self.folder, ou_config.name, migrate=True)
+                if os.path.isfile(migrate_log):
+                    patterns = {
+                        "CRITICAL": "failed",
+                        "Modules loaded": migration_state
+                        if migration_state == "ready_to_prepare"
+                        else "migrated",
+                    }
+                    state, found = self._parse_log_file(
+                        migrate_log,
+                        patterns,
+                        default_state=migration_state,
+                        min_timestamp=min_timestamp,
+                    )
+                    if found:
+                        ou_config.update_migration_state_file(state)
+                        return
+            # 2. Check the update log (initial update / auto-install start)
             update_log = _get_log_path(self.folder, ou_config.name)
             if os.path.isfile(update_log):
                 patterns = {
@@ -1374,47 +1398,55 @@ class OpenupgraderMigration(models.Model):
                     else "updated",
                 }
                 state, found = self._parse_log_file(
-                    update_log, patterns, default_state=migration_state
+                    update_log,
+                    patterns,
+                    default_state=migration_state,
+                    min_timestamp=min_timestamp,
                 )
                 if found:
                     ou_config.update_migration_state_file(state)
-                    break
-
-            # 2. Check the migration log
-            migrate_log = _get_log_path(self.folder, ou_config.name, migrate=True)
-            if os.path.isfile(migrate_log):
-                patterns = {
-                    "CRITICAL": "failed",
-                    "Modules loaded": migration_state
-                    if migration_state == "ready_to_prepare"
-                    else "migrated",
-                }
-                state, found = self._parse_log_file(
-                    migrate_log, patterns, default_state=migration_state
-                )
-                if found:
-                    ou_config.update_migration_state_file(state)
-                    break
+                    return
 
     @staticmethod
-    def _parse_log_file(log_path, patterns, default_state):
+    def _parse_log_file(log_path, patterns, default_state, min_timestamp=None):
         """
         Helper to parse a log file for specific patterns.
         :param log_path: path to the log file
         :param patterns: dict of {string_to_find: state_to_return}
         :param default_state: state to return if file exists but no pattern matches
+        :param min_timestamp: only consider lines timed at or after this
+            "YYYY-MM-DD HH:MM:SS" timestamp (used to ignore previous runs)
         :return: (state, found_bool)
         """
         if not os.path.isfile(log_path):
             return None, False
 
+        min_datetime = None
+        if min_timestamp:
+            try:
+                min_datetime = datetime.strptime(min_timestamp, "%Y-%m-%d %H:%M:%S")
+            except (TypeError, ValueError):
+                min_datetime = None
+
         with open(log_path, "r") as f:
             # We read all lines. For large logs, we might want to read only the end.
             lines = f.readlines()
-            for line in reversed(lines):  # Check from the end for efficiency
-                for pattern, state in patterns.items():
-                    if pattern in line:
-                        return state, True
+        for line in reversed(lines):  # Check from the end for efficiency
+            if min_datetime is not None:
+                match = re.match(r"(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})", line)
+                if match:
+                    try:
+                        line_datetime = datetime.strptime(
+                            match.group(1), "%Y-%m-%d %H:%M:%S"
+                        )
+                    except ValueError:
+                        line_datetime = None
+                    # ignore lines written before the current run started
+                    if line_datetime and line_datetime < min_datetime:
+                        continue
+            for pattern, state in patterns.items():
+                if pattern in line:
+                    return state, True
         return default_state, True
 
     def _get_odoo_running_state(self):  # noqa C901
