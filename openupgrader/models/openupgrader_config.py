@@ -726,6 +726,19 @@ class OpenupgraderConfig(models.Model):
                 env_state="draft",
             )
 
+    def _get_odoo_executable(self, venv_path):
+        """Return the path of the Odoo server executable for this version.
+
+        It mirrors the path used when starting the environment, so that an
+        environment can be validated before it is marked as ``updated``.
+        """
+        version_float = float(self.name)
+        if version_float < 10:
+            return os.path.join(venv_path, "odoo", "openerp-server")
+        if version_float < 14:
+            return os.path.join(venv_path, "odoo", "odoo-bin")
+        return os.path.join(venv_path, "repos", "odoo", "odoo-bin")
+
     def button_create_env(self):  # noqa: C901
         self.ensure_one()
         _migration_state, env_state, _version = self.get_migration_state_from_file()
@@ -802,7 +815,27 @@ class OpenupgraderConfig(models.Model):
             self.install_pip_modules(odoo_modules_to_install_via_pip)
             # Include the addons installed with uv pip in the project and
             # refresh the environment so a plain ``uv sync`` keeps them.
-            self._sync_uv_env(venv_path, subprocess_env)
+            sync_process = self._sync_uv_env(venv_path, subprocess_env)
+            # Never mark a broken environment as updated: a missing Odoo
+            # executable or a failed ``uv sync`` must surface immediately
+            # instead of failing later when the migration is started.
+            odoo_executable = self._get_odoo_executable(venv_path)
+            if sync_process.returncode != 0 or not os.path.isfile(odoo_executable):
+                raise ValidationError(
+                    _(
+                        "Environment for version %(version)s is not usable: "
+                        "'uv sync' exited with code %(returncode)s and the Odoo "
+                        "executable '%(executable)s' %(state)s."
+                    )
+                    % {
+                        "version": self.name,
+                        "returncode": sync_process.returncode,
+                        "executable": odoo_executable,
+                        "state": _("is missing")
+                        if not os.path.isfile(odoo_executable)
+                        else _("exists"),
+                    }
+                )
             env_update_date = fields.Datetime.now()
             self.write(
                 {
