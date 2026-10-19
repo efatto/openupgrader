@@ -17,6 +17,7 @@ from odoo.tools.safe_eval import safe_eval
 
 from .tools import (
     _check_oca_authorship,
+    _get_migration_retry_number_from_migration_state_file,
     _get_retry_number_from_migration_state_file,
     _set_odoorc,
     _update_migration_state_file,
@@ -498,7 +499,8 @@ class OpenupgraderConfig(models.Model):
         env_state=None,
         env_update_date=None,
         date_started=None,
-        retry_number=None,
+        uninstall_modules_retry_number=None,
+        migration_retry_number=None,
     ):
         file_path = self.openupgrader_migration_id._default_migration_state_path()
         _update_migration_state_file(
@@ -508,7 +510,8 @@ class OpenupgraderConfig(models.Model):
             date_started=date_started,
             env_state=env_state,
             env_update_date=env_update_date,
-            retry_number=retry_number,
+            uninstall_modules_retry_number=uninstall_modules_retry_number,
+            migration_retry_number=migration_retry_number,
         )
 
     def get_uninstall_modules_retry_number(self):
@@ -518,13 +521,35 @@ class OpenupgraderConfig(models.Model):
 
     def increment_uninstall_modules_retry_number(self):
         """Increment and persist the retry number for pending modules removal."""
-        retry_number = self.get_uninstall_modules_retry_number() + 1
-        self.update_migration_state_file(retry_number=retry_number)
-        return retry_number
+        uninstall_modules_retry_number = self.get_uninstall_modules_retry_number() + 1
+        self.update_migration_state_file(
+            uninstall_modules_retry_number=uninstall_modules_retry_number)
+        return uninstall_modules_retry_number
 
     def reset_uninstall_modules_retry_number(self):
         """Reset the retry number for pending modules removal."""
-        self.update_migration_state_file(retry_number=0)
+        self.update_migration_state_file(uninstall_modules_retry_number=0)
+
+    def get_migration_retry_number(self):
+        """Get the number of retries done for a failed migration step."""
+        file_path = self.openupgrader_migration_id._default_migration_state_path()
+        return _get_migration_retry_number_from_migration_state_file(
+            file_path, self.name
+        )
+
+    def increment_migration_retry_number(self):
+        """Increment and persist the retry number of a failed migration step.
+
+        The counter is bounded by the auto-migration cron so that a
+        deterministic failure does not loop forever.
+        """
+        migration_retry_number = self.get_migration_retry_number() + 1
+        self.update_migration_state_file(migration_retry_number=migration_retry_number)
+        return migration_retry_number
+
+    def reset_migration_retry_number(self):
+        """Reset the retry number of a failed migration step."""
+        self.update_migration_state_file(migration_retry_number=0)
 
     def _create_db_backup(self, folder):
         self.ensure_one()
@@ -1229,10 +1254,16 @@ class OpenupgraderConfig(models.Model):
                     self.module_to_uninstall_before_migration_ids |= module_id
 
     def load_config_file(self):
-        if self.openupgrader_migration_id.config_file:
-            file_content = base64.decodebytes(
-                self.openupgrader_migration_id.config_file
-            )  # noqa
+        migration = self.openupgrader_migration_id
+        file_content = False
+        # A path takes precedence over the stored binary: it allows the yml to
+        # be edited on disk and reloaded without uploading it again.
+        if migration.config_file_path and os.path.isfile(migration.config_file_path):
+            with open(migration.config_file_path, "rb") as config_file:
+                file_content = config_file.read()
+        elif migration.config_file:
+            file_content = base64.decodebytes(migration.config_file)  # noqa
+        if file_content:
             repos = {}
             try:
                 repos = yaml.safe_load(file_content) or {}
@@ -1414,6 +1445,92 @@ class OpenupgraderConfig(models.Model):
         process.wait()
         return process.returncode == 0
 
+    @staticmethod
+    def _normalize_package_name(name):
+        """Normalize a distribution name the same way uv/PyPI do."""
+        return name.lower().replace("_", "-")
+
+    def _install_modules_batch(
+        self,
+        modules_to_install,
+        requirement_by_module,
+        venv_path,
+        extra_index_url,
+        pip_env,
+    ):
+        """Install as many modules as possible from the extra index at once.
+
+        ``modules_to_install`` is updated in place: the modules installed by
+        the batch are marked ``installed_from_extra``, while the modules that
+        are not available on the extra index are left as ``not_installed`` so
+        that the per-module fallback (including the OCA PyPI fallback) can
+        handle them. A single batch avoids one install (and one dependency
+        compile) per module, which dominates the migration time on large
+        module sets.
+        """
+        if not extra_index_url or not modules_to_install:
+            return set()
+        module_by_normalized_pkg = {
+            self._normalize_package_name(
+                requirement_by_module[module].split("==")[0]
+            ): module
+            for module in modules_to_install
+        }
+        pending = {
+            module: requirement_by_module[module] for module in modules_to_install
+        }
+        while pending:
+            requirements = list(pending.values())
+            reinstall_options = " ".join(
+                f"--reinstall-package {requirement.split('==')[0]}"
+                for requirement in requirements
+            )
+            command = (
+                f"uv pip install --default-index {extra_index_url} "
+                "--no-deps --upgrade --prerelease=allow "
+                f"{reinstall_options} " + " ".join(requirements)
+            )
+            logger.info(
+                "Installing %s modules from the extra index in one batch",
+                len(pending),
+            )
+            process = Popen(
+                command,
+                cwd=venv_path,
+                shell=True,
+                stderr=PIPE,
+                env=pip_env,
+            )
+            stderr = process.communicate()[1] or b""
+            if process.returncode == 0:
+                for module in pending:
+                    modules_to_install[module] = "installed_from_extra"
+                return set(pending)
+            error_text = stderr.decode(errors="replace").lower()
+            missing_normalized = set(
+                re.findall(r"odoo(?:1[0-9])?-addon-[a-z0-9][a-z0-9-]*", error_text)
+            )
+            removed = False
+            for normalized in missing_normalized:
+                module = module_by_normalized_pkg.get(normalized)
+                if module and module in pending:
+                    logger.info(
+                        "Module %s is not available on the extra index, "
+                        "leaving it to the per-module fallback",
+                        module,
+                    )
+                    pending.pop(module)
+                    removed = True
+            if not removed:
+                logger.info(
+                    "Unable to install the extra-index batch (%s modules), "
+                    "falling back to per-module installation. uv output: %s",
+                    len(pending),
+                    error_text.strip()[:2000],
+                )
+                break
+        return set()
+
     def install_pip_modules(self, module_names):  # noqa C901
         self.ensure_one()
         if not isinstance(module_names, list):
@@ -1451,10 +1568,40 @@ class OpenupgraderConfig(models.Model):
             and name not in obsolete_modules
             and name not in uninstall_before_names
         }
+        requirement_by_module = {
+            name: f"odoo{release_val}-addon-{name}{version_val}"
+            for name in modules_to_install
+        }
+        # Install the modules available on the extra index in a single batch,
+        # then resolve their dependencies in one pass. This is much faster than
+        # one install + one compile per module on large module sets.
+        batch_installed = self._install_modules_batch(
+            modules_to_install,
+            requirement_by_module,
+            venv_path,
+            extra_index_url,
+            pip_env,
+        )
+        if batch_installed and not self._install_missing_dependencies(
+            [f"odoo{release_val}-addon-{name}" for name in batch_installed],
+            venv_path,
+            extra_index_url,
+            pip_env,
+        ):
+            logger.warning(
+                "Batch dependency resolution failed for %s modules, "
+                "retrying them one by one",
+                len(batch_installed),
+            )
+            for name in batch_installed:
+                modules_to_install[name] = "not_installed"
+            batch_installed = set()
         for name in modules_to_install:
+            if modules_to_install[name] != "not_installed":
+                continue
             # pypi standard server is not safe, get from it only OCA's author packages
             base_pkg_name = f"odoo{release_val}-addon-{name}"
-            pkg_name = f"{base_pkg_name}{version_val}"
+            pkg_name = requirement_by_module[name]
             # Always install the base OCA version when it is available.
             oca_package_found = _check_oca_authorship(
                 base_pkg_name,
