@@ -3,7 +3,7 @@ describes the data model, the normal UI procedure and a headless procedure
 suitable for repeated test runs.
 
 Concepts
---------
+~~~~~~~~
 
 * one ``openupgrader.migration`` record per database to migrate;
 * one ``openupgrader.config`` record **per Odoo version** involved
@@ -33,7 +33,7 @@ The per-version state stored in the JSON file goes through::
              -> ready_to_prepare -> ... -> done
 
 Standard procedure (UI)
------------------------
+~~~~~~~~~~~~~~~~~~~~~~~
 
 1. Install ``openupgrader`` on the **source** database (14.0 in this
    example) and open *Settings -> OpenUpgrader -> OpenUpgrader Migration*.
@@ -52,7 +52,7 @@ for each intermediate version.  ``Restore last dump of database`` rewinds to
 the last good per-version dump (requires *Dump each database version*).
 
 Headless procedure (recommended for tests)
-------------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The module ships a small driver kit in ``tests/migration_kit/``.  It uses
 ``odoo-bin shell`` and only calls the module's own methods, so it exercises
@@ -99,7 +99,7 @@ Useful variations::
     tests/migration_kit/run_migration.sh shell
 
 YML configuration reference
----------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The file is a mapping ``version -> list of recipe dicts``.  A recipe can
 contain::
@@ -140,7 +140,7 @@ Notes:
   edit (the path takes precedence over the uploaded file).
 
 Making repeated tests fast
---------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 #. **Build each virtualenv once.**  ``button_create_env`` returns immediately
    when ``env_state`` is ``updated``.  A full 14 -> 18 test needs five
@@ -170,7 +170,7 @@ Making repeated tests fast
    ``status``.
 
 Recovery cheat sheet
---------------------
+~~~~~~~~~~~~~~~~~~~~
 
 ``mig = env["openupgrader.migration"].search([], limit=1)``
 
@@ -191,7 +191,7 @@ Recovery cheat sheet
 * State file inconsistent: ``mig.init_migration_state_file()``.
 
 Handy methods (all callable from ``odoo-bin shell``)
-----------------------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ``mig.button_do_auto_migration()``
     start the cron-driven migration;
