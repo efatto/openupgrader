@@ -32,8 +32,13 @@ logger = logging.getLogger(__name__)
 
 # Maximum number of attempts used to uninstall pending modules by restarting
 # Odoo with ``update=True``. The current attempt number is persisted in the
-# migration state file as ``retry_number``.
+# migration state uninstall modules key as ``uninstall_modules_retry_number``.
 MAX_UNINSTALL_MODULES_RETRY = 5
+
+# Maximum number of automatic retries for a failed migration/update step. The
+# auto-migration cron retries the step up to this number of times and then
+# marks the migration as failed, so a deterministic error cannot loop forever.
+MAX_MIGRATION_RETRY = 3
 
 
 class OpenupgraderMigration(models.Model):
@@ -169,16 +174,38 @@ class OpenupgraderMigration(models.Model):
     )
     config_file = fields.Binary(string="Config file (yml)")
     config_file_name = fields.Char(string="Config file name")
+    config_file_path = fields.Char(
+        string="Config file path (yml)",
+        help="Optional path of the yml configuration on the server. When set, "
+        "it takes precedence over the uploaded file and can be reloaded after "
+        "editing it on disk.",
+    )
 
     def write(self, vals):
         res = super().write(vals)
-        if "config_file" in vals:
+        if "config_file" in vals or "config_file_path" in vals:
             openupgrader_configs = self.env["openupgrader.config"].search(
                 [("openupgrader_migration_id", "=", self.id)]
             )
             for openupgrader_config in openupgrader_configs:
                 openupgrader_config.action_load_config()
         return res
+
+    def button_reload_config_file(self):
+        """Reload the yml configuration, preferring ``config_file_path``.
+
+        Pointing ``config_file_path`` at the yml allows editing it on disk and
+        reloading the configuration without uploading the file again.
+        """
+        self.ensure_one()
+        if self.config_file_path and not os.path.isfile(self.config_file_path):
+            raise UserError(_("Config file %s not found!") % self.config_file_path)
+        openupgrader_configs = self.env["openupgrader.config"].search(
+            [("openupgrader_migration_id", "=", self.id)]
+        )
+        for openupgrader_config in openupgrader_configs:
+            openupgrader_config.action_load_config()
+        return {"type": "ir.actions.client", "tag": "reload"}
 
     @api.depends("current_config_id", "to_config_id")
     def _compute_is_migration_done(self):
@@ -614,10 +641,12 @@ class OpenupgraderMigration(models.Model):
             "Migrated" if migrated else "Original",
             version_name,
         )
-        # Stream output to a file written with the current user
+        # Stream output to a file written with the current user. Reuse the
+        # connection variables (host/port/user/password), otherwise pg_dumpall
+        # falls back to the local socket and fails on remote/non-default setups.
         with open(globals_path, "w") as output_file:
             run(
-                f"pg_dumpall -U {self.pg_user} --globals-only",
+                f"{conn_vars} && pg_dumpall --globals-only",
                 stdout=output_file,
                 shell=True,
             )
@@ -628,6 +657,16 @@ class OpenupgraderMigration(models.Model):
         conn_vars = self._get_db_connection_variables()
         db_name = self.env.cr.dbname
         version_name = self.current_config_id.name
+        # Terminate any session still connected to the migrated database,
+        # otherwise ``dropdb`` fails with "database is being accessed by other
+        # users".
+        run(
+            f"{conn_vars} && psql -d postgres -c "
+            f"\"SELECT pg_terminate_backend(pid) FROM pg_stat_activity "
+            f"WHERE datname = '{db_name}_migrate' "
+            f"AND pid <> pg_backend_pid()\"",
+            shell=True,
+        )
         process = Popen(
             [
                 f"{conn_vars} && dropdb --if-exists {db_name}_migrate",
@@ -918,6 +957,7 @@ class OpenupgraderMigration(models.Model):
             f"Update of current version {self.current_config_id.name} completed"
         )
         self.current_config_id.update_migration_state_file(migration_state)
+        self.current_config_id.reset_migration_retry_number()
         self.button_prepare_for_migration()
         self.state = "auto"
 
@@ -1014,8 +1054,8 @@ class OpenupgraderMigration(models.Model):
         self._set_pending_modules_to_remove()
         found_modules_by_state = self._verify_module_states()
         pending_modules = found_modules_by_state.get("pending", [])
-        retry_number = self.current_config_id.get_uninstall_modules_retry_number()
-        if retry_number >= MAX_UNINSTALL_MODULES_RETRY:
+        uninstall_modules_retry_number = self.current_config_id.get_uninstall_modules_retry_number()
+        if uninstall_modules_retry_number >= MAX_UNINSTALL_MODULES_RETRY:
             logger.warning(
                 "Maximum number of retries (%s) reached while trying to uninstall "
                 "pending modules for version %s. Skipping uninstallation.",
@@ -1031,13 +1071,13 @@ class OpenupgraderMigration(models.Model):
         if pending_modules:
             # Persist the retry number in the migration state file before starting
             # Odoo, so that a failed/crashed attempt is taken into account as well.
-            retry_number = (
+            uninstall_modules_retry_number = (
                 self.current_config_id.increment_uninstall_modules_retry_number()
             )
             logger.info(
                 "Uninstalling pending modules for version %s (attempt %s/%s).",
                 self.current_config_id.name,
-                retry_number,
+                uninstall_modules_retry_number,
                 MAX_UNINSTALL_MODULES_RETRY,
             )
             logger.info(
@@ -1213,6 +1253,54 @@ class OpenupgraderMigration(models.Model):
                         f"not running, so try to restart it."
                     )
                     migration.button_do_migration()
+                elif migration_state in ["failed", "restore_failed"]:
+                    # Retry a failed step a bounded number of times instead of
+                    # leaving the cron in a silent no-op loop forever.
+                    config = (
+                        migration.env["openupgrader.config"].search(
+                            [("name", "=", current_version)], limit=1
+                        )
+                        or migration.next_config_id
+                        or migration.current_config_id
+                    )
+                    if not config:
+                        logger.info(
+                            "No configuration available to retry for %s.",
+                            migration.db_name,
+                        )
+                        continue
+                    migration_retry_number = config.get_migration_retry_number()
+                    if migration_retry_number >= MAX_MIGRATION_RETRY:
+                        logger.warning(
+                            "Maximum number of retries (%s) reached for "
+                            "version %s in state %s; marking the migration "
+                            "as failed.",
+                            MAX_MIGRATION_RETRY,
+                            config.name,
+                            migration_state,
+                        )
+                        migration.state = "failed"
+                        continue
+                    migration_retry_number = config.increment_migration_retry_number()
+                    logger.info(
+                        "Retrying version %s in state %s (attempt %s/%s).",
+                        config.name,
+                        migration_state,
+                        migration_retry_number,
+                        MAX_MIGRATION_RETRY,
+                    )
+                    # Remove the logs of the failed attempt, otherwise the log
+                    # scanner would immediately detect the same failure again.
+                    migration.button_clean_logs(config)
+                    if (
+                        migration_state == "restore_failed"
+                        and migration.current_config_id == config
+                    ):
+                        config.update_migration_state_file("started")
+                        migration.button_update_current_config()
+                    else:
+                        config.update_migration_state_file("ready_for_migration")
+                        migration.button_do_migration()
                 else:
                     logger.info(
                         f"Migration for {migration.db_name} in version "
@@ -1308,6 +1396,7 @@ class OpenupgraderMigration(models.Model):
         if self.dump_each_version_database:
             self.button_dump_current_database()
         self.current_config_id.update_migration_state_file("ready_to_prepare")
+        self.current_config_id.reset_migration_retry_number()
         # compare the fields directly: is_migration_done is a computed field
         # whose cache could have been filled before current_config_id was moved
         if self.current_config_id == self.to_config_id:
