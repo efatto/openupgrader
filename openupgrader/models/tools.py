@@ -348,11 +348,13 @@ def _update_migration_state_file(
     if env_update_date is not None:
         migration_state_dict[config_name]["env_update_date"] = env_update_date
     if uninstall_modules_retry_number is not None:
-        migration_state_dict[config_name]["uninstall_modules_retry_number"] = uninstall_modules_retry_number
+        migration_state_dict[config_name][
+            "uninstall_modules_retry_number"
+        ] = uninstall_modules_retry_number
     if migration_retry_number is not None:
-        migration_state_dict[config_name]["migration_retry_number"] = (
-            migration_retry_number
-        )
+        migration_state_dict[config_name][
+            "migration_retry_number"
+        ] = migration_retry_number
     migration_state_dict[config_name]["date_updated"] = datetime.now().strftime(
         "%Y-%m-%d %H:%M:%S"
     )
@@ -385,7 +387,12 @@ def _get_retry_number_from_migration_state_file(migration_state_path, config_nam
         except Exception as _e:
             migration_state_dict = {}
         if migration_state_dict and migration_state_dict.get(config_name):
-            return migration_state_dict[config_name].get("uninstall_modules_retry_number", 0) or 0
+            return (
+                migration_state_dict[config_name].get(
+                    "uninstall_modules_retry_number", 0
+                )
+                or 0
+            )
     return 0
 
 

@@ -662,9 +662,9 @@ class OpenupgraderMigration(models.Model):
         # users".
         run(
             f"{conn_vars} && psql -d postgres -c "
-            f"\"SELECT pg_terminate_backend(pid) FROM pg_stat_activity "
+            f'"SELECT pg_terminate_backend(pid) FROM pg_stat_activity '
             f"WHERE datname = '{db_name}_migrate' "
-            f"AND pid <> pg_backend_pid()\"",
+            f'AND pid <> pg_backend_pid()"',
             shell=True,
         )
         process = Popen(
@@ -1054,7 +1054,9 @@ class OpenupgraderMigration(models.Model):
         self._set_pending_modules_to_remove()
         found_modules_by_state = self._verify_module_states()
         pending_modules = found_modules_by_state.get("pending", [])
-        uninstall_modules_retry_number = self.current_config_id.get_uninstall_modules_retry_number()
+        uninstall_modules_retry_number = (
+            self.current_config_id.get_uninstall_modules_retry_number()
+        )
         if uninstall_modules_retry_number >= MAX_UNINSTALL_MODULES_RETRY:
             logger.warning(
                 "Maximum number of retries (%s) reached while trying to uninstall "

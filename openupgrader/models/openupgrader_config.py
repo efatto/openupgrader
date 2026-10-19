@@ -523,7 +523,8 @@ class OpenupgraderConfig(models.Model):
         """Increment and persist the retry number for pending modules removal."""
         uninstall_modules_retry_number = self.get_uninstall_modules_retry_number() + 1
         self.update_migration_state_file(
-            uninstall_modules_retry_number=uninstall_modules_retry_number)
+            uninstall_modules_retry_number=uninstall_modules_retry_number
+        )
         return uninstall_modules_retry_number
 
     def reset_uninstall_modules_retry_number(self):
