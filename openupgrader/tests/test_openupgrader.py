@@ -64,7 +64,7 @@ class OpenUpgrader(SavepointCase):
                 )
                 openupgrader_config = openupgrader_config_form.save()
                 setattr(cls, f"{config}_id", openupgrader_config)
-                openupgrader_config.button_recreate_venv()
+                openupgrader_config.button_create_env()
         cls.from_config_id = cls.config_obj.search(
             [
                 ("name", "=", cls.from_config),
@@ -211,17 +211,30 @@ class OpenUpgrader(SavepointCase):
         )
         migration.button_do_auto_migration()
         cron_migration = self.env.ref("openupgrader.cron_openugrader_do_auto_migration")
-        current_version = migration.current_config_id.name
-        while current_version != migration.to_config_id.name:
+        # The cron moves current_config_id only when the after-migration step of
+        # a version is completed. Waiting for is_migration_done (instead of the
+        # version reported in the state file) ensures the final after-migration
+        # step is executed too and prevents an endless loop on a stuck
+        # migration.
+        timeout = time.time() + 4 * 60 * 60
+        while not migration.is_migration_done:
+            if time.time() > timeout:
+                self.fail(
+                    "Migration did not complete within the expected time "
+                    "(state: %s, current version: %s)"
+                    % (migration.state, migration.current_config_id.name)
+                )
             # Directly trigger the cron job to simulate the migration process, as cron
             # are disabled in tests.
             cron_migration.method_direct_trigger()
             time.sleep(10)
-            (
-                _odoo_running_state,
-                _migration_state,
-                current_version,
-            ) = migration._get_odoo_running_state()
+            migration._get_odoo_running_state()
+            if migration.state == "failed":
+                self.fail(
+                    "Migration failed (current version: %s)"
+                    % migration.current_config_id.name
+                )
+        self.assertEqual(migration.state, "done")
         self.assertEqual(migration.is_migration_done, True)
         self.assertEqual(
             migration.current_config_id,
