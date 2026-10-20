@@ -629,6 +629,9 @@ class OpenupgraderConfig(models.Model):
         "module_auto_install_ids",
         "renamed_module_ids",
         "module_to_uninstall_before_migration_ids",
+        "module_to_uninstall_after_migration_ids",
+        "module_to_delete_after_migration_ids",
+        "obsolete_modules",
     )
     def _compute_module_installed_ids(self):  # noqa: C901
         for config in self:
@@ -921,6 +924,7 @@ class OpenupgraderConfig(models.Model):
             self.module_to_delete_after_migration_ids = False
             self.module_to_uninstall_after_migration_ids = False
             self.module_to_uninstall_before_migration_ids = False
+            self.obsolete_modules = False
             recipe_data = recipes[version_name]
         else:
             # add only apriori_py data to existing records
@@ -1253,6 +1257,7 @@ class OpenupgraderConfig(models.Model):
                         module_id = self.env["module.name"].create({"name": module})
                         module_id.flush()
                     self.module_to_uninstall_before_migration_ids |= module_id
+        self._compute_module_installed_ids()
 
     def load_config_file(self):
         migration = self.openupgrader_migration_id
