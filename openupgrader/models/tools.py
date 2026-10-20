@@ -100,7 +100,6 @@ def _get_odoo_pids(dbname):
     db_name = dbname
     commands = [
         f"pgrep -a python | grep {db_name}_migrate",
-        f"pgrep -a postgres | grep {db_name}_migrate",
     ]
     for command in commands:
         process = Popen(
