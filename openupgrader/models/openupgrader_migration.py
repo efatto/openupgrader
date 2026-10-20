@@ -187,7 +187,9 @@ class OpenupgraderMigration(models.Model):
             openupgrader_configs = self.env["openupgrader.config"].search(
                 [("openupgrader_migration_id", "=", self.id)]
             )
-            for openupgrader_config in openupgrader_configs:
+            for openupgrader_config in sorted(
+                openupgrader_configs, key=lambda c: float(c.name)
+            ):
                 openupgrader_config.action_load_config()
         return res
 
@@ -203,7 +205,9 @@ class OpenupgraderMigration(models.Model):
         openupgrader_configs = self.env["openupgrader.config"].search(
             [("openupgrader_migration_id", "=", self.id)]
         )
-        for openupgrader_config in openupgrader_configs:
+        for openupgrader_config in sorted(
+            openupgrader_configs, key=lambda c: float(c.name)
+        ):
             openupgrader_config.action_load_config()
         return {"type": "ir.actions.client", "tag": "reload"}
 
@@ -1228,6 +1232,27 @@ class OpenupgraderMigration(models.Model):
                 if migration_state == "starting":
                     migration.start_initial_migration()
                     continue
+                if migration_state == "restored":
+                    # The restore succeeded but the initial update did not run
+                    # (or was interrupted). Recover from it instead of leaving
+                    # the cron in a silent no-op loop.
+                    if not migration.current_config_id:
+                        migration.current_config_id = migration.from_config_id
+                    if not migration.next_config_id:
+                        migration.next_config_id = migration.env[
+                            "openupgrader.config"
+                        ].search(
+                            [
+                                (
+                                    "name",
+                                    "=",
+                                    str(float(migration.current_config_id.name) + 1),
+                                )
+                            ],
+                            limit=1,
+                        )
+                    migration.button_update_current_config()
+                    continue
                 # It the migration is done and the version is not yet moved to the next
                 # one, do after migration stuff and set to the next version
                 if (
@@ -1407,6 +1432,7 @@ class OpenupgraderMigration(models.Model):
             logger.info(
                 "Migration completed from version %s to version %s", from_n, to_n
             )
+            self.current_config_id.update_migration_state_file("done")
             self.state = "done"
 
     def _do_end_migration(self):
@@ -1662,17 +1688,26 @@ class OpenupgraderMigration(models.Model):
     def uninstall_modules(
         self, config_id, before_migration=False, after_migration=False
     ):
-        self.start_odoo(config_id)
-        modules_to_uninstall = []
+        modules_to_uninstall = set()
         if after_migration:
             after_ids = config_id.module_to_uninstall_after_migration_ids
-            modules_to_uninstall.extend(after_ids)
+            modules_to_uninstall.update(after_ids.mapped("name"))
         if before_migration:
             before_ids = config_id.module_to_uninstall_before_migration_ids
-            modules_to_uninstall.extend(before_ids)
+            modules_to_uninstall.update(before_ids.mapped("name"))
 
-        for module in modules_to_uninstall:
-            self.install_uninstall_module(module.name, config_id, install=False)
+        self.start_odoo(config_id)
+        for module_name in sorted(modules_to_uninstall):
+            try:
+                self.install_uninstall_module(
+                    module_name, config_id, install=False
+                )
+            except Exception:
+                logger.exception(
+                    "Unable to uninstall module %s in version %s",
+                    module_name,
+                    config_id.name,
+                )
 
         self.button_stop_odoo()
 
