@@ -1,4 +1,5 @@
 import configparser
+import importlib.util
 import logging
 import os
 import re
@@ -166,9 +167,6 @@ class OpenupgraderMigration(models.Model):
     pending_modules = fields.Text(string="Pending modules set as uninstalled")
     uninstalled_modules = fields.Text(string="Uninstalled modules")
     uninstallable_modules = fields.Text(string="Uninstallable modules")
-    uninstalled_modules_not_obsolete = fields.Text(
-        string="Uninstalled modules not obsolete"
-    )
     not_autoinstallable_modules = fields.Text(
         string="Modules set as not autoinstallable"
     )
@@ -396,6 +394,70 @@ class OpenupgraderMigration(models.Model):
             % version_name
         )
 
+    def _try_install_missing_pip_modules(self, config_id, out):
+        """Pip-install modules reported as missing by an Odoo update.
+
+        Modules explicitly scheduled for removal are skipped: Odoo reports
+        them as missing/inconsistent precisely because they must disappear.
+        """
+        if not any(
+            x in out
+            for x in [
+                "Some modules have inconsistent states",
+                "Unmet dependencies",
+            ]
+        ):
+            return
+        if "Some modules have inconsistent states" in out:
+            match_string = (
+                "Some modules have inconsistent states, some "
+                "dependencies may be missing: "
+            )
+            match = re.search(r"%s\[.*\]" % match_string, out)
+        else:
+            match_string = "Unmet dependencies: "
+            match = re.search(r"%s[a-z0-9_,]+" % match_string, out)
+        if not match:
+            return
+        try:
+            modules_str = match[0].replace(match_string, "")
+            if "," in modules_str and not (
+                modules_str.startswith("[") or modules_str.startswith("(")
+            ):
+                modules = [
+                    module.strip()
+                    for module in modules_str.split(",")
+                    if module.strip()
+                ]
+            else:
+                modules = safe_eval(modules_str)
+            modules_to_uninstall = set(
+                config_id.module_to_uninstall_after_migration_ids.mapped("name")
+            ) | set(config_id.module_to_uninstall_before_migration_ids.mapped("name"))
+            skipped_modules = [
+                module for module in modules if module in modules_to_uninstall
+            ]
+            modules = [
+                module for module in modules if module not in modules_to_uninstall
+            ]
+            if skipped_modules:
+                logger.info(
+                    "Skipping modules scheduled for removal on-the-fly: %s",
+                    skipped_modules,
+                )
+            if modules:
+                logger.info(f"Installing missing modules {str(modules)}")
+                config_id.install_pip_modules(modules)
+        except ValueError:
+            logger.info(
+                f"Unable to list modules to install via pip " f"on-the-fly: {match[0]}"
+            )
+        except Exception as e:
+            logger.info(
+                f"Unexpected error while installing missing "
+                f"modules via pip on-the-fly: {e}"
+            )
+
     def start_odoo(  # noqa C901
         self,
         config_id,
@@ -508,51 +570,8 @@ class OpenupgraderMigration(models.Model):
                     except UnicodeDecodeError:
                         continue
                     if out and out != " ":
-                        # try to install missing module with pip on-the-fly
-                        if try_install_missing_pip_module and any(
-                            x in out
-                            for x in [
-                                "Some modules have inconsistent states",
-                                "Unmet dependencies",
-                            ]
-                        ):
-                            if "Some modules have inconsistent states" in out:
-                                match_string = (
-                                    "Some modules have inconsistent states, some "
-                                    "dependencies may be missing: "
-                                )
-                                match = re.search(r"%s\[.*\]" % match_string, out)
-                            else:
-                                match_string = "Unmet dependencies: "
-                                match = re.search(r"%s[a-z0-9_,]+" % match_string, out)
-                            if match:
-                                try:
-                                    modules_str = match[0].replace(match_string, "")
-                                    if "," in modules_str and not (
-                                        modules_str.startswith("[")
-                                        or modules_str.startswith("(")
-                                    ):
-                                        modules = [
-                                            m.strip()
-                                            for m in modules_str.split(",")
-                                            if m.strip()
-                                        ]
-                                    else:
-                                        modules = safe_eval(modules_str)
-                                    logger.info(
-                                        f"Installing missing modules {str(modules)}"
-                                    )
-                                    config_id.install_pip_modules(modules)
-                                except ValueError:
-                                    logger.info(
-                                        f"Unable to list modules to install via pip "
-                                        f"on-the-fly: {match[0]}"
-                                    )
-                                except Exception as e:
-                                    logger.info(
-                                        f"Unexpected error while installing missing "
-                                        f"modules via pip on-the-fly: {e}"
-                                    )
+                        if try_install_missing_pip_module:
+                            self._try_install_missing_pip_modules(config_id, out)
                         logger.info(out.strip())
                 # Read the remaining
                 try:
@@ -853,7 +872,6 @@ class OpenupgraderMigration(models.Model):
         self.pending_modules = False
         self.uninstalled_modules = False
         self.uninstallable_modules = False
-        self.uninstalled_modules_not_obsolete = False
         self.button_clean_logs()
         self.init_migration_state_file()
         self.state = "draft"
@@ -962,6 +980,7 @@ class OpenupgraderMigration(models.Model):
         )
         self.current_config_id.update_migration_state_file(migration_state)
         self.current_config_id.reset_migration_retry_number()
+        self.uninstall_modules(self.current_config_id, after_migration=True)
         self.button_prepare_for_migration()
         self.state = "auto"
 
@@ -993,15 +1012,7 @@ class OpenupgraderMigration(models.Model):
         conn_vars = self._get_db_connection_variables()
         found_modules_by_state = self._verify_module_states()
         pending_modules = found_modules_by_state.get("pending", [])
-        obsolete_modules_to_remove = found_modules_by_state.get(
-            "to remove obsolete", []
-        )
-        missing_modules = [
-            x for x in pending_modules if x not in obsolete_modules_to_remove
-        ]
         self.uninstallable_modules = False
-        if missing_modules:
-            self.uninstalled_modules_not_obsolete = str(sorted(set(missing_modules)))
         if not pending_modules and self.current_config_id:
             # Nothing left to uninstall: reset the retry counter stored in the
             # migration state file.
@@ -1187,7 +1198,7 @@ class OpenupgraderMigration(models.Model):
             )
         logger.info(f"Delete via sql menu and views linked to modules {modules}.")
 
-    def _cron_migration(self):
+    def _cron_migration(self):  # noqa: C901
         logger.info("Starting OpenUpgrader auto-migration cron")
         try:
             migrations = self.env["openupgrader.migration"].search(
@@ -1341,25 +1352,11 @@ class OpenupgraderMigration(models.Model):
         logger.info("OpenUpgrader auto-migration cron finished")
 
     def _verify_module_states(self):
-        # get obsolete modules from openupgrader configs
-        obsolete_modules = []
-        openupgrader_configs = self.env["openupgrader.config"].search(
-            [
-                ("obsolete_modules", "!=", False),
-                ("openupgrader_migration_id", "=", self.id),
-            ]
-        )
-        if openupgrader_configs:
-            for openupgrader_config in openupgrader_configs:
-                obsolete_modules.extend(safe_eval(openupgrader_config.obsolete_modules))
-            obsolete_modules = set(obsolete_modules)
-        # get modules' state from db
         found_modules_by_state = {
             "to upgrade": [],
             "to remove": [],
             "to install": [],
             "pending": [],
-            "to remove obsolete": [],
             "uninstalled": [],
             "uninstallable": [],
             "installed": [],
@@ -1389,8 +1386,6 @@ class OpenupgraderMigration(models.Model):
                     if len(parts) == 2:
                         module, state = parts
                         found_modules_by_state[state].append(module)
-                        if module in obsolete_modules:
-                            found_modules_by_state["to remove obsolete"].append(module)
             found_modules_by_state["pending"] = (
                 found_modules_by_state.get("to upgrade", [])
                 + found_modules_by_state.get("to remove", [])
@@ -1685,6 +1680,35 @@ class OpenupgraderMigration(models.Model):
                             )
         self.button_stop_odoo()
 
+    def _get_apriori_modules_to_uninstall(self, config_id):
+        """Return the old module names declared in apriori.py for a version.
+
+        Only the keys of ``renamed_modules`` and ``merged_modules`` are
+        returned. They are the modules to uninstall after the migration to
+        that version.
+        """
+        if not config_id:
+            return set()
+        apriori_py_path = os.path.join(
+            self.folder,
+            f"openupgrade{config_id.name}",
+            "odoo",
+            "openupgrade_scripts",
+            "apriori.py",
+        )
+        if not os.path.isfile(apriori_py_path):
+            return set()
+        try:
+            spec = importlib.util.spec_from_file_location("apriori", apriori_py_path)
+            apriori_mod = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(apriori_mod)
+        except Exception:
+            logger.exception("Error loading apriori.py from %s", apriori_py_path)
+            return set()
+        renamed_modules = getattr(apriori_mod, "renamed_modules", {}) or {}
+        merged_modules = getattr(apriori_mod, "merged_modules", {}) or {}
+        return set(renamed_modules) | set(merged_modules)
+
     def uninstall_modules(
         self, config_id, before_migration=False, after_migration=False
     ):
@@ -1692,6 +1716,9 @@ class OpenupgraderMigration(models.Model):
         if after_migration:
             after_ids = config_id.module_to_uninstall_after_migration_ids
             modules_to_uninstall.update(after_ids.mapped("name"))
+            modules_to_uninstall.update(
+                self._get_apriori_modules_to_uninstall(config_id)
+            )
         if before_migration:
             before_ids = config_id.module_to_uninstall_before_migration_ids
             modules_to_uninstall.update(before_ids.mapped("name"))
@@ -1699,9 +1726,7 @@ class OpenupgraderMigration(models.Model):
         self.start_odoo(config_id)
         for module_name in sorted(modules_to_uninstall):
             try:
-                self.install_uninstall_module(
-                    module_name, config_id, install=False
-                )
+                self.install_uninstall_module(module_name, config_id, install=False)
             except Exception:
                 logger.exception(
                     "Unable to uninstall module %s in version %s",

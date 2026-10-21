@@ -174,7 +174,6 @@
                             <group>
                                 <field name="pending_modules" />
                                 <field name="uninstalled_modules" />
-                                <field name="uninstalled_modules_not_obsolete" />
                                 <field name="uninstallable_modules" />
                             </group>
                         </page>

@@ -325,7 +325,6 @@ class OpenupgraderConfig(models.Model):
         ondelete="cascade",
         copy=False,
     )
-    obsolete_modules = fields.Text()
     core_modules = fields.Text()
     not_autoinstallable_modules = fields.Text()
     env_state = fields.Selection(
@@ -631,7 +630,6 @@ class OpenupgraderConfig(models.Model):
         "module_to_uninstall_before_migration_ids",
         "module_to_uninstall_after_migration_ids",
         "module_to_delete_after_migration_ids",
-        "obsolete_modules",
     )
     def _compute_module_installed_ids(self):  # noqa: C901
         for config in self:
@@ -685,11 +683,6 @@ class OpenupgraderConfig(models.Model):
                     new_module_installed_ids -= (
                         previous_config.module_to_uninstall_before_migration_ids
                     )
-                    if previous_config.obsolete_modules:
-                        new_module_installed_ids = new_module_installed_ids.filtered(
-                            lambda m, pc=previous_config: m.name
-                            not in safe_eval(pc.obsolete_modules)
-                        )
                     # add new modules to install
                     for module_auto_install in config.module_auto_install_ids:
                         if module_auto_install.name in new_module_installed_ids.mapped(
@@ -924,7 +917,6 @@ class OpenupgraderConfig(models.Model):
             self.module_to_delete_after_migration_ids = False
             self.module_to_uninstall_after_migration_ids = False
             self.module_to_uninstall_before_migration_ids = False
-            self.obsolete_modules = False
             recipe_data = recipes[version_name]
         else:
             # add only apriori_py data to existing records
@@ -960,7 +952,6 @@ class OpenupgraderConfig(models.Model):
                         for renamed_module, target_module in renamed_modules.items():
                             if isinstance(recipe_data, list):
                                 renamed_modules_found = False
-                                obsolete_found = False
                                 for recipe in recipe_data:
                                     if "renamed_modules" in recipe.keys():
                                         if not isinstance(
@@ -971,11 +962,6 @@ class OpenupgraderConfig(models.Model):
                                             f"{renamed_module} {target_module}"
                                         )
                                         renamed_modules_found = True
-                                    if "obsolete" in recipe.keys():
-                                        if not isinstance(recipe["obsolete"], list):
-                                            recipe["obsolete"] = []
-                                        recipe["obsolete"].append(renamed_module)
-                                        obsolete_found = True
                                 if not renamed_modules_found:
                                     recipe_data.append(
                                         {
@@ -984,19 +970,12 @@ class OpenupgraderConfig(models.Model):
                                             ],
                                         }
                                     )
-                                if not obsolete_found:
-                                    recipe_data.append(
-                                        {
-                                            "obsolete": [renamed_module],
-                                        }
-                                    )
                             else:
                                 recipe_data.append(
                                     {
                                         "renamed_modules": [
                                             f"{renamed_module} {target_module}"
                                         ],
-                                        "obsolete": [renamed_module],
                                     }
                                 )
                     merged_modules = getattr(apriori_mod, "merged_modules", {})
@@ -1004,7 +983,6 @@ class OpenupgraderConfig(models.Model):
                         for merged_module, target_module in merged_modules.items():
                             if isinstance(recipe_data, list):
                                 auto_install_found = False
-                                obsolete_found = False
                                 for recipe in recipe_data:
                                     if "auto_install" in recipe.keys():
                                         if not isinstance(recipe["auto_install"], list):
@@ -1013,11 +991,6 @@ class OpenupgraderConfig(models.Model):
                                             f"{merged_module} {target_module}"
                                         )
                                         auto_install_found = True
-                                    if "obsolete" in recipe.keys():
-                                        if not isinstance(recipe["obsolete"], list):
-                                            recipe["obsolete"] = []
-                                        recipe["obsolete"].append(merged_module)
-                                        obsolete_found = True
                                 if not auto_install_found:
                                     recipe_data.append(
                                         {
@@ -1026,19 +999,12 @@ class OpenupgraderConfig(models.Model):
                                             ]
                                         }
                                     )
-                                if not obsolete_found:
-                                    recipe_data.append(
-                                        {
-                                            "obsolete": [merged_module],
-                                        }
-                                    )
                             else:
                                 recipe_data.append(
                                     {
                                         "auto_install": [
                                             f"{merged_module} {target_module}"
                                         ],
-                                        "obsolete": [merged_module],
                                     }
                                 )
         if isinstance(recipe_data, dict):
@@ -1223,9 +1189,6 @@ class OpenupgraderConfig(models.Model):
                         module_id = self.env["module.name"].create({"name": module})
                         module_id.flush()
                     self.module_to_delete_after_migration_ids |= module_id
-            if recipe.get("obsolete"):
-                obsolete = recipe.get("obsolete")
-                self.obsolete_modules = str(set(obsolete))
             if recipe.get("not_autoinstallable_modules"):
                 not_autoinstallable_modules = recipe.get("not_autoinstallable_modules")
                 self.not_autoinstallable_modules = str(set(not_autoinstallable_modules))
@@ -1549,30 +1512,29 @@ class OpenupgraderConfig(models.Model):
         subprocess_env = _get_env_for_subprocess(venv_path, self.python_version)
         # try to install with pip and log error if it fails
         not_installable_modules = []
-        if not self.obsolete_modules:
-            obsolete_modules = []
-        else:
-            obsolete_modules = safe_eval(self.obsolete_modules)
         if not self.core_modules:
             core_modules = []
         else:
             core_modules = safe_eval(self.core_modules)
         uninstall_before = self.module_to_uninstall_before_migration_ids
         uninstall_before_names = uninstall_before.mapped("name")
+        uninstall_after_names = self.module_to_uninstall_after_migration_ids.mapped(
+            "name"
+        )
         extra_index_url = subprocess_env.get("UV_INDEX")
         pip_env = subprocess_env.copy()
         # Avoid conflicts between UV_INDEX and --default-index.
         pip_env.pop("UV_INDEX", None)
         release_val = odoo_version_int if odoo_version_int < 15 else ""
         version_val = f"=={self.name}.*" if odoo_version_int >= 15 else ""
-        # exclude module if present in self obsolete modules,
-        # core modules or to be uninstalled before migration
+        # exclude core modules and modules to be uninstalled
+        # before/after migration
         modules_to_install = {
             name: "not_installed"
             for name in module_names
             if name not in core_modules
-            and name not in obsolete_modules
             and name not in uninstall_before_names
+            and name not in uninstall_after_names
         }
         requirement_by_module = {
             name: f"odoo{release_val}-addon-{name}{version_val}"

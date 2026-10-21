@@ -169,9 +169,6 @@
                                     widget="many2many_tags"
                                 />
                             </group>
-                            <group string="Obsolete modules">
-                                <field name="obsolete_modules" />
-                            </group>
                             <group string="Not autoinstallable modules">
                                 <field name="not_autoinstallable_modules" />
                             </group>
