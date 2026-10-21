@@ -606,21 +606,36 @@ class OpenupgraderConfig(models.Model):
             module_id.flush()
         return module_id
 
-    def _get_core_modules(self, odoo_path):
+    def _get_core_modules(self, odoo_path=None):
+        """Return the modules shipped with the target Odoo version.
+
+        When ``odoo_path`` is not provided, resolve the path of the target
+        Odoo checkout. If it is not available, fall back to the stored
+        ``core_modules`` field, which is filled when the environment is
+        created.
+        """
         self.ensure_one()
-        odoo_addons_path = os.path.join(
-            odoo_path,
-            "addons",
-        )
-        res = [
-            "base",
-        ]
+        if odoo_path is None:
+            venv_path = os.path.join(
+                self.openupgrader_migration_id.folder, f"openupgrade{self.name}"
+            )
+            odoo_path = (
+                os.path.join(venv_path, "odoo")
+                if self.odoo_is_openupgrade
+                else os.path.join(venv_path, "repos", "odoo")
+            )
+            if not os.path.isdir(os.path.join(odoo_path, "addons")):
+                if self.core_modules:
+                    return set(safe_eval(self.core_modules))
+                return set()
+        odoo_addons_path = os.path.join(odoo_path, "addons")
+        res = {"base"}
         if os.path.isdir(odoo_addons_path):
             for module in os.listdir(odoo_addons_path):
                 if os.path.isfile(
                     os.path.join(odoo_addons_path, module, "__manifest__.py")
                 ):
-                    res.append(module)
+                    res.add(module)
         return res
 
     @api.depends(

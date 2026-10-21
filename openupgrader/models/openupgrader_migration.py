@@ -1680,12 +1680,25 @@ class OpenupgraderMigration(models.Model):
                             )
         self.button_stop_odoo()
 
+    def _exclude_core_modules(self, config_id, module_names):
+        core_modules = config_id._get_core_modules()
+        core_modules_to_keep = module_names & core_modules
+        if core_modules_to_keep:
+            logger.info(
+                "Not uninstalling modules that are now part of Odoo %s: %s",
+                config_id.name,
+                sorted(core_modules_to_keep),
+            )
+        return module_names - core_modules
+
     def _get_apriori_modules_to_uninstall(self, config_id):
         """Return the old module names declared in apriori.py for a version.
 
         Only the keys of ``renamed_modules`` and ``merged_modules`` are
         returned. They are the modules to uninstall after the migration to
-        that version.
+        that version. Modules shipped with the target Odoo core are excluded:
+        the old OCA module may have been replaced by a core module using the
+        same technical name.
         """
         if not config_id:
             return set()
@@ -1707,7 +1720,8 @@ class OpenupgraderMigration(models.Model):
             return set()
         renamed_modules = getattr(apriori_mod, "renamed_modules", {}) or {}
         merged_modules = getattr(apriori_mod, "merged_modules", {}) or {}
-        return set(renamed_modules) | set(merged_modules)
+        modules_to_uninstall = set(renamed_modules) | set(merged_modules)
+        return self._exclude_core_modules(config_id, modules_to_uninstall)
 
     def uninstall_modules(
         self, config_id, before_migration=False, after_migration=False
@@ -1722,6 +1736,9 @@ class OpenupgraderMigration(models.Model):
         if before_migration:
             before_ids = config_id.module_to_uninstall_before_migration_ids
             modules_to_uninstall.update(before_ids.mapped("name"))
+        modules_to_uninstall = self._exclude_core_modules(
+            config_id, modules_to_uninstall
+        )
 
         self.start_odoo(config_id)
         for module_name in sorted(modules_to_uninstall):
