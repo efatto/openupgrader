@@ -1741,7 +1741,14 @@ class OpenupgraderMigration(models.Model):
         )
 
         self.start_odoo(config_id)
+        odoo_client = self.odoo_connect(config_id)
+        module_obj = odoo_client.env["ir.module.module"] if odoo_client else None
         for module_name in sorted(modules_to_uninstall):
+            if module_obj and module_obj.search(
+                [("name", "=", module_name), ("state", "=", "uninstalled")]
+            ):
+                logger.info("Module %s is already uninstalled, skipping" % module_name)
+                continue
             try:
                 self.install_uninstall_module(module_name, config_id, install=False)
             except Exception:
