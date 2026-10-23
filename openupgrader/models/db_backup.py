@@ -28,7 +28,8 @@ class DbBackup(models.Model):
     def dump_db_manifest(cr, version_name, dbname):
         pg_version = "%d.%d" % divmod(cr._obj.connection.server_version / 100, 100)
         cr.execute(
-            "SELECT name, latest_version FROM ir_module_module WHERE state = 'installed'"
+            "SELECT name, latest_version FROM ir_module_module "
+            "WHERE state = 'installed'"
         )
         modules = dict(cr.fetchall())
         manifest = {
@@ -58,9 +59,7 @@ class DbBackup(models.Model):
                 try:
                     os.makedirs(rec.folder)
                 except OSError as e:
-                    logger.info(
-                        "Error %s in creating folder: %s " % (e, rec.folder)
-                    )
+                    logger.info("Error %s in creating folder: %s " % (e, rec.folder))
                 with open(os.path.join(rec.folder, filename), "wb") as destiny:
                     # Always generate new backup
                     rec.dump_db_migration(

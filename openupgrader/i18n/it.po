@@ -1,14 +1,14 @@
 # Translation of Odoo Server.
 # This file contains the translation of the following modules:
-#	* openupgrader
+# 	* openupgrader
 #
 msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-12-08 17:02+0000\n"
-"PO-Revision-Date: 2025-12-08 17:02+0000\n"
-"Last-Translator: <>\n"
+"POT-Creation-Date: 2026-04-15 16:37+0000\n"
+"PO-Revision-Date: 2026-04-15 16:37+0000\n"
+"Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -16,48 +16,53 @@ msgstr ""
 "Plural-Forms: \n"
 
 #. module: openupgrader
-#: selection:openupgrader.config,name:0
+#: model:ir.model.fields.selection,name:openupgrader.selection__openupgrader_config__name__10_0
 msgid "10.0"
 msgstr ""
 
 #. module: openupgrader
-#: selection:openupgrader.config,name:0
+#: model:ir.model.fields.selection,name:openupgrader.selection__openupgrader_config__name__11_0
 msgid "11.0"
 msgstr ""
 
 #. module: openupgrader
-#: selection:openupgrader.config,name:0
+#: model:ir.model.fields.selection,name:openupgrader.selection__openupgrader_config__name__12_0
 msgid "12.0"
 msgstr ""
 
 #. module: openupgrader
-#: selection:openupgrader.config,name:0
+#: model:ir.model.fields.selection,name:openupgrader.selection__openupgrader_config__name__13_0
 msgid "13.0"
 msgstr ""
 
 #. module: openupgrader
-#: selection:openupgrader.config,name:0
+#: model:ir.model.fields.selection,name:openupgrader.selection__openupgrader_config__name__14_0
 msgid "14.0"
 msgstr ""
 
 #. module: openupgrader
-#: selection:openupgrader.config,name:0
+#: model:ir.model.fields.selection,name:openupgrader.selection__openupgrader_config__name__15_0
 msgid "15.0"
 msgstr ""
 
 #. module: openupgrader
-#: selection:openupgrader.config,name:0
+#: model:ir.model.fields.selection,name:openupgrader.selection__openupgrader_config__name__16_0
 msgid "16.0"
 msgstr ""
 
 #. module: openupgrader
-#: selection:openupgrader.config,name:0
+#: model:ir.model.fields.selection,name:openupgrader.selection__openupgrader_config__name__17_0
 msgid "17.0"
 msgstr ""
 
 #. module: openupgrader
-#: selection:openupgrader.config,name:0
+#: model:ir.model.fields.selection,name:openupgrader.selection__openupgrader_config__name__18_0
 msgid "18.0"
+msgstr ""
+
+#. module: openupgrader
+#: model:ir.model.fields.selection,name:openupgrader.selection__openupgrader_config__name__19_0
+msgid "19.0"
 msgstr ""
 
 #. module: openupgrader
@@ -82,35 +87,54 @@ msgstr "3: prepara la migrazione"
 
 #. module: openupgrader
 #: model_terms:ir.ui.view,arch_db:openupgrader.view_openupgrader_migration_form
-msgid "4: migrate (re-click until this disappears)"
-msgstr ""
+msgid "4: migrate (if the process has failed)"
+msgstr "4: migra (se il processo è fallito)"
 
 #. module: openupgrader
-#: selection:openupgrader.config,name:0
+#: model_terms:ir.ui.view,arch_db:openupgrader.view_openupgrader_migration_form
+msgid "4: migrate (re-click until this disappears)"
+msgstr "4: migra (clicca fino a quando non scompare)"
+
+#. module: openupgrader
+#: model:ir.model.fields.selection,name:openupgrader.selection__openupgrader_config__name__7_0
 msgid "7.0"
 msgstr ""
 
 #. module: openupgrader
-#: selection:openupgrader.config,name:0
+#: model:ir.model.fields.selection,name:openupgrader.selection__openupgrader_config__name__8_0
 msgid "8.0"
 msgstr ""
 
 #. module: openupgrader
-#: selection:openupgrader.config,name:0
+#: model:ir.model.fields.selection,name:openupgrader.selection__openupgrader_config__name__9_0
 msgid "9.0"
 msgstr ""
 
 #. module: openupgrader
 #: model_terms:ir.ui.view,arch_db:openupgrader.view_openupgrader_migration_form
-msgid "<i class=\"fa fa-info-circle\"/>\n"
-"                                        <span>Migration is running!</span>"
-msgstr "<i class=\"fa fa-info-circle\"/>\n"
-"                                    <span>Migrazione attiva!</span>"
+msgid ""
+"<i class=\"fa fa-info-circle\"/>\n"
+"                                            <span>Migration is running!</span>"
+msgstr ""
+"<i class=\"fa fa-info-circle\"/>\n"
+"                                    <span>Attenzione: L'istanza di Odoo migrata è attiva!</span>"
 
 #. module: openupgrader
 #: model:ir.model.fields,help:openupgrader.field_openupgrader_migration__folder
 msgid "Absolute path for migrated Odoo instance"
 msgstr "Percorso assoluto per le istanze di Odoo migrate"
+
+#. module: openupgrader
+#: model:ir.model.fields,field_description:openupgrader.field_auto_install_module__assigned_attachment_ids
+#: model:ir.model.fields,field_description:openupgrader.field_db_backup__assigned_attachment_ids
+#: model:ir.model.fields,field_description:openupgrader.field_module_name__assigned_attachment_ids
+#: model:ir.model.fields,field_description:openupgrader.field_openupgrader_config__assigned_attachment_ids
+#: model:ir.model.fields,field_description:openupgrader.field_openupgrader_migration__assigned_attachment_ids
+#: model:ir.model.fields,field_description:openupgrader.field_pip_requirement__assigned_attachment_ids
+#: model:ir.model.fields,field_description:openupgrader.field_remote_repo__assigned_attachment_ids
+#: model:ir.model.fields,field_description:openupgrader.field_sql_update_command__assigned_attachment_ids
+msgid "Assigned Attachments"
+msgstr "Allegati assegnati"
 
 #. module: openupgrader
 #: model:ir.model.fields,field_description:openupgrader.field_openupgrader_config__module_auto_install_ids
@@ -129,8 +153,8 @@ msgstr "Moduli da auto installare"
 
 #. module: openupgrader
 #: model_terms:ir.ui.view,arch_db:openupgrader.view_openupgrader_migration_form
-msgid "Check utilities"
-msgstr "Utilità di controllo"
+msgid "Check migration running state"
+msgstr "Verifica se la migrazione è in corso"
 
 #. module: openupgrader
 #: model_terms:ir.ui.view,arch_db:openupgrader.view_openupgrader_migration_form
@@ -138,14 +162,20 @@ msgid "Clean migration log"
 msgstr "Pulisci log migrazione"
 
 #. module: openupgrader
-#: model:ir.model.fields,field_description:openupgrader.field_openupgrader_config__config_file
+#: model:ir.model.fields,field_description:openupgrader.field_openupgrader_migration__config_file
 msgid "Config file (yml)"
 msgstr "File di configurazione (yml)"
 
 #. module: openupgrader
-#: model:ir.model.fields,field_description:openupgrader.field_openupgrader_config__config_file_name
+#: model:ir.model.fields,field_description:openupgrader.field_openupgrader_migration__config_file_name
 msgid "Config file name"
-msgstr "Nome del file di configuazione"
+msgstr "Nome del file di configurazione"
+
+#. module: openupgrader
+#: code:addons/openupgrader/models/openupgrader_migration.py:0
+#, python-format
+msgid "Connection to Odoo failed for %s!"
+msgstr "Connessione a Odoo fallita per %s!"
 
 #. module: openupgrader
 #: model_terms:ir.ui.view,arch_db:openupgrader.view_openupgrader_config_form
@@ -175,17 +205,12 @@ msgid "Created on"
 msgstr "Creato il"
 
 #. module: openupgrader
-#: model_terms:ir.ui.view,arch_db:openupgrader.view_openupgrader_migration_form
-msgid "Crons"
-msgstr "Attività pianificate"
-
-#. module: openupgrader
-#: model:ir.model.fields,field_description:openupgrader.field_openupgrader_migration__current_version_id
+#: model:ir.model.fields,field_description:openupgrader.field_openupgrader_migration__current_config_id
 msgid "Current migrated version"
 msgstr "Versione migrata corrente"
 
 #. module: openupgrader
-#: code:addons/openupgrader/models/openupgrader_migration.py:538
+#: code:addons/openupgrader/models/openupgrader_migration.py:0
 #, python-format
 msgid "Current version is required!"
 msgstr "La versione corrente è richiesta!"
@@ -199,7 +224,7 @@ msgstr "Opzioni custom per la connessione postgres, tipo '--cluster 14/main'"
 #: model:ir.model,name:openupgrader.model_db_backup
 #: model:ir.model.fields,field_description:openupgrader.field_openupgrader_config__db_backup_id
 msgid "Database Backup"
-msgstr "Backup Database"
+msgstr "Backup database"
 
 #. module: openupgrader
 #: model:ir.model.fields,field_description:openupgrader.field_openupgrader_migration__db_name
@@ -212,12 +237,18 @@ msgid "Database port"
 msgstr "Porta Db"
 
 #. module: openupgrader
-#: model:ir.model.fields,field_description:openupgrader.field_openupgrader_migration__disabled_cron_ids
-msgid "Disabled ir crons"
-msgstr "Cron disabilitati"
+#: code:addons/openupgrader/models/openupgrader_migration.py:0
+#, python-format
+msgid ""
+"Db name, login and password are required to connect to the Odoo instance. Please "
+"fill them and try again."
+msgstr ""
+"Nome del db, login e password sono richiesti per la connessione all'istanza Odoo. Compilare "
+" i campi e riprovare."
 
 #. module: openupgrader
 #: model:ir.model.fields,field_description:openupgrader.field_auto_install_module__display_name
+#: model:ir.model.fields,field_description:openupgrader.field_db_backup__display_name
 #: model:ir.model.fields,field_description:openupgrader.field_module_name__display_name
 #: model:ir.model.fields,field_description:openupgrader.field_openupgrader_config__display_name
 #: model:ir.model.fields,field_description:openupgrader.field_openupgrader_migration__display_name
@@ -225,7 +256,12 @@ msgstr "Cron disabilitati"
 #: model:ir.model.fields,field_description:openupgrader.field_remote_repo__display_name
 #: model:ir.model.fields,field_description:openupgrader.field_sql_update_command__display_name
 msgid "Display Name"
-msgstr "Nome visualizzato"
+msgstr "Nome da visualizzare"
+
+#. module: openupgrader
+#: model_terms:ir.ui.view,arch_db:openupgrader.view_openupgrader_migration_form
+msgid "Do auto-migration"
+msgstr "Esegui la migrazione automatica"
 
 #. module: openupgrader
 #: model_terms:ir.ui.view,arch_db:openupgrader.view_openupgrader_migration_form
@@ -233,14 +269,14 @@ msgid "Do some useful stuff before migration"
 msgstr "Fa alcune cose utili prima della migrazione"
 
 #. module: openupgrader
-#: selection:openupgrader.migration,state:0
+#: model:ir.model.fields.selection,name:openupgrader.selection__openupgrader_migration__state__done
 msgid "Done"
-msgstr ""
+msgstr "Completato"
 
 #. module: openupgrader
-#: selection:openupgrader.migration,state:0
+#: model:ir.model.fields.selection,name:openupgrader.selection__openupgrader_migration__state__draft
 msgid "Draft"
-msgstr ""
+msgstr "Bozza"
 
 #. module: openupgrader
 #: model_terms:ir.ui.view,arch_db:openupgrader.view_openupgrader_migration_form
@@ -248,7 +284,7 @@ msgid "Dump current migrating database"
 msgstr "Esegui il backup del database in corso di migrazione"
 
 #. module: openupgrader
-#: code:addons/openupgrader/models/openupgrader_migration.py:613
+#: code:addons/openupgrader/models/openupgrader_migration.py:0
 #, python-format
 msgid "Dump sql file %s not found!"
 msgstr "File sql di backup %s non trovato!"
@@ -257,6 +293,11 @@ msgstr "File sql di backup %s non trovato!"
 #: model_terms:ir.ui.view,arch_db:openupgrader.view_openupgrader_migration_form
 msgid "Dump utilities"
 msgstr "Utilità di backup"
+
+#. module: openupgrader
+#: model_terms:ir.ui.view,arch_db:openupgrader.view_openupgrader_migration_form
+msgid "Environment management"
+msgstr "Gestione dell'ambiente"
 
 #. module: openupgrader
 #: model_terms:ir.ui.view,arch_db:openupgrader.view_backup_conf_form
@@ -269,9 +310,9 @@ msgid "Extra Odoo modules to be installed via pip"
 msgstr "Moduli Odoo aggiuntivi da installare tramite pip"
 
 #. module: openupgrader
-#: selection:openupgrader.migration,state:0
+#: model:ir.model.fields.selection,name:openupgrader.selection__openupgrader_migration__state__failed
 msgid "Failed"
-msgstr ""
+msgstr "Fallito"
 
 #. module: openupgrader
 #: model:ir.model.fields,field_description:openupgrader.field_openupgrader_migration__folder
@@ -279,7 +320,7 @@ msgid "Folder"
 msgstr "Cartella"
 
 #. module: openupgrader
-#: model:ir.model.fields,field_description:openupgrader.field_openupgrader_migration__from_version_id
+#: model:ir.model.fields,field_description:openupgrader.field_openupgrader_migration__from_config_id
 msgid "From version"
 msgstr "Dalla versione"
 
@@ -304,7 +345,13 @@ msgid "Git User"
 msgstr "User Git"
 
 #. module: openupgrader
+#: model_terms:ir.ui.view,arch_db:openupgrader.view_openupgrader_migration_form
+msgid "I feel lucky!"
+msgstr "Mi sento fortunato!"
+
+#. module: openupgrader
 #: model:ir.model.fields,field_description:openupgrader.field_auto_install_module__id
+#: model:ir.model.fields,field_description:openupgrader.field_db_backup__id
 #: model:ir.model.fields,field_description:openupgrader.field_module_name__id
 #: model:ir.model.fields,field_description:openupgrader.field_openupgrader_config__id
 #: model:ir.model.fields,field_description:openupgrader.field_openupgrader_migration__id
@@ -315,10 +362,11 @@ msgid "ID"
 msgstr ""
 
 #. module: openupgrader
-#: code:addons/openupgrader/models/openupgrader_migration.py:155
+#: code:addons/openupgrader/models/openupgrader_migration.py:0
 #, python-format
 msgid "If you want to do this action anyway, force the stop."
 msgstr ""
+"Se vuoi comunque eseguire questa azione, forza l'arresto della migrazione."
 
 #. module: openupgrader
 #: model_terms:ir.ui.view,arch_db:openupgrader.view_openupgrader_config_form
@@ -342,6 +390,7 @@ msgstr "È Odoo"
 
 #. module: openupgrader
 #: model:ir.model.fields,field_description:openupgrader.field_auto_install_module____last_update
+#: model:ir.model.fields,field_description:openupgrader.field_db_backup____last_update
 #: model:ir.model.fields,field_description:openupgrader.field_module_name____last_update
 #: model:ir.model.fields,field_description:openupgrader.field_openupgrader_config____last_update
 #: model:ir.model.fields,field_description:openupgrader.field_openupgrader_migration____last_update
@@ -349,7 +398,7 @@ msgstr "È Odoo"
 #: model:ir.model.fields,field_description:openupgrader.field_remote_repo____last_update
 #: model:ir.model.fields,field_description:openupgrader.field_sql_update_command____last_update
 msgid "Last Modified on"
-msgstr "Ultima modifica il"
+msgstr "Data di ultima modifica"
 
 #. module: openupgrader
 #: model:ir.model.fields,field_description:openupgrader.field_auto_install_module__write_uid
@@ -360,7 +409,7 @@ msgstr "Ultima modifica il"
 #: model:ir.model.fields,field_description:openupgrader.field_remote_repo__write_uid
 #: model:ir.model.fields,field_description:openupgrader.field_sql_update_command__write_uid
 msgid "Last Updated by"
-msgstr "Ultimo aggiornamento di"
+msgstr "Ultima modifica di"
 
 #. module: openupgrader
 #: model:ir.model.fields,field_description:openupgrader.field_auto_install_module__write_date
@@ -371,7 +420,7 @@ msgstr "Ultimo aggiornamento di"
 #: model:ir.model.fields,field_description:openupgrader.field_remote_repo__write_date
 #: model:ir.model.fields,field_description:openupgrader.field_sql_update_command__write_date
 msgid "Last Updated on"
-msgstr "Ultimo aggiornamento il"
+msgstr "Ultima modifica il"
 
 #. module: openupgrader
 #: model:ir.model.fields,help:openupgrader.field_openupgrader_config__module_to_delete_after_migration_ids
@@ -384,11 +433,6 @@ msgid "List of modules to install if there is another module installed"
 msgstr "Lista di moduli da installare se c'è un altro modulo installato"
 
 #. module: openupgrader
-#: model_terms:ir.ui.view,arch_db:openupgrader.view_openupgrader_config_form
-msgid "Load recipe"
-msgstr "Carica ricetta"
-
-#. module: openupgrader
 #: model_terms:ir.ui.view,arch_db:openupgrader.view_openupgrader_migration_form
 msgid "Logs"
 msgstr "Log"
@@ -399,14 +443,24 @@ msgid "Migrate Filestore"
 msgstr "Migra il filestore"
 
 #. module: openupgrader
-#: selection:openupgrader.migration,state:0
+#: model:ir.model.fields.selection,name:openupgrader.selection__openupgrader_migration__state__migrated
 msgid "Migrated"
-msgstr ""
+msgstr "Migrato"
 
 #. module: openupgrader
-#: model:ir.model.fields,help:openupgrader.field_openupgrader_migration__odoo_migrated_state
+#: model:ir.model.fields,help:openupgrader.field_openupgrader_migration__odoo_running_state
 msgid "Migrated Odo instance is running or stopped"
 msgstr "L'istanza di Odoo migrata è accesa o spenta"
+
+#. module: openupgrader
+#: model_terms:ir.ui.view,arch_db:openupgrader.view_openupgrader_migration_form
+msgid "Migration Error Logs"
+msgstr "Log errori di migrazione"
+
+#. module: openupgrader
+#: model_terms:ir.ui.view,arch_db:openupgrader.view_openupgrader_migration_form
+msgid "Migration Warning Logs"
+msgstr "Log avvisi di migrazione"
 
 #. module: openupgrader
 #: model:ir.model.fields,field_description:openupgrader.field_openupgrader_migration__migration_error_log
@@ -419,6 +473,11 @@ msgid "Migration for"
 msgstr "Migrazione di"
 
 #. module: openupgrader
+#: model_terms:ir.ui.view,arch_db:openupgrader.view_openupgrader_migration_form
+msgid "Migration info"
+msgstr "Informazioni migrazione"
+
+#. module: openupgrader
 #: model:ir.model.fields,field_description:openupgrader.field_openupgrader_migration__state
 msgid "Migration state"
 msgstr "Stato della migrazione"
@@ -429,17 +488,12 @@ msgid "Migration warnings in log"
 msgstr "Avvisi nel log della migrazione"
 
 #. module: openupgrader
-#: code:addons/openupgrader/models/openupgrader_config.py:572
+#: code:addons/openupgrader/models/openupgrader_migration.py:0
+#: code:addons/openupgrader/models/openupgrader_migration.py:0
 #, python-format
-msgid "Missing configuration file!"
-msgstr "File di configurazione mancante!"
-
-#. module: openupgrader
-#: code:addons/openupgrader/models/openupgrader_migration.py:324
-#: code:addons/openupgrader/models/openupgrader_migration.py:659
-#, python-format
-msgid "Missing env for version %s! Create in Odoo Version menu."
-msgstr "Virtualenv mancante per la versione %s! Creala nel menu Versioni Odoo."
+msgid "Missing environment for version %s! Create it in Odoo Version menu."
+msgstr ""
+"Virtualenv mancante per la versione %s! Creala nel menu Versioni Odoo."
 
 #. module: openupgrader
 #: model:ir.model.fields,field_description:openupgrader.field_module_name__name
@@ -473,8 +527,8 @@ msgstr "Gestione moduli"
 
 #. module: openupgrader
 #: model:ir.model.fields,field_description:openupgrader.field_openupgrader_config__module_installed_ids
-msgid "Modules installed in current instance"
-msgstr "Moduli installati nell'istanza corrente"
+msgid "Modules to be installed"
+msgstr "Moduli da installare"
 
 #. module: openupgrader
 #: model_terms:ir.ui.view,arch_db:openupgrader.view_openupgrader_config_form
@@ -493,9 +547,14 @@ msgid "Modules to uninstall after migration"
 msgstr "Moduli da disinstallare dopo la migrazione"
 
 #. module: openupgrader
-#: model:ir.model.fields,field_description:openupgrader.field_openupgrader_migration__next_version_id
+#: model:ir.model.fields,field_description:openupgrader.field_openupgrader_migration__next_config_id
 msgid "Next version to be migrated"
 msgstr "Prossima versione da migrare"
+
+#. module: openupgrader
+#: model:ir.model.fields,field_description:openupgrader.field_openupgrader_config__obsolete_modules
+msgid "Obsolete modules"
+msgstr "Moduli obsoleti"
 
 #. module: openupgrader
 #: model:ir.model.fields,field_description:openupgrader.field_openupgrader_config__openupgrader_migration_id
@@ -503,10 +562,10 @@ msgid "Odoo Migration"
 msgstr "Migrazione Odoo"
 
 #. module: openupgrader
-#: code:addons/openupgrader/models/openupgrader_migration.py:154
+#: code:addons/openupgrader/models/openupgrader_migration.py:0
 #, python-format
 msgid "Odoo Migration is running!"
-msgstr ""
+msgstr "La migrazione di Odoo è attiva!"
 
 #. module: openupgrader
 #: model:ir.model.fields,field_description:openupgrader.field_openupgrader_config__odoo_pip_requirement_ids
@@ -545,7 +604,7 @@ msgid "Odoo is in local network"
 msgstr "Odoo è nella rete locale"
 
 #. module: openupgrader
-#: model:ir.model.fields,field_description:openupgrader.field_openupgrader_migration__odoo_migrated_state
+#: model:ir.model.fields,field_description:openupgrader.field_openupgrader_migration__odoo_running_state
 msgid "Odoo migrating instance state"
 msgstr "Stato dell'istanza Odoo in migrazione"
 
@@ -573,6 +632,11 @@ msgstr "Repository OpenUpgrade"
 #: model:ir.ui.menu,name:openupgrader.menu_openupgrader
 msgid "OpenUpgrader"
 msgstr ""
+
+#. module: openupgrader
+#: model:ir.actions.server,name:openupgrader.openugrader_do_auto_migration_ir_actions_server
+msgid "OpenUpgrader - do all the migration automatically"
+msgstr "OpenUpgrader - esegue tutta la migrazione automaticamente"
 
 #. module: openupgrader
 #: model:ir.actions.act_window,name:openupgrader.action_openupgrader_config
@@ -672,9 +736,14 @@ msgid "Re-create virtualenv"
 msgstr "Ricrea il virtualenv"
 
 #. module: openupgrader
-#: selection:openupgrader.migration,state:0
+#: model:ir.model.fields.selection,name:openupgrader.selection__openupgrader_migration__state__ready_for_migration
 msgid "Ready for migration"
-msgstr ""
+msgstr "Pronto per la migrazione"
+
+#. module: openupgrader
+#: model_terms:ir.ui.view,arch_db:openupgrader.view_openupgrader_migration_form
+msgid "Recreate all environments"
+msgstr "Ricrea tutti gli environment"
 
 #. module: openupgrader
 #: model_terms:ir.ui.view,arch_db:openupgrader.view_openupgrader_migration_form
@@ -707,9 +776,9 @@ msgid "Restore db of current version before migration"
 msgstr "Ripristina alla versione corrente prima di migrare"
 
 #. module: openupgrader
-#: selection:openupgrader.migration,state:0
+#: model:ir.model.fields.selection,name:openupgrader.selection__openupgrader_migration__state__restore_failed
 msgid "Restore failed"
-msgstr ""
+msgstr "Ripristino fallito"
 
 #. module: openupgrader
 #: model_terms:ir.ui.view,arch_db:openupgrader.view_openupgrader_migration_form
@@ -717,14 +786,14 @@ msgid "Restore last database dump"
 msgstr "Ripristina l'ultimo backup del database"
 
 #. module: openupgrader
-#: selection:openupgrader.migration,state:0
+#: model:ir.model.fields.selection,name:openupgrader.selection__openupgrader_migration__state__restored
 msgid "Restored"
-msgstr ""
+msgstr "Ripristinato"
 
 #. module: openupgrader
-#: selection:openupgrader.migration,odoo_migrated_state:0
+#: model:ir.model.fields.selection,name:openupgrader.selection__openupgrader_migration__odoo_running_state__running
 msgid "Running"
-msgstr ""
+msgstr "Attivo"
 
 #. module: openupgrader
 #: model:ir.model.fields,field_description:openupgrader.field_sql_update_command__name
@@ -759,18 +828,27 @@ msgstr "Comandi d'aggiornamento SQL prima della migrazione"
 
 #. module: openupgrader
 #: model:ir.model.fields,help:openupgrader.field_openupgrader_migration__xmlrpc_port
-msgid "Set a different port from the current one used, as this would block the instance."
-msgstr "Imposta una porta diversa da quella corrente, in quanto non è possibile usare la stessa."
+msgid ""
+"Set a different port from the current one used, as this would block the "
+"instance."
+msgstr ""
+"Imposta una porta diversa da quella corrente, in quanto non è possibile "
+"usare la stessa."
 
 #. module: openupgrader
 #: model:ir.model.fields,help:openupgrader.field_openupgrader_migration__pg_password_var
-msgid "Set the environment variable (like $POSTGRES_PASSWORD), alternative to setting the password directly"
-msgstr "Imposta la variabile d'ambiente (come $POSTGRES_PASSWORD), alternativa ad impostare la password direttamente"
+msgid ""
+"Set the environment variable (like $POSTGRES_PASSWORD), alternative to "
+"setting the password directly"
+msgstr ""
+"Imposta la variabile d'ambiente (come $POSTGRES_PASSWORD), alternativa ad "
+"impostare la password direttamente"
 
 #. module: openupgrader
 #: model:ir.model.fields,help:openupgrader.field_openupgrader_migration__pg_password
 msgid "Set the password directly, alternative to pg_password_var"
-msgstr "Imposta la password direttamente, alternativa alla variabile d'ambiente"
+msgstr ""
+"Imposta la password direttamente, alternativa alla variabile d'ambiente"
 
 #. module: openupgrader
 #: model:ir.model.fields,help:openupgrader.field_openupgrader_migration__pg_user
@@ -784,13 +862,14 @@ msgstr "Imposta a bozza"
 
 #. module: openupgrader
 #: model_terms:ir.ui.view,arch_db:openupgrader.view_openupgrader_config_form
-msgid "Sql command to execute after migration"
-msgstr "Comandi SQL da eseguire dopo la migrazione"
+msgid "Sql command to execute after migration to this version"
+msgstr "Comandi SQL da eseguire dopo la migrazione a questa versione"
 
 #. module: openupgrader
 #: model_terms:ir.ui.view,arch_db:openupgrader.view_openupgrader_config_form
-msgid "Sql command to execute before migration"
-msgstr "Comandi SQL da eseguire prima della migrazione"
+msgid "Sql command to execute before migration to the next version"
+msgstr ""
+"Comandi SQL da eseguire prima della migrazione alla versione successiva"
 
 #. module: openupgrader
 #: model_terms:ir.ui.view,arch_db:openupgrader.view_openupgrader_migration_form
@@ -803,9 +882,9 @@ msgid "Stop Odoo"
 msgstr "Ferma Odoo"
 
 #. module: openupgrader
-#: selection:openupgrader.migration,odoo_migrated_state:0
+#: model:ir.model.fields.selection,name:openupgrader.selection__openupgrader_migration__odoo_running_state__stopped
 msgid "Stopped"
-msgstr ""
+msgstr "Spento"
 
 #. module: openupgrader
 #: model:ir.model.fields,field_description:openupgrader.field_auto_install_module__name
@@ -818,20 +897,20 @@ msgid "Technical Name of Module To Install"
 msgstr "Nome tecnico del modulo da installare"
 
 #. module: openupgrader
-#: sql_constraint:openupgrader.config:0
+#: model:ir.model.constraint,message:openupgrader.constraint_openupgrader_config_version_unique
 msgid "This Odoo version already exists!"
-msgstr ""
+msgstr "Questa versione Odoo esiste già!"
 
 #. module: openupgrader
-#: sql_constraint:openupgrader.config:0
+#: model:ir.model.constraint,message:openupgrader.constraint_openupgrader_config_db_backup_unique
 msgid "This Odoo version already has a backup!"
-msgstr ""
+msgstr "Questa versione di Odoo ha già un backup!"
 
 #. module: openupgrader
-#: sql_constraint:module.name:0
-#: sql_constraint:pip.requirement:0
+#: model:ir.model.constraint,message:openupgrader.constraint_module_name_name_unique
+#: model:ir.model.constraint,message:openupgrader.constraint_pip_requirement_name_unique
 msgid "This module already exists!"
-msgstr ""
+msgstr "Questo modulo esiste già!"
 
 #. module: openupgrader
 #: model_terms:ir.ui.view,arch_db:openupgrader.view_openupgrader_config_form
@@ -839,9 +918,24 @@ msgid "To recreate a clean virtualenv after removing some libraries"
 msgstr "Per ricreare un virtualenv pulito dopo aver rimosso alcune librerie"
 
 #. module: openupgrader
-#: model:ir.model.fields,field_description:openupgrader.field_openupgrader_migration__to_version_id
+#: model:ir.model.fields,field_description:openupgrader.field_openupgrader_migration__to_config_id
 msgid "To version"
 msgstr "Alla versione"
+
+#. module: openupgrader
+#: model:ir.model.fields,field_description:openupgrader.field_openupgrader_migration__uninstallable_modules
+msgid "Uninstallable modules"
+msgstr "Moduli non disinstallabili"
+
+#. module: openupgrader
+#: model_terms:ir.ui.view,arch_db:openupgrader.view_openupgrader_migration_form
+msgid "Update Error Logs"
+msgstr "Log degli errori di aggiornamento"
+
+#. module: openupgrader
+#: model_terms:ir.ui.view,arch_db:openupgrader.view_openupgrader_migration_form
+msgid "Update Warning Logs"
+msgstr "Log degli avvisi di aggiornamento"
 
 #. module: openupgrader
 #: model_terms:ir.ui.view,arch_db:openupgrader.view_openupgrader_migration_form
@@ -859,9 +953,14 @@ msgid "Update warnings in log"
 msgstr "Segnalazioni nel log di aggiornamento"
 
 #. module: openupgrader
-#: selection:openupgrader.migration,state:0
+#: model:ir.model.fields.selection,name:openupgrader.selection__openupgrader_migration__state__updated
 msgid "Updated"
-msgstr ""
+msgstr "Aggiornato"
+
+#. module: openupgrader
+#: model_terms:ir.ui.view,arch_db:openupgrader.view_openupgrader_migration_form
+msgid "Utilities"
+msgstr "Utilità"
 
 #. module: openupgrader
 #: model:ir.model.fields,field_description:openupgrader.field_openupgrader_migration__verify_ssl
@@ -873,3 +972,8 @@ msgstr "Verifica Ssl"
 msgid "XmlRpc port"
 msgstr "Porta XmlRpc"
 
+#. module: openupgrader
+#: code:addons/openupgrader/models/openupgrader_config.py:0
+#, python-format
+msgid "uv is not installed, please install it first!"
+msgstr "uv non è installato, installalo prima!"

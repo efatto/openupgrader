@@ -9,7 +9,10 @@
                 <field name="python_version" />
                 <field name="sql_after_migration_command_ids" />
                 <field name="sql_before_migration_command_ids" />
+                <field name="python_after_migration_command_ids" />
+                <field name="python_before_migration_command_ids" />
                 <field name="module_auto_install_ids" />
+                <field name="renamed_module_ids" />
                 <field name="module_to_delete_after_migration_ids" />
                 <field name="module_to_uninstall_after_migration_ids" />
                 <field name="module_to_uninstall_before_migration_ids" />
@@ -35,15 +38,16 @@
             <form string="OpenUpgrader Configuration">
                 <header>
                     <button
-                        name="button_create_venv"
+                        name="button_sync_env"
                         type="object"
-                        string="Create or update virtualenv"
+                        string="Sync virtualenv"
+                        help="Install the Python dependencies (uv sync, or pip for Python 3.7)"
                     />
                     <button
-                        name="button_recreate_venv"
+                        name="button_recreate_env"
                         type="object"
-                        string="Re-create virtualenv"
-                        help="To recreate a clean virtualenv after removing some libraries"
+                        string="Recreate virtualenv"
+                        help="Delete and recreate virtualenv"
                     />
                 </header>
                 <sheet string="OpenUpgrader Configuration">
@@ -56,15 +60,6 @@
                     <group>
                         <group>
                             <field name="openupgrader_migration_id" />
-                            <field name="config_file" filename="config_file_name" />
-                            <field name="config_file_name" invisible="1" />
-                            <button
-                                type="object"
-                                name="button_load_config"
-                                attrs="{'invisible': [('config_file', '=', False),
-                            ]}"
-                                string="Load recipe"
-                            />
                         </group>
                         <group>
                             <field name="python_version" />
@@ -88,8 +83,10 @@
                                 </field>
                             </group>
                         </page>
-                        <page string="SQL Commands">
-                            <group string="Sql command to execute before migration">
+                        <page string="Custom Commands">
+                            <group
+                                string="Sql command to execute before migration to the next version"
+                            >
                                 <field name="sql_before_migration_command_ids">
                                     <tree editable="top">
                                         <field name="sequence" widget="handle" />
@@ -97,8 +94,30 @@
                                     </tree>
                                 </field>
                             </group>
-                            <group string="Sql command to execute after migration">
+                            <group
+                                string="Sql command to execute after migration to this version"
+                            >
                                 <field name="sql_after_migration_command_ids">
+                                    <tree editable="top">
+                                        <field name="sequence" widget="handle" />
+                                        <field name="name" />
+                                    </tree>
+                                </field>
+                            </group>
+                            <group
+                                string="Python command to execute before migration to the next version"
+                            >
+                                <field name="python_before_migration_command_ids">
+                                    <tree editable="top">
+                                        <field name="sequence" widget="handle" />
+                                        <field name="name" />
+                                    </tree>
+                                </field>
+                            </group>
+                            <group
+                                string="Python command to execute after migration to this version"
+                            >
+                                <field name="python_after_migration_command_ids">
                                     <tree editable="top">
                                         <field name="sequence" widget="handle" />
                                         <field name="name" />
@@ -108,12 +127,23 @@
                         </page>
                         <page string="Modules Installed">
                             <group string="Installed Modules">
-                                <field name="module_installed_ids" />
+                                <field name="module_installed_ids">
+                                    <tree>
+                                        <field name="name" />
+                                    </tree>
+                                </field>
                             </group>
                         </page>
                         <page string="Modules Management">
                             <group string="Auto-install modules">
                                 <field name="module_auto_install_ids">
+                                    <tree editable="top">
+                                        <field name="sequence" widget="handle" />
+                                        <field name="name" />
+                                        <field name="module_to_install_name" />
+                                    </tree>
+                                </field>
+                                <field name="renamed_module_ids">
                                     <tree editable="top">
                                         <field name="sequence" widget="handle" />
                                         <field name="name" />
@@ -138,6 +168,12 @@
                                     name="module_to_uninstall_after_migration_ids"
                                     widget="many2many_tags"
                                 />
+                            </group>
+                            <group string="Not autoinstallable modules">
+                                <field name="not_autoinstallable_modules" />
+                            </group>
+                            <group string="Core modules">
+                                <field name="core_modules" />
                             </group>
                         </page>
                     </notebook>
