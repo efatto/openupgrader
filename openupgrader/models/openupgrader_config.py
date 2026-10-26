@@ -1278,19 +1278,52 @@ class OpenupgraderConfig(models.Model):
     def _canonicalize_package_name(name):
         return re.sub(r"[-_.]+", "-", name).lower()
 
-    def _get_installed_versions(self, site_packages):
+    @staticmethod
+    def _iter_distribution_metadata(site_packages):
         try:
+            # py3.8
             from importlib import metadata as importlib_metadata
         except ImportError:  # pragma: no cover
-            import importlib_metadata
-
-        versions = {}
-        for dist in importlib_metadata.distributions(path=[site_packages]):
             try:
-                name = dist.metadata["Name"]
-                version = dist.metadata["Version"]
-            except Exception:  # noqa: BLE001
+                # py3.6 with backport
+                import importlib_metadata
+            except ImportError:
+                # py3.6 without backport
+                importlib_metadata = None
+
+        if importlib_metadata:
+            for dist in importlib_metadata.distributions(path=[site_packages]):
+                try:
+                    name = dist.metadata["Name"]
+                    version = dist.metadata["Version"]
+                except Exception:  # noqa: BLE001
+                    continue
+                yield name, version, getattr(dist, "requires", None) or []
+            return
+
+        import email.parser
+
+        metadata_paths = glob.glob(
+            os.path.join(site_packages, "*.dist-info", "METADATA")
+        )
+        metadata_paths += glob.glob(
+            os.path.join(site_packages, "*.egg-info", "PKG-INFO")
+        )
+        for metadata_path in metadata_paths:
+            try:
+                with open(metadata_path, "r", errors="replace") as metadata_file:
+                    metadata = email.parser.Parser().parse(metadata_file)
+            except OSError:
                 continue
+            yield (
+                metadata.get("Name"),
+                metadata.get("Version"),
+                metadata.get_all("Requires-Dist") or [],
+            )
+
+    def _get_installed_versions(self, site_packages):
+        versions = {}
+        for name, version, _requires in self._iter_distribution_metadata(site_packages):
             if name and version:
                 versions[self._canonicalize_package_name(name)] = version
         return versions
