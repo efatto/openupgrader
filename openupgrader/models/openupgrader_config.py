@@ -1435,22 +1435,54 @@ class OpenupgraderConfig(models.Model):
     def _canonicalize_package_name(name):
         return re.sub(r"[-_.]+", "-", name).lower()
 
-    def _get_installed_versions(self, site_packages):
+    @staticmethod
+    def _iter_distribution_metadata(site_packages):
         try:
+            # py3.8
             from importlib import metadata as importlib_metadata
         except ImportError:  # pragma: no cover
             try:
+                # py3.6 with backport
                 import importlib_metadata
             except ImportError:
-                return {}
+                # py3.6 without backport
+                importlib_metadata = None
 
-        versions = {}
-        for dist in importlib_metadata.distributions(path=[site_packages]):
+        if importlib_metadata:
+            for dist in importlib_metadata.distributions(path=[site_packages]):
+                try:
+                    name = dist.metadata["Name"]
+                    version = dist.metadata["Version"]
+                except Exception:  # noqa: BLE001
+                    continue
+                yield name, version, getattr(dist, "requires", None) or []
+            return
+
+        import email.parser
+
+        metadata_paths = glob.glob(
+            os.path.join(site_packages, "*.dist-info", "METADATA")
+        )
+        metadata_paths += glob.glob(
+            os.path.join(site_packages, "*.egg-info", "PKG-INFO")
+        )
+        for metadata_path in metadata_paths:
             try:
-                name = dist.metadata["Name"]
-                version = dist.metadata["Version"]
-            except Exception:  # noqa: BLE001
+                with open(metadata_path, "r", errors="replace") as metadata_file:
+                    metadata = email.parser.Parser().parse(metadata_file)
+            except OSError:
                 continue
+            yield (
+                metadata.get("Name"),
+                metadata.get("Version"),
+                metadata.get_all("Requires-Dist") or [],
+            )
+
+    def _get_installed_versions(self, site_packages):
+        versions = {}
+        for name, version, _requires in self._iter_distribution_metadata(
+            site_packages
+        ):
             if name and version:
                 versions[self._canonicalize_package_name(name)] = version
         return versions
@@ -1473,20 +1505,8 @@ class OpenupgraderConfig(models.Model):
         site_packages = self._get_venv_site_packages(venv_path, self.python_version)
         if not site_packages:
             return {}
-        try:
-            from importlib import metadata as importlib_metadata
-        except ImportError:  # pragma: no cover
-            try:
-                import importlib_metadata
-            except ImportError:
-                return {}
         addons = {}
-        for dist in importlib_metadata.distributions(path=[site_packages]):
-            try:
-                name = dist.metadata["Name"]
-                version = dist.metadata["Version"]
-            except Exception:  # noqa: BLE001
-                continue
+        for name, version, requires in self._iter_distribution_metadata(site_packages):
             if not name or not version:
                 continue
             normalized_name = self._canonicalize_package_name(name)
@@ -1497,7 +1517,7 @@ class OpenupgraderConfig(models.Model):
                 "name": name,
                 "version": version,
                 "module": module_name,
-                "requires": getattr(dist, "requires", None) or [],
+                "requires": requires,
             }
         return addons
 
