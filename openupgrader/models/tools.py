@@ -318,6 +318,7 @@ def _update_migration_state_file(
         - "ready_for_migration"
         - "ready_to_prepare"
         - "failed"
+        - "done"
     :param date_started: New date_started for the configuration.
     :param env_state: New env_state for the configuration.
     :param env_update_date: New env_update_date for the configuration.

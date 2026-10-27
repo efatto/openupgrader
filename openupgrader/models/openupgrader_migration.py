@@ -1217,6 +1217,14 @@ class OpenupgraderMigration(models.Model):
                     [("state", "=", "done")]
                 )
                 for done_migration in done_migrations:
+                    done_config = done_migration.current_config_id
+                    migration_state = (
+                        done_config.get_migration_state_from_file()[0]
+                        if done_config
+                        else None
+                    )
+                    if migration_state == "done":
+                        continue
                     pending_modules = done_migration.get_pending_modules()
                     if pending_modules:
                         done_migration.uninstall_pending_modules()
@@ -1302,50 +1310,52 @@ class OpenupgraderMigration(models.Model):
                 elif migration_state in ["failed", "restore_failed"]:
                     # Retry a failed step a bounded number of times instead of
                     # leaving the cron in a silent no-op loop forever.
-                    config = (
+                    failed_config = (
                         migration.env["openupgrader.config"].search(
                             [("name", "=", current_version)], limit=1
                         )
                         or migration.next_config_id
                         or migration.current_config_id
                     )
-                    if not config:
+                    if not failed_config:
                         logger.info(
                             "No configuration available to retry for %s.",
                             migration.db_name,
                         )
                         continue
-                    migration_retry_number = config.get_migration_retry_number()
+                    migration_retry_number = failed_config.get_migration_retry_number()
                     if migration_retry_number >= MAX_MIGRATION_RETRY:
                         logger.warning(
                             "Maximum number of retries (%s) reached for "
                             "version %s in state %s; marking the migration "
                             "as failed.",
                             MAX_MIGRATION_RETRY,
-                            config.name,
+                            failed_config.name,
                             migration_state,
                         )
                         migration.state = "failed"
                         continue
-                    migration_retry_number = config.increment_migration_retry_number()
+                    migration_retry_number = (
+                        failed_config.increment_migration_retry_number()
+                    )
                     logger.info(
                         "Retrying version %s in state %s (attempt %s/%s).",
-                        config.name,
+                        failed_config.name,
                         migration_state,
                         migration_retry_number,
                         MAX_MIGRATION_RETRY,
                     )
                     # Remove the logs of the failed attempt, otherwise the log
                     # scanner would immediately detect the same failure again.
-                    migration.button_clean_logs(config)
+                    migration.button_clean_logs(failed_config)
                     if (
                         migration_state == "restore_failed"
-                        and migration.current_config_id == config
+                        and migration.current_config_id == failed_config
                     ):
-                        config.update_migration_state_file("started")
+                        failed_config.update_migration_state_file("started")
                         migration.button_update_current_config()
                     else:
-                        config.update_migration_state_file("ready_for_migration")
+                        failed_config.update_migration_state_file("ready_for_migration")
                         migration.button_do_migration()
                 else:
                     logger.info(
@@ -1435,12 +1445,37 @@ class OpenupgraderMigration(models.Model):
             logger.info(
                 "Migration completed from version %s to version %s", from_n, to_n
             )
-            self.current_config_id.update_migration_state_file("done")
+            # Keep the per-version state at ready_to_prepare: the final dump
+            # is written by _do_end_migration() and only then the state is set
+            # to done.
             self.state = "done"
 
     def _do_end_migration(self):
+        """Write the final dump and mark the migration as done.
+
+        The cron calls this method for every migration still in state
+        ``done``. The per-version ``done`` state in the migration state file
+        is written only after the dump, so subsequent cron runs can reuse it
+        as a marker and avoid dumping the database again.
+        """
         self.ensure_one()
+        if not self.current_config_id:
+            return
+        (
+            migration_state,
+            _env_state,
+            _config_name,
+        ) = self.current_config_id.get_migration_state_from_file()
+        if migration_state == "done":
+            logger.info("Final dump already done for %s, skipping.", self.db_name)
+            return
         self.button_dump_current_database()
+        self.current_config_id.update_migration_state_file("done")
+        logger.info(
+            "Final dump of %s for version %s completed.",
+            self.db_name,
+            self.current_config_id.name,
+        )
 
     def button_do_migration(self):
         (

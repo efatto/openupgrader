@@ -32,6 +32,9 @@ The per-version state stored in the JSON file goes through::
              -> ready_for_migration -> migrating -> migrated
              -> ready_to_prepare -> ... -> done
 
+The per-version ``done`` state is written only after the final
+end-migration dump, so later cron runs do not dump the database again.
+
 Standard procedure (UI)
 ~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -44,7 +47,9 @@ Standard procedure (UI)
    them (or ``Create all envs`` on the migration).
 4. Press ``Auto migration``.
 5. When the state is ``done``, restore the final dump
-   ``database.<target>.dump`` on the target server.
+   ``database.<target>.dump`` on the target server.  The per-version ``done``
+   state also confirms that the final end-migration dump has been written
+   exactly once.
 
 The manual alternative, for a single version, is:
 ``Restore`` -> ``Update`` -> ``Prepare migration`` -> ``Migrate``, repeated

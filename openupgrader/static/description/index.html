@@ -501,6 +501,8 @@ starting -&gt; started -&gt; restored -&gt; updated
          -&gt; ready_for_migration -&gt; migrating -&gt; migrated
          -&gt; ready_to_prepare -&gt; ... -&gt; done
 </pre>
+<p>The per-version <tt class="docutils literal">done</tt> state is written only after the final
+end-migration dump, so later cron runs do not dump the database again.</p>
 </div>
 <div class="section" id="standard-procedure-ui">
 <h3><a class="toc-backref" href="#toc-entry-4">Standard procedure (UI)</a></h3>
@@ -514,7 +516,9 @@ configs by hand).</li>
 them (or <tt class="docutils literal">Create all envs</tt> on the migration).</li>
 <li>Press <tt class="docutils literal">Auto migration</tt>.</li>
 <li>When the state is <tt class="docutils literal">done</tt>, restore the final dump
-<tt class="docutils literal"><span class="pre">database.&lt;target&gt;.dump</span></tt> on the target server.</li>
+<tt class="docutils literal"><span class="pre">database.&lt;target&gt;.dump</span></tt> on the target server.  The per-version <tt class="docutils literal">done</tt>
+state also confirms that the final end-migration dump has been written
+exactly once.</li>
 </ol>
 <p>The manual alternative, for a single version, is:
 <tt class="docutils literal">Restore</tt> -&gt; <tt class="docutils literal">Update</tt> -&gt; <tt class="docutils literal">Prepare migration</tt> -&gt; <tt class="docutils literal">Migrate</tt>, repeated
