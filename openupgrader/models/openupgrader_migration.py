@@ -1787,27 +1787,29 @@ class OpenupgraderMigration(models.Model):
         odoo_client = self.odoo_connect(config_id)
         module_obj = odoo_client.env["ir.module.module"] if odoo_client else None
         if module_obj and modules_to_uninstall:
-            found_modules = module_obj.search(
+            found_module_ids = module_obj.search(
                 [("name", "in", sorted(modules_to_uninstall))]
             )
-            found_module_names = set(found_modules.mapped("name"))
-            missing_modules = modules_to_uninstall - found_module_names
-            already_uninstalled = {
-                module.name for module in found_modules if module.state == "uninstalled"
-            }
-            if missing_modules:
-                logger.info(
-                    "Skipping modules that do not exist in version %s: %s",
-                    config_id.name,
-                    sorted(missing_modules),
-                )
-            if already_uninstalled:
-                logger.info(
-                    "Skipping already uninstalled modules in version %s: %s",
-                    config_id.name,
-                    sorted(already_uninstalled),
-                )
-            modules_to_uninstall = found_module_names - already_uninstalled
+            if found_module_ids:
+                found_modules = module_obj.browse(found_module_ids)
+                found_module_names = set(found_modules.mapped("name"))
+                missing_modules = modules_to_uninstall - found_module_names
+                already_uninstalled = {
+                    module.name for module in found_modules if module.state == "uninstalled"
+                }
+                if missing_modules:
+                    logger.info(
+                        "Skipping modules that do not exist in version %s: %s",
+                        config_id.name,
+                        sorted(missing_modules),
+                    )
+                if already_uninstalled:
+                    logger.info(
+                        "Skipping already uninstalled modules in version %s: %s",
+                        config_id.name,
+                        sorted(already_uninstalled),
+                    )
+                modules_to_uninstall = found_module_names - already_uninstalled
         for module_name in sorted(modules_to_uninstall):
             try:
                 self.install_uninstall_module(module_name, config_id, install=False)
