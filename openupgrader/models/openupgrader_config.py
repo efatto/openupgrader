@@ -46,6 +46,11 @@ def _get_env_for_subprocess(folder, py_version):
     env_folder = os.path.join(folder, ".venv")
     env_for_subprocess["VIRTUAL_ENV"] = env_folder
     env_for_subprocess["UV_PROJECT_ENVIRONMENT"] = env_folder
+    # uv 0.13.0 switched to a stricter tar backend that rejects old, but
+    # valid, source distributions such as PyPDF2 1.26.0 (a pinned Odoo 14
+    # requirement). Keep the legacy backend so those sdists can still be
+    # extracted; users can opt out by setting the variable explicitly.
+    env_for_subprocess.setdefault("UV_LEGACY_TAR_BACKEND", "1")
     env_for_subprocess["PYTHONPATH"] = os.path.join(env_folder, "bin", "python")
     # If there is a PIP_EXTRA_INDEX_URL in local env, put in the pyenv
     pip_extra_index_url = _get_pip_extra_index_url()
