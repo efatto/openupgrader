@@ -1490,26 +1490,42 @@ class OpenupgraderConfig(models.Model):
         return sorted(missing_modules)
 
     @staticmethod
-    def _get_pip_compile_index_options(extra_index_url):
-        """Return the index options used to resolve dependencies.
+    def _get_pip_index_options(extra_index_url):
+        """Return the index options used to resolve and install packages.
 
-        When a private index is configured it is used together with PyPI in a
-        single resolution so that newer versions or modules available only on
-        the private index (and their own private dependencies) are resolved,
-        while PyPI still provides public dependencies the private index can
-        not satisfy (for example ``pymssql<=2.2.5``). ``unsafe-best-match``
-        selects the highest version satisfying the requirements across all
-        indexes. PyPI only is kept as a fallback for when the private index is
-        not reachable.
+        The private index is passed as ``--index`` and PyPI as the default
+        index, so with ``unsafe-best-match`` the newest version available on
+        either server is selected. If the same version exists on both, the
+        private index wins because it is the first index.
+        PyPI only is kept as a fallback for when the private index is not
+        reachable.
         """
         if extra_index_url:
             return [
-                f"--default-index {extra_index_url} "
-                "--index https://pypi.org/simple "
+                f"--index {extra_index_url} "
+                "--default-index https://pypi.org/simple "
                 "--index-strategy unsafe-best-match",
                 "--default-index https://pypi.org/simple",
             ]
         return ["--default-index https://pypi.org/simple"]
+
+    @classmethod
+    def _get_module_index_options(cls, extra_index_url, oca_package_found):
+        """Return index options for installing one Odoo addon package.
+
+        The private index is always tried first. PyPI is added only for
+        packages verified as OCA-authored, because PyPI may contain a
+        non-OCA package with the same name and a higher version. With both
+        indexes, ``unsafe-best-match`` selects the newest version while the
+        private index wins when the same version exists on both servers.
+        """
+        if not extra_index_url:
+            if oca_package_found:
+                return ["--default-index https://pypi.org/simple"]
+            return []
+        if oca_package_found:
+            return cls._get_pip_index_options(extra_index_url)
+        return [f"--default-index {extra_index_url}"]
 
     def _get_odoo_stub_override(self, venv_path):
         """Create a local stub ``odoo`` package used as a compile override.
@@ -1556,7 +1572,7 @@ class OpenupgraderConfig(models.Model):
         else:
             constraint_options = [""]
         short_version = ".".join(self.python_version.split(".")[:2])
-        for index_options in self._get_pip_compile_index_options(extra_index_url):
+        for index_options in self._get_pip_index_options(extra_index_url):
             for constraint_option in constraint_options:
                 parts = [
                     "uv pip compile --quiet",
@@ -1635,16 +1651,22 @@ class OpenupgraderConfig(models.Model):
         venv_path,
         extra_index_url,
         pip_env,
+        oca_package_found_by_module,
     ):
-        """Install as many modules as possible from the extra index at once.
+        """Install as many modules as possible in one resolution.
+
+        Modules are grouped by authorship: PyPI is used only for OCA-authored
+        packages, while non-OCA modules are installed from the private index
+        only. In both groups the private index comes first, so it wins on
+        equal versions, while OCA modules can still get a newer version from
+        PyPI.
 
         ``modules_to_install`` is updated in place: the modules installed by
         the batch are marked ``installed_from_extra``, while the modules that
-        are not available on the extra index are left as ``not_installed`` so
-        that the per-module fallback (including the OCA PyPI fallback) can
-        handle them. A single batch avoids one install (and one dependency
-        compile) per module, which dominates the migration time on large
-        module sets.
+        are not available on the allowed indexes are left as ``not_installed``
+        so that the per-module fallback can handle them. A single batch avoids
+        one install (and one dependency compile) per module, which dominates
+        the migration time on large module sets.
         """
         if not extra_index_url or not modules_to_install:
             return set()
@@ -1654,60 +1676,73 @@ class OpenupgraderConfig(models.Model):
             ): module
             for module in modules_to_install
         }
-        pending = {
-            module: requirement_by_module[module] for module in modules_to_install
-        }
-        while pending:
-            requirements = list(pending.values())
-            reinstall_options = " ".join(
-                f"--reinstall-package {requirement.split('==')[0]}"
-                for requirement in requirements
-            )
-            command = (
-                f"uv pip install --default-index {extra_index_url} "
-                "--no-deps --upgrade --prerelease=allow "
-                f"{reinstall_options} " + " ".join(requirements)
-            )
-            logger.info(
-                "Installing %s modules from the extra index in one batch",
-                len(pending),
-            )
-            process = Popen(
-                command,
-                cwd=venv_path,
-                shell=True,
-                stderr=PIPE,
-                env=pip_env,
-            )
-            stderr = process.communicate()[1] or b""
-            if process.returncode == 0:
-                for module in pending:
-                    modules_to_install[module] = "installed_from_extra"
-                return set(pending)
-            error_text = stderr.decode(errors="replace").lower()
-            missing_normalized = set(
-                re.findall(r"odoo(?:1[0-9])?-addon-[a-z0-9][a-z0-9-]*", error_text)
-            )
-            removed = False
-            for normalized in missing_normalized:
-                module = module_by_normalized_pkg.get(normalized)
-                if module and module in pending:
-                    logger.info(
-                        "Module %s is not available on the extra index, "
-                        "leaving it to the per-module fallback",
-                        module,
-                    )
-                    pending.pop(module)
-                    removed = True
-            if not removed:
-                logger.info(
-                    "Unable to install the extra-index batch (%s modules), "
-                    "falling back to per-module installation. uv output: %s",
-                    len(pending),
-                    error_text.strip()[:2000],
+        pending_by_oca = {True: {}, False: {}}
+        for module in modules_to_install:
+            pending_by_oca[bool(oca_package_found_by_module.get(module))][
+                module
+            ] = requirement_by_module[module]
+        installed_modules = set()
+        for oca_package_found in (True, False):
+            pending = pending_by_oca[oca_package_found]
+            if not pending:
+                continue
+            index_options = self._get_module_index_options(
+                extra_index_url, oca_package_found
+            )[0]
+            while pending:
+                requirements = list(pending.values())
+                reinstall_options = " ".join(
+                    f"--reinstall-package {requirement.split('==')[0]}"
+                    for requirement in requirements
                 )
-                break
-        return set()
+                command = (
+                    f"uv pip install {index_options} "
+                    "--no-deps --upgrade --prerelease=allow "
+                    f"{reinstall_options} " + " ".join(requirements)
+                )
+                logger.info(
+                    "Installing %s %s modules in one batch",
+                    len(pending),
+                    "OCA" if oca_package_found else "private-index",
+                )
+                process = Popen(
+                    command,
+                    cwd=venv_path,
+                    shell=True,
+                    stderr=PIPE,
+                    env=pip_env,
+                )
+                stderr = process.communicate()[1] or b""
+                if process.returncode == 0:
+                    for module in pending:
+                        modules_to_install[module] = "installed_from_extra"
+                    installed_modules.update(pending)
+                    pending = {}
+                    break
+                error_text = stderr.decode(errors="replace").lower()
+                missing_normalized = set(
+                    re.findall(r"odoo(?:1[0-9])?-addon-[a-z0-9][a-z0-9-]*", error_text)
+                )
+                removed = False
+                for normalized in missing_normalized:
+                    module = module_by_normalized_pkg.get(normalized)
+                    if module and module in pending:
+                        logger.info(
+                            "Module %s is not available on the allowed indexes, "
+                            "leaving it to the per-module fallback",
+                            module,
+                        )
+                        pending.pop(module)
+                        removed = True
+                if not removed:
+                    logger.info(
+                        "Unable to install the index batch (%s modules), "
+                        "falling back to per-module installation. uv output: %s",
+                        len(pending),
+                        error_text.strip()[:2000],
+                    )
+                    break
+        return installed_modules
 
     def install_pip_modules(self, module_names, _install_dependencies=True):  # noqa C901
         self.ensure_one()
@@ -1749,15 +1784,23 @@ class OpenupgraderConfig(models.Model):
             name: f"odoo{release_val}-addon-{name}{version_val}"
             for name in modules_to_install
         }
-        # Install the modules available on the extra index in a single batch,
-        # then resolve their dependencies in one pass. This is much faster than
-        # one install + one compile per module on large module sets.
+        # PyPI may contain a non-OCA package with the same addon name, so it
+        # is allowed only for packages whose PyPI metadata identifies OCA as
+        # the author.
+        oca_package_found_by_module = {
+            name: _check_oca_authorship(f"odoo{release_val}-addon-{name}", self.name)
+            for name in modules_to_install
+        }
+        # Install the modules in batches, then resolve their dependencies in
+        # one pass. This is much faster than one install + one compile per
+        # module on large module sets.
         batch_installed = self._install_modules_batch(
             modules_to_install,
             requirement_by_module,
             venv_path,
             extra_index_url,
             pip_env,
+            oca_package_found_by_module,
         )
         if batch_installed and not self._install_missing_dependencies(
             [f"odoo{release_val}-addon-{name}" for name in batch_installed],
@@ -1776,65 +1819,25 @@ class OpenupgraderConfig(models.Model):
         for name in modules_to_install:
             if modules_to_install[name] != "not_installed":
                 continue
-            # pypi standard server is not safe, get from it only OCA's author packages
             base_pkg_name = f"odoo{release_val}-addon-{name}"
             pkg_name = requirement_by_module[name]
-            # Always install the base OCA version when it is available.
-            oca_package_found = _check_oca_authorship(
-                base_pkg_name,
-                self.name,
-            )
-
             installed = False
-
-            # Try the extra index first for every module, installing it
-            # without dependencies. --reinstall-package forces a reinstall so
-            # an already installed or cached version can never shadow the one
-            # provided by the extra index.
-            if extra_index_url:
+            index_options_list = self._get_module_index_options(
+                extra_index_url, oca_package_found_by_module[name]
+            )
+            for attempt, index_options in enumerate(index_options_list):
                 command = (
-                    f"uv pip install --default-index {extra_index_url} "
+                    f"uv pip install {index_options} "
                     "--no-deps --upgrade "
                     f"--reinstall-package {base_pkg_name} "
                     f"--prerelease=allow {pkg_name}"
                 )
                 logger.info(
-                    "Installing module %s from extra index: %s",
+                    "Installing module %s with index options %s (attempt %s/%s): " "%s",
                     name,
-                    command,
-                )
-                process = Popen(
-                    command,
-                    cwd=venv_path,
-                    shell=True,
-                    env=pip_env,
-                )
-                process.wait()
-                if process.returncode != 0:
-                    logger.info(
-                        "Module %s not available on the extra index",
-                        name,
-                    )
-                else:
-                    installed = True
-                    modules_to_install[name] = "installed_from_extra"
-                    logger.info(
-                        "Odoo module %s installed successfully from the extra index",
-                        name,
-                    )
-
-            # Fall back to the standard index only for OCA authored packages,
-            # since the standard server is not considered safe. Install the
-            # base version without dependencies first as well.
-            if oca_package_found and not installed:
-                command = (
-                    "uv pip install --default-index "
-                    "https://pypi.org/simple --upgrade "
-                    "--no-deps --reinstall-package {base} "
-                    "--prerelease=allow {pkg}"
-                ).format(base=base_pkg_name, pkg=pkg_name)
-                logger.info(
-                    "Installing Odoo OCA module from standard index: %s",
+                    index_options,
+                    attempt + 1,
+                    len(index_options_list),
                     command,
                 )
                 process = Popen(
@@ -1844,46 +1847,41 @@ class OpenupgraderConfig(models.Model):
                     stderr=PIPE,
                     env=pip_env,
                 )
-                stderr = process.communicate()[1]
-                log_texts = []
-                if stderr:
-                    for log_line in stderr.splitlines():
-                        try:
-                            log_l = log_line.decode().lower()
-                            log_texts.append(log_l)
-                        except UnicodeDecodeError:
-                            continue
-
-                if process.returncode != 0:
-                    if any("no solution found" in log_text for log_text in log_texts):
-                        logger.info(
-                            "Module %s not found with uv pip installer: %s"
-                            % (
-                                name,
-                                "\n".join(log_text for log_text in log_texts),
-                            )
-                        )
-                    elif any("pkg_resources" in log_text for log_text in log_texts):
-                        err_log = "\n".join(log_text for log_text in log_texts)
-                        logger.info(
-                            "Module %s not installable for setuptools error: %s",
-                            name,
-                            err_log,
-                        )
-                    else:
-                        logger.warning(
-                            "Failed to install module %s from standard index: %s",
-                            name,
-                            "\n".join(log_text for log_text in log_texts),
-                        )
-                else:
+                stderr = process.communicate()[1] or b""
+                if process.returncode == 0:
                     installed = True
-                    modules_to_install[name] = "installed_oca"
+                    modules_to_install[name] = (
+                        "installed_from_extra" if attempt == 0 else "installed_oca"
+                    )
                     logger.info(
-                        "Odoo module %s installed successfully from "
-                        "standard index: %s",
+                        "Odoo module %s installed successfully with index "
+                        "options %s",
                         name,
-                        "\n".join(log_text for log_text in log_texts),
+                        index_options,
+                    )
+                    break
+                log_texts = [
+                    log_line.decode(errors="replace").lower()
+                    for log_line in stderr.splitlines()
+                ]
+                if any("no solution found" in log_text for log_text in log_texts):
+                    logger.info(
+                        "Module %s not found with uv pip installer: %s",
+                        name,
+                        "\n".join(log_texts),
+                    )
+                elif any("pkg_resources" in log_text for log_text in log_texts):
+                    logger.info(
+                        "Module %s not installable for setuptools error: %s",
+                        name,
+                        "\n".join(log_texts),
+                    )
+                else:
+                    logger.warning(
+                        "Failed to install module %s with index options %s: %s",
+                        name,
+                        index_options,
+                        "\n".join(log_texts)[:2000],
                     )
 
             # Resolve the dependencies of the just installed distribution with
