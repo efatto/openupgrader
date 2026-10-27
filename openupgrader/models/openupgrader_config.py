@@ -5,9 +5,11 @@ import importlib.util
 import json
 import logging
 import os
+import platform
 import re
 import shutil
-from subprocess import PIPE, Popen, run
+import time
+from subprocess import PIPE, STDOUT, Popen, run
 
 import yaml
 
@@ -49,6 +51,7 @@ def _get_env_for_subprocess(folder, py_version):
     pip_extra_index_url = _get_pip_extra_index_url()
     if pip_extra_index_url:
         env_for_subprocess["UV_INDEX"] = pip_extra_index_url
+        env_for_subprocess["PIP_EXTRA_INDEX_URL"] = pip_extra_index_url
     env_for_subprocess["PATH"] = ":".join(
         [
             env_folder,
@@ -422,6 +425,7 @@ class OpenupgraderConfig(models.Model):
             pip_requirements
             + openupgrade_requirements
             + odoo_requirements
+            + self._get_installed_addon_requirements(venv_path)
             + self._get_addon_requirements(venv_path)
         ):
             package_name = self._extract_package_name(requirement)
@@ -475,18 +479,77 @@ class OpenupgraderConfig(models.Model):
             pyproject_file.write("\n".join(lines) + "\n")
         return dependencies
 
+    @staticmethod
+    def _get_uv_sync_log_path(venv_path):
+        return os.path.join(venv_path, "uv-sync.log")
+
+    def _get_uv_sync_log_tail(self, venv_path, max_chars=4000):
+        """Return the last lines of the ``uv sync`` log for diagnostics."""
+        try:
+            with open(self._get_uv_sync_log_path(venv_path), "r") as log_file:
+                return log_file.read()[-max_chars:].strip()
+        except (OSError, UnicodeDecodeError):
+            return ""
+
+    def _is_uv_env_installed(self, venv_path):
+        """Return True when Odoo itself is installed in the uv environment."""
+        site_packages = self._get_venv_site_packages(venv_path, self.python_version)
+        if not site_packages:
+            return False
+        return "odoo" in self._get_installed_versions(site_packages)
+
     def _sync_uv_env(self, venv_path, subprocess_env=None):
-        """Create/update the virtualenv from the project ``pyproject.toml``."""
+        """Create/update the virtualenv from the project ``pyproject.toml``.
+
+        ``uv`` aborts with ``SIGABRT`` (exit code 134) when it can not write
+        to its stderr, for example when Odoo stderr is a closed/non-blocking
+        pipe, or when the disk/quota is exhausted (astral-sh/uv#22170,
+        astral-sh/uv#22278). Redirecting the output to a regular log file
+        makes those writes blocking and persistent, and also gives a useful
+        error message instead of a bare return code. Aborts are retried since
+        a transient network/entropy failure can also produce ``SIGABRT``
+        (astral-sh/uv#21743).
+        """
         if subprocess_env is None:
             subprocess_env = _get_env_for_subprocess(venv_path, self.python_version)
-        process = run(
-            "uv sync",
-            cwd=venv_path,
-            shell=True,
-            env=subprocess_env,
-        )
-        if process.returncode != 0:
-            logger.warning("uv sync failed in %s", venv_path)
+        uv_env = subprocess_env.copy()
+        if platform.machine().lower() in ("aarch64", "arm64"):
+            # AWS-LC uses the aarch64 RNDR instruction without retrying a
+            # transient failure, which aborts uv during TLS handshakes.
+            uv_env.setdefault("OPENSSL_armcap", "~0x20000")
+        log_path = self._get_uv_sync_log_path(venv_path)
+        process = None
+        for attempt in range(1, 4):
+            try:
+                log_file = open(log_path, "w")
+            except OSError:
+                # never let an unwritable log turn into an inherited,
+                # possibly broken, stderr: discard the output instead
+                log_file = open(os.devnull, "w")
+            try:
+                process = run(
+                    "uv sync",
+                    cwd=venv_path,
+                    shell=True,
+                    env=uv_env,
+                    stdout=log_file,
+                    stderr=STDOUT,
+                )
+            finally:
+                log_file.close()
+            if process.returncode == 0:
+                return process
+            output = self._get_uv_sync_log_tail(venv_path)
+            logger.warning(
+                "uv sync failed in %s (attempt %s/3, code %s)%s",
+                venv_path,
+                attempt,
+                process.returncode,
+                "\n%s" % output if output else "",
+            )
+            if process.returncode not in (134, -6) or attempt == 3:
+                break
+            time.sleep(attempt * 2)
         return process
 
     def get_migration_state_from_file(self):
@@ -824,7 +887,7 @@ class OpenupgraderConfig(models.Model):
             # local Odoo source and version overrides) and install it with
             # ``uv sync`` so that running ``uv sync`` again keeps it coherent.
             self._write_uv_pyproject(venv_path, odoo_path)
-            self._sync_uv_env(venv_path, subprocess_env)
+            initial_sync_process = self._sync_uv_env(venv_path, subprocess_env)
 
             core_modules = self._get_core_modules(odoo_path)
             self.core_modules = str(set(core_modules))
@@ -857,14 +920,35 @@ class OpenupgraderConfig(models.Model):
             # executable or a failed ``uv sync`` must surface immediately
             # instead of failing later when the migration is started.
             odoo_executable = self._get_odoo_executable(venv_path)
-            if sync_process.returncode != 0 or not os.path.isfile(odoo_executable):
-                raise ValidationError(
-                    _(
+            uv_sync_failed = bool(sync_process and sync_process.returncode != 0)
+            if (
+                sync_process
+                and sync_process.returncode in (134, -6)
+                and (
+                    (initial_sync_process and initial_sync_process.returncode == 0)
+                    or self._is_uv_env_installed(venv_path)
+                )
+                and os.path.isfile(os.path.join(venv_path, ".venv", "bin", "python"))
+                and os.path.isfile(odoo_executable)
+            ):
+                # The first sync created a complete environment; only the
+                # final refresh of the addon requirements was aborted by uv.
+                # The packages are already installed, so the environment is
+                # usable and the migration can proceed.
+                logger.warning(
+                    "uv sync aborted while refreshing the addons in %s, but "
+                    "the environment is usable; see %s",
+                    venv_path,
+                    self._get_uv_sync_log_path(venv_path),
+                )
+                uv_sync_failed = False
+            if uv_sync_failed or not os.path.isfile(odoo_executable):
+                if sync_process:
+                    error_message = _(
                         "Environment for version %(version)s is not usable: "
                         "'uv sync' exited with code %(returncode)s and the Odoo "
                         "executable '%(executable)s' %(state)s."
-                    )
-                    % {
+                    ) % {
                         "version": self.name,
                         "returncode": sync_process.returncode,
                         "executable": odoo_executable,
@@ -872,7 +956,20 @@ class OpenupgraderConfig(models.Model):
                         if not os.path.isfile(odoo_executable)
                         else _("exists"),
                     }
+                else:
+                    error_message = _(
+                        "Environment for version %(version)s is not usable: "
+                        "the Odoo executable '%(executable)s' is missing."
+                    ) % {
+                        "version": self.name,
+                        "executable": odoo_executable,
+                    }
+                uv_sync_output = (
+                    self._get_uv_sync_log_tail(venv_path) if sync_process else ""
                 )
+                if uv_sync_output:
+                    error_message += "\n\n%s" % uv_sync_output
+                raise ValidationError(error_message)
             env_update_date = fields.Datetime.now()
             self.write(
                 {
@@ -1329,6 +1426,70 @@ class OpenupgraderConfig(models.Model):
         return versions
 
     @staticmethod
+    def _get_addon_module_from_package_name(package_name):
+        """Return the module name of an ``odoo*-addon-*`` package."""
+        match = re.match(r"^odoo(?:[0-9]+)?-addon-(.+)$", package_name)
+        return match.group(1) if match else None
+
+    @staticmethod
+    def _extract_requirement_package_name(requirement):
+        """Extract the package name from a ``Requires-Dist`` entry."""
+        requirement = requirement.split(";", 1)[0].strip()
+        match = re.match(r"^([A-Za-z0-9_.-]+)", requirement)
+        return match.group(1) if match else ""
+
+    def _get_installed_addons(self, venv_path):
+        """Return the Odoo addon distributions installed in the environment."""
+        site_packages = self._get_venv_site_packages(venv_path, self.python_version)
+        if not site_packages:
+            return {}
+        addons = {}
+        for name, version, requires in self._iter_distribution_metadata(site_packages):
+            if not name or not version:
+                continue
+            normalized_name = self._canonicalize_package_name(name)
+            module_name = self._get_addon_module_from_package_name(normalized_name)
+            if not module_name:
+                continue
+            addons[normalized_name] = {
+                "name": name,
+                "version": version,
+                "module": module_name,
+                "requires": requires,
+            }
+        return addons
+
+    def _get_installed_addon_requirements(self, venv_path):
+        """Return pinned requirements for every Odoo addon installed with pip."""
+        return [
+            f"{addon['name']}=={addon['version']}"
+            for addon in self._get_installed_addons(venv_path).values()
+        ]
+
+    def _get_missing_addon_dependencies(self, venv_path):
+        """Return same-repository addon dependencies still missing in the env.
+
+        Odoo addon wheels declare their module dependencies as
+        ``odoo*-addon-*`` ``Requires-Dist`` entries. They are normally pulled
+        in by the pip/uv resolver, but this check makes the migration install
+        them explicitly when a dependency was skipped or was not installed by
+        the first resolution.
+        """
+        addons = self._get_installed_addons(venv_path)
+        missing_modules = set()
+        for addon in addons.values():
+            for requirement in addon["requires"]:
+                if "extra" in requirement.replace(" ", "").lower():
+                    # optional/test dependencies are not module dependencies
+                    continue
+                package_name = self._extract_requirement_package_name(requirement)
+                normalized_name = self._canonicalize_package_name(package_name)
+                module_name = self._get_addon_module_from_package_name(normalized_name)
+                if module_name and normalized_name not in addons:
+                    missing_modules.add(module_name)
+        return sorted(missing_modules)
+
+    @staticmethod
     def _get_pip_compile_index_options(extra_index_url):
         """Return the index options used to resolve dependencies.
 
@@ -1548,7 +1709,7 @@ class OpenupgraderConfig(models.Model):
                 break
         return set()
 
-    def install_pip_modules(self, module_names):  # noqa C901
+    def install_pip_modules(self, module_names, _install_dependencies=True):  # noqa C901
         self.ensure_one()
         if not isinstance(module_names, list):
             module_names = [module_names]
@@ -1751,16 +1912,27 @@ class OpenupgraderConfig(models.Model):
                     self.name,
                 )
                 not_installable_modules.append(name)
-        # Persist the installed addon requirements so they become part of the
-        # project and are not removed by a plain ``uv sync``, then refresh the
-        # lock file so the environment stays consistent with it.
+        # Install addon dependencies from the same repository explicitly: a
+        # module wheel declares them as ``odoo*-addon-*`` requirements, but
+        # they can be skipped by a partial resolution or by an older wheel.
+        if _install_dependencies:
+            missing_addons = self._get_missing_addon_dependencies(venv_path)
+            if missing_addons:
+                logger.info(
+                    "Installing addon dependencies from the same repositories: %s",
+                    missing_addons,
+                )
+                modules_to_install.update(
+                    self.install_pip_modules(
+                        missing_addons, _install_dependencies=False
+                    )
+                )
+        # Persist every installed addon (including same-repository
+        # dependencies) so they become part of the project and are not
+        # removed by a plain ``uv sync``.
         self._record_addon_requirements(
             venv_path,
-            [
-                f"odoo{release_val}-addon-{name}{version_val}"
-                for name, state in modules_to_install.items()
-                if state != "not_installed"
-            ],
+            self._get_installed_addon_requirements(venv_path),
         )
         openupgrade_path = os.path.join(venv_path, "odoo")
         odoo_path = (

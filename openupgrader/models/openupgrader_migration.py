@@ -41,6 +41,13 @@ MAX_UNINSTALL_MODULES_RETRY = 5
 # marks the migration as failed, so a deterministic error cannot loop forever.
 MAX_MIGRATION_RETRY = 3
 
+# OdooRPC uses a 120s timeout by default. Installing/uninstalling modules on a
+# large database can take much longer; when the client times out the server-side
+# operation keeps running, and retrying immediately starts a second concurrent
+# module operation (which can then block on PostgreSQL row locks). Wait for the
+# RPC to finish instead.
+ODOO_RPC_TIMEOUT = 3600
+
 
 class OpenupgraderMigration(models.Model):
     _name = "openupgrader.migration"
@@ -362,6 +369,7 @@ class OpenupgraderMigration(models.Model):
                     login=self.db_user,
                     password=self.db_password,
                 )
+                client.config["timeout"] = ODOO_RPC_TIMEOUT
                 time.sleep(5)
                 return client
             except Exception as e:

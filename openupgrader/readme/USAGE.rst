@@ -128,6 +128,10 @@ contain::
 
 Notes:
 
+* Odoo addon wheels declare their same-repository module dependencies as
+  ``odoo*-addon-*`` requirements. They are installed by pip/uv together with
+  the requested module and are persisted in the project, so a later
+  ``uv sync`` does not remove them;
 * ``renamed_modules``, ``auto_install``, ``delete`` and ``obsolete`` are
   merged with the ``apriori.py`` of OpenUpgrade when the version checkout is
   available;

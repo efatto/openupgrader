@@ -2,10 +2,8 @@ import json
 import logging
 import os
 import shutil
-import signal
 import ssl
 import sys
-import time
 from datetime import datetime
 from pathlib import Path
 from subprocess import PIPE, Popen
@@ -57,7 +55,9 @@ def _set_odoorc(folder, config_id):
     if float(config_id.name) > 15:
         sed_cmd = f"sed -i 's/longpolling/gevent/g' {odoorc_path}"
         Popen(sed_cmd, shell=True)
-    not_auto_install_list = safe_eval(config_id.not_autoinstallable_modules)
+    not_auto_install_list = safe_eval(config_id.not_autoinstallable_modules or "[]")
+    if not isinstance(not_auto_install_list, (list, tuple, set)):
+        not_auto_install_list = [not_auto_install_list]
     mod_not_install = (
         f"modules_auto_install_disabled = {','.join(not_auto_install_list)}"
     )
@@ -120,13 +120,23 @@ def _get_odoo_pids(dbname):
 def _stop_pid(pid=False):
     if pid:
         try:
-            os.kill(pid, signal.SIGTERM)
-            time.sleep(5)
-        except OSError:
-            time.sleep(10)
+            process = psutil.Process(pid)
+        except psutil.NoSuchProcess:
+            process = None
+        if process:
             try:
-                os.kill(pid, signal.SIGKILL)
-            except OSError as e:
+                process.terminate()
+                try:
+                    process.wait(timeout=30)
+                except psutil.TimeoutExpired:
+                    logger.warning(
+                        "Odoo process %s did not stop after 30s, killing it.", pid
+                    )
+                    process.kill()
+                    process.wait(timeout=10)
+            except psutil.NoSuchProcess:
+                pass
+            except psutil.Error as e:
                 logger.info("Error %s in killing pid: %s " % (e, pid))
     logger.info("Odoo migration instance stopped.")
 

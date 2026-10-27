@@ -1,3 +1,7 @@
+.. image:: https://odoo-community.org/readme-banner-image
+   :target: https://odoo-community.org/get-involved?utm_source=readme
+   :alt: Odoo Community Association
+
 ============
 OpenUpgrader
 ============
@@ -13,7 +17,7 @@ OpenUpgrader
 .. |badge1| image:: https://img.shields.io/badge/maturity-Beta-yellow.png
     :target: https://odoo-community.org/page/development-status
     :alt: Beta
-.. |badge2| image:: https://img.shields.io/badge/licence-AGPL--3-blue.png
+.. |badge2| image:: https://img.shields.io/badge/license-AGPL--3-blue.png
     :target: http://www.gnu.org/licenses/agpl-3.0-standalone.html
     :alt: License: AGPL-3
 .. |badge3| image:: https://img.shields.io/badge/github-efatto%2Fopenupgrader-lightgray.png?logo=github
@@ -245,6 +249,10 @@ contain::
 
 Notes:
 
+* Odoo addon wheels declare their same-repository module dependencies as
+  ``odoo*-addon-*`` requirements. They are installed by pip/uv together with
+  the requested module and are persisted in the project, so a later
+  ``uv sync`` does not remove them;
 * ``renamed_modules``, ``auto_install``, ``delete`` and ``obsolete`` are
   merged with the ``apriori.py`` of OpenUpgrade when the version checkout is
   available;
