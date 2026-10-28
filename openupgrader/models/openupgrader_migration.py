@@ -503,7 +503,9 @@ class OpenupgraderMigration(models.Model):
         if version_float > 11:
             load = "base,web"
         if version_float > 13:
-            load += ",openupgrade_framework,module_change_auto_install"
+            load += ",openupgrade_framework"
+        if version_float >= 13:
+            load += ",module_change_auto_install"
         executable = config_id._get_odoo_executable(folder)
         addons_path = f"{folder}/repos/odoo/addons"
         if version_float < 14:
