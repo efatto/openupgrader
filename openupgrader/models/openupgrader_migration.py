@@ -853,8 +853,6 @@ class OpenupgraderMigration(models.Model):
             self.show_message_odoo_running_and_return()
         before_sql = self.current_config_id.sql_before_migration_command_ids
         self.sql_fixes(before_sql)
-        before_python = self.current_config_id.python_before_migration_command_ids
-        self.python_fixes(before_python)
         self.uninstall_modules(self.current_config_id, before_migration=True)
         self.remove_not_installed_module_views()
         self.remove_assets()
@@ -1429,7 +1427,6 @@ class OpenupgraderMigration(models.Model):
         self.auto_install_modules(next_config)
         self.uninstall_modules(next_config, after_migration=True)
         self.sql_fixes(self.current_config_id.sql_after_migration_command_ids)
-        self.python_fixes(self.current_config_id.python_after_migration_command_ids)
         # move version to the next step
         self.current_config_id = next_config
         self.next_config_id = self.env["openupgrader.config"].search(

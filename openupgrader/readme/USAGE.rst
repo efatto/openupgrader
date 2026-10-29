@@ -121,8 +121,6 @@ contain::
           - UPDATE ...
       - before_migration_to_next_version_sql_command:
           - DELETE ...
-      - after_migration_to_this_version_python_command: []
-      - before_migration_to_next_version_python_command: []
       - renamed_modules:  ["old_name new_name"]      # one rename per line
       - auto_install:     ["installed_mod new_mod"]  # install new_mod
       - delete:           ["module_to_drop"]
