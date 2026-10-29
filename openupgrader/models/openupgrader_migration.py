@@ -1631,6 +1631,7 @@ class OpenupgraderMigration(models.Model):
         logger.info("Doing custom sql commands.")
         conn_vars = self._get_db_connection_variables()
         for sql_command in sql_commands:
+            logger.info(f"Executing sql command: {sql_command.name}")
             run(
                 [
                     f"{conn_vars} && psql -d {self.env.cr.dbname}_migrate "
@@ -1638,19 +1639,6 @@ class OpenupgraderMigration(models.Model):
                 ],
                 shell=True,
             )
-
-    def python_fixes(self, python_commands):
-        logger.info("Doing custom python commands.")
-        for python_command in python_commands:
-            try:
-                safe_eval(
-                    python_command.name,
-                    {"self": self, "api": api, "fields": fields, "models": models},
-                )
-            except Exception as e:
-                logger.error(
-                    f"Error executing python command: {python_command.name}. Error: {e}"
-                )
 
     def install_repo(self, remote_repo, version_name, repo_path=None):
         if repo_path is None:

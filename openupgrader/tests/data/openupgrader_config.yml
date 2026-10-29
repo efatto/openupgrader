@@ -10,8 +10,6 @@
       - module_change_auto_install
   - after_migration_to_this_version_sql_command: ""
   - before_migration_to_next_version_sql_command: ""
-  - after_migration_to_this_version_python_command: ""
-  - before_migration_to_next_version_python_command: ""
   - auto_install: ""
   - renamed_modules: ""
   - delete: ""
@@ -30,8 +28,6 @@
       - module_change_auto_install
   - after_migration_to_this_version_sql_command: ""
   - before_migration_to_next_version_sql_command: ""
-  - after_migration_to_this_version_python_command: ""
-  - before_migration_to_next_version_python_command: ""
   - auto_install:
       - account_invoice_single_tax account_tax_one_vat
   - renamed_modules: ""
@@ -62,8 +58,6 @@
   - after_migration_to_this_version_sql_command: ""
   - before_migration_to_next_version_sql_command:
       - ALTER TABLE purchase_order DROP COLUMN IF EXISTS project_id;
-  - after_migration_to_this_version_python_command: ""
-  - before_migration_to_next_version_python_command: ""
   - auto_install: ""
   - renamed_modules: ""
   - delete: ""
@@ -92,8 +86,6 @@
       - module_change_auto_install
   - after_migration_to_this_version_sql_command: ""
   - before_migration_to_next_version_sql_command: ""
-  - after_migration_to_this_version_python_command: ""
-  - before_migration_to_next_version_python_command: ""
   - auto_install:
       - base auditlog
   - renamed_modules: ""
@@ -123,8 +115,6 @@
       - module_change_auto_install
   - after_migration_to_this_version_sql_command: ""
   - before_migration_to_next_version_sql_command: ""
-  - after_migration_to_this_version_python_command: ""
-  - before_migration_to_next_version_python_command: ""
   - auto_install: ""
   - renamed_modules: ""
   - delete: ""
@@ -160,8 +150,6 @@
         c.id = w.company_id AND w.partner_id IS DISTINCT FROM c.partner_id AND EXISTS
         (SELECT 1 FROM ir_model_data WHERE module = 'base' AND name = 'user_demo' AND
         model = 'res.users'); # demo multi-company data: make warehouse/partner companies consistent for the 15.0 stock post-migration
-  - after_migration_to_this_version_python_command: ""
-  - before_migration_to_next_version_python_command: ""
   - auto_install: ""
   - renamed_modules: ""
   - delete: ""
