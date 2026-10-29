@@ -140,7 +140,7 @@ Notes:
   available;
 * ``obsolete`` modules are uninstalled as part of the post-migration
   cleanup, so listing a module there is usually enough;
-* SQL/python commands run through the module's own mechanisms, which makes
+* SQL commands run through the module's own mechanisms, which makes
   data workarounds reproducible and keeps them out of the migration code;
 * the YML is loaded when a config is created; use
   ``config_file_path`` + ``button_reload_config_file`` to reload after an
@@ -207,7 +207,7 @@ Handy methods (all callable from ``odoo-bin shell``)
 ``mig.button_do_migration()``
     run one migration step (used by the cron);
 ``mig.button_prepare_for_migration()``
-    run the pre-migration SQL/python fixes, uninstalls and cleanup;
+    run the pre-migration SQL fixes, uninstalls and cleanup;
 ``mig.button_dump_current_database()``
     dump the migrated DB for the current version;
 ``mig.button_restore_last_database()``

@@ -607,7 +607,7 @@ merged with the <tt class="docutils literal">apriori.py</tt> of OpenUpgrade when
 available;</li>
 <li><tt class="docutils literal">obsolete</tt> modules are uninstalled as part of the post-migration
 cleanup, so listing a module there is usually enough;</li>
-<li>SQL/python commands run through the module’s own mechanisms, which makes
+<li>SQL commands run through the module’s own mechanisms, which makes
 data workarounds reproducible and keeps them out of the migration code;</li>
 <li>the YML is loaded when a config is created; use
 <tt class="docutils literal">config_file_path</tt> + <tt class="docutils literal">button_reload_config_file</tt> to reload after an
@@ -676,7 +676,7 @@ module still writes <tt class="docutils literal">migrate.log</tt>/<tt class="doc
 <dt><tt class="docutils literal">mig.button_do_migration()</tt></dt>
 <dd>run one migration step (used by the cron);</dd>
 <dt><tt class="docutils literal">mig.button_prepare_for_migration()</tt></dt>
-<dd>run the pre-migration SQL/python fixes, uninstalls and cleanup;</dd>
+<dd>run the pre-migration SQL fixes, uninstalls and cleanup;</dd>
 <dt><tt class="docutils literal">mig.button_dump_current_database()</tt></dt>
 <dd>dump the migrated DB for the current version;</dd>
 <dt><tt class="docutils literal">mig.button_restore_last_database()</tt></dt>
