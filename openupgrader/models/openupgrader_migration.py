@@ -1592,15 +1592,15 @@ END
             f"Migration done from version {self.current_config_id.name} "
             f"to version {next_config.name}"
         )
-        # do after migration stuff
-        self.auto_install_modules(next_config)
-        self.uninstall_modules(next_config, after_migration=True)
-        self.sql_fixes(self.current_config_id.sql_after_migration_command_ids)
+        # do after migration stuff for the current migrated version
         # move version to the next step
         self.current_config_id = next_config
         self.next_config_id = self.env["openupgrader.config"].search(
             [("name", "=", str(float(self.current_config_id.name) + 1))], limit=1
         )
+        self.auto_install_modules(self.current_config_id)
+        self.uninstall_modules(self.current_config_id, after_migration=True)
+        self.sql_fixes(self.current_config_id.sql_after_migration_command_ids)
         if self.dump_each_version_database:
             self.button_dump_current_database()
         self.current_config_id.update_migration_state_file("ready_to_prepare")
