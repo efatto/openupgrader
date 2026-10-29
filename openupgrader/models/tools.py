@@ -18,6 +18,125 @@ from odoo.tools.safe_eval import safe_eval
 logger = logging.getLogger(__name__)
 
 
+# SQL helper used by openupgrader.migration.replace_website_links().
+# The double dollar quotes are escaped because the command is passed to psql
+# through a double quoted shell string (see sql_fixes/remove_assets).
+_REPLACE_TEXT_SQL = r"""
+CREATE OR REPLACE FUNCTION public.openupgrader_replace_text(
+    old_text text, new_text text
+) RETURNS void
+LANGUAGE plpgsql
+AS \$\$
+DECLARE
+    r record;
+    updated_rows bigint;
+BEGIN
+    IF old_text IS NULL OR old_text = '' OR old_text = new_text THEN
+        RETURN;
+    END IF;
+    FOR r IN
+        SELECT c.table_name, c.column_name, c.data_type
+        FROM information_schema.columns c
+        JOIN information_schema.tables t
+          ON t.table_schema = c.table_schema
+         AND t.table_name = c.table_name
+        WHERE c.table_schema = 'public'
+          AND t.table_type = 'BASE TABLE'
+          AND c.data_type IN (
+              'text', 'character varying', 'character', 'jsonb', 'json'
+          )
+          -- keep technical identifiers untouched
+          AND NOT (c.table_name = 'ir_model_data'
+                   AND c.column_name IN ('name', 'module', 'model'))
+          AND NOT (c.table_name = 'ir_model_fields'
+                   AND c.column_name IN (
+                       'name', 'model', 'relation', 'relation_field',
+                       'ttype', 'related'
+                   ))
+          AND NOT (c.table_name = 'ir_model'
+                   AND c.column_name = 'model')
+          AND NOT (c.table_name = 'ir_module_module'
+                   AND c.column_name IN ('name', 'state'))
+          AND NOT (c.table_name = 'ir_config_parameter'
+                   AND c.column_name = 'key')
+          AND NOT (c.table_name = 'ir_ui_view'
+                   AND c.column_name = 'key')
+          AND NOT (c.table_name = 'ir_act_report_xml'
+                   AND c.column_name IN (
+                       'report_name', 'report_file', 'model'
+                   ))
+          AND NOT (c.table_name = 'ir_translation'
+                   AND c.column_name IN (
+                       'name', 'module', 'lang', 'type', 'state'
+                   ))
+          AND NOT (c.table_name = 'res_users'
+                   AND c.column_name IN (
+                       'login', 'password', 'api_key', 'totp_secret'
+                   ))
+    LOOP
+        BEGIN
+            IF r.data_type IN ('jsonb', 'json') THEN
+                EXECUTE format(
+                    'UPDATE public.%I SET %I = '
+                    'replace(%I::text, %L, %L)::%s '
+                    'WHERE %I::text LIKE %L',
+                    r.table_name, r.column_name, r.column_name,
+                    old_text, new_text, r.data_type, r.column_name,
+                    '%' || old_text || '%'
+                );
+            ELSE
+                EXECUTE format(
+                    'UPDATE public.%I SET %I = '
+                    'replace(%I, %L, %L) '
+                    'WHERE %I LIKE %L',
+                    r.table_name, r.column_name, r.column_name,
+                    old_text, new_text, r.column_name,
+                    '%' || old_text || '%'
+                );
+            END IF;
+            GET DIAGNOSTICS updated_rows = ROW_COUNT;
+            IF updated_rows > 0 THEN
+                RAISE NOTICE
+                    'website link replacement: % row(s) in %.%',
+                    updated_rows, r.table_name, r.column_name;
+            END IF;
+        EXCEPTION WHEN others THEN
+            RAISE WARNING
+                'website link replacement skipped %.%: %',
+                r.table_name, r.column_name, SQLERRM;
+        END;
+    END LOOP;
+END
+\$\$;
+SELECT public.openupgrader_replace_text(old_text, new_text)
+FROM (VALUES
+{values}
+) AS replacements(old_text, new_text);
+DROP FUNCTION IF EXISTS public.openupgrader_replace_text(text, text);
+"""
+
+
+def _sql_quote(value):
+    """Quote a value for a single quoted SQL literal."""
+    return "'%s'" % str(value).replace("'", "''")
+
+
+def _get_replace_text_sql(replacements):
+    """Return a self-contained SQL script replacing text in all columns.
+
+    ``replacements`` is a list of ``(old_text, new_text)`` tuples.  The SQL
+    helper scans every text/varchar/char/json/jsonb column of the public
+    schema, replaces the exact old strings and then drops itself.
+    """
+    if not replacements:
+        return ""
+    values = ",\n".join(
+        "        (%s, %s)" % (_sql_quote(old), _sql_quote(new))
+        for old, new in replacements
+    )
+    return _REPLACE_TEXT_SQL.format(values=values)
+
+
 def _get_opener(verify_ssl=True, sessions=True):
     handlers = []
     if not verify_ssl:

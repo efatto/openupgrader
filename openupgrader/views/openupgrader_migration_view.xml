@@ -161,6 +161,10 @@
                             <field name="pg_password_var" />
                         </group>
                     </group>
+                    <group string="Website migration">
+                        <field name="old_website_name" />
+                        <field name="new_website_name" />
+                    </group>
                     <notebook>
                         <page string="Migration info">
                             <group>

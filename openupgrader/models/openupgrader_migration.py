@@ -8,6 +8,7 @@ import time
 from datetime import datetime
 from pathlib import Path
 from subprocess import PIPE, Popen, run
+from urllib.parse import urlsplit
 
 import odoorpc
 
@@ -25,7 +26,9 @@ from .tools import (
     _get_odoo_pids,
     _get_odoo_process_state,
     _get_opener,
+    _get_replace_text_sql,
     _init_migration_state_file,
+    _sql_quote,
     _stop_pid,
 )
 
@@ -58,6 +61,21 @@ class OpenupgraderMigration(models.Model):
         string="Database name",
         readonly=True,
         default=lambda self: self.env.cr.dbname,
+    )
+    old_website_name = fields.Char(
+        string="Old website name",
+        default=lambda self: self._get_old_website_name(),
+        help="Website hostname detected from the current Odoo instance "
+        "(web.base.url, then website.domain). It can be edited if needed.",
+    )
+    new_website_name = fields.Char(
+        string="New website name",
+        compute="_compute_new_website_name",
+        store=True,
+        readonly=False,
+        help="Website hostname to use after migration. It is pre-filled from "
+        "the old website name by adding 'migr' to its first dot-separated "
+        "part, e.g. odoo.mysite.it -> odoomigr.mysite.it. It can be edited.",
     )
     db_user = fields.Char(string="Odoo user", default="admin")
     db_password = fields.Char(string="Odoo password", default="admin")
@@ -841,6 +859,156 @@ class OpenupgraderMigration(models.Model):
         # odoo service is stopped automatically at the end of the update process
         return self.start_odoo(self.current_config_id, update=True)
 
+    @staticmethod
+    def _extract_website_hostname(value):
+        """Return the hostname of a URL or domain, without scheme and port."""
+        value = (value or "").strip()
+        if not value:
+            return ""
+        if "://" not in value and not value.startswith("//"):
+            value = "//" + value
+        try:
+            hostname = urlsplit(value).hostname or ""
+        except ValueError:
+            hostname = ""
+        return hostname.lower().strip(".")
+
+    def _get_old_website_name(self):
+        """Detect the old website hostname from the current Odoo instance."""
+        candidates = [
+            self.env["ir.config_parameter"].sudo().get_param("web.base.url"),
+        ]
+        if "website" in self.env:
+            website = self.env["website"].sudo().search([], limit=1)
+            if website:
+                candidates.append(website.domain)
+        candidates.append(self.address)
+        for candidate in candidates:
+            hostname = self._extract_website_hostname(candidate)
+            if hostname and hostname not in (
+                "http",
+                "https",
+                "localhost",
+                "127.0.0.1",
+                "::1",
+            ):
+                return hostname
+        for candidate in candidates:
+            hostname = self._extract_website_hostname(candidate)
+            if hostname and hostname not in ("http", "https"):
+                return hostname
+        return ""
+
+    @staticmethod
+    def _build_new_website_name(old_name):
+        """Add ``migr`` to the first dot-separated part of the old name."""
+        old_name = (old_name or "").strip().strip(".")
+        if not old_name:
+            return ""
+        parts = old_name.split(".", 1)
+        if len(parts) == 1:
+            return f"{parts[0]}migr"
+        return f"{parts[0]}migr.{parts[1]}"
+
+    @api.depends("old_website_name")
+    def _compute_new_website_name(self):
+        for record in self:
+            record.new_website_name = record._build_new_website_name(
+                record.old_website_name
+            )
+
+    @staticmethod
+    def _get_website_link_replacements(old_name, new_name):
+        """Return the URL variants to replace for a hostname change."""
+        return [
+            (f"{prefix}{old_name}", f"{prefix}{new_name}")
+            for prefix in ("https://", "http://", "//")
+        ]
+
+    def replace_website_links(self):
+        """Replace website URL occurrences in the migrated database."""
+        self.ensure_one()
+        old_name = (
+            self._extract_website_hostname(self.old_website_name)
+            or self._get_old_website_name()
+        )
+        if old_name in ("http", "https"):
+            old_name = self._get_old_website_name()
+        new_name = self._extract_website_hostname(self.new_website_name)
+        if new_name in ("http", "https"):
+            new_name = ""
+        if not old_name:
+            logger.warning(
+                "No old website name found: website link replacement skipped."
+            )
+            return
+        if not new_name:
+            new_name = self._build_new_website_name(old_name)
+            self.new_website_name = new_name
+        if old_name == new_name:
+            logger.info(
+                "Old and new website names are the same (%s): replacement " "skipped.",
+                old_name,
+            )
+            return
+        hostname_re = re.compile(r"^[A-Za-z0-9]([A-Za-z0-9.-]*[A-Za-z0-9])?$")
+        for label, hostname in (("old", old_name), ("new", new_name)):
+            if not hostname_re.match(hostname):
+                raise UserError(
+                    _("Invalid %(label)s website name: %(hostname)s")
+                    % {"label": label, "hostname": hostname}
+                )
+        if self.old_website_name != old_name:
+            self.old_website_name = old_name
+        if self.new_website_name != new_name:
+            self.new_website_name = new_name
+        sql = _get_replace_text_sql(
+            self._get_website_link_replacements(old_name, new_name)
+        )
+        old_sql = _sql_quote(old_name)
+        new_sql = _sql_quote(new_name)
+        sql += f"""
+UPDATE ir_config_parameter
+SET value = replace(value, {old_sql}, {new_sql})
+WHERE key = 'web.base.url'
+  AND strpos(value, {old_sql}) > 0;
+DO \\$\\$
+BEGIN
+    IF to_regclass('public.website') IS NOT NULL THEN
+        BEGIN
+            UPDATE website
+            SET domain = replace(domain, {old_sql}, {new_sql})
+            WHERE strpos(domain, {old_sql}) > 0;
+        EXCEPTION WHEN unique_violation THEN
+            RAISE WARNING 'website domain replacement skipped: %', SQLERRM;
+        END;
+    END IF;
+END
+\\$\\$;
+"""
+        conn_vars = self._get_db_connection_variables()
+        logger.info(
+            "Replacing website links %s -> %s in %s_migrate",
+            old_name,
+            new_name,
+            self.env.cr.dbname,
+        )
+        result = run(
+            [f"{conn_vars} && psql -d {self.env.cr.dbname}_migrate " f'-c "{sql}"'],
+            shell=True,
+            stdout=PIPE,
+            stderr=PIPE,
+            universal_newlines=True,
+        )
+        if result.returncode:
+            raise UserError(
+                _("Website link replacement failed:\n%s")
+                % (result.stderr or result.stdout)
+            )
+        if result.stderr:
+            logger.info("Website link replacement: %s", result.stderr.strip())
+        logger.info("Website link replacement completed.")
+
     def button_prepare_for_migration(self):
         # do pre-upgrade stuff
         self.ensure_one()
@@ -856,6 +1024,7 @@ class OpenupgraderMigration(models.Model):
         self.uninstall_modules(self.current_config_id, before_migration=True)
         self.remove_not_installed_module_views()
         self.remove_assets()
+        self.replace_website_links()
         self.delete_old_modules(self.current_config_id)
         self.current_config_id.update_migration_state_file("ready_for_migration")
 
