@@ -1588,19 +1588,33 @@ END
         if not next_config and self.to_config_id == self.current_config_id:
             # migration should be done, enable re-try last after migration stuff
             next_config = self.current_config_id
+        if not next_config:
+            raise ValidationError(
+                _(
+                    "Missing configuration for the version after %(current)s: "
+                    "cannot run the after-migration steps up to %(target)s."
+                )
+                % {
+                    "current": self.current_config_id.name or "-",
+                    "target": self.to_config_id.name or "-",
+                }
+            )
         logger.info(
             f"Migration done from version {self.current_config_id.name} "
             f"to version {next_config.name}"
         )
-        # do after migration stuff for the current migrated version
-        # move version to the next step
+        # The after-migration work belongs to the version we have just migrated
+        # to: at this point current_config_id is still the source version.
+        self.auto_install_modules(next_config)
+        self.uninstall_modules(next_config, after_migration=True)
+        self.sql_fixes(next_config.sql_after_migration_command_ids)
+        # Move to the next step only once the after-migration work succeeded, so
+        # that a failure keeps current_config_id on the source version and the
+        # cron can retry _do_after_migration.
         self.current_config_id = next_config
         self.next_config_id = self.env["openupgrader.config"].search(
             [("name", "=", str(float(self.current_config_id.name) + 1))], limit=1
         )
-        self.auto_install_modules(self.current_config_id)
-        self.uninstall_modules(self.current_config_id, after_migration=True)
-        self.sql_fixes(self.current_config_id.sql_after_migration_command_ids)
         if self.dump_each_version_database:
             self.button_dump_current_database()
         self.current_config_id.update_migration_state_file("ready_to_prepare")
@@ -1798,13 +1812,31 @@ END
         conn_vars = self._get_db_connection_variables()
         for sql_command in sql_commands:
             logger.info(f"Executing sql command: {sql_command.name}")
-            run(
+            # ON_ERROR_STOP makes psql return a non-zero exit code when the
+            # command fails; without it the failure is only printed on stderr
+            # and the migration silently continues.
+            result = run(
                 [
-                    f"{conn_vars} && psql -d {self.env.cr.dbname}_migrate "
+                    f"{conn_vars} && psql -v ON_ERROR_STOP=1 "
+                    f"-d {self.env.cr.dbname}_migrate "
                     f'-c "{sql_command.name}"',
                 ],
                 shell=True,
+                stdout=PIPE,
+                stderr=PIPE,
+                text=True,
             )
+            if (result.stdout or "").strip():
+                logger.info("SQL command result: %s", result.stdout.strip())
+            if result.returncode:
+                logger.error(
+                    "SQL command failed (exit code %s): %s\n%s",
+                    result.returncode,
+                    sql_command.name,
+                    (result.stderr or result.stdout or "").strip(),
+                )
+            elif (result.stderr or "").strip():
+                logger.info("SQL command output: %s", result.stderr.strip())
 
     def install_repo(self, remote_repo, version_name, repo_path=None):
         if repo_path is None:
