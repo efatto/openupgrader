@@ -50,3 +50,43 @@ class TestWebsiteNames(SavepointCase):
                 ("//odoo.mysite.it", "//odoomigr.mysite.it"),
             ],
         )
+
+    def test_get_old_website_name_variants(self):
+        Migration = self.env["openupgrader.migration"]
+        self.assertEqual(
+            Migration._get_old_website_name_variants("odootest.mysite.it"),
+            ["odootest.mysite.it", "odoo.mysite.it"],
+        )
+        self.assertEqual(
+            Migration._get_old_website_name_variants("test.mysite.it"),
+            ["test.mysite.it", "mysite.it"],
+        )
+        self.assertEqual(
+            Migration._get_old_website_name_variants("mysite.test.it"),
+            ["mysite.test.it", "mysite.it"],
+        )
+        self.assertEqual(
+            Migration._get_old_website_name_variants("odoo.mysite.it"),
+            ["odoo.mysite.it"],
+        )
+
+    def test_get_website_link_replacements_with_test_host(self):
+        Migration = self.env["openupgrader.migration"]
+        replacements = Migration._get_website_link_replacements(
+            "odootest.mysite.it", "odoomigr.mysite.it"
+        )
+        self.assertIn(
+            (
+                "https://odootest.mysite.it",
+                "https://odoomigr.mysite.it",
+            ),
+            replacements,
+        )
+        self.assertIn(
+            ("https://odoo.mysite.it", "https://odoomigr.mysite.it"),
+            replacements,
+        )
+        self.assertIn(
+            ("//odoo.mysite.it", "//odoomigr.mysite.it"),
+            replacements,
+        )

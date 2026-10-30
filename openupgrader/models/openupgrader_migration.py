@@ -918,10 +918,35 @@ class OpenupgraderMigration(models.Model):
             )
 
     @staticmethod
-    def _get_website_link_replacements(old_name, new_name):
+    def _get_old_website_name_variants(old_name):
+        """Return the old hostname and, for test hosts, its non-test variant.
+
+        When the current website host contains ``test`` (for example
+        ``odootest.mysite.it``), the database may still contain links to the
+        production host (``odoo.mysite.it``).  Both have to be rewritten to
+        the new website name.
+        """
+        variants = [old_name]
+        if "test" not in old_name.lower():
+            return variants
+        without_test = ".".join(
+            label
+            for label in (
+                re.sub("test", "", part, flags=re.IGNORECASE).strip("-")
+                for part in old_name.split(".")
+            )
+            if label
+        )
+        if without_test and without_test != old_name:
+            variants.append(without_test)
+        return variants
+
+    @classmethod
+    def _get_website_link_replacements(cls, old_name, new_name):
         """Return the URL variants to replace for a hostname change."""
         return [
-            (f"{prefix}{old_name}", f"{prefix}{new_name}")
+            (f"{prefix}{old}", f"{prefix}{new_name}")
+            for old in cls._get_old_website_name_variants(old_name)
             for prefix in ("https://", "http://", "//")
         ]
 
@@ -951,8 +976,11 @@ class OpenupgraderMigration(models.Model):
                 old_name,
             )
             return
+        old_variants = self._get_old_website_name_variants(old_name)
         hostname_re = re.compile(r"^[A-Za-z0-9]([A-Za-z0-9.-]*[A-Za-z0-9])?$")
-        for label, hostname in (("old", old_name), ("new", new_name)):
+        for label, hostname in [("old", variant) for variant in old_variants] + [
+            ("new", new_name)
+        ]:
             if not hostname_re.match(hostname):
                 raise UserError(
                     _("Invalid %(label)s website name: %(hostname)s")
@@ -965,9 +993,10 @@ class OpenupgraderMigration(models.Model):
         sql = _get_replace_text_sql(
             self._get_website_link_replacements(old_name, new_name)
         )
-        old_sql = _sql_quote(old_name)
         new_sql = _sql_quote(new_name)
-        sql += f"""
+        for old_variant in old_variants:
+            old_sql = _sql_quote(old_variant)
+            sql += f"""
 UPDATE ir_config_parameter
 SET value = replace(value, {old_sql}, {new_sql})
 WHERE key = 'web.base.url'
@@ -989,7 +1018,7 @@ END
         conn_vars = self._get_db_connection_variables()
         logger.info(
             "Replacing website links %s -> %s in %s_migrate",
-            old_name,
+            old_variants,
             new_name,
             self.env.cr.dbname,
         )
