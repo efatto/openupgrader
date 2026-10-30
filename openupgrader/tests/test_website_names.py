@@ -69,6 +69,16 @@ class TestWebsiteNames(SavepointCase):
             Migration._get_old_website_name_variants("odoo.mysite.it"),
             ["odoo.mysite.it"],
         )
+        self.assertEqual(
+            Migration._get_old_website_name_variants("OdooTest.Mysite.IT"),
+            ["OdooTest.Mysite.IT", "Odoo.Mysite.IT"],
+        )
+        self.assertEqual(
+            Migration._get_old_website_name_variants("  odootest.mysite.it  "),
+            ["odootest.mysite.it", "odoo.mysite.it"],
+        )
+        self.assertEqual(Migration._get_old_website_name_variants(""), [])
+        self.assertEqual(Migration._get_old_website_name_variants(False), [])
 
     def test_get_website_link_replacements_with_test_host(self):
         Migration = self.env["openupgrader.migration"]

@@ -66,7 +66,9 @@ class OpenupgraderMigration(models.Model):
         string="Old website name",
         default=lambda self: self._get_old_website_name(),
         help="Website hostname detected from the current Odoo instance "
-        "(web.base.url, then website.domain). It can be edited if needed.",
+        "(web.base.url, then website.domain). It can be edited if needed. "
+        "If the current name contains 'test' string, the occurrences without this "
+        "string will be replaced too.",
     )
     new_website_name = fields.Char(
         string="New website name",
@@ -926,18 +928,21 @@ class OpenupgraderMigration(models.Model):
         production host (``odoo.mysite.it``).  Both have to be rewritten to
         the new website name.
         """
+        old_name = (old_name or "").strip()
+        if not old_name:
+            return []
         variants = [old_name]
         if "test" not in old_name.lower():
             return variants
         without_test = ".".join(
             label
             for label in (
-                re.sub("test", "", part, flags=re.IGNORECASE).strip("-")
+                re.sub("test", "", part, flags=re.IGNORECASE).strip("-.")
                 for part in old_name.split(".")
             )
             if label
         )
-        if without_test and without_test != old_name:
+        if without_test and without_test not in variants:
             variants.append(without_test)
         return variants
 
@@ -1251,7 +1256,9 @@ END
                 shell=True,
                 stdout=PIPE,
                 stderr=PIPE,
-                text=True,
+                # ``text`` is only available from Python 3.7, while Odoo 14
+                # supports Python 3.6.
+                universal_newlines=True,
                 check=True,
             )
             if process.returncode != 0:
@@ -1264,7 +1271,7 @@ END
                 shell=True,
                 stdout=PIPE,
                 stderr=PIPE,
-                text=True,
+                universal_newlines=True,
                 check=True,
             )
             logger.info(f"Current modules to be removed: {process.stdout}")
@@ -1590,7 +1597,7 @@ END
             shell=True,
             stdout=PIPE,
             stderr=PIPE,
-            text=True,
+            universal_newlines=True,
         )
 
         if result.returncode == 0:
@@ -1853,7 +1860,9 @@ END
                 shell=True,
                 stdout=PIPE,
                 stderr=PIPE,
-                text=True,
+                # ``text`` is only available from Python 3.7, while Odoo 14
+                # supports Python 3.6.
+                universal_newlines=True,
             )
             if (result.stdout or "").strip():
                 logger.info("SQL command result: %s", result.stdout.strip())
