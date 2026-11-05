@@ -23,6 +23,7 @@ from .tools import (
     _get_migration_logs,
     _get_migration_state_entry_from_file,
     _get_migration_state_from_file,
+    _get_odoo_batch_pids,
     _get_odoo_pids,
     _get_odoo_process_state,
     _get_opener,
@@ -52,6 +53,33 @@ MAX_MIGRATION_RETRY = 3
 # module operation (which can then block on PostgreSQL row locks). Wait for the
 # RPC to finish instead.
 ODOO_RPC_TIMEOUT = 3600
+
+# A module operation (install/uninstall/update) locks the module and model
+# tables of the migrated database and its registry reload unlinks ``ir.model``
+# records, deleting their ``mail_message``/``ir_attachment`` data. A second
+# operation started while the first one is still running on the same database
+# blocks on PostgreSQL row locks (or deletes data the first one is using), so
+# module operations are serialized: before starting one, wait up to this many
+# seconds for the migrated database to become idle, then refuse instead of
+# racing with the running operation.
+MIGRATED_DB_BUSY_TIMEOUT = 3600
+MIGRATED_DB_BUSY_POLL_INTERVAL = 5
+# Tables touched by a module/registry operation. Only queries and locks on
+# these tables are considered: longpolling or business queries of the
+# migration instance do not block a module operation.
+MIGRATED_DB_MODULE_TABLES = (
+    "ir_module_module",
+    "ir_model",
+    "ir_model_fields",
+    "ir_model_data",
+    "ir_ui_view",
+    "ir_act_window",
+    "ir_act_window_view",
+    "ir_attachment",
+    "mail_message",
+    "mail_follower",
+    "mail_notification",
+)
 
 
 class OpenupgraderMigration(models.Model):
@@ -459,8 +487,99 @@ class OpenupgraderMigration(models.Model):
             % {"port": port, "db": migrated_db}
         )
 
+    def _check_no_migration_batch_running(self):
+        """Refuse to touch the migrated instance while it is updating.
+
+        ``-u all --stop`` processes unlink ``ir.model`` records and delete
+        their ``mail_message``/``ir_attachment`` data. Killing such a process
+        (as ``button_stop_odoo`` would) or connecting to it to install or
+        uninstall a module makes the two operations race on the same
+        PostgreSQL tables.
+        """
+        batch_pids = _get_odoo_batch_pids(self.env.cr.dbname)
+        if not batch_pids:
+            return
+        raise UserError(
+            _(
+                "The migration instance of database %(db)s is still running an "
+                "update (process %(pids)s). Wait for it to finish: stopping it "
+                "or running a module operation concurrently would corrupt the "
+                "migrated database."
+            )
+            % {
+                "db": self._get_migrated_db_name(),
+                "pids": ", ".join(str(pid) for pid in batch_pids),
+            }
+        )
+
+    def _count_migrated_db_module_queries(self, migrated_db):
+        """Count the module/registry queries running on ``migrated_db``."""
+        conn_vars = self._get_db_connection_variables()
+        table_conditions = " OR ".join(
+            "query ILIKE %s" % _sql_quote(f"%{table}%")
+            for table in MIGRATED_DB_MODULE_TABLES
+        )
+        sql = (
+            "SELECT count(*) FROM pg_stat_activity "
+            "WHERE datname = %s "
+            "AND pid <> pg_backend_pid() "
+            "AND state <> 'idle' "
+            # exclude the probes of concurrent openupgrader processes
+            "AND query NOT ILIKE '%pg_stat_activity%' "
+            "AND (%s)" % (_sql_quote(migrated_db), table_conditions)
+        )
+        result = run(
+            [f'{conn_vars} && psql -d {migrated_db} -t -A -c "{sql}"'],
+            shell=True,
+            stdout=PIPE,
+            stderr=PIPE,
+            universal_newlines=True,
+        )
+        if result.returncode:
+            logger.warning(
+                "Unable to inspect the running queries of %s: %s",
+                migrated_db,
+                (result.stderr or "").strip(),
+            )
+            return 0
+        try:
+            return int((result.stdout or "0").strip().splitlines()[-1])
+        except (IndexError, TypeError, ValueError):
+            return 0
+
+    def _wait_migrated_db_idle(self, migrated_db):
+        """Wait until no module operation runs on ``migrated_db``.
+
+        A previous RPC whose driver request was killed or timed out keeps
+        running on the migrated instance; the retry must wait for it instead
+        of starting a second concurrent registry update on the same database.
+        """
+        self._check_no_migration_batch_running()
+        deadline = time.time() + MIGRATED_DB_BUSY_TIMEOUT
+        while True:
+            running = self._count_migrated_db_module_queries(migrated_db)
+            if not running:
+                return
+            if time.time() >= deadline:
+                raise UserError(
+                    _(
+                        "%(count)s module/registry queries are still running on "
+                        "the migrated database %(db)s. Refusing to start a new "
+                        "module operation concurrently."
+                    )
+                    % {"count": running, "db": migrated_db}
+                )
+            logger.info(
+                "Waiting for %s module/registry queries running on %s to "
+                "finish before running a module operation.",
+                running,
+                migrated_db,
+            )
+            time.sleep(MIGRATED_DB_BUSY_POLL_INTERVAL)
+
     def odoo_connect(self, config_id):
         migrated_db = self._get_migrated_db_name()
+        self._check_no_migration_batch_running()
         if _get_odoo_process_state(self.env.cr.dbname) == "stopped":
             # start current config odoo if not running
             self.start_odoo(config_id)
@@ -624,6 +743,9 @@ class OpenupgraderMigration(models.Model):
         version_name = config_id.name
         version_float = float(version_name)
         migrated_db = self._get_migrated_db_name()
+        # never stop (or race with) a running -u all: it is updating the same
+        # database and unlinks ir.model/mail data
+        self._check_no_migration_batch_running()
         http_port, websocket_port = self._get_migration_instance_ports()
         websocket_server = "longpolling" if version_float < 16 else "gevent"
         # Odoo 7.0 has no --db-filter option: do not break it.
@@ -649,6 +771,8 @@ class OpenupgraderMigration(models.Model):
         if 9 < version_float < 14:
             extra_addons_path = f",{folder}/odoo/odoo/addons"
         subprocess_env = _get_env_for_subprocess(folder, config_id.python_version)
+        # identify the connections of the migration instance in pg_stat_activity
+        subprocess_env["PGAPPNAME"] = f"openupgrader-{migrated_db}"
         bash_command = (
             f"{subprocess_env['PYTHONPATH']} "
             f"{executable} "
@@ -2036,6 +2160,7 @@ END
         if not odoo_client:
             return
         module_obj = odoo_client.env["ir.module.module"]
+        migrated_db = self._get_migrated_db_name()
         # force recompute of installed modules for the current version
         config_id._compute_module_installed_ids()
         for module in config_id.module_auto_install_ids | config_id.renamed_module_ids:
@@ -2054,14 +2179,18 @@ END
                     module_toinstall_id = module_obj.browse(module_toinstall)
                     if module_toinstall_id:
                         try:
-                            logging.info(
-                                f"Installing module: {module_toinstall_id.name}"
+                            logger.info(
+                                "Installing module %s on migrated database %s",
+                                module_toinstall_id.name,
+                                migrated_db,
                             )
+                            self._wait_migrated_db_idle(migrated_db)
                             module_toinstall_id.button_immediate_install()
                         except Exception as e:
-                            logging.error(
-                                f"Error installing module {module_toinstall_id.name}:"
-                                f" {e}"
+                            logger.error(
+                                "Error installing module %s: %s",
+                                module_toinstall_id.name,
+                                e,
                             )
         self.button_stop_odoo()
 
@@ -2246,6 +2375,7 @@ END
             if not odoo_client:
                 return
             module_obj = odoo_client.env["ir.module.module"]
+            migrated_db = self._get_migrated_db_name()
             for module_to_delete in config_id.module_to_delete_after_migration_ids:
                 module_id = module_obj.browse(
                     module_obj.search(
@@ -2256,6 +2386,7 @@ END
                     )
                 )
                 if module_id:
+                    self._wait_migrated_db_idle(migrated_db)
                     module_id.unlink()
             self.button_stop_odoo()
 
@@ -2285,6 +2416,10 @@ END
                 migrated_db,
             )
             return False
+        # a previous module operation (possibly left running by a killed or
+        # retried driver request) must finish before touching the module and
+        # model tables again: its ir.model unlink deletes mail_message rows
+        self._wait_migrated_db_idle(migrated_db)
         module_obj = odoo_client.env["ir.module.module"]
         # module_obj.update_list()
         # removed as this changes the modules' state from 'to upgrade' to 'installed'
@@ -2304,11 +2439,16 @@ END
             )
             for module in modules:
                 if install:
+                    self._wait_migrated_db_idle(migrated_db)
                     module.button_immediate_install()
                 elif module.state in ["installed", "to upgrade", "uninstallable"]:
                     try_number = 0
                     while try_number < 5:
                         try:
+                            # the previous attempt may still be running on the
+                            # migrated instance: wait for it instead of starting
+                            # a second concurrent registry update
+                            self._wait_migrated_db_idle(migrated_db)
                             module.button_immediate_uninstall()
                             module.unlink()
                             logger.info("Module %s uninstalled" % module.name)

@@ -271,6 +271,40 @@ def _get_odoo_pids(dbname):
     return pids
 
 
+def _process_is_batch_update(pid):
+    """Tell whether the Odoo process ``pid`` is running a batch operation.
+
+    ``start_odoo(update=True)`` runs ``-u all --stop``: that process is
+    updating the migrated database and must never be stopped or have a
+    concurrent module operation started against the same database (the
+    registry update unlinks ``ir.model`` records and deletes their
+    ``mail_message``/``ir_attachment`` data, which would race with a module
+    install/uninstall).
+    """
+    update_flags = (
+        "-i",
+        "--init",
+        "-u",
+        "--update",
+        "--stop-after-init",
+        "--stop",
+    )
+    for arg in _get_process_cmdline(pid):
+        if arg in update_flags:
+            return True
+        if arg.startswith(("--init=", "--update=")):
+            return True
+        # argparse also accepts the attached form ``-uall`` / ``-imodule``
+        if arg.startswith(("-u", "-i")) and len(arg) > 2:
+            return True
+    return False
+
+
+def _get_odoo_batch_pids(dbname):
+    """Return the PIDs updating the ``<dbname>_migrate`` database."""
+    return [pid for pid in _get_odoo_pids(dbname) if _process_is_batch_update(pid)]
+
+
 def _get_pid_listening_on_port(port):
     """Return the PID listening on TCP ``port``, or None if unknown."""
     try:
