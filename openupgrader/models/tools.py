@@ -6,7 +6,7 @@ import ssl
 import sys
 from datetime import datetime
 from pathlib import Path
-from subprocess import PIPE, Popen
+from subprocess import Popen
 from urllib.request import HTTPSHandler, Request, urlopen
 
 import psutil
@@ -214,26 +214,82 @@ def _get_log_path(folder, version_name, migrate=False):
     return Path(folder) / f"openupgrade{version_name}" / f"{log_name}.log"
 
 
+def _get_process_cmdline(pid):
+    """Return the command line of ``pid`` as a list of arguments."""
+    try:
+        with open(f"/proc/{pid}/cmdline", "rb") as cmdline_file:
+            raw_cmdline = cmdline_file.read()
+    except OSError:
+        raw_cmdline = b""
+    if raw_cmdline:
+        return [arg.decode(errors="replace") for arg in raw_cmdline.split(b"\0") if arg]
+    try:
+        return psutil.Process(pid).cmdline()
+    except psutil.Error:
+        return []
+
+
+def _process_uses_database(pid, db_name):
+    """Tell whether the process ``pid`` serves exactly ``db_name``.
+
+    Only the ``-d``/``--database`` argument is inspected: a process whose
+    addons, data or log path happens to contain the database name (for
+    instance the working Odoo instance with a ``<db>_migrate`` path) must
+    never be mistaken for the migration instance.
+    """
+    args = _get_process_cmdline(pid)
+    for index, arg in enumerate(args):
+        if arg in ("-d", "--database"):
+            if index + 1 < len(args) and args[index + 1] == db_name:
+                return True
+        elif arg.startswith("--database="):
+            if arg.split("=", 1)[1] == db_name:
+                return True
+        elif arg.startswith("-d"):
+            # argparse also accepts the attached form ``-d<db_name>``
+            if arg[2:] == db_name:
+                return True
+    return False
+
+
 def _get_odoo_pids(dbname):
+    """Return the PIDs of the Odoo process serving ``<dbname>_migrate``.
+
+    ``psutil`` is used instead of an unanchored ``pgrep | grep`` on the whole
+    command line: the working (not migrated) Odoo instance must never be
+    selected - and stopped - because one of its arguments contains
+    ``<dbname>_migrate``.
+    """
+    migrated_dbname = f"{dbname}_migrate"
     pids = []
-    db_name = dbname
-    commands = [
-        f"pgrep -a python | grep {db_name}_migrate",
-    ]
-    for command in commands:
-        process = Popen(
-            command,
-            shell=True,
-            stdout=PIPE,
-        )
-        has_stdout = True
-        while has_stdout:
-            one_line_output = process.stdout.readline()
-            if one_line_output:
-                pids.append(int(one_line_output.split()[0]))
-            else:
-                has_stdout = False
+    for process in psutil.process_iter(["pid"]):
+        try:
+            if _process_uses_database(process.pid, migrated_dbname):
+                pids.append(process.pid)
+        except (psutil.Error, OSError):
+            continue
     return pids
+
+
+def _get_pid_listening_on_port(port):
+    """Return the PID listening on TCP ``port``, or None if unknown."""
+    try:
+        port = int(port)
+    except (TypeError, ValueError):
+        return None
+    try:
+        connections = psutil.net_connections(kind="inet")
+    except (psutil.Error, OSError):
+        return None
+    for connection in connections:
+        if (
+            connection.status == psutil.CONN_LISTEN
+            and connection.laddr
+            and connection.laddr.port == port
+            and connection.pid
+        ):
+            return connection.pid
+    return None
 
 
 def _stop_pid(pid=False):

@@ -84,8 +84,7 @@ def _build_wheel(index_root, version, marker):
         )
         wheel.writestr(
             "%s/METADATA" % dist_info,
-            "Metadata-Version: 2.1\nName: %s\nVersion: %s\n"
-            % (PACKAGE_NAME, version),
+            "Metadata-Version: 2.1\nName: %s\nVersion: %s\n" % (PACKAGE_NAME, version),
         )
         wheel.writestr(
             "%s/WHEEL" % dist_info,
@@ -168,9 +167,9 @@ class TestPipIndexPriority(SavepointCase):
         private_url = self._start_index_server(private_root)
         default_url = self._start_index_server(default_root)
 
-        index_options_list = self.env[
-            "openupgrader.config"
-        ]._get_module_index_options(private_url, True)
+        index_options_list = self.env["openupgrader.config"]._get_module_index_options(
+            private_url, True
+        )
         self.assertEqual(len(index_options_list), 2)
         index_options = index_options_list[0]
         self.assertIn("--index %s" % private_url, index_options)

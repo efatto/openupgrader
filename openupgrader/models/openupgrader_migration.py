@@ -26,8 +26,10 @@ from .tools import (
     _get_odoo_pids,
     _get_odoo_process_state,
     _get_opener,
+    _get_pid_listening_on_port,
     _get_replace_text_sql,
     _init_migration_state_file,
+    _process_uses_database,
     _sql_quote,
     _stop_pid,
 )
@@ -366,18 +368,114 @@ class OpenupgraderMigration(models.Model):
             )
             self.update_warning_log += update_warning_log
 
+    def _get_migrated_db_name(self):
+        """Return the database name used by the migration instance.
+
+        It is always ``<working database>_migrate``: the working database is
+        never touched by the migration instance. ``self.db_name`` is only
+        kept for compatibility with older records; all the dump/restore/SQL
+        code already targets ``self.env.cr.dbname``, so using anything else
+        here would start the migration instance on a different database than
+        the one being migrated.
+        """
+        working_db_name = self.env.cr.dbname
+        if self.db_name and self.db_name != working_db_name:
+            logger.warning(
+                "The migration record database %s differs from the current "
+                "database %s: using %s as migration database.",
+                self.db_name,
+                working_db_name,
+                f"{working_db_name}_migrate",
+            )
+        return f"{working_db_name}_migrate"
+
+    def _get_working_instance_ports(self):
+        """Return the ports already used by the working Odoo instance."""
+        ports = set()
+        for config_key in ("http_port", "longpolling_port", "gevent_port"):
+            try:
+                ports.add(int(config.get(config_key)))
+            except (TypeError, ValueError):
+                continue
+        return ports
+
+    def _get_migration_instance_ports(self):
+        """Return the HTTP and websocket ports of the migration instance.
+
+        The websocket/longpolling port used to be hardcoded to 8072, which is
+        also the default of the working Odoo instance: the migration instance
+        could not bind it and its requests could be served by the working
+        one. The port is now derived from the configured XML-RPC port and is
+        guaranteed not to be a port already used by the working instance.
+        """
+        working_ports = self._get_working_instance_ports()
+        try:
+            http_port = int(self.xmlrpc_port)
+        except (TypeError, ValueError) as e:
+            raise UserError(_("XmlRpc port must be an integer.")) from e
+        if http_port in working_ports:
+            raise UserError(
+                _(
+                    "XmlRpc port %(port)s is used by the working Odoo instance. "
+                    "Set a different XmlRpc port on the migration before "
+                    "installing or uninstalling modules."
+                )
+                % {"port": http_port}
+            )
+        websocket_port = http_port + 1
+        while websocket_port in working_ports:
+            websocket_port += 1
+        return http_port, websocket_port
+
+    def _check_migration_rpc_target(self, port, migrated_db):
+        """Ensure the Odoo process listening on ``port`` is the migration one.
+
+        The migration instance runs side by side with the working one. If the
+        RPC port is served by the working instance, ``install_uninstall_module``
+        would have the working Odoo process run the module operations, sharing
+        its registry, its ``ir_cron`` lock and its database connections.
+        """
+        pid = _get_pid_listening_on_port(port)
+        if not pid:
+            # The listener could not be identified (e.g. insufficient
+            # permissions): keep the previous behaviour, the port check done
+            # when starting the instance is still enforced.
+            logger.warning(
+                "Unable to identify the process listening on port %s: cannot "
+                "verify that it is the migration instance of database %s.",
+                port,
+                migrated_db,
+            )
+            return
+        if _process_uses_database(pid, migrated_db):
+            return
+        raise UserError(
+            _(
+                "The Odoo instance listening on port %(port)s is not the "
+                "migration instance of database %(db)s. Refusing to run module "
+                "operations on it: stop that instance or set a different "
+                "XmlRpc port on the migration."
+            )
+            % {"port": port, "db": migrated_db}
+        )
+
     def odoo_connect(self, config_id):
+        migrated_db = self._get_migrated_db_name()
         if _get_odoo_process_state(self.env.cr.dbname) == "stopped":
             # start current config odoo if not running
             self.start_odoo(config_id)
         if self.db_name and self.db_user and self.db_password:
             try:
+                http_port, _websocket_port = self._get_migration_instance_ports()
+                self._check_migration_rpc_target(http_port, migrated_db)
                 client = odoorpc.ODOO(
                     host="localhost",
                     protocol="jsonrpc",
-                    port=self.xmlrpc_port,
+                    port=http_port,
                     opener=_get_opener(verify_ssl=False),
                 )
+            except UserError:
+                raise
             except Exception as e:
                 logger.info("Connection to Odoo failed for %s!" % str(e))
                 # try stop-restart odoo as it is unresponsive
@@ -385,13 +483,23 @@ class OpenupgraderMigration(models.Model):
                 return None
             try:
                 client.login(
-                    db=f"{self.db_name}_migrate",
+                    db=migrated_db,
                     login=self.db_user,
                     password=self.db_password,
                 )
+                if client.env.db != migrated_db:
+                    raise UserError(
+                        _(
+                            "The migration RPC session is bound to database "
+                            "%(session_db)s instead of %(db)s."
+                        )
+                        % {"session_db": client.env.db, "db": migrated_db}
+                    )
                 client.config["timeout"] = ODOO_RPC_TIMEOUT
                 time.sleep(5)
                 return client
+            except UserError:
+                raise
             except Exception as e:
                 error_string = str(e)
                 if (
@@ -515,6 +623,13 @@ class OpenupgraderMigration(models.Model):
         )
         version_name = config_id.name
         version_float = float(version_name)
+        migrated_db = self._get_migrated_db_name()
+        http_port, websocket_port = self._get_migration_instance_ports()
+        websocket_server = "longpolling" if version_float < 16 else "gevent"
+        # Odoo 7.0 has no --db-filter option: do not break it.
+        db_filter = (
+            f"--db-filter=^{re.escape(migrated_db)}$ " if version_float >= 8 else ""
+        )
         self.button_stop_odoo()
         folder = self.check_venv(version_name)
         load = "web"
@@ -545,15 +660,16 @@ class OpenupgraderMigration(models.Model):
             f"--db_password={self.pg_password_var or self.pg_password or ''} "
             f"--db_port={self.db_port} "
             f"--db_host={self.pg_host or ''} "
-            f"--xmlrpc-port={self.xmlrpc_port} "
+            f"{db_filter}"
+            f"--xmlrpc-port={http_port} "
             f"--max-cron-threads=0 "
             f"--limit-time-cpu=99000 "
             f"--limit-time-real=99000 "
             f"--limit-memory-soft=4147483648 "
             f"--limit-memory-hard=4679107584 "
-            f"--{'longpolling' if version_float < 16 else 'gevent'}-port=8072 "
+            f"--{websocket_server}-port={websocket_port} "
             f"--load={load} "
-            f"-d {self.env.cr.dbname}_migrate "
+            f"-d {migrated_db} "
         )
         if version_name != "7.0":
             data_dir = os.path.join(self.folder, "data_dir")
@@ -2144,12 +2260,30 @@ END
             self.button_stop_odoo()
 
     def install_uninstall_module(self, module_name, config_id, install=True):
+        """Install or uninstall a module in the migration instance.
+
+        Module operations are always executed by the migration instance, on
+        ``<working database>_migrate``. ``odoo_connect`` refuses to connect
+        when the RPC port is served by the working instance and the exact
+        ``-d <db>_migrate`` process matching prevents stopping the working
+        instance, so its PostgreSQL queries and writes are not impacted.
+        """
         logger.info(
             f"{'Installing' if install else 'Uninstalling'} module %s in Odoo."
             % module_name
         )
         odoo_client = self.odoo_connect(config_id)
         if not odoo_client:
+            return False
+        migrated_db = self._get_migrated_db_name()
+        if odoo_client.env.db != migrated_db:
+            logger.error(
+                "Refusing to modify module %s: the RPC session is bound to "
+                "database %s instead of %s.",
+                module_name,
+                odoo_client.env.db,
+                migrated_db,
+            )
             return False
         module_obj = odoo_client.env["ir.module.module"]
         # module_obj.update_list()
