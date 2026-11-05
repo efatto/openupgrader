@@ -252,19 +252,47 @@ def _process_uses_database(pid, db_name):
     return False
 
 
+def _process_is_odoo_instance(pid):
+    """Tell whether ``pid`` looks like an Odoo server process.
+
+    ``_get_odoo_pids`` used to match any process carrying ``-d <db>_migrate``
+    in its arguments: ``psql`` commands, ``pg_restore`` and another driver's
+    probe were then treated as the migration instance and could be stopped by
+    ``button_stop_odoo``. Require an Odoo entry point in the first arguments.
+    """
+    odoo_entrypoints = (
+        "odoo-bin",
+        "odoo-bin.py",
+        "openerp-server",
+        "openerp-server.py",
+        "odoo",
+    )
+    args = _get_process_cmdline(pid)
+    for index, arg in enumerate(args[:4]):
+        if os.path.basename(arg) in odoo_entrypoints:
+            return True
+        # ``python -m odoo`` form
+        if index and arg == "odoo" and args[index - 1] == "-m":
+            return True
+    return False
+
+
 def _get_odoo_pids(dbname):
     """Return the PIDs of the Odoo process serving ``<dbname>_migrate``.
 
     ``psutil`` is used instead of an unanchored ``pgrep | grep`` on the whole
     command line: the working (not migrated) Odoo instance must never be
     selected - and stopped - because one of its arguments contains
-    ``<dbname>_migrate``.
+    ``<dbname>_migrate``. Only real Odoo processes are returned, so that
+    ``psql``/``pg_restore`` commands on the same database are not stopped.
     """
     migrated_dbname = f"{dbname}_migrate"
     pids = []
     for process in psutil.process_iter(["pid"]):
         try:
-            if _process_uses_database(process.pid, migrated_dbname):
+            if _process_is_odoo_instance(process.pid) and _process_uses_database(
+                process.pid, migrated_dbname
+            ):
                 pids.append(process.pid)
         except (psutil.Error, OSError):
             continue

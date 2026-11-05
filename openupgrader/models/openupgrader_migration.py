@@ -4,6 +4,7 @@ import logging
 import os
 import re
 import shutil
+import socket
 import time
 from datetime import datetime
 from pathlib import Path
@@ -54,6 +55,19 @@ MAX_MIGRATION_RETRY = 3
 # RPC to finish instead.
 ODOO_RPC_TIMEOUT = 3600
 
+
+def _is_rpc_timeout(exc):
+    """Tell whether ``exc`` is an RPC timeout.
+
+    A timed-out RPC keeps running on the migrated instance: retrying (or
+    moving to the next module) would start a concurrent registry update.
+    """
+    if isinstance(exc, (socket.timeout, TimeoutError)):
+        return True
+    text = str(exc).lower()
+    return "timed out" in text or "timeout" in text or "time out" in text
+
+
 # A module operation (install/uninstall/update) locks the module and model
 # tables of the migrated database and its registry reload unlinks ``ir.model``
 # records, deleting their ``mail_message``/``ir_attachment`` data. A second
@@ -64,22 +78,6 @@ ODOO_RPC_TIMEOUT = 3600
 # racing with the running operation.
 MIGRATED_DB_BUSY_TIMEOUT = 3600
 MIGRATED_DB_BUSY_POLL_INTERVAL = 5
-# Tables touched by a module/registry operation. Only queries and locks on
-# these tables are considered: longpolling or business queries of the
-# migration instance do not block a module operation.
-MIGRATED_DB_MODULE_TABLES = (
-    "ir_module_module",
-    "ir_model",
-    "ir_model_fields",
-    "ir_model_data",
-    "ir_ui_view",
-    "ir_act_window",
-    "ir_act_window_view",
-    "ir_attachment",
-    "mail_message",
-    "mail_follower",
-    "mail_notification",
-)
 
 
 class OpenupgraderMigration(models.Model):
@@ -512,40 +510,79 @@ class OpenupgraderMigration(models.Model):
             }
         )
 
-    def _count_migrated_db_module_queries(self, migrated_db):
-        """Count the module/registry queries running on ``migrated_db``."""
-        conn_vars = self._get_db_connection_variables()
-        table_conditions = " OR ".join(
-            "query ILIKE %s" % _sql_quote(f"%{table}%")
-            for table in MIGRATED_DB_MODULE_TABLES
+    def _lock_migrated_db(self):
+        """Take one transaction-scoped lock per migrated database.
+
+        The lock lives in the working database (it is not tied to the
+        migrated one, which may be dropped and recreated) and is shared by the
+        cron, the UI buttons and any shell driver. Two processes can therefore
+        not start, stop or modify the same ``_migrate`` database at the same
+        time. The lock is released when the current transaction is committed
+        or rolled back.
+        """
+        migrated_db = self._get_migrated_db_name()
+        self.env.cr.execute(
+            "SELECT pg_try_advisory_xact_lock(hashtext(%s), hashtext(%s))",
+            ("openupgrader", migrated_db),
         )
+        if not self.env.cr.fetchone()[0]:
+            raise UserError(
+                _(
+                    "Another OpenUpgrader operation is already running on the "
+                    "migrated database %(db)s. Wait for it to finish and try "
+                    "again."
+                )
+                % {"db": migrated_db}
+            )
+
+    def _count_migrated_db_open_transactions(self, migrated_db):
+        """Count the open transactions of the ``migrated_db`` database.
+
+        A registry update keeps an open transaction between its statements
+        (``idle in transaction``) and runs statements on tables that are not
+        listed here, so counting only module-table queries is not enough. The
+        probe runs against the ``postgres`` database, so it never competes
+        with ``dropdb``/``pg_restore`` and failures are reported instead of
+        being silently treated as "idle".
+        """
+        conn_vars = self._get_db_connection_variables()
         sql = (
             "SELECT count(*) FROM pg_stat_activity "
             f"WHERE datname = {_sql_quote(migrated_db)} "
             "AND pid <> pg_backend_pid() "
-            "AND state <> 'idle' "
-            # exclude the probes of concurrent openupgrader processes
-            "AND query NOT ILIKE '%pg_stat_activity%' "
-            f"AND ({table_conditions})"
+            "AND xact_start IS NOT NULL "
+            "AND query NOT LIKE 'autovacuum:%'"
         )
         result = run(
-            [f'{conn_vars} && psql -d {migrated_db} -t -A -c "{sql}"'],
+            [f'{conn_vars} && psql -d postgres -t -A -c "{sql}"'],
             shell=True,
             stdout=PIPE,
             stderr=PIPE,
+            # ``text`` is only available from Python 3.7, while Odoo 14
+            # supports Python 3.6.
             universal_newlines=True,
         )
         if result.returncode:
-            logger.warning(
-                "Unable to inspect the running queries of %s: %s",
-                migrated_db,
-                (result.stderr or "").strip(),
+            raise UserError(
+                _(
+                    "Unable to inspect the open transactions of the migrated "
+                    "database %(db)s: %(error)s"
+                )
+                % {
+                    "db": migrated_db,
+                    "error": (result.stderr or result.stdout or "").strip(),
+                }
             )
-            return 0
         try:
             return int((result.stdout or "0").strip().splitlines()[-1])
-        except (IndexError, TypeError, ValueError):
-            return 0
+        except (IndexError, TypeError, ValueError) as e:
+            raise UserError(
+                _(
+                    "Unable to read the open transaction count of the migrated "
+                    "database %(db)s."
+                )
+                % {"db": migrated_db}
+            ) from e
 
     def _wait_migrated_db_idle(self, migrated_db):
         """Wait until no module operation runs on ``migrated_db``.
@@ -557,28 +594,70 @@ class OpenupgraderMigration(models.Model):
         self._check_no_migration_batch_running()
         deadline = time.time() + MIGRATED_DB_BUSY_TIMEOUT
         while True:
-            running = self._count_migrated_db_module_queries(migrated_db)
+            running = self._count_migrated_db_open_transactions(migrated_db)
             if not running:
                 return
             if time.time() >= deadline:
                 raise UserError(
                     _(
-                        "%(count)s module/registry queries are still running on "
-                        "the migrated database %(db)s. Refusing to start a new "
+                        "%(count)s open transactions are still running on the "
+                        "migrated database %(db)s. Refusing to start a new "
                         "module operation concurrently."
                     )
                     % {"count": running, "db": migrated_db}
                 )
             logger.info(
-                "Waiting for %s module/registry queries running on %s to "
-                "finish before running a module operation.",
+                "Waiting for %s open transactions on %s to finish before "
+                "running a module operation.",
                 running,
                 migrated_db,
             )
             time.sleep(MIGRATED_DB_BUSY_POLL_INTERVAL)
 
+    def _terminate_migrated_db_backends(self, migrated_db):
+        """Terminate the sessions still connected to ``migrated_db``."""
+        conn_vars = self._get_db_connection_variables()
+        result = run(
+            [
+                f"{conn_vars} && psql -d postgres -t -A -c "
+                f'"SELECT pg_terminate_backend(pid) FROM pg_stat_activity '
+                f"WHERE datname = {_sql_quote(migrated_db)} "
+                f'AND pid <> pg_backend_pid()"'
+            ],
+            shell=True,
+            stdout=PIPE,
+            stderr=PIPE,
+            universal_newlines=True,
+        )
+        if result.returncode:
+            logger.warning(
+                "Unable to terminate the sessions of %s: %s",
+                migrated_db,
+                (result.stderr or result.stdout or "").strip(),
+            )
+
+    def _abort_on_rpc_timeout(self, migrated_db, module_name):
+        """Stop the instance and abort after a timed-out module operation."""
+        logger.error(
+            "The module operation on %s (%s) timed out: stopping the migration "
+            "instance and terminating its database sessions.",
+            module_name,
+            migrated_db,
+        )
+        self.button_stop_odoo(force=True)
+        self._terminate_migrated_db_backends(migrated_db)
+        raise UserError(
+            _(
+                "The module operation on %(module)s in the migrated database "
+                "%(db)s timed out. The server-side operation was aborted; wait "
+                "for the database to be idle before retrying."
+            )
+            % {"module": module_name, "db": migrated_db}
+        )
+
     def odoo_connect(self, config_id):
         migrated_db = self._get_migrated_db_name()
+        self._lock_migrated_db()
         self._check_no_migration_batch_running()
         if _get_odoo_process_state(self.env.cr.dbname) == "stopped":
             # start current config odoo if not running
@@ -626,7 +705,7 @@ class OpenupgraderMigration(models.Model):
                     or "Wrong login ID or password" in error_string
                 ):
                     raise ValidationError(
-                        _("Login to Odoo failed for %s!" % error_string)
+                        _("Login to Odoo failed for %s!") % error_string
                     ) from e
                 logger.info("Login to Odoo failed for %s!" % error_string)
                 return None
@@ -743,6 +822,7 @@ class OpenupgraderMigration(models.Model):
         version_name = config_id.name
         version_float = float(version_name)
         migrated_db = self._get_migrated_db_name()
+        self._lock_migrated_db()
         # never stop (or race with) a running -u all: it is updating the same
         # database and unlinks ir.model/mail data
         self._check_no_migration_batch_running()
@@ -752,7 +832,14 @@ class OpenupgraderMigration(models.Model):
         db_filter = (
             f"--db-filter=^{re.escape(migrated_db)}$ " if version_float >= 8 else ""
         )
-        self.button_stop_odoo()
+        # the migration instance may still be finishing a module operation
+        # started by a request whose driver was killed: wait for it instead of
+        # killing the server and its backend in the middle of a registry update
+        self._wait_migrated_db_idle(migrated_db)
+        self.button_stop_odoo(force=True)
+        # the stopped instance may still have a backend running the last
+        # statement: do not start an update next to it
+        self._terminate_migrated_db_backends(migrated_db)
         folder = self.check_venv(version_name)
         load = "web"
         if version_name == "10.0":
@@ -772,7 +859,10 @@ class OpenupgraderMigration(models.Model):
             extra_addons_path = f",{folder}/odoo/odoo/addons"
         subprocess_env = _get_env_for_subprocess(folder, config_id.python_version)
         # identify the connections of the migration instance in pg_stat_activity
-        subprocess_env["PGAPPNAME"] = f"openupgrader-{migrated_db}"
+        # (Odoo >= 16 overrides application_name from ODOO_PGAPPNAME)
+        subprocess_env["PGAPPNAME"] = subprocess_env[
+            "ODOO_PGAPPNAME"
+        ] = f"openupgrader-{migrated_db}"
         bash_command = (
             f"{subprocess_env['PYTHONPATH']} "
             f"{executable} "
@@ -863,7 +953,16 @@ class OpenupgraderMigration(models.Model):
             self.button_check_odoo_migrated_running_state()
         time.sleep(2)
 
-    def button_stop_odoo(self):
+    def button_stop_odoo(self, force=False):
+        """Stop the migration instance.
+
+        :param force: skip the advisory lock and the running-update check.
+            Only the explicit "stop auto migration" flow uses it: every other
+            caller must not interrupt an update of the migrated database.
+        """
+        if not force:
+            self._lock_migrated_db()
+            self._check_no_migration_batch_running()
         pids = _get_odoo_pids(self.env.cr.dbname)
         for pid in pids:
             _stop_pid(pid)
@@ -946,23 +1045,19 @@ class OpenupgraderMigration(models.Model):
         return destination_path
 
     def restore_db(self, config_id=False):
+        migrated_db = self._get_migrated_db_name()
+        self._lock_migrated_db()
+        self._check_no_migration_batch_running()
         self.button_stop_odoo()
         conn_vars = self._get_db_connection_variables()
-        db_name = self.env.cr.dbname
         version_name = self.current_config_id.name
         # Terminate any session still connected to the migrated database,
         # otherwise ``dropdb`` fails with "database is being accessed by other
         # users".
-        run(
-            f"{conn_vars} && psql -d postgres -c "
-            f'"SELECT pg_terminate_backend(pid) FROM pg_stat_activity '
-            f"WHERE datname = '{db_name}_migrate' "
-            f'AND pid <> pg_backend_pid()"',
-            shell=True,
-        )
+        self._terminate_migrated_db_backends(migrated_db)
         process = Popen(
             [
-                f"{conn_vars} && dropdb --if-exists {db_name}_migrate",
+                f"{conn_vars} && dropdb --if-exists {migrated_db}",
             ],
             shell=True,
             stderr=PIPE,
@@ -980,10 +1075,9 @@ class OpenupgraderMigration(models.Model):
                 continue
         if errors:
             raise UserError("\n".join(e for e in errors))
-        db_migrate = f"{self.env.cr.dbname}_migrate"
         run(
             [
-                f"{conn_vars} && createdb {db_migrate}",
+                f"{conn_vars} && createdb {migrated_db}",
             ],
             shell=True,
         )
@@ -1006,7 +1100,7 @@ class OpenupgraderMigration(models.Model):
         run(
             [
                 f"{conn_vars} && pg_restore {self.pg_options or ''} "
-                f"-d {self.env.cr.dbname}_migrate {dump_file_sql}"
+                f"-d {migrated_db} {dump_file_sql}"
             ],
             shell=True,
         )
@@ -1049,6 +1143,7 @@ class OpenupgraderMigration(models.Model):
         self._restore()
 
     def _restore(self, force=False):
+        self._lock_migrated_db()
         self.ensure_one()
         state = "restored"
         (
@@ -1057,7 +1152,7 @@ class OpenupgraderMigration(models.Model):
             _current_version,
         ) = self._get_odoo_running_state()
         if odoo_running_state == "running":
-            self.show_message_odoo_running_and_return()
+            return self.show_message_odoo_running_and_return()
         if force:
             self.button_clean_logs(self.current_config_id)
             state = "migrated"
@@ -1085,6 +1180,7 @@ class OpenupgraderMigration(models.Model):
             op_config.update_migration_state_file(state=False)
 
     def button_update_current_config(self):
+        self._lock_migrated_db()
         self.ensure_one()
         (
             odoo_running_state,
@@ -1092,7 +1188,7 @@ class OpenupgraderMigration(models.Model):
             _current_version,
         ) = self._get_odoo_running_state()
         if odoo_running_state == "running":
-            self.show_message_odoo_running_and_return()
+            return self.show_message_odoo_running_and_return()
         if migration_state == "updated":
             return {
                 "type": "ir.actions.client",
@@ -1198,6 +1294,7 @@ class OpenupgraderMigration(models.Model):
     def replace_website_links(self):
         """Replace website URL occurrences in the migrated database."""
         self.ensure_one()
+        self._lock_migrated_db()
         old_name = (
             self._extract_website_hostname(self.old_website_name)
             or self._get_old_website_name()
@@ -1261,14 +1358,16 @@ END
 \\$\\$;
 """
         conn_vars = self._get_db_connection_variables()
+        migrated_db = self._get_migrated_db_name()
+        self._wait_migrated_db_idle(migrated_db)
         logger.info(
-            "Replacing website links %s -> %s in %s_migrate",
+            "Replacing website links %s -> %s in %s",
             old_variants,
             new_name,
-            self.env.cr.dbname,
+            migrated_db,
         )
         result = run(
-            [f"{conn_vars} && psql -d {self.env.cr.dbname}_migrate " f'-c "{sql}"'],
+            [f"{conn_vars} && psql -d {migrated_db} " f'-c "{sql}"'],
             shell=True,
             stdout=PIPE,
             stderr=PIPE,
@@ -1284,6 +1383,7 @@ END
         logger.info("Website link replacement completed.")
 
     def button_prepare_for_migration(self):
+        self._lock_migrated_db()
         # do pre-upgrade stuff
         self.ensure_one()
         (
@@ -1292,7 +1392,7 @@ END
             current_version,
         ) = self._get_odoo_running_state()
         if odoo_running_state == "running":
-            self.show_message_odoo_running_and_return()
+            return self.show_message_odoo_running_and_return()
         before_sql = self.current_config_id.sql_before_migration_command_ids
         self.sql_fixes(before_sql)
         self.uninstall_modules(self.current_config_id, before_migration=True)
@@ -1303,6 +1403,7 @@ END
         self.current_config_id.update_migration_state_file("ready_for_migration")
 
     def button_draft(self):
+        self._lock_migrated_db()
         self.env.ref("openupgrader.cron_openugrader_do_auto_migration").active = False
         (
             odoo_running_state,
@@ -1310,7 +1411,7 @@ END
             _current_version,
         ) = self._get_odoo_running_state()
         if odoo_running_state == "running":
-            self.show_message_odoo_running_and_return()
+            return self.show_message_odoo_running_and_return()
         for config_id in [self.current_config_id, self.next_config_id]:
             sql_file_path = os.path.join(
                 self.folder,
@@ -1362,13 +1463,15 @@ END
                 max_wait -= 1
         if cron.active:
             raise ValidationError(_("Stop auto migration failed! Retry later."))
-        self.button_stop_odoo()
+        # explicit emergency stop: force overrides the running-update guard
+        self.button_stop_odoo(force=True)
         self.state = "draft"  # TODO put the current migration state if possible
         # reset next config migration state in json file
         self.next_config_id.update_migration_state_file(state=False)
         self.button_clean_logs(config_id=self.next_config_id)
 
     def button_do_auto_migration(self):
+        self._lock_migrated_db()
         #  0. set migration state to draft
         #  1. start migration with the restore of the db-filestore
         #  2. activate the cron for the actual migration
@@ -1403,6 +1506,7 @@ END
             self.set_current_instance_env_to_migr_and_stop()
 
     def button_continue_auto_migration(self):
+        self._lock_migrated_db()
         auto_migration_cron = self.env.ref(
             "openupgrader.cron_openugrader_do_auto_migration"
         )
@@ -1460,6 +1564,9 @@ END
         self.pending_modules = str(sorted(set(pending_modules)))
 
     def _set_pending_modules_to_remove(self):
+        self._lock_migrated_db()
+        migrated_db = self._get_migrated_db_name()
+        self._wait_migrated_db_idle(migrated_db)
         conn_vars = self._get_db_connection_variables()
         found_modules_by_state = self._verify_module_states()
         pending_modules = found_modules_by_state.get("pending", [])
@@ -1489,10 +1596,7 @@ END
             logger.info(f"Setting modules to be uninstalled: {in_clause}.")
         for sql_command in sql_commands:
             process = run(
-                [
-                    f"{conn_vars} && psql -d {self.env.cr.dbname}_migrate -c "
-                    f'"{sql_command}"'
-                ],
+                [f"{conn_vars} && psql -d {migrated_db} -c " f'"{sql_command}"'],
                 shell=True,
                 stdout=PIPE,
                 stderr=PIPE,
@@ -1507,7 +1611,7 @@ END
                 )
             sql = "SELECT name FROM ir_module_module WHERE state = 'to remove'"
             process = run(
-                [f'{conn_vars} && psql -d {self.env.cr.dbname}_migrate -c "{sql}"'],
+                [f'{conn_vars} && psql -d {migrated_db} -c "{sql}"'],
                 shell=True,
                 stdout=PIPE,
                 stderr=PIPE,
@@ -1519,6 +1623,7 @@ END
                 logger.info(f"ERROR setting modules to be removed: {process.stderr}")
 
     def get_pending_modules(self):
+        self._lock_migrated_db()
         self._set_pending_modules_to_remove()
         found_modules_by_state = self._verify_module_states()
         pending_modules = found_modules_by_state.get("pending", [])
@@ -1536,6 +1641,7 @@ END
         return pending_modules
 
     def uninstall_pending_modules(self):
+        self._lock_migrated_db()
         # start_odoo with update=True will wait for Odoo to stop
         pending_modules = self.get_pending_modules()
         if pending_modules:
@@ -1563,6 +1669,9 @@ END
             )
 
     def _set_pending_modules_uninstalled(self):
+        self._lock_migrated_db()
+        migrated_db = self._get_migrated_db_name()
+        self._wait_migrated_db_idle(migrated_db)
         logger.info("Set pending modules as uninstalled.")
         conn_vars = self._get_db_connection_variables()
         # Verification via SQL
@@ -1592,10 +1701,7 @@ END
                     WHERE name IN %s
                 """ % list(current_pending_modules)
                 run(
-                    [
-                        f"{conn_vars} && psql -d {self.env.cr.dbname}_migrate -c "
-                        f'"{sql_command}"'
-                    ],
+                    [f"{conn_vars} && psql -d {migrated_db} -c " f'"{sql_command}"'],
                     shell=True,
                 )
                 logger.info(
@@ -1606,6 +1712,8 @@ END
     def remove_modules_views_menus(self, modules):
         if not modules:
             return
+        migrated_db = self._get_migrated_db_name()
+        self._wait_migrated_db_idle(migrated_db)
         conn_vars = self._get_db_connection_variables()
         sql_commands = [
             (
@@ -1643,10 +1751,7 @@ END
         ]
         for sql_command in sql_commands:
             run(
-                [
-                    f"{conn_vars} && psql -d {self.env.cr.dbname}_migrate -c "
-                    f'"{sql_command}"'
-                ],
+                [f"{conn_vars} && psql -d {migrated_db} -c " f'"{sql_command}"'],
                 shell=True,
             )
         logger.info(f"Delete via sql menu and views linked to modules {modules}.")
@@ -1662,6 +1767,15 @@ END
                     [("state", "=", "done")]
                 )
                 for done_migration in done_migrations:
+                    try:
+                        done_migration._lock_migrated_db()
+                    except UserError:
+                        logger.info(
+                            "Another OpenUpgrader operation is running on %s, "
+                            "skipping this cron iteration.",
+                            done_migration._get_migrated_db_name(),
+                        )
+                        continue
                     done_config = done_migration.current_config_id
                     migration_state = (
                         done_config.get_migration_state_from_file()[0]
@@ -1681,6 +1795,15 @@ END
                         )
                 logger.info("No pending migrations found for cron.")
             for migration in migrations:
+                try:
+                    migration._lock_migrated_db()
+                except UserError:
+                    logger.info(
+                        "Another OpenUpgrader operation is running on %s, "
+                        "skipping this cron iteration.",
+                        migration._get_migrated_db_name(),
+                    )
+                    continue
                 logger.info(
                     f"Processing migration for database: {migration.db_name} "
                     f"(ID: {migration.id})"
@@ -1936,13 +2059,14 @@ END
         )
 
     def button_do_migration(self):
+        self._lock_migrated_db()
         (
             odoo_running_state,
             migration_state,
             current_version,
         ) = self._get_odoo_running_state()
         if odoo_running_state == "running":
-            self.show_message_odoo_running_and_return()
+            return self.show_message_odoo_running_and_return()
         if migration_state in ["migrated", "done"]:
             return {
                 "type": "ir.actions.client",
@@ -2084,6 +2208,9 @@ END
     def sql_fixes(self, sql_commands):
         # do not change quote order as it will change the way the sql command is
         # interpreted!
+        self._lock_migrated_db()
+        migrated_db = self._get_migrated_db_name()
+        self._wait_migrated_db_idle(migrated_db)
         logger.info("Doing custom sql commands.")
         conn_vars = self._get_db_connection_variables()
         for sql_command in sql_commands:
@@ -2094,7 +2221,7 @@ END
             result = run(
                 [
                     f"{conn_vars} && psql -v ON_ERROR_STOP=1 "
-                    f"-d {self.env.cr.dbname}_migrate "
+                    f"-d {migrated_db} "
                     f'-c "{sql_command.name}"',
                 ],
                 shell=True,
@@ -2155,6 +2282,7 @@ END
             )
 
     def auto_install_modules(self, config_id):
+        self._lock_migrated_db()
         self.start_odoo(config_id)
         odoo_client = self.odoo_connect(config_id)
         if not odoo_client:
@@ -2171,6 +2299,7 @@ END
             ):
                 # install pip package as possibly absent
                 config_id.install_pip_modules(module_to_install_name)
+                self._wait_migrated_db_idle(migrated_db)
                 module_obj.update_list()
                 module_toinstall = module_obj.search(
                     [("name", "=", module_to_install_name)], limit=1
@@ -2178,15 +2307,21 @@ END
                 if module_toinstall:
                     module_toinstall_id = module_obj.browse(module_toinstall)
                     if module_toinstall_id:
+                        self._wait_migrated_db_idle(migrated_db)
                         try:
                             logger.info(
                                 "Installing module %s on migrated database %s",
                                 module_toinstall_id.name,
                                 migrated_db,
                             )
-                            self._wait_migrated_db_idle(migrated_db)
                             module_toinstall_id.button_immediate_install()
+                        except UserError:
+                            raise
                         except Exception as e:
+                            if _is_rpc_timeout(e):
+                                self._abort_on_rpc_timeout(
+                                    migrated_db, module_toinstall_id.name
+                                )
                             logger.error(
                                 "Error installing module %s: %s",
                                 module_toinstall_id.name,
@@ -2240,6 +2375,7 @@ END
     def uninstall_modules(
         self, config_id, before_migration=False, after_migration=False
     ):
+        self._lock_migrated_db()
         modules_to_uninstall = set()
         if after_migration:
             after_ids = config_id.module_to_uninstall_after_migration_ids
@@ -2285,7 +2421,13 @@ END
         for module_name in sorted(modules_to_uninstall):
             try:
                 self.install_uninstall_module(module_name, config_id, install=False)
-            except Exception:
+            except UserError:
+                raise
+            except Exception as e:
+                if _is_rpc_timeout(e):
+                    self._abort_on_rpc_timeout(
+                        self._get_migrated_db_name(), module_name
+                    )
                 logger.exception(
                     "Unable to uninstall module %s in version %s",
                     module_name,
@@ -2295,6 +2437,9 @@ END
         self.button_stop_odoo()
 
     def remove_not_installed_module_views(self):
+        self._lock_migrated_db()
+        migrated_db = self._get_migrated_db_name()
+        self._wait_migrated_db_idle(migrated_db)
         conn_vars = self._get_db_connection_variables()
         sql_commands = [
             """
@@ -2317,15 +2462,23 @@ END
             "installed module."
         )
         for sql_command in sql_commands:
-            Popen(
-                [
-                    f"{conn_vars} && "
-                    f'psql -d {self.env.cr.dbname}_migrate -c "{sql_command}"'
-                ],
+            result = run(
+                [f"{conn_vars} && " f'psql -d {migrated_db} -c "{sql_command}"'],
                 shell=True,
+                stdout=PIPE,
+                stderr=PIPE,
+                universal_newlines=True,
             )
+            if result.returncode:
+                logger.error(
+                    "Unable to delete views not linked to an installed module: %s",
+                    (result.stderr or result.stdout or "").strip(),
+                )
 
     def remove_assets(self):
+        self._lock_migrated_db()
+        migrated_db = self._get_migrated_db_name()
+        self._wait_migrated_db_idle(migrated_db)
         conn_vars = self._get_db_connection_variables()
         views_list = [
             "portal._assets_primary_variables",
@@ -2360,15 +2513,21 @@ END
             "views."
         )
         for sql_command in sql_commands:
-            Popen(
-                [
-                    f"{conn_vars} && "
-                    f'psql -d {self.env.cr.dbname}_migrate -c "{sql_command}"'
-                ],
+            result = run(
+                [f"{conn_vars} && " f'psql -d {migrated_db} -c "{sql_command}"'],
                 shell=True,
+                stdout=PIPE,
+                stderr=PIPE,
+                universal_newlines=True,
             )
+            if result.returncode:
+                logger.error(
+                    "Unable to delete inherited assets views: %s",
+                    (result.stderr or result.stdout or "").strip(),
+                )
 
     def delete_old_modules(self, config_id):
+        self._lock_migrated_db()
         if config_id.module_to_delete_after_migration_ids:
             self.start_odoo(config_id)
             odoo_client = self.odoo_connect(config_id)
@@ -2399,6 +2558,7 @@ END
         ``-d <db>_migrate`` process matching prevents stopping the working
         instance, so its PostgreSQL queries and writes are not impacted.
         """
+        self._lock_migrated_db()
         logger.info(
             f"{'Installing' if install else 'Uninstalling'} module %s in Odoo."
             % module_name
@@ -2440,20 +2600,29 @@ END
             for module in modules:
                 if install:
                     self._wait_migrated_db_idle(migrated_db)
-                    module.button_immediate_install()
+                    try:
+                        module.button_immediate_install()
+                    except Exception as e:
+                        if _is_rpc_timeout(e):
+                            self._abort_on_rpc_timeout(migrated_db, module.name)
+                        raise
                 elif module.state in ["installed", "to upgrade", "uninstallable"]:
                     try_number = 0
                     while try_number < 5:
+                        # the previous attempt may still be running on the
+                        # migrated instance: wait for it instead of starting
+                        # a second concurrent registry update
+                        self._wait_migrated_db_idle(migrated_db)
                         try:
-                            # the previous attempt may still be running on the
-                            # migrated instance: wait for it instead of starting
-                            # a second concurrent registry update
-                            self._wait_migrated_db_idle(migrated_db)
                             module.button_immediate_uninstall()
                             module.unlink()
                             logger.info("Module %s uninstalled" % module.name)
                             try_number = 5
+                        except UserError:
+                            raise
                         except Exception as e:
+                            if _is_rpc_timeout(e):
+                                self._abort_on_rpc_timeout(migrated_db, module.name)
                             try_number += 1
                             logger.info(
                                 "Module %s not uninstalled for %s, trying %s/%s times."
