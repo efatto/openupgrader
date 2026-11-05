@@ -8,6 +8,7 @@ __pycache__/
 # C extensions
 *.so
 
+migration_kit
 # Distribution / packaging
 .Python
 env/
