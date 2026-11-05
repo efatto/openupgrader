@@ -521,12 +521,12 @@ class OpenupgraderMigration(models.Model):
         )
         sql = (
             "SELECT count(*) FROM pg_stat_activity "
-            "WHERE datname = %s "
+            f"WHERE datname = {_sql_quote(migrated_db)} "
             "AND pid <> pg_backend_pid() "
             "AND state <> 'idle' "
             # exclude the probes of concurrent openupgrader processes
             "AND query NOT ILIKE '%pg_stat_activity%' "
-            "AND (%s)" % (_sql_quote(migrated_db), table_conditions)
+            f"AND ({table_conditions})"
         )
         result = run(
             [f'{conn_vars} && psql -d {migrated_db} -t -A -c "{sql}"'],
