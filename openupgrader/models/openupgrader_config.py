@@ -600,6 +600,7 @@ class OpenupgraderConfig(models.Model):
 
         :return: dict ``{module_name: number of failed attempts}``
         """
+        self.ensure_one()
         file_path = self.openupgrader_migration_id._default_migration_state_path()
         return _get_install_failed_modules_from_migration_state_file(
             file_path, self.name
@@ -612,6 +613,7 @@ class OpenupgraderConfig(models.Model):
         hangs (or raises) during the after-migration installation is retried a
         bounded number of times instead of blocking the whole migration.
         """
+        self.ensure_one()
         self.update_migration_state_file(install_failed_modules=install_failed_modules)
 
     def _create_db_backup(self, folder):
