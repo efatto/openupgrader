@@ -19,6 +19,7 @@ from odoo.tools.safe_eval import safe_eval
 
 from .tools import (
     _check_oca_authorship,
+    _get_install_failed_modules_from_migration_state_file,
     _get_migration_retry_number_from_migration_state_file,
     _get_retry_number_from_migration_state_file,
     _set_odoorc,
@@ -541,6 +542,7 @@ class OpenupgraderConfig(models.Model):
         date_started=None,
         uninstall_modules_retry_number=None,
         migration_retry_number=None,
+        install_failed_modules=None,
     ):
         file_path = self.openupgrader_migration_id._default_migration_state_path()
         _update_migration_state_file(
@@ -552,6 +554,7 @@ class OpenupgraderConfig(models.Model):
             env_update_date=env_update_date,
             uninstall_modules_retry_number=uninstall_modules_retry_number,
             migration_retry_number=migration_retry_number,
+            install_failed_modules=install_failed_modules,
         )
 
     def get_uninstall_modules_retry_number(self):
@@ -591,6 +594,25 @@ class OpenupgraderConfig(models.Model):
     def reset_migration_retry_number(self):
         """Reset the retry number of a failed migration step."""
         self.update_migration_state_file(migration_retry_number=0)
+
+    def get_install_failed_modules(self):
+        """Get the modules of this version whose installation failed.
+
+        :return: dict ``{module_name: number of failed attempts}``
+        """
+        file_path = self.openupgrader_migration_id._default_migration_state_path()
+        return _get_install_failed_modules_from_migration_state_file(
+            file_path, self.name
+        )
+
+    def set_install_failed_modules(self, install_failed_modules):
+        """Persist the modules of this version whose installation failed.
+
+        The mapping is kept in the migration state file so that a module that
+        hangs (or raises) during the after-migration installation is retried a
+        bounded number of times instead of blocking the whole migration.
+        """
+        self.update_migration_state_file(install_failed_modules=install_failed_modules)
 
     def _create_db_backup(self, folder):
         self.ensure_one()

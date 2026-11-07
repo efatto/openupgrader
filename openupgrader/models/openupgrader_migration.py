@@ -53,7 +53,17 @@ MAX_MIGRATION_RETRY = 3
 # operation keeps running, and retrying immediately starts a second concurrent
 # module operation (which can then block on PostgreSQL row locks). Wait for the
 # RPC to finish instead.
-ODOO_RPC_TIMEOUT = 3600
+# It can be lowered with ``OPENUPGRADER_RPC_TIMEOUT`` (seconds) on installations
+# where a hung module operation must not cost a full hour of the migration.
+ODOO_RPC_TIMEOUT = int(os.environ.get("OPENUPGRADER_RPC_TIMEOUT") or 3600)
+
+# Maximum number of failed attempts allowed for the installation of a single
+# module of the after-migration step. A module whose installation raises or
+# times out is reported and the other modules are still installed, so one
+# broken module does not abort the whole after-migration step; after this
+# number of attempts it is skipped (and logged) instead of being retried at
+# every cron iteration.
+MAX_INSTALL_MODULE_RETRY = 2
 
 
 def _is_rpc_timeout(exc):
@@ -636,8 +646,15 @@ class OpenupgraderMigration(models.Model):
                 (result.stderr or result.stdout or "").strip(),
             )
 
-    def _abort_on_rpc_timeout(self, migrated_db, module_name):
-        """Stop the instance and abort after a timed-out module operation."""
+    def _stop_after_rpc_timeout(self, migrated_db, module_name):
+        """Stop the instance after a timed-out module operation.
+
+        A timed-out RPC keeps running on the migrated instance: the module
+        operation is aborted by stopping the instance and terminating its
+        backends, so that its (rolled back) work cannot race with the next
+        module operation. Nothing is raised: the caller decides whether the
+        migration can go on with the remaining modules.
+        """
         logger.error(
             "The module operation on %s (%s) timed out: stopping the migration "
             "instance and terminating its database sessions.",
@@ -646,6 +663,15 @@ class OpenupgraderMigration(models.Model):
         )
         self.button_stop_odoo(force=True)
         self._terminate_migrated_db_backends(migrated_db)
+
+    def _abort_on_rpc_timeout(self, migrated_db, module_name):
+        """Stop the instance and abort the step after a timed-out operation.
+
+        Used by the steps that cannot continue safely without the module
+        operation (uninstall/update flows): the auto-migration cron retries
+        the step a bounded number of times.
+        """
+        self._stop_after_rpc_timeout(migrated_db, module_name)
         raise UserError(
             _(
                 "The module operation on %(module)s in the migrated database "
@@ -2282,51 +2308,131 @@ END
             )
 
     def auto_install_modules(self, config_id):
+        """Install the modules of ``config_id`` on the migrated database.
+
+        A module whose installation fails (or whose RPC times out) is recorded
+        in the migration state file and does not abort the step: the server
+        side is stopped, the connection is re-established and the remaining
+        modules are installed anyway, so that a single broken module cannot
+        block the whole migration. After ``MAX_INSTALL_MODULE_RETRY`` failed
+        attempts the module is skipped, so it is not retried at every cron
+        iteration either.
+        """
         self._lock_migrated_db()
         self.start_odoo(config_id)
         odoo_client = self.odoo_connect(config_id)
         if not odoo_client:
             return
-        module_obj = odoo_client.env["ir.module.module"]
         migrated_db = self._get_migrated_db_name()
         # force recompute of installed modules for the current version
         config_id._compute_module_installed_ids()
+        install_failed_modules = config_id.get_install_failed_modules()
+        failed_this_run = []
+        skipped_modules = []
         for module in config_id.module_auto_install_ids | config_id.renamed_module_ids:
             module_to_check = module.name
             module_to_install_name = module.module_to_install_name
-            if module_obj.search(
+            if not odoo_client:
+                # the timed-out session is gone and the instance could not be
+                # restarted (or the target moved): leave the remaining modules
+                # to the next cron iteration instead of failing the step
+                logger.error(
+                    "Unable to reconnect to the migrated database %s: the "
+                    "remaining modules will be installed by the next "
+                    "migration iteration.",
+                    migrated_db,
+                )
+                break
+            module_obj = odoo_client.env["ir.module.module"]
+            if not module_obj.search(
                 [("name", "=", module_to_check), ("state", "=", "installed")],
             ):
-                # install pip package as possibly absent
-                config_id.install_pip_modules(module_to_install_name)
-                self._wait_migrated_db_idle(migrated_db)
-                module_obj.update_list()
-                module_toinstall = module_obj.search(
-                    [("name", "=", module_to_install_name)], limit=1
+                continue
+            if (
+                install_failed_modules.get(module_to_install_name, 0)
+                >= MAX_INSTALL_MODULE_RETRY
+            ):
+                logger.warning(
+                    "Skipping module %s: its installation already failed %s "
+                    "times on version %s. Install it manually on %s once the "
+                    "reason is fixed (or reset the install_failed_modules "
+                    "entry of %s in the migration state file).",
+                    module_to_install_name,
+                    MAX_INSTALL_MODULE_RETRY,
+                    config_id.name,
+                    migrated_db,
+                    config_id.name,
                 )
-                if module_toinstall:
-                    module_toinstall_id = module_obj.browse(module_toinstall)
-                    if module_toinstall_id:
-                        self._wait_migrated_db_idle(migrated_db)
-                        try:
-                            logger.info(
-                                "Installing module %s on migrated database %s",
-                                module_toinstall_id.name,
-                                migrated_db,
-                            )
-                            module_toinstall_id.button_immediate_install()
-                        except UserError:
-                            raise
-                        except Exception as e:
-                            if _is_rpc_timeout(e):
-                                self._abort_on_rpc_timeout(
-                                    migrated_db, module_toinstall_id.name
-                                )
-                            logger.error(
-                                "Error installing module %s: %s",
-                                module_toinstall_id.name,
-                                e,
-                            )
+                skipped_modules.append(module_to_install_name)
+                continue
+            # install pip package as possibly absent
+            config_id.install_pip_modules(module_to_install_name)
+            self._wait_migrated_db_idle(migrated_db)
+            module_obj.update_list()
+            module_toinstall = module_obj.search(
+                [("name", "=", module_to_install_name)], limit=1
+            )
+            if not module_toinstall:
+                logger.warning(
+                    "Module %s is not available in version %s: skipping its "
+                    "installation.",
+                    module_to_install_name,
+                    config_id.name,
+                )
+                continue
+            module_toinstall_id = module_obj.browse(module_toinstall)
+            if not module_toinstall_id:
+                continue
+            self._wait_migrated_db_idle(migrated_db)
+            try:
+                logger.info(
+                    "Installing module %s on migrated database %s",
+                    module_toinstall_id.name,
+                    migrated_db,
+                )
+                module_toinstall_id.button_immediate_install()
+            except UserError:
+                # driver-side guard (busy database, unsafe RPC target, ...):
+                # the step must be aborted, not silently continued
+                raise
+            except Exception as e:
+                timed_out = _is_rpc_timeout(e)
+                if timed_out:
+                    # the request is gone but the server may still be working:
+                    # stop the instance and kill its backends, then reconnect
+                    # before touching another module
+                    self._stop_after_rpc_timeout(migrated_db, module_toinstall_id.name)
+                logger.error(
+                    "Error installing module %s: %s",
+                    module_toinstall_id.name,
+                    e,
+                )
+                failed_this_run.append(module_toinstall_id.name)
+                install_failed_modules[module_toinstall_id.name] = (
+                    install_failed_modules.get(module_toinstall_id.name, 0) + 1
+                )
+                config_id.set_install_failed_modules(install_failed_modules)
+                if timed_out:
+                    odoo_client = self.odoo_connect(config_id)
+            else:
+                if module_toinstall_id.name in install_failed_modules:
+                    # installation finally succeeded: forget the failures
+                    install_failed_modules.pop(module_toinstall_id.name)
+                    config_id.set_install_failed_modules(install_failed_modules)
+        if failed_this_run:
+            logger.warning(
+                "The installation of %s module(s) failed on %s: %s. The "
+                "migration goes on without them; see the previous errors.",
+                len(failed_this_run),
+                migrated_db,
+                ", ".join(sorted(failed_this_run)),
+            )
+        if skipped_modules:
+            logger.warning(
+                "Module(s) skipped after %s failed installation attempts: %s",
+                MAX_INSTALL_MODULE_RETRY,
+                ", ".join(sorted(skipped_modules)),
+            )
         self.button_stop_odoo()
 
     def _exclude_core_modules(self, config_id, module_names):

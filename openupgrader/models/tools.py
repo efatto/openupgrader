@@ -490,6 +490,7 @@ def _init_migration_state_file(migration_state_path, config_names, reset_env=Fal
                     "date_updated": None,
                     "uninstall_modules_retry_number": 0,
                     "migration_retry_number": 0,
+                    "install_failed_modules": {},
                 }
                 if reset_env:
                     migration_state_dict[config_name].update(
@@ -506,6 +507,7 @@ def _init_migration_state_file(migration_state_path, config_names, reset_env=Fal
                         "date_updated": None,
                         "uninstall_modules_retry_number": 0,
                         "migration_retry_number": 0,
+                        "install_failed_modules": {},
                     }
                 )
                 if reset_env:
@@ -525,6 +527,7 @@ def _init_migration_state_file(migration_state_path, config_names, reset_env=Fal
                 "env_update_date": None,
                 "uninstall_modules_retry_number": 0,
                 "migration_retry_number": 0,
+                "install_failed_modules": {},
             }
             for config_name in config_names
         }
@@ -541,6 +544,7 @@ def _update_migration_state_file(
     env_update_date=None,
     uninstall_modules_retry_number=None,
     migration_retry_number=None,
+    install_failed_modules=None,
 ):
     """
     Update the migration state file with the given parameters.
@@ -563,6 +567,8 @@ def _update_migration_state_file(
         uninstallation of pending modules of the configuration.
     :param migration_retry_number: New number of retries done for a failed
         migration step of the configuration.
+    :param install_failed_modules: New ``{module_name: attempts}`` mapping of
+        the modules of the configuration whose installation failed.
     :return: None
     """
     with open(migration_state_path, "r") as f:
@@ -584,6 +590,7 @@ def _update_migration_state_file(
             "env_update_date": None,
             "uninstall_modules_retry_number": 0,
             "migration_retry_number": 0,
+            "install_failed_modules": {},
         },
     )
     if state is not None:
@@ -602,11 +609,28 @@ def _update_migration_state_file(
         migration_state_dict[config_name][
             "migration_retry_number"
         ] = migration_retry_number
+    if install_failed_modules is not None:
+        migration_state_dict[config_name]["install_failed_modules"] = dict(
+            install_failed_modules
+        )
     migration_state_dict[config_name]["date_updated"] = datetime.now().strftime(
         "%Y-%m-%d %H:%M:%S"
     )
     with open(migration_state_path, "w") as f:
         json.dump(migration_state_dict, f, sort_keys=True, indent=2)
+
+
+def _get_install_failed_modules_from_migration_state_file(
+    migration_state_path, config_name
+):
+    """Return the ``{module_name: attempts}`` of the failed installations.
+
+    :param migration_state_path: Path to the migration state file.
+    :param config_name: Name of the configuration.
+    :return: The stored mapping, empty when nothing failed yet.
+    """
+    entry = _get_migration_state_entry_from_file(migration_state_path, config_name)
+    return dict(entry.get("install_failed_modules") or {})
 
 
 def _get_migration_retry_number_from_migration_state_file(
