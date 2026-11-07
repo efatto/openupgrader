@@ -39,6 +39,42 @@ class _FakeModule:
             raise self.error
 
 
+class _FakeUninstallModule:
+    """Stand-in for an uninstalled ``ir.module.module`` record."""
+
+    def __init__(self, name, state):
+        self.name = name
+        self.state = state
+        self.id = abs(hash(name)) % 1000
+        self.install_cancelled = 0
+        self.uninstall_cancelled = 0
+        self.unlinked = 0
+        self.written_states = []
+
+    def button_install_cancel(self):
+        self.install_cancelled += 1
+        self.state = "uninstalled"
+
+    def button_uninstall_cancel(self):
+        self.uninstall_cancelled += 1
+        self.state = "installed"
+
+    def unlink(self):  # pylint: disable=method-required-super
+        self.unlinked += 1
+
+    def write(self, values):  # pylint: disable=method-required-super
+        self.written_states.append(values.get("state"))
+        self.state = values.get("state", self.state)
+
+
+class _FakeEnv(dict):
+    """Minimal stand-in for the ``odoorpc`` environment (dict + ``db``)."""
+
+    def __init__(self, db):
+        super().__init__()
+        self.db = db
+
+
 class _FakeConfig:
     """Stand-in for the target ``openupgrader.config`` of the step."""
 
@@ -384,3 +420,253 @@ class MigrationGuardTest(SavepointCase):
                 ConnectionResetError("connection reset by peer")
             )
         )
+
+    # -- uninstallation of the modules left in 'to remove' -------------------
+
+    def test_pending_modules_are_only_the_to_remove_ones(self):
+        """Leftovers of an interrupted update are never uninstalled."""
+        states = {
+            "to upgrade": ["leftover_upgrade"],
+            "to remove": ["old_a", "old_b"],
+            "to install": ["leftover_install"],
+            "pending": [
+                "leftover_upgrade",
+                "old_a",
+                "leftover_install",
+                "old_b",
+            ],
+        }
+        config = Mock()
+        config.get_uninstall_modules_retry_number.return_value = 0
+        migration_class = type(self.migration)
+        with patch.object(
+            migration_class, "_verify_module_states", return_value=states
+        ), patch.object(migration_class, "current_config_id", new=config), patch.object(
+            migration_module.logger, "warning"
+        ) as warn_mock:
+            self.assertEqual(self.migration.get_pending_modules(), ["old_a", "old_b"])
+        self.assertIn("leftover_upgrade", str(warn_mock.call_args_list))
+        self.assertIn("leftover_install", str(warn_mock.call_args_list))
+
+    def test_pending_modules_empty_resets_the_retry_counter(self):
+        states = {"to upgrade": [], "to remove": [], "to install": []}
+        config = Mock()
+        migration_class = type(self.migration)
+        with patch.object(
+            migration_class, "_verify_module_states", return_value=states
+        ), patch.object(migration_class, "current_config_id", new=config):
+            self.assertEqual(self.migration.get_pending_modules(), [])
+        config.reset_uninstall_modules_retry_number.assert_called_once()
+        config.get_uninstall_modules_retry_number.assert_not_called()
+
+    def test_pending_modules_skipped_after_max_retries(self):
+        states = {"to upgrade": [], "to remove": ["old_a"], "to install": []}
+        config = Mock()
+        config.get_uninstall_modules_retry_number.return_value = (
+            migration_module.MAX_UNINSTALL_MODULES_RETRY
+        )
+        migration_class = type(self.migration)
+        with patch.object(
+            migration_class, "_verify_module_states", return_value=states
+        ), patch.object(migration_class, "current_config_id", new=config):
+            self.assertEqual(self.migration.get_pending_modules(), [])
+
+    def test_uninstall_pending_modules_does_not_run_a_full_update(self):
+        """Pending modules are uninstalled by the running instance, no -u all."""
+        config = Mock()
+        config.name = "18.0"
+        config.increment_uninstall_modules_retry_number.return_value = 1
+        migration_class = type(self.migration)
+        with patch.object(
+            migration_class, "get_pending_modules", return_value=["old_a", "old_b"]
+        ), patch.object(migration_class, "current_config_id", new=config), patch.object(
+            migration_class, "start_odoo"
+        ) as start_mock, patch.object(
+            migration_class, "install_uninstall_module"
+        ) as uninstall_mock, patch.object(
+            migration_class, "button_stop_odoo"
+        ) as stop_mock, patch.object(
+            migration_class, "_get_pending_modules_to_uninstall", return_value=[]
+        ):
+            self.migration.uninstall_pending_modules()
+        start_mock.assert_called_once_with(config)
+        self.assertEqual(
+            [call[0] for call in uninstall_mock.call_args_list],
+            [("old_a", config), ("old_b", config)],
+        )
+        self.assertEqual(
+            [call[1] for call in uninstall_mock.call_args_list],
+            [{"install": False}, {"install": False}],
+        )
+        stop_mock.assert_called_once()
+        self.assertEqual(self.migration.pending_modules, "[]")
+
+    def test_uninstalled_module_record_deleted_after_reload_to_install(self):
+        """OpenUpgrade puts a module back 'to install'; it is cancelled + deleted."""
+        module = _FakeUninstallModule("old_a", "to install")
+        migration_class = type(self.migration)
+        with patch.object(
+            migration_class, "_get_migrated_module_state", return_value="to install"
+        ):
+            self.assertTrue(self.migration._remove_uninstalled_module_record(module))
+        self.assertEqual((module.install_cancelled, module.unlinked), (1, 1))
+
+    def test_uninstalled_module_record_reinstalled_is_kept(self):
+        module = _FakeUninstallModule("old_a", "installed")
+        migration_class = type(self.migration)
+        with patch.object(
+            migration_class, "_get_migrated_module_state", return_value="installed"
+        ):
+            self.assertFalse(self.migration._remove_uninstalled_module_record(module))
+        self.assertEqual((module.install_cancelled, module.unlinked), (0, 0))
+
+    def test_uninstalled_module_record_deleted(self):
+        module = _FakeUninstallModule("old_a", "uninstalled")
+        migration_class = type(self.migration)
+        with patch.object(
+            migration_class, "_get_migrated_module_state", return_value="uninstalled"
+        ):
+            self.assertTrue(self.migration._remove_uninstalled_module_record(module))
+        self.assertEqual((module.install_cancelled, module.unlinked), (0, 1))
+
+    def test_migrated_module_state_is_read_with_sql(self):
+        result = subprocess.CompletedProcess([], 0, "to remove\n", "")
+        with patch.object(migration_module, "run", return_value=result) as run_mock:
+            self.assertEqual(
+                self.migration._get_migrated_module_state("old_a"), "to remove"
+            )
+        command = run_mock.call_args[0][0][0]
+        self.assertIn("psql -d", command)
+        self.assertIn("SELECT state FROM ir_module_module", command)
+        self.assertIn("'old_a'", command)
+
+    def test_uninstall_cancels_only_the_requested_module(self):
+        """The other 'to remove' modules stay candidates for their own call."""
+        requested = _FakeUninstallModule("old_a", "to remove")
+        other = _FakeUninstallModule("old_b", "to remove")
+        module_obj = Mock()
+        # first search: the 'to remove' modules, second one: the requested
+        # module is no longer 'to remove' after the cancel and is not found
+        module_obj.search.side_effect = [[requested.id, other.id], []]
+        module_obj.browse.side_effect = lambda ids: [
+            {requested.id: requested, other.id: other}[module_id] for module_id in ids
+        ]
+        fake_env = _FakeEnv("x_migrate")
+        fake_env["ir.module.module"] = module_obj
+        client = Mock()
+        client.env = fake_env
+        migration_class = type(self.migration)
+        with patch.object(migration_class, "_lock_migrated_db"), patch.object(
+            migration_class, "odoo_connect", return_value=client
+        ), patch.object(
+            migration_class, "_get_migrated_db_name", return_value="x_migrate"
+        ), patch.object(migration_class, "_wait_migrated_db_idle"):
+            self.migration.install_uninstall_module("old_a", Mock(), install=False)
+        self.assertEqual(
+            (requested.uninstall_cancelled, other.uninstall_cancelled), (1, 0)
+        )
+
+    def test_uninstalled_module_records_cleaned_up_together(self):
+        """Modules uninstalled by the same reload are all cleaned up."""
+        first = _FakeUninstallModule("old_a", "to install")
+        second = _FakeUninstallModule("old_b", "to install")
+        with patch.object(
+            type(self.migration),
+            "_get_migrated_module_state",
+            return_value="to install",
+        ):
+            self.assertEqual(
+                self.migration._remove_uninstalled_module_records([first, second]),
+                ["old_a", "old_b"],
+            )
+        self.assertEqual(
+            (
+                first.install_cancelled,
+                first.unlinked,
+                second.install_cancelled,
+                second.unlinked,
+            ),
+            (1, 1, 1, 1),
+        )
+
+    def test_uninstalled_module_record_kept_in_unexpected_state(self):
+        """Only a re-added 'to install' state is cancelled, then unlinked."""
+        for state in ("installed", "to remove", "to upgrade", None):
+            module = _FakeUninstallModule("old_a", state)
+            with patch.object(
+                type(self.migration),
+                "_get_migrated_module_state",
+                return_value=state,
+            ):
+                self.assertFalse(
+                    self.migration._remove_uninstalled_module_record(module)
+                )
+            self.assertEqual((module.install_cancelled, module.unlinked), (0, 0), state)
+
+    def test_uninstalled_module_record_missing_row_is_unlinked(self):
+        module = _FakeUninstallModule("old_a", "")
+        with patch.object(
+            type(self.migration), "_get_migrated_module_state", return_value=""
+        ):
+            self.assertTrue(self.migration._remove_uninstalled_module_record(module))
+        self.assertEqual((module.install_cancelled, module.unlinked), (0, 1))
+
+    def test_uninstall_pending_modules_stops_the_instance_on_error(self):
+        config = Mock()
+        config.name = "18.0"
+        config.increment_uninstall_modules_retry_number.return_value = 1
+        migration_class = type(self.migration)
+        with patch.object(
+            migration_class, "get_pending_modules", return_value=["old_a"]
+        ), patch.object(migration_class, "current_config_id", new=config), patch.object(
+            migration_class, "start_odoo"
+        ), patch.object(
+            migration_class,
+            "install_uninstall_module",
+            side_effect=UserError("uninstall failed"),
+        ), patch.object(
+            migration_class, "_get_migrated_db_name", return_value="x_migrate"
+        ), patch.object(
+            migration_class, "_wait_migrated_db_idle"
+        ) as idle_mock, patch.object(migration_class, "button_stop_odoo") as stop_mock:
+            with self.assertRaises(UserError):
+                self.migration.uninstall_pending_modules()
+        idle_mock.assert_called_once_with("x_migrate")
+        stop_mock.assert_called_once()
+
+    def test_pending_modules_without_current_version_is_empty(self):
+        states = {"to upgrade": [], "to remove": ["old_a"], "to install": []}
+        migration_class = type(self.migration)
+        with patch.object(
+            migration_class, "_verify_module_states", return_value=states
+        ), patch.object(migration_class, "current_config_id", new=False):
+            self.assertEqual(self.migration.get_pending_modules(), [])
+
+    def test_module_states_read_fails_closed(self):
+        """An unreadable module state must never mean 'nothing pending'."""
+        result = subprocess.CompletedProcess([], 1, "", "connection refused")
+        with patch.object(migration_module, "run", return_value=result):
+            with self.assertRaises(UserError):
+                self.migration._verify_module_states()
+
+    def test_failed_uninstall_leaves_the_module_pending(self):
+        """A module cancelled before a failed uninstall is pending again."""
+        module = _FakeUninstallModule("old_a", "installed")
+        migration_class = type(self.migration)
+        with patch.object(
+            migration_class, "_get_migrated_module_state", return_value="installed"
+        ):
+            self.migration._restore_pending_removal(module)
+        self.assertEqual(module.state, "to remove")
+
+    def test_already_removed_module_is_not_pending_again(self):
+        module = _FakeUninstallModule("old_a", "")
+        migration_class = type(self.migration)
+        for state in ("", "uninstalled", "uninstallable", "to remove", None):
+            module.state = state
+            module.written_states = []
+            with patch.object(
+                migration_class, "_get_migrated_module_state", return_value=state
+            ):
+                self.migration._restore_pending_removal(module)
+            self.assertEqual(module.written_states, [], state)

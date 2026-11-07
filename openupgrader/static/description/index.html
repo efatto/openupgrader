@@ -503,6 +503,16 @@ starting -&gt; started -&gt; restored -&gt; updated
 </pre>
 <p>The per-version <tt class="docutils literal">done</tt> state is written only after the final
 end-migration dump, so later cron runs do not dump the database again.</p>
+<p>Modules left in state <tt class="docutils literal">to remove</tt> on the migrated database (a renamed,
+merged or obsolete module without code in the target version) are uninstalled
+by the cron with the normal Odoo uninstall: the migration instance is started
+and every module is removed with <tt class="docutils literal">button_immediate_uninstall</tt>, no full
+<tt class="docutils literal"><span class="pre">-u</span> all</tt> update is run. The attempt counter is stored in the state file
+(<tt class="docutils literal">uninstall_modules_retry_number</tt>, <tt class="docutils literal">MAX_UNINSTALL_MODULES_RETRY</tt> attempts)
+and the final dump is written anyway when the limit is reached. Modules left
+in <tt class="docutils literal">to upgrade</tt>/<tt class="docutils literal">to install</tt> are <strong>not</strong> uninstalled: they are the
+leftovers of an interrupted update and the update must be run again (they are
+listed in a warning).</p>
 </div>
 <div class="section" id="standard-procedure-ui">
 <h3><a class="toc-backref" href="#toc-entry-4">Standard procedure (UI)</a></h3>

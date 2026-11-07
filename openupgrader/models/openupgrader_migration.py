@@ -39,9 +39,11 @@ from .tools import (
 
 logger = logging.getLogger(__name__)
 
-# Maximum number of attempts used to uninstall pending modules by restarting
-# Odoo with ``update=True``. The current attempt number is persisted in the
-# migration state uninstall modules key as ``uninstall_modules_retry_number``.
+# Maximum number of attempts used to uninstall the modules left in state
+# ``to remove`` on the migrated database (each attempt restarts the migration
+# instance and uninstalls them with ``button_immediate_uninstall``). The
+# current attempt number is persisted in the migration state file under the
+# ``uninstall_modules_retry_number`` key.
 MAX_UNINSTALL_MODULES_RETRY = 5
 
 # Maximum number of automatic retries for a failed migration/update step. The
@@ -1596,198 +1598,177 @@ END
         pending_modules = found_modules_by_state.get("pending", [])
         self.pending_modules = str(sorted(set(pending_modules)))
 
-    def _set_pending_modules_to_remove(self):
-        self._lock_migrated_db()
-        migrated_db = self._get_migrated_db_name()
-        self._wait_migrated_db_idle(migrated_db)
+    def _get_migrated_module_state(self, module_name):
+        """Read the state of a module from the migrated database.
+
+        The state is read with SQL on purpose: the OdooRPC recordset caches
+        the value read before the module operation, and the SQL read does not
+        wait for the registry reload the instance is running.
+        """
+        if not re.match(r"^[a-zA-Z0-9_.\-]+$", module_name or ""):
+            logger.error("Invalid module name %r, cannot read its state.", module_name)
+            return None
         conn_vars = self._get_db_connection_variables()
+        sql_command = (
+            "SELECT state FROM ir_module_module WHERE name = %s;"
+            % _sql_quote(module_name)
+        )
+        result = run(
+            [
+                f"{conn_vars} && psql -d {self._get_migrated_db_name()} -c "
+                f'"{sql_command}" -t -A'
+            ],
+            shell=True,
+            stdout=PIPE,
+            stderr=PIPE,
+            universal_newlines=True,
+        )
+        if result.returncode != 0:
+            logger.error(
+                "Unable to read the state of module %s: %s",
+                module_name,
+                (result.stderr or result.stdout or "").strip(),
+            )
+            return None
+        return result.stdout.strip()
+
+    def _get_pending_modules_to_uninstall(self):
+        """Return the modules of the migrated DB left in ``to remove``.
+
+        Only ``to remove`` modules are uninstall candidates. Modules left in
+        ``to upgrade``/``to install`` are the leftovers of an interrupted
+        update: they must be updated again, not uninstalled, so they are only
+        reported (the previous implementation set them to ``to remove`` too and
+        a single interrupted update could uninstall hundreds of modules).
+        """
         found_modules_by_state = self._verify_module_states()
-        pending_modules = found_modules_by_state.get("pending", [])
-        self.uninstallable_modules = False
+        leftovers = sorted(
+            found_modules_by_state.get("to upgrade", [])
+            + found_modules_by_state.get("to install", [])
+        )
+        if leftovers:
+            logger.warning(
+                "Modules left in 'to upgrade'/'to install' state in %s are not "
+                "uninstalled, they are the leftovers of an interrupted update "
+                "and the update must be run again: %s",
+                self._get_migrated_db_name(),
+                leftovers,
+            )
+        return found_modules_by_state.get("to remove", [])
+
+    def get_pending_modules(self):
+        """Return the modules that still have to be uninstalled."""
+        self._lock_migrated_db()
+        pending_modules = self._get_pending_modules_to_uninstall()
         if not pending_modules and self.current_config_id:
             # Nothing left to uninstall: reset the retry counter stored in the
             # migration state file.
             self.current_config_id.reset_uninstall_modules_retry_number()
-        # ensure no pending queries are running before doing sql commands
-        self.flush()
-        sql_commands = []
-        # Use tuple to format the SQL query safely for the IN clause
-        if pending_modules:
-            pending_modules = tuple(pending_modules)
-            if len(pending_modules) == 1:
-                in_clause = "('%s')" % pending_modules[0]
-            else:
-                in_clause = str(pending_modules)
-
-            sql_commands.append(
-                (
-                    f"UPDATE ir_module_module SET state = 'to remove' "
-                    f"WHERE name in {in_clause} "
-                    f"AND state not in ('uninstalled', 'to remove');"
-                ),
+            return []
+        if not pending_modules:
+            return []
+        if not self.current_config_id:
+            logger.error(
+                "No current version configured for %s: cannot uninstall %s.",
+                self.db_name,
+                sorted(pending_modules),
             )
-            logger.info(f"Setting modules to be uninstalled: {in_clause}.")
-        for sql_command in sql_commands:
-            process = run(
-                [f"{conn_vars} && psql -d {migrated_db} -c " f'"{sql_command}"'],
-                shell=True,
-                stdout=PIPE,
-                stderr=PIPE,
-                # ``text`` is only available from Python 3.7, while Odoo 14
-                # supports Python 3.6.
-                universal_newlines=True,
-                check=True,
-            )
-            if process.returncode != 0:
-                logger.info(
-                    f"ERROR setting modules to be uninstalled: {process.stderr}"
-                )
-            sql = "SELECT name FROM ir_module_module WHERE state = 'to remove'"
-            process = run(
-                [f'{conn_vars} && psql -d {migrated_db} -c "{sql}"'],
-                shell=True,
-                stdout=PIPE,
-                stderr=PIPE,
-                universal_newlines=True,
-                check=True,
-            )
-            logger.info(f"Current modules to be removed: {process.stdout}")
-            if process.returncode != 0:
-                logger.info(f"ERROR setting modules to be removed: {process.stderr}")
-
-    def get_pending_modules(self):
-        self._lock_migrated_db()
-        self._set_pending_modules_to_remove()
-        found_modules_by_state = self._verify_module_states()
-        pending_modules = found_modules_by_state.get("pending", [])
+            return []
         uninstall_modules_retry_number = (
             self.current_config_id.get_uninstall_modules_retry_number()
         )
         if uninstall_modules_retry_number >= MAX_UNINSTALL_MODULES_RETRY:
             logger.warning(
                 "Maximum number of retries (%s) reached while trying to uninstall "
-                "pending modules for version %s. Skipping uninstallation.",
+                "pending modules for version %s. Skipping uninstallation of %s.",
                 MAX_UNINSTALL_MODULES_RETRY,
                 self.current_config_id.name,
+                sorted(pending_modules),
             )
             return []
         return pending_modules
 
     def uninstall_pending_modules(self):
+        """Uninstall the modules left in ``to remove`` with Odoo's mechanism.
+
+        The migration instance is started normally (no ``-u all``) and every
+        module is uninstalled with ``button_immediate_uninstall``, exactly like
+        the Odoo UI does: it sets the module and its dependents to ``to remove``
+        and reloads the registry once. No full update is needed, and running one
+        here is not only slow (minutes instead of seconds on a real database) but
+        also wrong: OpenUpgrade patches ``update_list()`` to set every
+        ``auto_install`` module whose dependencies are installed back to
+        ``to install``, so a module without target-version code is re-added at
+        every update and never removed.
+        """
         self._lock_migrated_db()
-        # start_odoo with update=True will wait for Odoo to stop
         pending_modules = self.get_pending_modules()
-        if pending_modules:
-            # Persist the retry number in the migration state file before starting
-            # Odoo, so that a failed/crashed attempt is taken into account as well.
-            uninstall_modules_retry_number = (
-                self.current_config_id.increment_uninstall_modules_retry_number()
-            )
-            logger.info(
-                "Uninstalling pending modules for version %s (attempt %s/%s).",
-                self.current_config_id.name,
-                uninstall_modules_retry_number,
-                MAX_UNINSTALL_MODULES_RETRY,
-            )
-            logger.info(
-                f"Set pending modules for {self.db_name} "
-                f"to be removed during the restoring process. This method "
-                f"could be called many times by cron, until all pending "
-                f"modules are removed or set as 'uninstalled'."
-            )
-            self.start_odoo(
-                self.current_config_id,
-                update=True,
-                try_install_missing_pip_module=False,
-            )
-
-    def _set_pending_modules_uninstalled(self):
-        self._lock_migrated_db()
-        migrated_db = self._get_migrated_db_name()
-        self._wait_migrated_db_idle(migrated_db)
-        logger.info("Set pending modules as uninstalled.")
-        conn_vars = self._get_db_connection_variables()
-        # Verification via SQL
-        found_modules_by_state = self._verify_module_states()
-        pending_modules = found_modules_by_state.get("pending", [])
-
-        if pending_modules:
-            modules_removed = set(pending_modules)
-            uninstallable_modules = [
-                x for x in pending_modules if x in found_modules_by_state["pending"]
-            ]
-            if uninstallable_modules:
-                modules_removed -= set(uninstallable_modules)
-                self.uninstallable_modules = sorted(set(uninstallable_modules))
-            self.uninstalled_modules = sorted(modules_removed)
-            current_pending_modules = [
-                x
-                for x in pending_modules
-                if x in found_modules_by_state.get("pending", [])
-            ]
-            # set current pending modules as uninstalled
-            if current_pending_modules:
-                self.pending_modules = str(sorted(set(current_pending_modules)))
-                sql_command = """
-                    UPDATE ir_module_module
-                    SET state='uninstalled'
-                    WHERE name IN %s
-                """ % list(current_pending_modules)
-                run(
-                    [f"{conn_vars} && psql -d {migrated_db} -c " f'"{sql_command}"'],
-                    shell=True,
-                )
-                logger.info(
-                    f"Pending modules set as uninstalled {self.pending_modules}."
-                )
-            self.remove_modules_views_menus(modules_removed)
-
-    def remove_modules_views_menus(self, modules):
-        if not modules:
+        if not pending_modules:
             return
-        migrated_db = self._get_migrated_db_name()
-        self._wait_migrated_db_idle(migrated_db)
-        conn_vars = self._get_db_connection_variables()
-        sql_commands = [
-            (
-                """
-            WITH RECURSIVE views_to_delete AS (
-                SELECT v.id
-                FROM ir_ui_view v
-                JOIN ir_model_data imd
-                    ON imd.model = 'ir.ui.view'
-                   AND imd.res_id = v.id
-                   AND imd.module = ANY(ARRAY%s)
-                UNION ALL
-                SELECT v.id
-                FROM ir_ui_view v
-                JOIN views_to_delete vtd ON v.inherit_id = vtd.id
-            ),
-            deleted_imd AS (
-                DELETE FROM ir_model_data
-                WHERE model = 'ir.ui.view'
-                  AND res_id IN (SELECT id FROM views_to_delete)
-            )
-            DELETE FROM ir_ui_view
-            WHERE id IN (SELECT id FROM views_to_delete)
-            """
-                % list(modules)
-            ),
-            (
-                """
-            DELETE FROM ir_model_data
-            WHERE model = 'ir.ui.menu'
-            AND module = ANY(ARRAY%s)
-            """
-                % list(modules)
-            ),
+        config_id = self.current_config_id
+        # Persist the retry number in the migration state file before starting
+        # Odoo, so that a failed/crashed attempt is taken into account as well.
+        uninstall_modules_retry_number = (
+            config_id.increment_uninstall_modules_retry_number()
+        )
+        logger.info(
+            "Uninstalling pending modules for version %s (attempt %s/%s): %s",
+            config_id.name,
+            uninstall_modules_retry_number,
+            MAX_UNINSTALL_MODULES_RETRY,
+            sorted(pending_modules),
+        )
+        try:
+            self.start_odoo(config_id)
+            for module_name in sorted(pending_modules):
+                try:
+                    self.install_uninstall_module(module_name, config_id, install=False)
+                except UserError:
+                    raise
+                except Exception:
+                    logger.exception(
+                        "Unable to uninstall module %s in version %s",
+                        module_name,
+                        config_id.name,
+                    )
+        finally:
+            # a module operation may still be finishing on the instance (after
+            # a client timeout or a crash): wait for it instead of killing the
+            # server in the middle of a registry update. A stop error must not
+            # hide the uninstallation error.
+            migrated_db = self._get_migrated_db_name()
+            try:
+                self._wait_migrated_db_idle(migrated_db)
+                self.button_stop_odoo()
+            except UserError:
+                logger.exception(
+                    "Unable to stop the migration instance of %s after the "
+                    "uninstallation attempt.",
+                    self.db_name,
+                )
+        remaining_modules = self._get_pending_modules_to_uninstall()
+        # report the real outcome: a module whose uninstallation failed is not
+        # necessarily back to 'to remove' (it may have been cancelled to
+        # 'installed' before the failure), so the state is read again
+        module_states = {
+            module_name: self._get_migrated_module_state(module_name)
+            for module_name in pending_modules
+        }
+        uninstalled_modules = [
+            module_name
+            for module_name, state in module_states.items()
+            if state in ("", "uninstalled", "uninstallable")
         ]
-        for sql_command in sql_commands:
-            run(
-                [f"{conn_vars} && psql -d {migrated_db} -c " f'"{sql_command}"'],
-                shell=True,
-            )
-        logger.info(f"Delete via sql menu and views linked to modules {modules}.")
+        self.uninstalled_modules = str(sorted(uninstalled_modules))
+        self.uninstallable_modules = str(
+            sorted(set(pending_modules) - set(uninstalled_modules))
+        )
+        self.pending_modules = str(sorted(remaining_modules))
+        logger.info(
+            "Pending modules of %s after uninstallation: %s",
+            self.db_name,
+            sorted(remaining_modules),
+        )
 
     def _cron_migration(self):  # noqa: C901
         logger.info("Starting OpenUpgrader auto-migration cron")
@@ -2011,7 +1992,20 @@ END
                 + found_modules_by_state.get("to install", [])
             )
         else:
+            # fail closed: an unreadable state must never be taken for "no
+            # pending module", otherwise the final dump is written while the
+            # modules to uninstall are still there
             logger.error(f"Error checking module states: {result.stderr}")
+            raise UserError(
+                _(
+                    "Unable to read the module states of the migrated database "
+                    "%(db)s: %(error)s"
+                )
+                % {
+                    "db": self._get_migrated_db_name(),
+                    "error": (result.stderr or result.stdout or "").strip(),
+                }
+            )
 
         return found_modules_by_state
 
@@ -2683,6 +2677,110 @@ END
                     module_id.unlink()
             self.button_stop_odoo()
 
+    def _remove_uninstalled_module_record(self, module):
+        """Delete the ``ir.module.module`` row of a just uninstalled module.
+
+        The registry reloaded at the end of ``button_immediate_uninstall`` runs
+        OpenUpgrade's patched ``update_list()``: every module marked
+        ``auto_install`` whose dependencies are installed is set back to
+        ``to install``, even when its target-version code is missing (Odoo then
+        skips it as not installable and leaves an inconsistent state). That is
+        the only state that is cancelled here: the uninstallation is already
+        done, so the pending install must not survive and block the deletion of
+        the record. Any other unexpected state (a module really reinstalled, a
+        pending upgrade, ...) is kept and reported, so the database is not
+        silently left without its data.
+        """
+        module_name = module.name
+        state = self._get_migrated_module_state(module_name)
+        if state == "to install":
+            # the uninstallation is already done, only the module record was
+            # put back to 'to install' by the reloaded registry
+            module.button_install_cancel()
+        elif state not in ("", "uninstalled", "uninstallable"):
+            logger.error(
+                "Module %s is in state %r after its uninstallation: keeping "
+                "its record.",
+                module_name,
+                state,
+            )
+            return False
+        module.unlink()
+        return True
+
+    def _remove_uninstalled_module_records(self, modules):
+        """Delete the module records of the modules uninstalled by one reload.
+
+        ``button_immediate_uninstall`` sets to ``to remove`` and uninstalls the
+        module, its downstream dependencies and the modules already scheduled
+        for removal, all in the same registry reload.
+        """
+        removed_modules = []
+        for module in modules:
+            if self._remove_uninstalled_module_record(module):
+                removed_modules.append(module.name)
+        logger.info("Modules uninstalled: %s", sorted(removed_modules))
+        return removed_modules
+
+    def _uninstall_module(self, module, module_obj, cleanup_ids, migrated_db):
+        """Uninstall one module, retrying a failed RPC call.
+
+        ``cleanup_ids`` are the modules whose records are deleted once the
+        uninstallation reload is done.
+        """
+        try_number = 0
+        try:
+            while try_number < 5:
+                # the previous attempt may still be running on the migrated
+                # instance: wait for it instead of starting a second concurrent
+                # registry update
+                self._wait_migrated_db_idle(migrated_db)
+                try:
+                    module.button_immediate_uninstall()
+                    self._remove_uninstalled_module_records(
+                        module_obj.browse(sorted(cleanup_ids))
+                    )
+                    try_number = 5
+                except UserError:
+                    raise
+                except Exception as e:
+                    if _is_rpc_timeout(e):
+                        self._abort_on_rpc_timeout(migrated_db, module.name)
+                    try_number += 1
+                    logger.info(
+                        "Module %s not uninstalled for %s, trying %s/%s times.",
+                        module.name,
+                        str(e).replace("\n", ""),
+                        try_number,
+                        5,
+                    )
+                    if _(
+                        "One or more of the selected modules have already been "
+                        "uninstalled, if you believe this to be an error, you "
+                        "may try again later or contact support."
+                    ) in str(e):
+                        try_number = 5
+                    time.sleep(10)
+        finally:
+            # the pending removal was cancelled before the uninstallation: if
+            # the uninstallation did not even start, the module would silently
+            # stop being a candidate and the final dump would be written as if
+            # it had been removed
+            self._restore_pending_removal(module)
+
+    def _restore_pending_removal(self, module):
+        """Make a module cancelled before a failed uninstall pending again."""
+        if self._get_migrated_module_state(module.name) != "installed":
+            return
+        try:
+            module.write({"state": "to remove"})
+        except Exception:
+            logger.exception(
+                "Unable to set module %s back to 'to remove' after a failed "
+                "uninstallation attempt.",
+                module.name,
+            )
+
     def install_uninstall_module(self, module_name, config_id, install=True):
         """Install or uninstall a module in the migration instance.
 
@@ -2715,11 +2813,17 @@ END
         # model tables again: its ir.model unlink deletes mail_message rows
         self._wait_migrated_db_idle(migrated_db)
         module_obj = odoo_client.env["ir.module.module"]
-        # module_obj.update_list()
-        # removed as this changes the modules' state from 'to upgrade' to 'installed'
-        to_remove_modules = module_obj.search([("state", "=", "to remove")])
-        for module_to_remove_id in to_remove_modules:
-            module_obj.browse(module_to_remove_id).button_uninstall_cancel()
+        # Modules already marked 'to remove': Odoo uninstalls all of them in the
+        # registry reload of this call, so their records are cleaned up with the
+        # one of the requested module after the uninstallation.
+        scheduled_to_remove_ids = set(module_obj.search([("state", "=", "to remove")]))
+        # A module marked 'to remove' cannot be uninstalled again:
+        # ``button_uninstall`` raises for any state but 'installed'/'to upgrade'.
+        # Cancel the pending removal of the requested module only: the other
+        # 'to remove' modules stay candidates if this uninstallation fails.
+        for module_to_remove in module_obj.browse(sorted(scheduled_to_remove_ids)):
+            if module_to_remove.name == module_name:
+                module_to_remove.button_uninstall_cancel()
         domain = [("name", "=", module_name)]
         if not install:
             domain.append(("state", "!=", "not installed"))
@@ -2741,39 +2845,17 @@ END
                             self._abort_on_rpc_timeout(migrated_db, module.name)
                         raise
                 elif module.state in ["installed", "to upgrade", "uninstallable"]:
-                    try_number = 0
-                    while try_number < 5:
-                        # the previous attempt may still be running on the
-                        # migrated instance: wait for it instead of starting
-                        # a second concurrent registry update
-                        self._wait_migrated_db_idle(migrated_db)
-                        try:
-                            module.button_immediate_uninstall()
-                            module.unlink()
-                            logger.info("Module %s uninstalled" % module.name)
-                            try_number = 5
-                        except UserError:
-                            raise
-                        except Exception as e:
-                            if _is_rpc_timeout(e):
-                                self._abort_on_rpc_timeout(migrated_db, module.name)
-                            try_number += 1
-                            logger.info(
-                                "Module %s not uninstalled for %s, trying %s/%s times."
-                                % (
-                                    module.name,
-                                    str(e).replace("\n", ""),
-                                    try_number,
-                                    5,
-                                )
-                            )
-                            if _(
-                                "One or more of the selected modules have already been "
-                                "uninstalled, if you believe this to be an error, you "
-                                "may try again later or contact support."
-                            ) in str(e):
-                                try_number = 5
-                            time.sleep(10)
+                    # modules removed by the registry reload of this
+                    # uninstallation: the requested module, its downstream
+                    # dependencies and the modules already scheduled for
+                    # removal. Their module records are cleaned up together once
+                    # the reload is done.
+                    cleanup_ids = (
+                        {module.id}
+                        | set(module.downstream_dependencies() or [])
+                        | scheduled_to_remove_ids
+                    )
+                    self._uninstall_module(module, module_obj, cleanup_ids, migrated_db)
             return modules
         else:
             logger.info("Module %s not found" % module_name)

@@ -156,6 +156,17 @@ The per-version state stored in the JSON file goes through::
 The per-version ``done`` state is written only after the final
 end-migration dump, so later cron runs do not dump the database again.
 
+Modules left in state ``to remove`` on the migrated database (a renamed,
+merged or obsolete module without code in the target version) are uninstalled
+by the cron with the normal Odoo uninstall: the migration instance is started
+and every module is removed with ``button_immediate_uninstall``, no full
+``-u all`` update is run. The attempt counter is stored in the state file
+(``uninstall_modules_retry_number``, ``MAX_UNINSTALL_MODULES_RETRY`` attempts)
+and the final dump is written anyway when the limit is reached. Modules left
+in ``to upgrade``/``to install`` are **not** uninstalled: they are the
+leftovers of an interrupted update and the update must be run again (they are
+listed in a warning).
+
 Standard procedure (UI)
 ~~~~~~~~~~~~~~~~~~~~~~~
 
