@@ -81,6 +81,15 @@ def _is_rpc_timeout(exc):
     return "timed out" in text or "timeout" in text or "time out" in text
 
 
+class MigratedDbBusyError(UserError):
+    """The migrated database stayed busy for the whole timeout.
+
+    Distinct from the other ``UserError`` of the guards (a running ``-u all``
+    batch, an unreadable ``pg_stat_activity``): those must abort the step, while
+    a busy database only means a module operation is still running.
+    """
+
+
 def _is_rpc_transport_failure(exc):
     """Tell whether ``exc`` left the RPC session to the instance unusable.
 
@@ -624,7 +633,7 @@ class OpenupgraderMigration(models.Model):
             if not running:
                 return
             if time.time() >= deadline:
-                raise UserError(
+                raise MigratedDbBusyError(
                     _(
                         "%(count)s open transactions are still running on the "
                         "migrated database %(db)s. Refusing to start a new "
@@ -677,6 +686,92 @@ class OpenupgraderMigration(models.Model):
         )
         self.button_stop_odoo(force=True)
         self._terminate_migrated_db_backends(migrated_db)
+
+    def _wait_after_rpc_timeout(self, migrated_db, module_name):
+        """Wait for a timed-out module operation instead of aborting it.
+
+        A client timeout does not interrupt anything on the migration instance:
+        a big delete (the ``mail_message`` rows of an uninstalled module) can
+        run longer than ``ODOO_RPC_TIMEOUT``. Killing it throws the work away
+        and the retry starts it over, so wait for the database to be idle and
+        stop the instance only when it stays busy.
+
+        :return: ``True`` when the operation finished server side.
+        """
+        logger.warning(
+            "The module operation on %s (%s) outlived the RPC timeout: waiting "
+            "for it instead of aborting it.",
+            module_name,
+            migrated_db,
+        )
+        try:
+            self._wait_migrated_db_idle(migrated_db)
+        except MigratedDbBusyError:
+            # only a database that stayed busy: the operation is stuck, the
+            # other guard errors (running -u all, unreadable pg_stat_activity)
+            # are real aborts and must not kill a healthy instance
+            logger.error(
+                "The module operation on %s (%s) did not finish: stopping the "
+                "migration instance.",
+                module_name,
+                migrated_db,
+            )
+            self._stop_after_rpc_timeout(migrated_db, module_name)
+            return False
+        logger.info(
+            "The module operation on %s (%s) finished after the RPC timeout.",
+            module_name,
+            migrated_db,
+        )
+        return True
+
+    def _set_migrated_modules_to_remove(self, module_names):
+        """Mark *installed* modules as ``to remove`` directly in the database.
+
+        Only ``installed`` modules are flipped: ``to install``/``to upgrade``
+        ones are leftovers of an interrupted operation and must not turn into
+        removal candidates.
+
+        :return: ``True`` when the update ran, ``False`` otherwise.
+        """
+        module_names = sorted(set(module_names))
+        if not module_names:
+            return False
+        invalid_names = [
+            name for name in module_names if not re.match(r"^[a-zA-Z0-9_.\-]+$", name)
+        ]
+        if invalid_names:
+            logger.error(
+                "Invalid module names %s, not scheduling their removal.",
+                invalid_names,
+            )
+            return False
+        in_clause = ",".join(_sql_quote(name) for name in module_names)
+        sql_command = (
+            "SET lock_timeout = '30s'; UPDATE ir_module_module SET "
+            "state = 'to remove' WHERE name IN "
+            f"({in_clause}) AND state = 'installed';"
+        )
+        conn_vars = self._get_db_connection_variables()
+        result = run(
+            [
+                f"{conn_vars} && psql -v ON_ERROR_STOP=1 "
+                f"-d {self._get_migrated_db_name()} "
+                f'-c "{sql_command}"'
+            ],
+            shell=True,
+            stdout=PIPE,
+            stderr=PIPE,
+            universal_newlines=True,
+        )
+        if result.returncode:
+            logger.error(
+                "Unable to schedule the removal of %s: %s",
+                ", ".join(module_names),
+                (result.stderr or result.stdout or "").strip(),
+            )
+            return False
+        return True
 
     def _abort_on_rpc_timeout(self, migrated_db, module_name):
         """Like ``_stop_after_rpc_timeout``, but aborts the step (uninstalls)."""
@@ -2365,81 +2460,14 @@ END
                     ", ".join(result["not_processed"]),
                 )
                 break
-            module_to_check = module.name
-            module_to_install_name = module.module_to_install_name
-            module_obj = odoo_client.env["ir.module.module"]
-            try:
-                if not module_obj.search(
-                    [("name", "=", module_to_check), ("state", "=", "installed")],
-                ):
-                    continue
-                if (
-                    install_failed_modules.get(module_to_install_name, 0)
-                    >= MAX_INSTALL_MODULE_RETRY
-                ):
-                    logger.warning(
-                        "Skipping module %s: its installation already failed "
-                        "%s times on version %s. Install it manually on %s "
-                        "once the reason is fixed (or delete its "
-                        "install_failed_modules entry in the migration state "
-                        "file of version %s).",
-                        module_to_install_name,
-                        MAX_INSTALL_MODULE_RETRY,
-                        config_id.name,
-                        migrated_db,
-                        config_id.name,
-                    )
-                    result["skipped"].append(module_to_install_name)
-                    continue
-                # install pip package as possibly absent
-                config_id.install_pip_modules(module_to_install_name)
-                self._wait_migrated_db_idle(migrated_db)
-                module_obj.update_list()
-                module_toinstall = module_obj.search(
-                    [("name", "=", module_to_install_name)], limit=1
-                )
-                if not module_toinstall:
-                    logger.warning(
-                        "Module %s is not available in version %s: skipping "
-                        "its installation.",
-                        module_to_install_name,
-                        config_id.name,
-                    )
-                    continue
-                module_toinstall_id = module_obj.browse(module_toinstall)
-                if not module_toinstall_id:
-                    continue
-                self._wait_migrated_db_idle(migrated_db)
-                logger.info(
-                    "Installing module %s on migrated database %s",
-                    module_to_install_name,
-                    migrated_db,
-                )
-                module_toinstall_id.button_immediate_install()
-            except UserError:
-                # driver-side guard (busy database, unsafe RPC target, ...)
-                raise
-            except Exception as e:
-                session_lost = _is_rpc_transport_failure(e)
-                if session_lost:
-                    self._stop_after_rpc_timeout(migrated_db, module_to_install_name)
-                logger.error(
-                    "Error installing module %s: %s",
-                    module_to_install_name,
-                    e,
-                )
-                result["failed"].append(module_to_install_name)
-                install_failed_modules[module_to_install_name] = (
-                    install_failed_modules.get(module_to_install_name, 0) + 1
-                )
-                config_id.set_install_failed_modules(install_failed_modules)
-                if session_lost:
-                    odoo_client = self.odoo_connect(config_id)
-            else:
-                if module_to_install_name in install_failed_modules:
-                    # installation finally succeeded: forget the failures
-                    install_failed_modules.pop(module_to_install_name)
-                    config_id.set_install_failed_modules(install_failed_modules)
+            odoo_client = self._install_module(
+                config_id,
+                module,
+                odoo_client,
+                migrated_db,
+                install_failed_modules,
+                result,
+            )
         if result["failed"]:
             logger.warning(
                 "The installation of %s module(s) failed on %s: %s. The "
@@ -2456,6 +2484,119 @@ END
             )
         self.button_stop_odoo()
         return result
+
+    def _install_module(
+        self,
+        config_id,
+        module,
+        odoo_client,
+        migrated_db,
+        install_failed_modules,
+        result,
+    ):
+        """Install one module of the after-migration step.
+
+        :return: the session to use for the next module: the same one, or a new
+            one when the failure killed it (``None`` when it cannot be opened).
+        """
+        module_to_install_name = module.module_to_install_name
+        module_obj = odoo_client.env["ir.module.module"]
+        try:
+            if not module_obj.search(
+                [("name", "=", module.name), ("state", "=", "installed")],
+            ):
+                return odoo_client
+            if (
+                install_failed_modules.get(module_to_install_name, 0)
+                >= MAX_INSTALL_MODULE_RETRY
+            ):
+                logger.warning(
+                    "Skipping module %s: its installation already failed %s "
+                    "times on version %s. Install it manually on %s once the "
+                    "reason is fixed (or delete its install_failed_modules "
+                    "entry in the migration state file of version %s).",
+                    module_to_install_name,
+                    MAX_INSTALL_MODULE_RETRY,
+                    config_id.name,
+                    migrated_db,
+                    config_id.name,
+                )
+                result["skipped"].append(module_to_install_name)
+                return odoo_client
+            # install pip package as possibly absent
+            config_id.install_pip_modules(module_to_install_name)
+            self._wait_migrated_db_idle(migrated_db)
+            module_obj.update_list()
+            module_toinstall = module_obj.search(
+                [("name", "=", module_to_install_name)], limit=1
+            )
+            if not module_toinstall:
+                logger.warning(
+                    "Module %s is not available in version %s: skipping its "
+                    "installation.",
+                    module_to_install_name,
+                    config_id.name,
+                )
+                return odoo_client
+            module_toinstall_id = module_obj.browse(module_toinstall)
+            if not module_toinstall_id:
+                return odoo_client
+            self._wait_migrated_db_idle(migrated_db)
+            logger.info(
+                "Installing module %s on migrated database %s",
+                module_to_install_name,
+                migrated_db,
+            )
+            module_toinstall_id.button_immediate_install()
+        except UserError:
+            # driver-side guard (busy database, unsafe RPC target, ...)
+            raise
+        except Exception as e:
+            return self._handle_install_failure(
+                config_id,
+                module_to_install_name,
+                odoo_client,
+                migrated_db,
+                e,
+                install_failed_modules,
+                result,
+            )
+        if install_failed_modules.pop(module_to_install_name, None) is not None:
+            # installation finally succeeded: forget the failures
+            config_id.set_install_failed_modules(install_failed_modules)
+        return odoo_client
+
+    def _handle_install_failure(
+        self,
+        config_id,
+        module_name,
+        odoo_client,
+        migrated_db,
+        error,
+        install_failed_modules,
+        result,
+    ):
+        """Record a failed module installation and get a usable session back."""
+        session_lost = _is_rpc_transport_failure(error)
+        if session_lost:
+            self._wait_after_rpc_timeout(migrated_db, module_name)
+            if self._get_migrated_module_state(module_name) == "installed":
+                # the installation completed after all: only the answer was lost
+                logger.info(
+                    "Module %s was installed after the RPC timeout.", module_name
+                )
+                if install_failed_modules.pop(module_name, None) is not None:
+                    config_id.set_install_failed_modules(install_failed_modules)
+                return self.odoo_connect(config_id)
+        logger.error("Error installing module %s: %s", module_name, error)
+        result["failed"].append(module_name)
+        install_failed_modules[module_name] = (
+            install_failed_modules.get(module_name, 0) + 1
+        )
+        config_id.set_install_failed_modules(install_failed_modules)
+        if session_lost:
+            return self.odoo_connect(config_id)
+        return odoo_client
 
     def _exclude_core_modules(self, config_id, module_names):
         core_modules = config_id._get_core_modules()
@@ -2722,19 +2863,32 @@ END
         logger.info("Modules uninstalled: %s", sorted(removed_modules))
         return removed_modules
 
-    def _uninstall_module(self, module, module_obj, cleanup_ids, migrated_db):
+    def _uninstall_module(
+        self, module, module_obj, cleanup_ids, migrated_db, config_id
+    ):
         """Uninstall one module, retrying a failed RPC call.
 
         ``cleanup_ids`` are the modules whose records are deleted once the
         uninstallation reload is done.
         """
+        module_name = module.name
         try_number = 0
         try:
             while try_number < 5:
                 # the previous attempt may still be running on the migrated
                 # instance: wait for it instead of starting a second concurrent
                 # registry update
-                self._wait_migrated_db_idle(migrated_db)
+                try:
+                    self._wait_migrated_db_idle(migrated_db)
+                except MigratedDbBusyError as e:
+                    try_number += 1
+                    logger.error(
+                        "The migrated database is still busy after %s "
+                        "attempt(s): %s",
+                        try_number,
+                        e,
+                    )
+                    continue
                 try:
                     module.button_immediate_uninstall()
                     self._remove_uninstalled_module_records(
@@ -2744,8 +2898,28 @@ END
                 except UserError:
                     raise
                 except Exception as e:
-                    if _is_rpc_timeout(e):
-                        self._abort_on_rpc_timeout(migrated_db, module.name)
+                    if _is_rpc_transport_failure(e):
+                        # the uninstallation may still be running server side
+                        # (a big mail_message delete outlives the RPC timeout):
+                        # do not throw it away, wait for it and reconnect
+                        self._wait_after_rpc_timeout(migrated_db, module_name)
+                        odoo_client = self.odoo_connect(config_id)
+                        if not odoo_client:
+                            raise
+                        module_obj = odoo_client.env["ir.module.module"]
+                        # 'to install' too: the reloaded registry puts
+                        # auto_install modules back to that state
+                        state = self._get_migrated_module_state(module_name)
+                        if state in ("", "uninstalled", "uninstallable", "to install"):
+                            # it did finish: only the records are left
+                            self._remove_uninstalled_module_records(
+                                module_obj.browse(sorted(cleanup_ids))
+                            )
+                            try_number = 5
+                            continue
+                        module = module_obj.browse(
+                            module_obj.search([("name", "=", module_name)], limit=1)
+                        )
                     try_number += 1
                     logger.info(
                         "Module %s not uninstalled for %s, trying %s/%s times.",
@@ -2769,17 +2943,23 @@ END
             self._restore_pending_removal(module)
 
     def _restore_pending_removal(self, module):
-        """Make a module cancelled before a failed uninstall pending again."""
+        """Make a module cancelled before a failed uninstall pending again.
+
+        Losing the candidate would make the final dump look complete, so fall
+        back to SQL when the session is dead (a timed-out uninstallation).
+        """
         if self._get_migrated_module_state(module.name) != "installed":
             return
         try:
             module.write({"state": "to remove"})
         except Exception:
-            logger.exception(
-                "Unable to set module %s back to 'to remove' after a failed "
-                "uninstallation attempt.",
+            logger.warning(
+                "Unable to write module %s through the RPC: setting it back "
+                "to 'to remove' with SQL.",
                 module.name,
+                exc_info=True,
             )
+            self._set_migrated_modules_to_remove([module.name])
 
     def install_uninstall_module(self, module_name, config_id, install=True):
         """Install or uninstall a module in the migration instance.
@@ -2841,8 +3021,8 @@ END
                     try:
                         module.button_immediate_install()
                     except Exception as e:
-                        if _is_rpc_timeout(e):
-                            self._abort_on_rpc_timeout(migrated_db, module.name)
+                        if _is_rpc_transport_failure(e):
+                            self._wait_after_rpc_timeout(migrated_db, module.name)
                         raise
                 elif module.state in ["installed", "to upgrade", "uninstallable"]:
                     # modules removed by the registry reload of this
@@ -2855,7 +3035,9 @@ END
                         | set(module.downstream_dependencies() or [])
                         | scheduled_to_remove_ids
                     )
-                    self._uninstall_module(module, module_obj, cleanup_ids, migrated_db)
+                    self._uninstall_module(
+                        module, module_obj, cleanup_ids, migrated_db, config_id
+                    )
             return modules
         else:
             logger.info("Module %s not found" % module_name)

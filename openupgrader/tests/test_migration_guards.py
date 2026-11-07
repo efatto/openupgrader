@@ -297,7 +297,8 @@ class MigrationGuardTest(SavepointCase):
         self.assertEqual(config.install_failed_modules, {"new_a": 1})
         self.assertEqual(result["failed"], ["new_a"])
         self.assertEqual(result["not_processed"], [])
-        terminate_mock.assert_called_once_with("x_migrate")
+        # the server side is awaited, not killed
+        terminate_mock.assert_not_called()
         self.assertEqual(connect_mock.call_count, 2)
 
     def test_module_install_error_does_not_abort_the_step(self):
@@ -335,7 +336,7 @@ class MigrationGuardTest(SavepointCase):
         )
         self.assertEqual(ok_module.install_calls, 1)
         self.assertEqual(result["failed"], ["new_a"])
-        terminate_mock.assert_called_once_with("x_migrate")
+        terminate_mock.assert_not_called()
         self.assertEqual(connect_mock.call_count, 2)
 
     def test_module_install_unreachable_instance_is_reported(self):
@@ -408,6 +409,54 @@ class MigrationGuardTest(SavepointCase):
         ):
             with self.assertRaises(UserError):
                 self.migration._abort_on_rpc_timeout("x_migrate", "new_a")
+
+    def test_wait_after_rpc_timeout_waits_instead_of_killing(self):
+        """A slow server-side operation is awaited, not thrown away."""
+        migration_class = type(self.migration)
+        with patch.object(
+            migration_class, "_wait_migrated_db_idle"
+        ) as idle_mock, patch.object(
+            migration_class, "_stop_after_rpc_timeout"
+        ) as stop_mock:
+            self.assertTrue(self.migration._wait_after_rpc_timeout("x_migrate", "m"))
+        idle_mock.assert_called_once_with("x_migrate")
+        stop_mock.assert_not_called()
+
+    def test_wait_after_rpc_timeout_stops_a_stuck_operation(self):
+        """An operation that never ends is stopped, so the retry can start."""
+        migration_class = type(self.migration)
+        with patch.object(
+            migration_class,
+            "_wait_migrated_db_idle",
+            side_effect=migration_module.MigratedDbBusyError("still busy"),
+        ), patch.object(migration_class, "_stop_after_rpc_timeout") as stop_mock:
+            self.assertFalse(self.migration._wait_after_rpc_timeout("x_migrate", "m"))
+        stop_mock.assert_called_once_with("x_migrate", "m")
+
+    def test_set_migrated_modules_to_remove(self):
+        """The pending removal is written with SQL, without the RPC session."""
+        result = subprocess.CompletedProcess([], 0, "", "")
+        migration_class = type(self.migration)
+        with patch.object(
+            migration_module, "run", return_value=result
+        ) as run_mock, patch.object(
+            migration_class, "_get_migrated_db_name", return_value="x_migrate"
+        ):
+            self.migration._set_migrated_modules_to_remove(["b", "a"])
+        command = run_mock.call_args[0][0][0]
+        self.assertIn("-d x_migrate", command)
+        self.assertIn("name IN ('a','b')", command)
+        self.assertIn("state = 'to remove'", command)
+        # only installed modules become removal candidates, and the driver
+        # must not wait forever for the row lock
+        self.assertIn("state = 'installed'", command)
+        self.assertIn("lock_timeout", command)
+        # invalid names are refused instead of being put in the shell string
+        with patch.object(migration_module, "run") as run_mock:
+            self.assertFalse(
+                self.migration._set_migrated_modules_to_remove(["a'; DROP TABLE x"])
+            )
+        run_mock.assert_not_called()
 
     def test_server_error_mentioning_timeout_is_not_a_client_timeout(self):
         """A PostgreSQL lock timeout is an answer, not a lost session."""
@@ -528,6 +577,77 @@ class MigrationGuardTest(SavepointCase):
         ):
             self.assertTrue(self.migration._remove_uninstalled_module_record(module))
         self.assertEqual((module.install_cancelled, module.unlinked), (0, 1))
+
+    def _run_uninstall_module(self, module, states, timeout=True):
+        """Run ``_uninstall_module`` with the RPC layer replaced by fakes."""
+        module_obj = Mock()
+        module_obj.search.return_value = [module.id]
+        module_obj.browse.return_value = module
+        client = Mock()
+        client.env = _FakeEnv("x_migrate")
+        client.env["ir.module.module"] = module_obj
+        migration_class = type(self.migration)
+        with patch.object(migration_class, "_wait_migrated_db_idle"), patch.object(
+            migration_class, "_wait_after_rpc_timeout", return_value=True
+        ) as wait_mock, patch.object(
+            migration_class, "odoo_connect", return_value=client
+        ), patch.object(
+            migration_class, "_get_migrated_module_state", side_effect=states
+        ), patch.object(
+            migration_class, "_remove_uninstalled_module_records"
+        ) as cleanup_mock, patch.object(migration_module.time, "sleep"):
+            self.migration._uninstall_module(
+                module, module_obj, {module.id}, "x_migrate", Mock()
+            )
+        return wait_mock, cleanup_mock
+
+    def test_uninstall_timeout_waits_for_the_finished_uninstallation(self):
+        """A timed-out uninstall that did finish only leaves the records."""
+        module = _FakeUninstallModule("old_a", "installed")
+        module.button_immediate_uninstall = Mock(
+            side_effect=socket.timeout("timed out")
+        )
+        wait_mock, cleanup_mock = self._run_uninstall_module(module, ["", ""])
+        wait_mock.assert_called_once_with("x_migrate", "old_a")
+        cleanup_mock.assert_called_once()
+        # no second RPC call: the uninstallation was already done
+        self.assertEqual(module.button_immediate_uninstall.call_count, 1)
+
+    def test_uninstall_timeout_retries_when_the_module_is_still_installed(self):
+        """A timed-out uninstall that did not finish is retried."""
+        module = _FakeUninstallModule("old_a", "installed")
+        module.button_immediate_uninstall = Mock(
+            side_effect=[socket.timeout("timed out"), None]
+        )
+        wait_mock, cleanup_mock = self._run_uninstall_module(
+            module, ["installed", "uninstalled"]
+        )
+        wait_mock.assert_called_once_with("x_migrate", "old_a")
+        self.assertEqual(module.button_immediate_uninstall.call_count, 2)
+        cleanup_mock.assert_called_once()
+
+    def test_restore_pending_removal_falls_back_to_sql(self):
+        """A dead session must not lose the removal candidate."""
+        module = _FakeUninstallModule("old_a", "installed")
+        module.write = Mock(side_effect=ConnectionResetError("reset"))
+        migration_class = type(self.migration)
+        with patch.object(
+            migration_class, "_get_migrated_module_state", return_value="installed"
+        ), patch.object(migration_class, "_set_migrated_modules_to_remove") as sql_mock:
+            self.migration._restore_pending_removal(module)
+        sql_mock.assert_called_once_with(["old_a"])
+
+    def test_busy_database_is_not_a_general_guard_error(self):
+        """Only the busy timeout leads to a force stop."""
+        migration_class = type(self.migration)
+        with patch.object(
+            migration_class,
+            "_wait_migrated_db_idle",
+            side_effect=UserError("a batch update is running"),
+        ), patch.object(migration_class, "_stop_after_rpc_timeout") as stop_mock:
+            with self.assertRaises(UserError):
+                self.migration._wait_after_rpc_timeout("x_migrate", "m")
+        stop_mock.assert_not_called()
 
     def test_migrated_module_state_is_read_with_sql(self):
         result = subprocess.CompletedProcess([], 0, "to remove\n", "")
