@@ -450,8 +450,8 @@ def _check_oca_authorship(pkg_name, release):
             release,
         )
     except Exception as e:
-        logger.error(
-            "Error verifying OCA authorship for %s release %s: %s",
+        logger.info(
+            "Unable to verify the OCA authorship of %s release %s: %s",
             pkg_name,
             release,
             e,

@@ -1866,7 +1866,7 @@ class OpenupgraderConfig(models.Model):
                     )
 
             if modules_to_install[name] == "not_installed":
-                logger.error(
+                logger.info(
                     "Module %s not installable for %s",
                     name,
                     self.name,
