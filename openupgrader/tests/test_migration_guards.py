@@ -1,5 +1,7 @@
+import os
 import socket
 import subprocess
+import tempfile
 import types
 from unittest.mock import Mock, patch
 
@@ -486,6 +488,48 @@ class MigrationGuardTest(SavepointCase):
             migration_module._is_rpc_transport_failure(
                 ConnectionResetError("connection reset by peer")
             )
+        )
+
+    def test_mail_purge_also_purges_attachments(self):
+        """The big ir_attachment delete is batched before the uninstallation too."""
+        migration_class = type(self.migration)
+        with patch.object(
+            migration_class, "_get_module_model_names", return_value=["old.model"]
+        ), patch.object(
+            migration_class, "_get_migrated_db_name", return_value="x_migrate"
+        ), patch.object(migration_class, "_wait_active_module_operation"), patch.object(
+            migration_class, "_purge_attachment_data"
+        ) as attachment_mock, patch.object(
+            migration_module,
+            "run",
+            return_value=subprocess.CompletedProcess([], 0, "0\n", ""),
+        ):
+            self.migration._purge_mail_data(["old_module"])
+        attachment_mock.assert_called_once_with(["old.model"])
+
+    def test_attachment_purge_is_batched_and_marks_the_filestore(self):
+        """Deleted attachment files go to the filestore GC checklist."""
+        batches = [
+            subprocess.CompletedProcess([], 0, "2|ab/aaa,cd/bbb\n", ""),
+            subprocess.CompletedProcess([], 0, "0|\n", ""),
+        ]
+        migration_class = type(self.migration)
+        with tempfile.TemporaryDirectory() as folder, patch.object(
+            migration_class, "_get_migrated_db_name", return_value="x_migrate"
+        ), patch.object(migration_module, "run", side_effect=batches) as run_mock:
+            self.migration.folder = folder
+            deleted = self.migration._purge_attachment_data(["fatturapa.attachment"])
+            checklist = os.path.join(
+                folder, "data_dir", "filestore", "x_migrate", "checklist"
+            )
+            self.assertTrue(os.path.isfile(os.path.join(checklist, "ab", "aaa")))
+            self.assertTrue(os.path.isfile(os.path.join(checklist, "cd", "bbb")))
+        self.assertEqual(deleted, 2)
+        command = run_mock.call_args_list[0][0][0][0]
+        self.assertIn("DELETE FROM ir_attachment", command)
+        self.assertIn("res_model IN ('fatturapa.attachment')", command)
+        self.assertIn(
+            "LIMIT %s" % migration_module.ATTACHMENT_PURGE_BATCH_SIZE, command
         )
 
     # -- uninstallation of the modules left in 'to remove' -------------------

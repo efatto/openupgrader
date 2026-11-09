@@ -129,6 +129,10 @@ MIGRATED_DB_MAX_WAIT = int(
 # _purge_mail_data).
 MAIL_PURGE_BATCH_SIZE = 5000
 MAIL_PURGE_MAX_BATCHES = 10000
+# Batched purge of the ir_attachment rows of the modules to uninstall (see
+# _purge_attachment_data).
+ATTACHMENT_PURGE_BATCH_SIZE = 5000
+ATTACHMENT_PURGE_MAX_BATCHES = 10000
 # Models of mail: Odoo skips their mail data on unlink, purging them would
 # delete the mail data of every model.
 MAIL_MODELS_NOT_PURGED = frozenset(
@@ -3094,7 +3098,7 @@ END
         ]
         if invalid_names:
             logger.error(
-                "Not purging the mail data of the models %s (invalid name or "
+                "Not purging the data of the models %s (invalid name or "
                 "model of the mail module itself).",
                 invalid_names,
             )
@@ -3102,15 +3106,16 @@ END
         return model_names
 
     def _purge_mail_data(self, module_names):
-        """Delete the mail data of the models of ``module_names`` in advance.
+        """Delete the mail and attachment data of the removed models early.
 
         Odoo 18 ``mail``'s ``IrModel.unlink`` deletes every ``mail_message``,
-        ``mail_followers`` and ``mail_activity`` row of the removed models in
-        one unbounded statement inside the uninstall transaction (hours on a
-        production database). Doing it here in committed batches makes the
-        uninstallation fast and keeps the progress.
+        ``mail_followers`` and ``mail_activity`` row of the removed models, and
+        every ``ir_attachment`` row, in one unbounded statement inside the
+        uninstall transaction (hours on a production database). Doing it here
+        in committed batches makes the uninstallation fast and keeps the
+        progress.
 
-        :return: the number of rows deleted.
+        :return: the number of mail rows deleted.
         """
         model_names = self._get_module_model_names(module_names)
         if not model_names:
@@ -3216,7 +3221,161 @@ END
             deleted_rows,
             " (incomplete, see the previous errors)" if failed else "",
         )
+        # same order as IrModel.unlink: the mail rows (and their attachment
+        # relations) go first, then the attachment rows
+        self._purge_attachment_data(model_names)
         return deleted_rows
+
+    def _purge_attachment_data(self, model_names):
+        """Delete the ``ir_attachment`` rows of ``model_names`` in advance.
+
+        ``IrModel.unlink`` also runs ``DELETE FROM ir_attachment WHERE
+        res_model in %s`` for the removed models, in the same transaction as
+        the uninstallation. A big e-invoice history makes that statement alone
+        run for hours, so the client RPC timeout (and the cron worker timeout)
+        fires while the server keeps working: the work is then rolled back and
+        the next attempt starts over.
+
+        The rows are deleted here in committed batches instead. Deleting them
+        with SQL bypasses ``ir.attachment._file_delete``, so the
+        ``store_fname`` of each deleted row is added to the migration
+        instance's filestore checklist exactly like ``_mark_for_gc`` does; the
+        garbage collector keeps a file still referenced by an attachment of
+        another model.
+
+        :return: the number of rows deleted.
+        """
+        if not model_names:
+            return 0
+        migrated_db = self._get_migrated_db_name()
+        conn_vars = self._get_db_connection_variables()
+        models = ",".join(_sql_quote(name) for name in model_names)
+        logger.info(
+            "Purging the attachments of the models of the modules to uninstall "
+            "%s (%s models, %s rows per commit).",
+            model_names,
+            len(model_names),
+            ATTACHMENT_PURGE_BATCH_SIZE,
+        )
+        deleted_rows = 0
+        failed = False
+        batches = 0
+        while True:
+            batches += 1
+            if batches > ATTACHMENT_PURGE_MAX_BATCHES:
+                logger.error(
+                    "Stopped purging ir_attachment for models %s after %s "
+                    "batches: rows are still being inserted?",
+                    model_names,
+                    batches,
+                )
+                failed = True
+                break
+            sql_command = (
+                "SET lock_timeout = '60s'; "
+                "WITH batch AS ("
+                "SELECT id, store_fname FROM ir_attachment "
+                f"WHERE res_model IN ({models}) "
+                f"LIMIT {ATTACHMENT_PURGE_BATCH_SIZE}), "
+                "deleted AS ("
+                "DELETE FROM ir_attachment a USING batch b "
+                "WHERE a.id = b.id RETURNING b.store_fname) "
+                "SELECT count(*), coalesce(string_agg(store_fname, ','), '') "
+                "FROM deleted;"
+            )
+            result = run(
+                [
+                    f"{conn_vars} && psql -v ON_ERROR_STOP=1 "
+                    f'-d {migrated_db} -t -A -c "{sql_command}"'
+                ],
+                shell=True,
+                stdout=PIPE,
+                stderr=PIPE,
+                universal_newlines=True,
+            )
+            if result.returncode:
+                logger.error(
+                    "Unable to purge ir_attachment for models %s: %s. The "
+                    "uninstallation will delete the remaining rows in one "
+                    "statement.",
+                    model_names,
+                    (result.stderr or result.stdout or "").strip(),
+                )
+                failed = True
+                break
+            output = (result.stdout or "").strip().splitlines()
+            try:
+                deleted, store_fnames = output[-1].split("|", 1)
+                deleted = int(deleted)
+            except (IndexError, ValueError):
+                logger.error(
+                    "Unexpected output purging ir_attachment for models %s: %s",
+                    model_names,
+                    (result.stdout or "").strip(),
+                )
+                failed = True
+                break
+            if not deleted:
+                break
+            deleted_rows += deleted
+            self._mark_attachments_for_gc(
+                [fname for fname in store_fnames.split(",") if fname]
+            )
+            logger.info(
+                "Purged %s ir_attachment row(s) for modules %s.",
+                deleted,
+                model_names,
+            )
+        logger.info(
+            "Attachment purge for models %s done: %s row(s) deleted%s.",
+            model_names,
+            deleted_rows,
+            " (incomplete, see the previous errors)" if failed else "",
+        )
+        return deleted_rows
+
+    def _mark_attachments_for_gc(self, store_fnames):
+        """Add ``store_fnames`` to the migrated instance filestore checklist.
+
+        Mirrors ``ir.attachment._mark_for_gc``: the real file is removed later
+        by the garbage collector, which also checks that no other attachment
+        still references it. The checklist lives in the data dir that
+        ``start_odoo`` passes to the migration instance.
+        """
+        checklist_dir = os.path.abspath(
+            os.path.join(
+                self.folder,
+                "data_dir",
+                "filestore",
+                self._get_migrated_db_name(),
+                "checklist",
+            )
+        )
+        for store_fname in store_fnames:
+            # same normalization as ir.attachment._mark_for_gc
+            fname = re.sub(r"[.]", "", store_fname).strip("/\\")
+            if not fname:
+                continue
+            full_path = os.path.abspath(os.path.join(checklist_dir, fname))
+            if os.path.commonpath([checklist_dir, full_path]) != checklist_dir:
+                logger.warning(
+                    "Not marking attachment file %s for garbage collection: "
+                    "invalid store name.",
+                    store_fname,
+                )
+                continue
+            try:
+                dirname = os.path.dirname(full_path)
+                if not os.path.isdir(dirname):
+                    os.makedirs(dirname, exist_ok=True)
+                with open(full_path, "ab"):
+                    pass
+            except OSError:
+                logger.warning(
+                    "Unable to mark attachment file %s for garbage collection.",
+                    full_path,
+                    exc_info=True,
+                )
 
     def _uninstall_module(
         self, module, module_obj, cleanup_ids, migrated_db, config_id
