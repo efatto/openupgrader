@@ -114,26 +114,23 @@ def _is_rpc_transport_failure(exc):
 MIGRATED_DB_BUSY_TIMEOUT = 3600
 MIGRATED_DB_BUSY_POLL_INTERVAL = 5
 
-# Seconds to wait for the migration instance to listen on its RPC port after a
-# start (a big database takes longer than the fixed 10 s it used to wait).
+# Seconds to wait for the migration instance to listen on its RPC port.
 MIGRATION_INSTANCE_START_TIMEOUT = int(
     os.environ.get("OPENUPGRADER_START_TIMEOUT") or 300
 )
 
-# A module operation that is still running after the RPC timeout is waited for
-# as long as it makes progress, but never longer than this (seconds; 24 h by
-# default, ``OPENUPGRADER_MIGRATED_DB_MAX_WAIT``).
+# Longest wait for a module operation still running after the RPC timeout
+# (``OPENUPGRADER_MIGRATED_DB_MAX_WAIT``, seconds).
 MIGRATED_DB_MAX_WAIT = int(
     os.environ.get("OPENUPGRADER_MIGRATED_DB_MAX_WAIT") or 24 * 3600
 )
 
-# Rows deleted per committed batch when the mail data of the models of a module
-# to uninstall is purged in advance (see _purge_mail_data).
+# Batched purge of the mail data of the modules to uninstall (see
+# _purge_mail_data).
 MAIL_PURGE_BATCH_SIZE = 5000
-# Safety net against an endless purge loop (rows inserted concurrently).
 MAIL_PURGE_MAX_BATCHES = 10000
-# The models of the ``mail`` module itself: Odoo skips their mail data when it
-# unlinks them, and purging them would delete the mail data of all models.
+# Models of mail: Odoo skips their mail data on unlink, purging them would
+# delete the mail data of every model.
 MAIL_MODELS_NOT_PURGED = frozenset(
     ("mail.activity", "mail.activity.type", "mail.followers", "mail.message")
 )
@@ -644,14 +641,10 @@ class OpenupgraderMigration(models.Model):
             ) from e
 
     def _get_migrated_db_open_transactions(self, migrated_db):
-        """Return the open transactions of ``migrated_db``.
+        """Return the open transactions of ``migrated_db`` as dicts.
 
-        Each item is a dict with ``pid``, ``state``, ``wait_event_type``,
-        ``wait_event``, ``xact_age`` and ``state_age`` (seconds) and ``query``
-        (truncated). The probe runs against the ``postgres`` database, like
-        ``_count_migrated_db_open_transactions``, and fails closed: an
-        unreadable or unparsable answer raises instead of being taken for
-        "no open transaction".
+        Runs against the ``postgres`` database and fails closed: an unreadable
+        or unparsable answer raises instead of meaning "no open transaction".
         """
         conn_vars = self._get_db_connection_variables()
         # chr(1) cannot appear in a query text: no psql -F separator to quote
@@ -731,13 +724,7 @@ class OpenupgraderMigration(models.Model):
 
     @staticmethod
     def _transaction_is_working(transaction):
-        """Tell whether a transaction is making progress.
-
-        ``active`` with a lock, timer or client wait is not: the statement is
-        blocked (``Client`` is a client that stopped reading, i.e. a stuck
-        worker), while a running statement may wait for I/O or a lightweight
-        lock it is going to get.
-        """
+        """Tell whether a transaction is making progress (not blocked)."""
         return transaction["state"] == "active" and transaction[
             "wait_event_type"
         ] not in (
@@ -749,18 +736,10 @@ class OpenupgraderMigration(models.Model):
     def _wait_active_module_operation(self, migrated_db, module_name=None):
         """Wait for a module operation that outlived the RPC timeout.
 
-        A client timeout stops nothing on the migration instance: the
-        ``mail_message`` delete of a module uninstallation can run for hours.
-        Waiting for it preserves the work, so the wait is not bound to the
-        timeout of a single statement: it ends when the database is idle, and
-        gives up only when *every* open transaction has been not working for
-        ``MIGRATED_DB_BUSY_TIMEOUT`` (an abandoned request, ``idle in
-        transaction``) or after the absolute ``MIGRATED_DB_MAX_WAIT``.
-
-        The stall test uses ``state_age`` (``now() - state_change``), not the
-        sampled state: a healthy uninstall is ``idle in transaction`` between
-        two short statements for a few seconds only, so sampling could
-        otherwise take it for a stuck one.
+        A client timeout stops nothing: a big delete can run for hours, so wait
+        while a session is active, and give up only when every transaction has
+        been not working for ``MIGRATED_DB_BUSY_TIMEOUT`` or after
+        ``MIGRATED_DB_MAX_WAIT``.
         """
         self._check_no_migration_batch_running()
         started = time.time()
@@ -820,10 +799,8 @@ class OpenupgraderMigration(models.Model):
         """Wait until no module operation runs on ``migrated_db``.
 
         A previous RPC whose driver request was killed or timed out keeps
-        running on the migrated instance; the retry must wait for it instead
-        of starting a second concurrent registry update on the same database.
-        See ``_wait_active_module_operation`` for the wait rules: a running
-        statement is never interrupted, an abandoned transaction is.
+        running on the migrated instance: wait for it instead of starting a
+        second concurrent registry update.
         """
         self._wait_active_module_operation(migrated_db)
 
@@ -1263,10 +1240,7 @@ class OpenupgraderMigration(models.Model):
     def _wait_for_odoo_started(self, http_port, timeout=None):
         """Wait until the migration instance listens on its RPC port.
 
-        Odoo takes longer than a fixed handful of seconds to load a big
-        database, and an RPC call made too early makes ``odoo_connect`` restart
-        the instance (or refuse it, when the port is still bound by the one it
-        just stopped).
+        An RPC call made too early makes ``odoo_connect`` restart the instance.
         """
         if timeout is None:
             timeout = MIGRATION_INSTANCE_START_TIMEOUT
@@ -1936,11 +1910,8 @@ END
     def _get_pending_modules_to_uninstall(self):
         """Return the modules of the migrated DB left in ``to remove``.
 
-        Only ``to remove`` modules are uninstall candidates. Modules left in
-        ``to upgrade``/``to install`` are the leftovers of an interrupted
-        update: they must be updated again, not uninstalled, so they are only
-        reported (the previous implementation set them to ``to remove`` too and
-        a single interrupted update could uninstall hundreds of modules).
+        ``to upgrade``/``to install`` leftovers of an interrupted update are
+        only reported: they must be updated again, not uninstalled.
         """
         found_modules_by_state = self._verify_module_states()
         leftovers = sorted(
@@ -1992,15 +1963,9 @@ END
     def uninstall_pending_modules(self):
         """Uninstall the modules left in ``to remove`` with Odoo's mechanism.
 
-        The migration instance is started normally (no ``-u all``) and every
-        module is uninstalled with ``button_immediate_uninstall``, exactly like
-        the Odoo UI does: it sets the module and its dependents to ``to remove``
-        and reloads the registry once. No full update is needed, and running one
-        here is not only slow (minutes instead of seconds on a real database) but
-        also wrong: OpenUpgrade patches ``update_list()`` to set every
-        ``auto_install`` module whose dependencies are installed back to
-        ``to install``, so a module without target-version code is re-added at
-        every update and never removed.
+        ``button_immediate_uninstall`` per module, like the Odoo UI: no
+        ``-u all`` (slow, and OpenUpgrade's patched ``update_list()`` would put
+        the modules without target-version code back to ``to install``).
         """
         self._lock_migrated_db()
         pending_modules = self.get_pending_modules()
@@ -2020,12 +1985,7 @@ END
             sorted(pending_modules),
         )
         try:
-            # Odoo uninstalls every 'to remove' module in the registry reload of
-            # the first uninstallation, deleting the mail data of their models in
-            # one unbounded statement each: purge the rows of all of them in
-            # committed batches first (they are all scheduled for removal, so
-            # they would be deleted anyway, but this way the progress is not lost
-            # when the RPC times out)
+            # all the 'to remove' modules are uninstalled in the same reload
             self._purge_mail_data(sorted(pending_modules))
             self.start_odoo(config_id)
             for module_name in sorted(pending_modules):
@@ -2911,10 +2871,7 @@ END
                 if module.state in ("installed", "to upgrade", "to remove")
             }
         try:
-            # the uninstallation deletes the mail data of the removed models in
-            # one unbounded statement: purge it in committed batches first (only
-            # for the modules that Odoo is going to uninstall, never for one that
-            # stays installed)
+            # only the modules that Odoo is going to uninstall are purged
             if purgable_module_names:
                 self._purge_mail_data(sorted(purgable_module_names))
             for module_name in sorted(modules_to_uninstall):
@@ -3051,16 +3008,10 @@ END
     def _remove_uninstalled_module_record(self, module):
         """Delete the ``ir.module.module`` row of a just uninstalled module.
 
-        The registry reloaded at the end of ``button_immediate_uninstall`` runs
-        OpenUpgrade's patched ``update_list()``: every module marked
-        ``auto_install`` whose dependencies are installed is set back to
-        ``to install``, even when its target-version code is missing (Odoo then
-        skips it as not installable and leaves an inconsistent state). That is
-        the only state that is cancelled here: the uninstallation is already
-        done, so the pending install must not survive and block the deletion of
-        the record. Any other unexpected state (a module really reinstalled, a
-        pending upgrade, ...) is kept and reported, so the database is not
-        silently left without its data.
+        OpenUpgrade's patched ``update_list()`` puts an ``auto_install`` module
+        back to ``to install`` after the reload; Odoo then refuses to unlink it.
+        Cancel that state and delete the row; any other unexpected state is kept
+        and reported.
         """
         module_name = module.name
         state = self._get_migrated_module_state(module_name)
@@ -3080,12 +3031,7 @@ END
         return True
 
     def _remove_uninstalled_module_records(self, modules):
-        """Delete the module records of the modules uninstalled by one reload.
-
-        ``button_immediate_uninstall`` sets to ``to remove`` and uninstalls the
-        module, its downstream dependencies and the modules already scheduled
-        for removal, all in the same registry reload.
-        """
+        """Delete the records of the modules uninstalled by one reload."""
         removed_modules = []
         for module in modules:
             if self._remove_uninstalled_module_record(module):
@@ -3094,15 +3040,10 @@ END
         return removed_modules
 
     def _get_module_model_names(self, module_names):
-        """Return the technical models that Odoo removes with ``module_names``.
+        """Return the models that Odoo removes with ``module_names``.
 
-        Mirrors ``ir.model.data._module_data_uninstall``: the ``ir.model``
-        records referenced by the ``ir_model_data`` rows of the modules, minus
-        the models that still have an ``ir_model_data`` row of another module
-        (a model defined by a removed module but extended by an installed one
-        is kept by Odoo, so its mail data must be kept too), minus the models
-        of ``mail`` itself (Odoo skips their mail data, purging them would
-        delete the mail data of every model).
+        Mirrors ``ir_model.data._module_data_uninstall``: models still
+        referenced by another module are kept by Odoo (and skipped here).
         """
         module_names = sorted(
             name
@@ -3163,15 +3104,11 @@ END
     def _purge_mail_data(self, module_names):
         """Delete the mail data of the models of ``module_names`` in advance.
 
-        Odoo 18 uninstalls a module by unlinking its ``ir.model`` records, and
-        ``mail``'s ``IrModel.unlink`` deletes *all* the ``mail_message``,
-        ``mail_followers`` and ``mail_activity`` rows of those models inside the
-        uninstall transaction, without limit and without logging anything: on a
-        production database that single statement runs for hours, the RPC client
-        times out and the operation either blocks the driver or is killed and
-        restarted from scratch. Deleting the same rows here, in small committed
-        batches, makes the uninstallation fast (the unbounded ``DELETE`` finds
-        nothing left) and keeps the progress if it is interrupted.
+        Odoo 18 ``mail``'s ``IrModel.unlink`` deletes every ``mail_message``,
+        ``mail_followers`` and ``mail_activity`` row of the removed models in
+        one unbounded statement inside the uninstall transaction (hours on a
+        production database). Doing it here in committed batches makes the
+        uninstallation fast and keeps the progress.
 
         :return: the number of rows deleted.
         """
@@ -3286,8 +3223,7 @@ END
     ):
         """Uninstall one module, retrying a failed RPC call.
 
-        ``cleanup_ids`` are the modules whose records are deleted once the
-        uninstallation reload is done.
+        ``cleanup_ids``: modules whose records are deleted after the reload.
         """
         module_name = module.name
         try_number = 0
