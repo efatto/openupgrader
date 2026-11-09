@@ -291,8 +291,12 @@ class MigrationGuardTest(SavepointCase):
         ) as connect_mock, patch.object(
             migration_class, "_get_migrated_db_name", return_value="x_migrate"
         ), patch.object(migration_class, "_wait_migrated_db_idle"), patch.object(
-            migration_class, "button_stop_odoo"
-        ), patch.object(
+            # the probe would need a real PostgreSQL connection: x_migrate is
+            # empty, so the timed-out operation has nothing left to wait for
+            migration_class,
+            "_get_migrated_db_open_transactions",
+            return_value=[],
+        ), patch.object(migration_class, "button_stop_odoo"), patch.object(
             migration_class, "_terminate_migrated_db_backends"
         ) as terminate_mock:
             result = self.migration.auto_install_modules(config)
