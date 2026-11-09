@@ -2545,7 +2545,7 @@ END
             if (result.stdout or "").strip():
                 logger.info("SQL command result: %s", result.stdout.strip())
             if result.returncode:
-                logger.error(
+                logger.info(
                     "SQL command failed (exit code %s): %s\n%s",
                     result.returncode,
                     sql_command.name,
