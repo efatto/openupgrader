@@ -114,6 +114,30 @@ def _is_rpc_transport_failure(exc):
 MIGRATED_DB_BUSY_TIMEOUT = 3600
 MIGRATED_DB_BUSY_POLL_INTERVAL = 5
 
+# Seconds to wait for the migration instance to listen on its RPC port after a
+# start (a big database takes longer than the fixed 10 s it used to wait).
+MIGRATION_INSTANCE_START_TIMEOUT = int(
+    os.environ.get("OPENUPGRADER_START_TIMEOUT") or 300
+)
+
+# A module operation that is still running after the RPC timeout is waited for
+# as long as it makes progress, but never longer than this (seconds; 24 h by
+# default, ``OPENUPGRADER_MIGRATED_DB_MAX_WAIT``).
+MIGRATED_DB_MAX_WAIT = int(
+    os.environ.get("OPENUPGRADER_MIGRATED_DB_MAX_WAIT") or 24 * 3600
+)
+
+# Rows deleted per committed batch when the mail data of the models of a module
+# to uninstall is purged in advance (see _purge_mail_data).
+MAIL_PURGE_BATCH_SIZE = 5000
+# Safety net against an endless purge loop (rows inserted concurrently).
+MAIL_PURGE_MAX_BATCHES = 10000
+# The models of the ``mail`` module itself: Odoo skips their mail data when it
+# unlinks them, and purging them would delete the mail data of all models.
+MAIL_MODELS_NOT_PURGED = frozenset(
+    ("mail.activity", "mail.activity.type", "mail.followers", "mail.message")
+)
+
 
 class OpenupgraderMigration(models.Model):
     _name = "openupgrader.migration"
@@ -619,35 +643,189 @@ class OpenupgraderMigration(models.Model):
                 % {"db": migrated_db}
             ) from e
 
+    def _get_migrated_db_open_transactions(self, migrated_db):
+        """Return the open transactions of ``migrated_db``.
+
+        Each item is a dict with ``pid``, ``state``, ``wait_event_type``,
+        ``wait_event``, ``xact_age`` and ``state_age`` (seconds) and ``query``
+        (truncated). The probe runs against the ``postgres`` database, like
+        ``_count_migrated_db_open_transactions``, and fails closed: an
+        unreadable or unparsable answer raises instead of being taken for
+        "no open transaction".
+        """
+        conn_vars = self._get_db_connection_variables()
+        # chr(1) cannot appear in a query text: no psql -F separator to quote
+        # (and nothing for the shell to interpret)
+        separator = "chr(1)"
+        sql = (
+            "SELECT pid || {sep} || coalesce(state, '') || {sep} || "
+            "coalesce(wait_event_type, '') || {sep} || coalesce(wait_event, '') "
+            "|| {sep} || coalesce(extract(epoch from now() - xact_start)::bigint, "
+            "0) || {sep} || coalesce(extract(epoch from now() - state_change)::"
+            "bigint, 0) || {sep} || left(regexp_replace(coalesce(query, ''), '\\s+', "
+            "' ', 'g'), 120) "
+            "FROM pg_stat_activity "
+            "WHERE datname = {} "
+            "AND pid <> pg_backend_pid() "
+            "AND xact_start IS NOT NULL "
+            "AND query NOT LIKE 'autovacuum:%' "
+            "ORDER BY xact_start"
+        ).format(_sql_quote(migrated_db), sep=separator)
+        result = run(
+            [f'{conn_vars} && psql -d postgres -t -A -c "{sql}"'],
+            shell=True,
+            stdout=PIPE,
+            stderr=PIPE,
+            universal_newlines=True,
+        )
+        if result.returncode:
+            raise UserError(
+                _(
+                    "Unable to inspect the open transactions of the migrated "
+                    "database %(db)s: %(error)s"
+                )
+                % {
+                    "db": migrated_db,
+                    "error": (result.stderr or result.stdout or "").strip(),
+                }
+            )
+        transactions = []
+        # split on newlines only: str.splitlines() also splits on the control
+        # characters a query text may contain
+        for line in (result.stdout or "").split("\n"):
+            if not line.strip():
+                continue
+            fields = line.split("\x01")
+            try:
+                (
+                    pid,
+                    state,
+                    wait_event_type,
+                    wait_event,
+                    xact_age,
+                    state_age,
+                    query,
+                ) = fields
+                xact_age = int(xact_age)
+                state_age = int(state_age)
+            except ValueError as e:
+                raise UserError(
+                    _(
+                        "Unable to read the open transactions of the migrated "
+                        "database %(db)s: unexpected output %(line)r"
+                    )
+                    % {"db": migrated_db, "line": line[:200]}
+                ) from e
+            transactions.append(
+                {
+                    "pid": pid,
+                    "state": state,
+                    "wait_event_type": wait_event_type,
+                    "wait_event": wait_event,
+                    "xact_age": xact_age,
+                    "state_age": state_age,
+                    "query": query,
+                }
+            )
+        return transactions
+
+    @staticmethod
+    def _transaction_is_working(transaction):
+        """Tell whether a transaction is making progress.
+
+        ``active`` with a lock, timer or client wait is not: the statement is
+        blocked (``Client`` is a client that stopped reading, i.e. a stuck
+        worker), while a running statement may wait for I/O or a lightweight
+        lock it is going to get.
+        """
+        return transaction["state"] == "active" and transaction[
+            "wait_event_type"
+        ] not in (
+            "Client",
+            "Lock",
+            "Timeout",
+        )
+
+    def _wait_active_module_operation(self, migrated_db, module_name=None):
+        """Wait for a module operation that outlived the RPC timeout.
+
+        A client timeout stops nothing on the migration instance: the
+        ``mail_message`` delete of a module uninstallation can run for hours.
+        Waiting for it preserves the work, so the wait is not bound to the
+        timeout of a single statement: it ends when the database is idle, and
+        gives up only when *every* open transaction has been not working for
+        ``MIGRATED_DB_BUSY_TIMEOUT`` (an abandoned request, ``idle in
+        transaction``) or after the absolute ``MIGRATED_DB_MAX_WAIT``.
+
+        The stall test uses ``state_age`` (``now() - state_change``), not the
+        sampled state: a healthy uninstall is ``idle in transaction`` between
+        two short statements for a few seconds only, so sampling could
+        otherwise take it for a stuck one.
+        """
+        self._check_no_migration_batch_running()
+        started = time.time()
+        while True:
+            transactions = self._get_migrated_db_open_transactions(migrated_db)
+            if not transactions:
+                return
+            working = [
+                transaction
+                for transaction in transactions
+                if self._transaction_is_working(transaction)
+            ]
+            if (
+                not working
+                and min(transaction["state_age"] for transaction in transactions)
+                >= MIGRATED_DB_BUSY_TIMEOUT
+            ):
+                raise MigratedDbBusyError(
+                    _(
+                        "%(count)s open transactions have been idle on the "
+                        "migrated database %(db)s for more than %(timeout)s "
+                        "seconds: refusing to start a new module operation "
+                        "concurrently."
+                    )
+                    % {
+                        "count": len(transactions),
+                        "db": migrated_db,
+                        "timeout": MIGRATED_DB_BUSY_TIMEOUT,
+                    }
+                )
+            if time.time() - started >= MIGRATED_DB_MAX_WAIT:
+                raise MigratedDbBusyError(
+                    _(
+                        "The module operation on the migrated database %(db)s "
+                        "has been running for more than %(timeout)s seconds: "
+                        "refusing to wait any longer."
+                    )
+                    % {"db": migrated_db, "timeout": MIGRATED_DB_MAX_WAIT}
+                )
+            for transaction in transactions:
+                logger.info(
+                    "Waiting for the module operation%s on %s: pid %s state=%s "
+                    "wait=%s/%s xact_age=%ss state_age=%ss query=%s",
+                    " on %s" % module_name if module_name else "",
+                    migrated_db,
+                    transaction["pid"],
+                    transaction["state"],
+                    transaction["wait_event_type"] or "-",
+                    transaction["wait_event"] or "-",
+                    transaction["xact_age"],
+                    transaction["state_age"],
+                    transaction["query"],
+                )
+            time.sleep(MIGRATED_DB_BUSY_POLL_INTERVAL)
+
     def _wait_migrated_db_idle(self, migrated_db):
         """Wait until no module operation runs on ``migrated_db``.
 
         A previous RPC whose driver request was killed or timed out keeps
         running on the migrated instance; the retry must wait for it instead
         of starting a second concurrent registry update on the same database.
+        See ``_wait_active_module_operation`` for the wait rules: a running
+        statement is never interrupted, an abandoned transaction is.
         """
-        self._check_no_migration_batch_running()
-        deadline = time.time() + MIGRATED_DB_BUSY_TIMEOUT
-        while True:
-            running = self._count_migrated_db_open_transactions(migrated_db)
-            if not running:
-                return
-            if time.time() >= deadline:
-                raise MigratedDbBusyError(
-                    _(
-                        "%(count)s open transactions are still running on the "
-                        "migrated database %(db)s. Refusing to start a new "
-                        "module operation concurrently."
-                    )
-                    % {"count": running, "db": migrated_db}
-                )
-            logger.info(
-                "Waiting for %s open transactions on %s to finish before "
-                "running a module operation.",
-                running,
-                migrated_db,
-            )
-            time.sleep(MIGRATED_DB_BUSY_POLL_INTERVAL)
+        self._wait_active_module_operation(migrated_db)
 
     def _terminate_migrated_db_backends(self, migrated_db):
         """Terminate the sessions still connected to ``migrated_db``."""
@@ -705,7 +883,7 @@ class OpenupgraderMigration(models.Model):
             migrated_db,
         )
         try:
-            self._wait_migrated_db_idle(migrated_db)
+            self._wait_active_module_operation(migrated_db, module_name)
         except MigratedDbBusyError:
             # only a database that stayed busy: the operation is stuck, the
             # other guard errors (running -u all, unreadable pg_stat_activity)
@@ -1079,9 +1257,37 @@ class OpenupgraderMigration(models.Model):
             # extra command presumes Odoo will stop automatically like update
             process.wait()
         if not update:
-            time.sleep(10)
-            self.button_check_odoo_migrated_running_state()
+            self._wait_for_odoo_started(http_port)
         time.sleep(2)
+
+    def _wait_for_odoo_started(self, http_port, timeout=None):
+        """Wait until the migration instance listens on its RPC port.
+
+        Odoo takes longer than a fixed handful of seconds to load a big
+        database, and an RPC call made too early makes ``odoo_connect`` restart
+        the instance (or refuse it, when the port is still bound by the one it
+        just stopped).
+        """
+        if timeout is None:
+            timeout = MIGRATION_INSTANCE_START_TIMEOUT
+        deadline = time.time() + timeout
+        while True:
+            if _get_odoo_process_state(
+                self.env.cr.dbname
+            ) == "running" and _get_pid_listening_on_port(http_port):
+                self.odoo_running_state = "running"
+                return True
+            if time.time() >= deadline:
+                logger.warning(
+                    "The migration instance of %s did not listen on port %s "
+                    "within %s seconds.",
+                    self._get_migrated_db_name(),
+                    http_port,
+                    timeout,
+                )
+                self.button_check_odoo_migrated_running_state()
+                return False
+            time.sleep(2)
 
     def button_stop_odoo(self, force=False):
         """Stop the migration instance.
@@ -1814,6 +2020,13 @@ END
             sorted(pending_modules),
         )
         try:
+            # Odoo uninstalls every 'to remove' module in the registry reload of
+            # the first uninstallation, deleting the mail data of their models in
+            # one unbounded statement each: purge the rows of all of them in
+            # committed batches first (they are all scheduled for removal, so
+            # they would be deleted anyway, but this way the progress is not lost
+            # when the RPC times out)
+            self._purge_mail_data(sorted(pending_modules))
             self.start_odoo(config_id)
             for module_name in sorted(pending_modules):
                 try:
@@ -2662,6 +2875,11 @@ END
         self.start_odoo(config_id)
         odoo_client = self.odoo_connect(config_id)
         module_obj = odoo_client.env["ir.module.module"] if odoo_client else None
+        # only the modules that Odoo really uninstalls are purged: a missing or
+        # uninstalled module is skipped, and a 'to install' one is refused by
+        # button_uninstall (the purge must never delete data of a module that
+        # stays installed)
+        purgable_module_names = set()
         if module_obj and modules_to_uninstall:
             found_module_ids = module_obj.search(
                 [("name", "in", sorted(modules_to_uninstall))]
@@ -2687,23 +2905,35 @@ END
                     sorted(already_uninstalled),
                 )
             modules_to_uninstall = found_module_names - already_uninstalled
-        for module_name in sorted(modules_to_uninstall):
-            try:
-                self.install_uninstall_module(module_name, config_id, install=False)
-            except UserError:
-                raise
-            except Exception as e:
-                if _is_rpc_timeout(e):
-                    self._abort_on_rpc_timeout(
-                        self._get_migrated_db_name(), module_name
+            purgable_module_names = {
+                module.name
+                for module in found_modules
+                if module.state in ("installed", "to upgrade", "to remove")
+            }
+        try:
+            # the uninstallation deletes the mail data of the removed models in
+            # one unbounded statement: purge it in committed batches first (only
+            # for the modules that Odoo is going to uninstall, never for one that
+            # stays installed)
+            if purgable_module_names:
+                self._purge_mail_data(sorted(purgable_module_names))
+            for module_name in sorted(modules_to_uninstall):
+                try:
+                    self.install_uninstall_module(module_name, config_id, install=False)
+                except UserError:
+                    raise
+                except Exception as e:
+                    if _is_rpc_timeout(e):
+                        self._abort_on_rpc_timeout(
+                            self._get_migrated_db_name(), module_name
+                        )
+                    logger.exception(
+                        "Unable to uninstall module %s in version %s",
+                        module_name,
+                        config_id.name,
                     )
-                logger.exception(
-                    "Unable to uninstall module %s in version %s",
-                    module_name,
-                    config_id.name,
-                )
-
-        self.button_stop_odoo()
+        finally:
+            self.button_stop_odoo()
 
     def remove_not_installed_module_views(self):
         self._lock_migrated_db()
@@ -2862,6 +3092,194 @@ END
                 removed_modules.append(module.name)
         logger.info("Modules uninstalled: %s", sorted(removed_modules))
         return removed_modules
+
+    def _get_module_model_names(self, module_names):
+        """Return the technical models that Odoo removes with ``module_names``.
+
+        Mirrors ``ir.model.data._module_data_uninstall``: the ``ir.model``
+        records referenced by the ``ir_model_data`` rows of the modules, minus
+        the models that still have an ``ir_model_data`` row of another module
+        (a model defined by a removed module but extended by an installed one
+        is kept by Odoo, so its mail data must be kept too), minus the models
+        of ``mail`` itself (Odoo skips their mail data, purging them would
+        delete the mail data of every model).
+        """
+        module_names = sorted(
+            name
+            for name in set(module_names or [])
+            if re.fullmatch(r"[a-zA-Z0-9_.\-]+", name or "")
+        )
+        if not module_names:
+            return []
+        in_clause = ",".join(_sql_quote(name) for name in module_names)
+        sql_command = (
+            "SELECT DISTINCT im.model FROM ir_model_data d "
+            "JOIN ir_model im ON im.id = d.res_id "
+            f"WHERE d.model = 'ir.model' AND d.module IN ({in_clause}) "
+            "AND NOT EXISTS ("
+            "SELECT 1 FROM ir_model_data o "
+            "WHERE o.model = 'ir.model' AND o.res_id = d.res_id "
+            f"AND o.module NOT IN ({in_clause}) "
+            "AND o.module <> '__cloc_exclude__')"
+            ";"
+        )
+        conn_vars = self._get_db_connection_variables()
+        result = run(
+            [
+                f"{conn_vars} && psql -d {self._get_migrated_db_name()} -t -A "
+                f'-c "{sql_command}"'
+            ],
+            shell=True,
+            stdout=PIPE,
+            stderr=PIPE,
+            universal_newlines=True,
+        )
+        if result.returncode:
+            logger.error(
+                "Unable to list the models of the modules to uninstall %s: %s",
+                module_names,
+                (result.stderr or result.stdout or "").strip(),
+            )
+            return []
+        model_names = [
+            line.strip() for line in (result.stdout or "").splitlines() if line.strip()
+        ]
+        # the names are embedded in a psql command line: never trust the table
+        invalid_names = [
+            name
+            for name in model_names
+            if not re.fullmatch(r"[a-zA-Z0-9_.]+", name)
+            or name in MAIL_MODELS_NOT_PURGED
+        ]
+        if invalid_names:
+            logger.error(
+                "Not purging the mail data of the models %s (invalid name or "
+                "model of the mail module itself).",
+                invalid_names,
+            )
+            model_names = [name for name in model_names if name not in invalid_names]
+        return model_names
+
+    def _purge_mail_data(self, module_names):
+        """Delete the mail data of the models of ``module_names`` in advance.
+
+        Odoo 18 uninstalls a module by unlinking its ``ir.model`` records, and
+        ``mail``'s ``IrModel.unlink`` deletes *all* the ``mail_message``,
+        ``mail_followers`` and ``mail_activity`` rows of those models inside the
+        uninstall transaction, without limit and without logging anything: on a
+        production database that single statement runs for hours, the RPC client
+        times out and the operation either blocks the driver or is killed and
+        restarted from scratch. Deleting the same rows here, in small committed
+        batches, makes the uninstallation fast (the unbounded ``DELETE`` finds
+        nothing left) and keeps the progress if it is interrupted.
+
+        :return: the number of rows deleted.
+        """
+        model_names = self._get_module_model_names(module_names)
+        if not model_names:
+            return 0
+        migrated_db = self._get_migrated_db_name()
+        # an operation left running by a previous attempt (typically the very
+        # delete being purged) must finish first: wait for it while it is active
+        self._wait_active_module_operation(migrated_db)
+        conn_vars = self._get_db_connection_variables()
+        models = ",".join(_sql_quote(name) for name in model_names)
+        statements = [
+            (
+                "mail_activity",
+                "DELETE FROM mail_activity WHERE id IN ("
+                "SELECT id FROM mail_activity WHERE res_model_id IN "
+                f"(SELECT id FROM ir_model WHERE model IN ({models})) "
+                f"LIMIT {MAIL_PURGE_BATCH_SIZE})",
+            ),
+            (
+                "mail_followers",
+                "DELETE FROM mail_followers WHERE id IN ("
+                f"SELECT id FROM mail_followers WHERE res_model IN ({models}) "
+                f"LIMIT {MAIL_PURGE_BATCH_SIZE})",
+            ),
+            (
+                "mail_message",
+                "DELETE FROM mail_message WHERE id IN ("
+                f"SELECT id FROM mail_message WHERE model IN ({models}) "
+                f"LIMIT {MAIL_PURGE_BATCH_SIZE})",
+            ),
+        ]
+        logger.info(
+            "Purging the mail data of the models of the modules to uninstall "
+            "%s (%s models, %s rows per commit).",
+            module_names,
+            len(model_names),
+            MAIL_PURGE_BATCH_SIZE,
+        )
+        deleted_rows = 0
+        failed = False
+        for table, statement in statements:
+            batches = 0
+            while True:
+                batches += 1
+                if batches > MAIL_PURGE_MAX_BATCHES:
+                    logger.error(
+                        "Stopped purging %s for modules %s after %s batches: "
+                        "rows are still being inserted?",
+                        table,
+                        module_names,
+                        batches,
+                    )
+                    failed = True
+                    break
+                sql_command = (
+                    "SET lock_timeout = '60s'; "
+                    f"WITH d AS ({statement} RETURNING 1) SELECT count(*) FROM d;"
+                )
+                result = run(
+                    [
+                        f"{conn_vars} && psql -v ON_ERROR_STOP=1 "
+                        f'-d {migrated_db} -t -A -c "{sql_command}"'
+                    ],
+                    shell=True,
+                    stdout=PIPE,
+                    stderr=PIPE,
+                    universal_newlines=True,
+                )
+                if result.returncode:
+                    logger.error(
+                        "Unable to purge %s for modules %s: %s. The "
+                        "uninstallation will delete the remaining rows in one "
+                        "statement.",
+                        table,
+                        module_names,
+                        (result.stderr or result.stdout or "").strip(),
+                    )
+                    failed = True
+                    break
+                try:
+                    deleted = int((result.stdout or "0").strip().splitlines()[-1])
+                except (IndexError, ValueError):
+                    logger.error(
+                        "Unexpected output purging %s for modules %s: %s",
+                        table,
+                        module_names,
+                        (result.stdout or "").strip(),
+                    )
+                    failed = True
+                    break
+                if not deleted:
+                    break
+                deleted_rows += deleted
+                logger.info(
+                    "Purged %s %s row(s) for modules %s.",
+                    deleted,
+                    table,
+                    module_names,
+                )
+        logger.info(
+            "Mail data purge for modules %s done: %s row(s) deleted%s.",
+            module_names,
+            deleted_rows,
+            " (incomplete, see the previous errors)" if failed else "",
+        )
+        return deleted_rows
 
     def _uninstall_module(
         self, module, module_obj, cleanup_ids, migrated_db, config_id

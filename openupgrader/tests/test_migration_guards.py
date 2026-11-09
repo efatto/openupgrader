@@ -12,11 +12,29 @@ from ..models import openupgrader_migration as migration_module
 from ..models import tools as tools_module
 
 
+def _activity_transaction(
+    pid=1, state="active", wait_event_type="", age=10, state_age=1
+):
+    """One row as returned by ``_get_migrated_db_open_transactions``."""
+    return {
+        "pid": pid,
+        "state": state,
+        "wait_event_type": wait_event_type,
+        "wait_event": "",
+        "xact_age": age,
+        "state_age": state_age,
+        "query": "DELETE FROM mail_message WHERE model in (...)",
+    }
+
+
 class _FakeRecordSet(list):
     """Minimal stand-in for a one2many union (``a | b``)."""
 
     def __or__(self, other):
         return _FakeRecordSet(list(self) + list(other))
+
+    def mapped(self, field):
+        return [getattr(item, field, None) for item in self]
 
 
 class _FakeAutoInstallModule:
@@ -214,8 +232,11 @@ class MigrationGuardTest(SavepointCase):
             migration_class, "_check_no_migration_batch_running"
         ), patch.object(
             migration_class,
-            "_count_migrated_db_open_transactions",
-            side_effect=[2, 0],
+            "_get_migrated_db_open_transactions",
+            side_effect=[
+                [_activity_transaction(pid=1), _activity_transaction(pid=2)],
+                [],
+            ],
         ), patch.object(migration_module.time, "sleep"):
             self.migration._wait_migrated_db_idle("x_migrate")
 
@@ -414,12 +435,12 @@ class MigrationGuardTest(SavepointCase):
         """A slow server-side operation is awaited, not thrown away."""
         migration_class = type(self.migration)
         with patch.object(
-            migration_class, "_wait_migrated_db_idle"
-        ) as idle_mock, patch.object(
+            migration_class, "_wait_active_module_operation"
+        ) as wait_mock, patch.object(
             migration_class, "_stop_after_rpc_timeout"
         ) as stop_mock:
             self.assertTrue(self.migration._wait_after_rpc_timeout("x_migrate", "m"))
-        idle_mock.assert_called_once_with("x_migrate")
+        wait_mock.assert_called_once_with("x_migrate", "m")
         stop_mock.assert_not_called()
 
     def test_wait_after_rpc_timeout_stops_a_stuck_operation(self):
@@ -427,7 +448,7 @@ class MigrationGuardTest(SavepointCase):
         migration_class = type(self.migration)
         with patch.object(
             migration_class,
-            "_wait_migrated_db_idle",
+            "_wait_active_module_operation",
             side_effect=migration_module.MigratedDbBusyError("still busy"),
         ), patch.object(migration_class, "_stop_after_rpc_timeout") as stop_mock:
             self.assertFalse(self.migration._wait_after_rpc_timeout("x_migrate", "m"))
@@ -642,7 +663,7 @@ class MigrationGuardTest(SavepointCase):
         migration_class = type(self.migration)
         with patch.object(
             migration_class,
-            "_wait_migrated_db_idle",
+            "_wait_active_module_operation",
             side_effect=UserError("a batch update is running"),
         ), patch.object(migration_class, "_stop_after_rpc_timeout") as stop_mock:
             with self.assertRaises(UserError):
@@ -790,3 +811,265 @@ class MigrationGuardTest(SavepointCase):
             ):
                 self.migration._restore_pending_removal(module)
             self.assertEqual(module.written_states, [], state)
+
+    # -- slow uninstallations (Odoo 18 mail data mass delete) ----------------
+
+    def test_open_transactions_are_parsed(self):
+        line = "\x01".join(
+            ["42", "active", "IO", "DataFileWrite", "120", "5", "DELETE FROM x"]
+        )
+        result = subprocess.CompletedProcess([], 0, line + "\n", "")
+        with patch.object(migration_module, "run", return_value=result) as run_mock:
+            self.assertEqual(
+                self.migration._get_migrated_db_open_transactions("x_migrate"),
+                [
+                    {
+                        "pid": "42",
+                        "state": "active",
+                        "wait_event_type": "IO",
+                        "wait_event": "DataFileWrite",
+                        "xact_age": 120,
+                        "state_age": 5,
+                        "query": "DELETE FROM x",
+                    }
+                ],
+            )
+        command = run_mock.call_args[0][0][0]
+        self.assertIn("psql -d postgres", command)
+        self.assertIn("xact_start IS NOT NULL", command)
+        self.assertIn("chr(1)", command)
+        self.assertIn("state_change", command)
+
+    def test_open_transactions_fail_closed(self):
+        result = subprocess.CompletedProcess([], 1, "", "connection refused")
+        with patch.object(migration_module, "run", return_value=result):
+            with self.assertRaises(UserError):
+                self.migration._get_migrated_db_open_transactions("x_migrate")
+
+    def test_open_transactions_fail_closed_on_bad_output(self):
+        result = subprocess.CompletedProcess([], 0, "not a transaction\n", "")
+        with patch.object(migration_module, "run", return_value=result):
+            with self.assertRaises(UserError):
+                self.migration._get_migrated_db_open_transactions("x_migrate")
+
+    def test_wait_active_module_operation_keeps_waiting_while_active(self):
+        """A running delete is never thrown away, however long it takes."""
+        transactions = [
+            [_activity_transaction(age=4000, state_age=4000)],
+            [_activity_transaction(age=8000, state_age=8000)],
+            [_activity_transaction(age=12000, state_age=12000)],
+            [],
+        ]
+        migration_class = type(self.migration)
+        with patch.object(
+            migration_class, "_check_no_migration_batch_running"
+        ), patch.object(
+            migration_class,
+            "_get_migrated_db_open_transactions",
+            side_effect=transactions,
+        ), patch.object(migration_module.time, "sleep"):
+            self.migration._wait_active_module_operation("x_migrate", "m")
+
+    def test_wait_active_module_operation_keeps_a_busy_session(self):
+        """idle in transaction for a few seconds is a healthy uninstall."""
+        transactions = [
+            [_activity_transaction(state="idle in transaction", state_age=5)],
+            [_activity_transaction(state="idle in transaction", state_age=5)],
+            [],
+        ]
+        migration_class = type(self.migration)
+        with patch.object(
+            migration_class, "_check_no_migration_batch_running"
+        ), patch.object(
+            migration_class,
+            "_get_migrated_db_open_transactions",
+            side_effect=transactions,
+        ), patch.object(migration_module.time, "sleep"):
+            self.migration._wait_active_module_operation("x_migrate", "m")
+
+    def test_wait_active_module_operation_stops_a_stuck_operation(self):
+        """An abandoned request is given up, so the retry can start."""
+        stuck = _activity_transaction(
+            state="idle in transaction",
+            age=migration_module.MIGRATED_DB_BUSY_TIMEOUT + 60,
+            state_age=migration_module.MIGRATED_DB_BUSY_TIMEOUT + 60,
+        )
+        migration_class = type(self.migration)
+        with patch.object(
+            migration_class, "_check_no_migration_batch_running"
+        ), patch.object(
+            migration_class, "_get_migrated_db_open_transactions", return_value=[stuck]
+        ), patch.object(migration_module.time, "sleep"):
+            with self.assertRaises(migration_module.MigratedDbBusyError):
+                self.migration._wait_active_module_operation("x_migrate", "m")
+
+    def test_wait_active_module_operation_has_an_absolute_cap(self):
+        """A client-blocked session is not progress: the cap stops the wait."""
+        blocked = _activity_transaction(
+            state="active", wait_event_type="Client", state_age=5
+        )
+        migration_class = type(self.migration)
+        with patch.object(
+            migration_class, "_check_no_migration_batch_running"
+        ), patch.object(
+            migration_class,
+            "_get_migrated_db_open_transactions",
+            return_value=[blocked],
+        ), patch.object(migration_module.time, "sleep"), patch.object(
+            migration_module.time,
+            "time",
+            side_effect=[0, migration_module.MIGRATED_DB_MAX_WAIT + 1],
+        ):
+            with self.assertRaises(migration_module.MigratedDbBusyError):
+                self.migration._wait_active_module_operation("x_migrate", "m")
+
+    def test_wait_active_module_operation_returns_when_idle(self):
+        migration_class = type(self.migration)
+        with patch.object(
+            migration_class, "_check_no_migration_batch_running"
+        ), patch.object(
+            migration_class, "_get_migrated_db_open_transactions", return_value=[]
+        ):
+            self.migration._wait_active_module_operation("x_migrate", "m")
+
+    def test_module_model_names_are_read_with_sql(self):
+        result = subprocess.CompletedProcess([], 0, "fatturapa.attachment\n", "")
+        with patch.object(migration_module, "run", return_value=result) as run_mock:
+            self.assertEqual(
+                self.migration._get_module_model_names(["old_a", "old_b"]),
+                ["fatturapa.attachment"],
+            )
+        command = run_mock.call_args[0][0][0]
+        self.assertIn("d.model = 'ir.model'", command)
+        self.assertIn("'old_a','old_b'", command)
+        # a model still referenced by another module is not removed by Odoo
+        self.assertIn("NOT EXISTS", command)
+        self.assertIn("o.module NOT IN ('old_a','old_b')", command)
+
+    def test_module_model_names_skip_mail_models_and_invalid_names(self):
+        result = subprocess.CompletedProcess(
+            [], 0, 'res.partner\nmail.message\nbad"name\n', ""
+        )
+        with patch.object(migration_module, "run", return_value=result):
+            self.assertEqual(
+                self.migration._get_module_model_names(["old_a"]), ["res.partner"]
+            )
+
+    def test_module_model_names_reject_invalid_names(self):
+        with patch.object(migration_module, "run") as run_mock:
+            self.assertEqual(self.migration._get_module_model_names(['x"; drop']), [])
+        run_mock.assert_not_called()
+
+    def _purge_result(self, deleted):
+        return subprocess.CompletedProcess([], 0, "%s\n" % deleted, "")
+
+    def test_purge_mail_data_deletes_in_batches(self):
+        """The unbounded mail DELETE of the uninstall is done in batches here."""
+        # mail_activity (300 then 0), mail_followers (2000 then 0),
+        # mail_message (5000 then 0)
+        deleted_per_call = [300, 0, 2000, 0, 5000, 0]
+        migration_class = type(self.migration)
+        with patch.object(
+            migration_class, "_get_module_model_names", return_value=["m1", "m2"]
+        ), patch.object(
+            migration_class, "_wait_active_module_operation"
+        ) as wait_mock, patch.object(
+            migration_module,
+            "run",
+            side_effect=[self._purge_result(n) for n in deleted_per_call],
+        ) as run_mock:
+            self.assertEqual(
+                self.migration._purge_mail_data(["old_a"]), sum(deleted_per_call)
+            )
+        wait_mock.assert_called_once_with(self.migration._get_migrated_db_name())
+        statements = [call[0][0][0] for call in run_mock.call_args_list]
+        # one batch per table and a last (empty) batch that stops the loop
+        self.assertEqual(len(statements), 6)
+        self.assertIn("DELETE FROM mail_activity", statements[0])
+        self.assertIn("DELETE FROM mail_followers", statements[2])
+        self.assertIn("DELETE FROM mail_message", statements[4])
+        for statement in statements:
+            self.assertIn("RETURNING 1", statement)
+            self.assertIn("SET lock_timeout = '60s'; ", statement)
+            self.assertIn("LIMIT 5000", statement)
+
+    def test_purge_mail_data_without_models_does_nothing(self):
+        migration_class = type(self.migration)
+        with patch.object(
+            migration_class, "_get_module_model_names", return_value=[]
+        ), patch.object(migration_module, "run") as run_mock:
+            self.assertEqual(self.migration._purge_mail_data(["unknown"]), 0)
+        run_mock.assert_not_called()
+
+    def test_unknown_module_is_not_purged(self):
+        """No RPC session: the module states are unknown, nothing is purged."""
+        migration_class = type(self.migration)
+        config = Mock()
+        config.name = "18.0"
+        config.module_to_uninstall_after_migration_ids = _FakeRecordSet()
+        with patch.object(
+            migration_class, "_get_apriori_modules_to_uninstall", return_value=set()
+        ), patch.object(
+            migration_class, "_exclude_core_modules", side_effect=lambda c, m: m
+        ), patch.object(migration_class, "start_odoo"), patch.object(
+            migration_class, "odoo_connect", return_value=None
+        ), patch.object(
+            migration_class, "_purge_mail_data"
+        ) as purge_mock, patch.object(
+            migration_class, "install_uninstall_module"
+        ), patch.object(migration_class, "button_stop_odoo"):
+            self.migration.uninstall_modules(config, after_migration=True)
+        purge_mock.assert_not_called()
+
+    def test_wait_for_odoo_started_waits_for_the_rpc_port(self):
+        """A slow instance start must not make odoo_connect restart it."""
+        migration_class = type(self.migration)
+        with patch.object(
+            migration_class, "_get_migrated_db_name", return_value="x_migrate"
+        ), patch.object(
+            migration_module, "_get_odoo_process_state", return_value="running"
+        ), patch.object(
+            migration_module,
+            "_get_pid_listening_on_port",
+            side_effect=[None, None, 4242],
+        ), patch.object(migration_module.time, "sleep"):
+            self.assertTrue(self.migration._wait_for_odoo_started(8099))
+
+    def test_wait_for_odoo_started_times_out(self):
+        migration_class = type(self.migration)
+        with patch.object(
+            migration_class, "_get_migrated_db_name", return_value="x_migrate"
+        ), patch.object(
+            migration_class, "button_check_odoo_migrated_running_state"
+        ) as state_mock, patch.object(
+            migration_module, "_get_odoo_process_state", return_value="stopped"
+        ), patch.object(
+            migration_module, "_get_pid_listening_on_port", return_value=None
+        ):
+            # timeout 0: the first poll is already past the deadline
+            self.assertFalse(self.migration._wait_for_odoo_started(8099, timeout=0))
+        state_mock.assert_called_once()
+
+    def test_module_scheduled_for_removal_is_not_pip_installed(self):
+        """A module of the target uninstall list is skipped, not pip-installed.
+
+        ``openupgrader`` itself is listed in the target version
+        ``uninstall_after_migration_to_this_version`` of the recipe: Odoo
+        reports it as inconsistent because it is about to be removed.
+        """
+        log_line = (
+            "Some modules have inconsistent states, some dependencies may be "
+            "missing: ['openupgrader']\n"
+        )
+        config = Mock()
+        config.module_to_uninstall_after_migration_ids = _FakeRecordSet(
+            [_FakeAutoInstallModule("openupgrader", None)]
+        )
+        config.module_to_uninstall_before_migration_ids = _FakeRecordSet()
+        with patch.object(migration_module.logger, "info") as log_mock:
+            self.migration._try_install_missing_pip_modules(config, log_line)
+        config.install_pip_modules.assert_not_called()
+        self.assertIn(
+            "Skipping modules scheduled for removal",
+            str(log_mock.call_args_list),
+        )
