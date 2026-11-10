@@ -2542,8 +2542,6 @@ END
                 shell=True,
                 stdout=PIPE,
                 stderr=PIPE,
-                # ``text`` is only available from Python 3.7, while Odoo 14
-                # supports Python 3.6.
                 universal_newlines=True,
             )
             if (result.stdout or "").strip():

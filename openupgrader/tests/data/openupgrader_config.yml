@@ -145,11 +145,7 @@
       - UPDATE res_partner p SET company_id = c.id FROM res_company c WHERE c.partner_id
         = p.id AND p.company_id IS DISTINCT FROM c.id AND EXISTS (SELECT 1 FROM
         ir_model_data WHERE module = 'base' AND name = 'user_demo' AND model =
-        'res.users'); # demo multi-company data: make warehouse/partner companies consistent for the 15.0 stock post-migration
-      - UPDATE stock_warehouse w SET partner_id = c.partner_id FROM res_company c WHERE
-        c.id = w.company_id AND w.partner_id IS DISTINCT FROM c.partner_id AND EXISTS
-        (SELECT 1 FROM ir_model_data WHERE module = 'base' AND name = 'user_demo' AND
-        model = 'res.users'); # demo multi-company data: make warehouse/partner companies consistent for the 15.0 stock post-migration
+        'res.users'); # demo multi-company data: make partner companies consistent
   - auto_install: ""
   - renamed_modules: ""
   - delete: ""
