@@ -621,9 +621,16 @@ class MigrationGuardTest(SavepointCase):
         ) as start_mock, patch.object(
             migration_class, "install_uninstall_module"
         ) as uninstall_mock, patch.object(
-            migration_class, "button_stop_odoo"
-        ) as stop_mock, patch.object(
+            migration_class, "_purge_mail_data"
+        ), patch.object(
+            # the probe needs a real PostgreSQL connection: the fake x_migrate
+            # database is empty, so there is nothing left to wait for
+            migration_class,
+            "_wait_migrated_db_idle",
+        ), patch.object(migration_class, "button_stop_odoo") as stop_mock, patch.object(
             migration_class, "_get_pending_modules_to_uninstall", return_value=[]
+        ), patch.object(
+            migration_class, "_get_migrated_module_state", return_value="uninstalled"
         ):
             self.migration.uninstall_pending_modules()
         start_mock.assert_called_once_with(config)
