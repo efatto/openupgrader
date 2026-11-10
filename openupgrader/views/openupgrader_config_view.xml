@@ -9,6 +9,7 @@
                 <field name="python_version" />
                 <field name="sql_after_migration_command_ids" />
                 <field name="sql_before_migration_command_ids" />
+                <field name="python_command_ids" />
                 <field name="module_auto_install_ids" />
                 <field name="renamed_module_ids" />
                 <field name="module_to_delete_after_migration_ids" />
@@ -98,6 +99,21 @@
                                 <field name="sql_after_migration_command_ids">
                                     <tree editable="top">
                                         <field name="sequence" widget="handle" />
+                                        <field name="name" />
+                                    </tree>
+                                </field>
+                            </group>
+                            <group
+                                string="Python commands executed on the migrated database"
+                            >
+                                <field
+                                    name="python_command_ids"
+                                    nolabel="1"
+                                    colspan="2"
+                                >
+                                    <tree editable="bottom">
+                                        <field name="sequence" widget="handle" />
+                                        <field name="before_migration" />
                                         <field name="name" />
                                     </tree>
                                 </field>

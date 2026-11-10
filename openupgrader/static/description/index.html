@@ -8,10 +8,11 @@
 
 /*
 :Author: David Goodger (goodger@python.org)
-:Id: $Id: html4css1.css 8954 2022-01-20 10:10:25Z milde $
+:Id: $Id: html4css1.css 9511 2024-01-13 09:50:07Z milde $
 :Copyright: This stylesheet has been placed in the public domain.
 
 Default cascading style sheet for the HTML output of Docutils.
+Despite the name, some widely supported CSS2 features are used.
 
 See https://docutils.sourceforge.io/docs/howto/html-stylesheets.html for how to
 customize this style sheet.
@@ -274,7 +275,7 @@ pre.literal-block, pre.doctest-block, pre.math, pre.code {
   margin-left: 2em ;
   margin-right: 2em }
 
-pre.code .ln { color: grey; } /* line numbers */
+pre.code .ln { color: gray; } /* line numbers */
 pre.code, code { background-color: #eeeeee }
 pre.code .comment, code .comment { color: #5C6576 }
 pre.code .keyword, code .keyword { color: #3B0D06; font-weight: bold }
@@ -300,7 +301,7 @@ span.option {
 span.pre {
   white-space: pre }
 
-span.problematic {
+span.problematic, pre.problematic {
   color: red }
 
 span.section-subtitle {
@@ -362,7 +363,9 @@ ul.auto-toc {
 <div class="document">
 
 
-<a class="reference external image-reference" href="https://odoo-community.org/get-involved?utm_source=readme"><img alt="Odoo Community Association" src="https://odoo-community.org/readme-banner-image" /></a>
+<a class="reference external image-reference" href="https://odoo-community.org/get-involved?utm_source=readme">
+<img alt="Odoo Community Association" src="https://odoo-community.org/readme-banner-image" />
+</a>
 <div class="section" id="openupgrader">
 <h1>OpenUpgrader</h1>
 <!-- !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -419,6 +422,7 @@ ul.auto-toc {
 </ul>
 <img alt="SQL commands" src="https://raw.githubusercontent.com/efatto/openupgrader/14.0/openupgrader/static/description/sql_commands.png" />
 <ul class="simple">
+<li>Python commands: python code executed with <cite>odoo shell</cite> on the migrated database, before or after the migration (the <cite>Before migration</cite> flag); handy for data fixes that are easier to read with the ORM than in SQL.</li>
 <li>Modules management: in this menu is possible to add module to be installed automatically, unistalled, or simply deleted:</li>
 </ul>
 <img alt="Modules management" src="https://raw.githubusercontent.com/efatto/openupgrader/14.0/openupgrader/static/description/modules_management.png" />
@@ -598,6 +602,16 @@ contain:</p>
       - UPDATE ...
   - before_migration_to_next_version_sql_command:
       - DELETE ...
+  - python_commands:             # python fixes, better than SQL when
+      - code: |                  # the work is readable in ORM terms
+          env[&quot;ir.ui.view&quot;].search([(&quot;arch_db&quot;, &quot;ilike&quot;, &quot;mt-n5&quot;)])
+        before: false            # false/omitted = after this version
+      - before: |                # shorthand keys
+          env[&quot;ir.model&quot;].search([]).mapped(&quot;model&quot;)
+      - after: |
+          env[&quot;res.company&quot;].search([]).mapped(&quot;name&quot;)
+      - |                        # a plain string runs after
+        env[&quot;res.users&quot;].search([]).mapped(&quot;login&quot;)
   - renamed_modules:  [&quot;old_name new_name&quot;]      # one rename per line
   - auto_install:     [&quot;installed_mod new_mod&quot;]  # install new_mod
   - delete:           [&quot;module_to_drop&quot;]
@@ -619,6 +633,20 @@ available;</li>
 cleanup, so listing a module there is usually enough;</li>
 <li>SQL commands run through the module’s own mechanisms, which makes
 data workarounds reproducible and keeps them out of the migration code;</li>
+<li><tt class="docutils literal">python_commands</tt> run the code with <tt class="docutils literal">odoo shell</tt> <strong>on the migrated
+database</strong>, using the Odoo/Python environment of the version config the
+command belongs to: the before-migration ones use the source version (like
+<tt class="docutils literal">before_migration_to_next_version_sql_command</tt>), the after-migration ones
+the target version. <tt class="docutils literal">env</tt> is available and the code is committed when it
+succeeds (<tt class="docutils literal">env.cr.commit()</tt> is appended, no need to call it; a command
+that raises is rolled back). Failures are logged like SQL ones and do not
+abort the migration;</li>
+<li>prefer <tt class="docutils literal">python_commands</tt> for data fixes that read clearly with the ORM
+(<tt class="docutils literal">search</tt>/<tt class="docutils literal">write</tt>/<tt class="docutils literal">unlink</tt>, <tt class="docutils literal">env.ref</tt>), and keep SQL for things the
+ORM cannot see (dangling foreign keys, legacy tables such as <tt class="docutils literal">ir_actions</tt>,
+<tt class="docutils literal">regexp</tt> driven rewrites). SQL and python commands are not interleaved:
+all SQL before commands run, then all python before commands (same for the
+after ones), so a command that depends on an SQL one must itself be SQL;</li>
 <li>the YML is loaded when a config is created; use
 <tt class="docutils literal">config_file_path</tt> + <tt class="docutils literal">button_reload_config_file</tt> to reload after an
 edit (the path takes precedence over the uploaded file).</li>

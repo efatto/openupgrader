@@ -1709,6 +1709,7 @@ END
             return self.show_message_odoo_running_and_return()
         before_sql = self.current_config_id.sql_before_migration_command_ids
         self.sql_fixes(before_sql)
+        self.python_fixes(self.current_config_id, before_migration=True)
         self.uninstall_modules(self.current_config_id, before_migration=True)
         self.remove_not_installed_module_views()
         self.remove_assets()
@@ -2322,6 +2323,7 @@ END
             )
         self.uninstall_modules(next_config, after_migration=True)
         self.sql_fixes(next_config.sql_after_migration_command_ids)
+        self.python_fixes(next_config, before_migration=False)
         # Move to the next step only once the after-migration work succeeded, so
         # that a failure keeps current_config_id on the source version and the
         # cron can retry _do_after_migration.
@@ -2555,6 +2557,103 @@ END
                 )
             elif (result.stderr or "").strip():
                 logger.info("SQL command output: %s", result.stderr.strip())
+
+    def _get_python_command_shell_command(self, config_id, migrated_db):
+        """Return ``(command, cwd, env)`` to run ``odoo shell`` on the
+        migrated database with the environment of ``config_id``."""
+        version_name = config_id.name
+        version_float = float(version_name)
+        folder = self.check_venv(version_name)
+        executable = config_id._get_odoo_executable(folder)
+        addons_path = f"{folder}/repos/odoo/addons"
+        if version_float < 14:
+            addons_path = f"{folder}/odoo/addons"
+        extra_addons_path = f",{folder}/repos/odoo/odoo/addons,{folder}/odoo"
+        if 9 < version_float < 14:
+            extra_addons_path = f",{folder}/odoo/odoo/addons"
+        data_dir = os.path.join(self.folder, "data_dir")
+        if not os.path.isdir(data_dir):
+            os.makedirs(data_dir)
+        subprocess_env = _get_env_for_subprocess(folder, config_id.python_version)
+        # identify the connections of the migration instance in pg_stat_activity
+        subprocess_env["PGAPPNAME"] = subprocess_env[
+            "ODOO_PGAPPNAME"
+        ] = f"openupgrader-{migrated_db}"
+        # The .odoorc shipped by the module has an empty http_port: optparse
+        # rejects the empty integer, so a port must be passed on the command
+        # line (the shell does not start any HTTP server).
+        try:
+            http_port = int(self.xmlrpc_port)
+        except (TypeError, ValueError):
+            http_port = 8069
+        no_http = "--no-http " if version_float >= 8 else ""
+        command = (
+            f"{subprocess_env['PYTHONPATH']} "
+            f"{executable} shell "
+            f"-c {folder}/.odoorc "
+            f"--addons-path={addons_path}{extra_addons_path} "
+            f"--db_user={self.pg_user} "
+            f"--db_password={self.pg_password_var or self.pg_password or ''} "
+            f"--db_port={self.db_port} "
+            f"--db_host={self.pg_host or ''} "
+            f"--data-dir={data_dir} "
+            f"--xmlrpc-port={http_port} "
+            f"{no_http}"
+            f"--log-level=warn "
+            f"-d {migrated_db}"
+        )
+        return command, folder, subprocess_env
+
+    def python_fixes(self, config_id, before_migration):
+        """Execute the custom python commands of ``config_id``.
+
+        The code runs with ``odoo shell`` against the migrated database, in the
+        environment of the configuration the command belongs to (the source
+        version for the before-migration ones, the target version for the
+        after-migration ones). ``env.cr.commit()`` is appended after the code:
+        a command that raises is rolled back, a successful one is committed.
+
+        Failures are logged and do not stop the migration, like ``sql_fixes``.
+        """
+        if not config_id:
+            return
+        python_commands = config_id._get_python_commands(before_migration)
+        if not python_commands:
+            return
+        self._lock_migrated_db()
+        migrated_db = self._get_migrated_db_name()
+        self._wait_migrated_db_idle(migrated_db)
+        logger.info(
+            "Doing custom python commands (%s the migration to %s).",
+            "before" if before_migration else "after",
+            config_id.name,
+        )
+        command, folder, subprocess_env = self._get_python_command_shell_command(
+            config_id, migrated_db
+        )
+        for python_command in python_commands:
+            logger.info("Executing python command: %s", python_command.name)
+            result = run(
+                [command],
+                shell=True,
+                cwd=folder,
+                env=subprocess_env,
+                input=f"{python_command.name}\n\nenv.cr.commit()\n",
+                stdout=PIPE,
+                stderr=PIPE,
+                universal_newlines=True,
+            )
+            if (result.stdout or "").strip():
+                logger.info("Python command result: %s", result.stdout.strip())
+            if result.returncode:
+                logger.info(
+                    "Python command failed (exit code %s): %s\n%s",
+                    result.returncode,
+                    python_command.name,
+                    (result.stderr or result.stdout or "").strip(),
+                )
+            elif (result.stderr or "").strip():
+                logger.info("Python command output: %s", result.stderr.strip())
 
     def install_repo(self, remote_repo, version_name, repo_path=None):
         if repo_path is None:

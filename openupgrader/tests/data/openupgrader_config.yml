@@ -26,6 +26,12 @@
   - odoo: "https://github.com/OCA/OCB.git 18.0"
   - odoo_pip_requirements:
       - module_change_auto_install
+  - python_commands:
+      # Smoke test of the python commands: runs in 'odoo shell' on the
+      # migrated database after the migration to 18.0.
+      - code: |
+          print("python command ok:", env["ir.module.module"].search_count([]))
+        before: false
   - after_migration_to_this_version_sql_command: ""
   - before_migration_to_next_version_sql_command: ""
   - auto_install:

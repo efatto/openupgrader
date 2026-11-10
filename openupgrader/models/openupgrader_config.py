@@ -174,6 +174,31 @@ class SqlUpdateCommand(models.Model):
     )
 
 
+class PythonUpdateCommand(models.Model):
+    _name = "python.update.command"
+    _description = "Python Update Command"
+    _order = "sequence, id"
+
+    name = fields.Text(
+        string="Python code",
+        required=True,
+        help="Python code executed with 'odoo shell' on the migrated database, "
+        "using the Odoo/Python environment of this configuration. The code "
+        "has 'env' available and is committed when it succeeds, without "
+        "needing 'env.cr.commit()'.",
+    )
+    sequence = fields.Integer(string="Python Sequence")
+    before_migration = fields.Boolean(
+        string="Before migration",
+        help="Run before the migration to the next version instead of after "
+        "the migration to this version.",
+    )
+    openupgrade_config_id = fields.Many2one(
+        comodel_name="openupgrader.config",
+        ondelete="cascade",
+    )
+
+
 class OpenupgraderConfig(models.Model):
     _name = "openupgrader.config"
     _description = "OpenUpgrader config"
@@ -259,6 +284,14 @@ class OpenupgraderConfig(models.Model):
         comodel_name="sql.update.command",
         inverse_name="openupgrade_before_config_id",
         string="SQL before commands",
+        copy=False,
+    )
+    python_command_ids = fields.One2many(
+        comodel_name="python.update.command",
+        inverse_name="openupgrade_config_id",
+        string="Python commands",
+        help="Python code executed on the migrated database before/after the "
+        "migration (see the 'Before migration' flag on every command).",
         copy=False,
     )
     module_auto_install_ids = fields.One2many(
@@ -1015,22 +1048,75 @@ class OpenupgraderConfig(models.Model):
         res.action_load_config()
         return res
 
+    @staticmethod
+    def _parse_python_command(command):
+        """Normalise one item of the ``python_commands`` YML key.
+
+        Accepted forms::
+
+            - code: |
+                env["res.company"].search([])   # executed after
+              before: false
+            - before: |
+                env["..."].search([])           # shorthand
+            - after: |
+                env["..."].search([])           # shorthand
+            - |
+              env["..."].search([])               # plain string, after
+
+        :return: ``(code, before_migration)`` or ``None`` when invalid
+        """
+        if isinstance(command, str):
+            return (command, False) if command.strip() else None
+        if not isinstance(command, dict):
+            return None
+        code = command.get("code") or command.get("python") or command.get("command")
+        before = command.get("before_migration", command.get("before"))
+        after = command.get("after")
+        if isinstance(before, str):
+            return before, True
+        if isinstance(after, str):
+            return after, False
+        if code:
+            when = command.get("when")
+            before_migration = bool(before)
+            if when in ("before", "after"):
+                before_migration = when == "before"
+            return code, before_migration
+        return None
+
+    def _get_python_commands(self, before_migration):
+        """Return the python commands to run before/after the migration."""
+        return self.python_command_ids.filtered(
+            lambda command: command.before_migration == before_migration
+        )
+
     def action_load_config(self):  # noqa: C901
         version_name = self.name
         recipes = self.load_config_file()
+        recipe_data = None
         if recipes:
-            # reset all existing configurations
-            self.pip_requirement_ids = False
-            self.odoo_pip_requirement_ids = False
-            self.sql_after_migration_command_ids = False
-            self.sql_before_migration_command_ids = False
-            self.module_auto_install_ids = False
-            self.renamed_module_ids = False
-            self.module_to_delete_after_migration_ids = False
-            self.module_to_uninstall_after_migration_ids = False
-            self.module_to_uninstall_before_migration_ids = False
-            recipe_data = recipes[version_name]
-        else:
+            recipe_data = recipes.get(version_name)
+            if recipe_data is None:
+                # The yml does not describe this version: leave the existing
+                # configuration untouched instead of failing on the lookup.
+                logger.info(
+                    "No recipe for version %s in the yml configuration",
+                    version_name,
+                )
+            else:
+                # reset all existing configurations
+                self.pip_requirement_ids = False
+                self.odoo_pip_requirement_ids = False
+                self.sql_after_migration_command_ids = False
+                self.sql_before_migration_command_ids = False
+                self.python_command_ids = False
+                self.module_auto_install_ids = False
+                self.renamed_module_ids = False
+                self.module_to_delete_after_migration_ids = False
+                self.module_to_uninstall_after_migration_ids = False
+                self.module_to_uninstall_before_migration_ids = False
+        if recipe_data is None:
             # add only apriori_py data to existing records
             recipe_data = [
                 {
@@ -1205,6 +1291,33 @@ class OpenupgraderConfig(models.Model):
                     if command
                     not in self.sql_before_migration_command_ids.mapped("name")
                 ]
+            if recipe.get("python_commands"):
+                for i, python_command in enumerate(recipe.get("python_commands")):
+                    parsed_command = self._parse_python_command(python_command)
+                    if not parsed_command:
+                        logger.warning(
+                            "Skipping invalid python_commands entry: %r",
+                            python_command,
+                        )
+                        continue
+                    command_code, before_migration = parsed_command
+                    if any(
+                        command.name == command_code
+                        and command.before_migration == before_migration
+                        for command in self.python_command_ids
+                    ):
+                        continue
+                    self.python_command_ids = [
+                        (
+                            0,
+                            0,
+                            {
+                                "name": command_code,
+                                "sequence": i,
+                                "before_migration": before_migration,
+                            },
+                        )
+                    ]
             if recipe.get("renamed_modules"):
                 renamed_modules = recipe.get("renamed_modules")
                 for i, module in enumerate(renamed_modules):

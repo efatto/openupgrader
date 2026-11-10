@@ -35,6 +35,8 @@ The configuration can be filled with these values:
 .. image:: ../static/description/sql_commands.png
     :alt: SQL commands
 
+* Python commands: python code executed with `odoo shell` on the migrated database, before or after the migration (the `Before migration` flag); handy for data fixes that are easier to read with the ORM than in SQL.
+
 * Modules management: in this menu is possible to add module to be installed automatically, unistalled, or simply deleted:
 
 .. image:: ../static/description/modules_management.png

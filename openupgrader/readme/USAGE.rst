@@ -132,6 +132,16 @@ contain::
           - UPDATE ...
       - before_migration_to_next_version_sql_command:
           - DELETE ...
+      - python_commands:             # python fixes, better than SQL when
+          - code: |                  # the work is readable in ORM terms
+              env["ir.ui.view"].search([("arch_db", "ilike", "mt-n5")])
+            before: false            # false/omitted = after this version
+          - before: |                # shorthand keys
+              env["ir.model"].search([]).mapped("model")
+          - after: |
+              env["res.company"].search([]).mapped("name")
+          - |                        # a plain string runs after
+            env["res.users"].search([]).mapped("login")
       - renamed_modules:  ["old_name new_name"]      # one rename per line
       - auto_install:     ["installed_mod new_mod"]  # install new_mod
       - delete:           ["module_to_drop"]
@@ -153,6 +163,20 @@ Notes:
   cleanup, so listing a module there is usually enough;
 * SQL commands run through the module's own mechanisms, which makes
   data workarounds reproducible and keeps them out of the migration code;
+* ``python_commands`` run the code with ``odoo shell`` **on the migrated
+  database**, using the Odoo/Python environment of the version config the
+  command belongs to: the before-migration ones use the source version (like
+  ``before_migration_to_next_version_sql_command``), the after-migration ones
+  the target version. ``env`` is available and the code is committed when it
+  succeeds (``env.cr.commit()`` is appended, no need to call it; a command
+  that raises is rolled back). Failures are logged like SQL ones and do not
+  abort the migration;
+* prefer ``python_commands`` for data fixes that read clearly with the ORM
+  (``search``/``write``/``unlink``, ``env.ref``), and keep SQL for things the
+  ORM cannot see (dangling foreign keys, legacy tables such as ``ir_actions``,
+  ``regexp`` driven rewrites). SQL and python commands are not interleaved:
+  all SQL before commands run, then all python before commands (same for the
+  after ones), so a command that depends on an SQL one must itself be SQL;
 * the YML is loaded when a config is created; use
   ``config_file_path`` + ``button_reload_config_file`` to reload after an
   edit (the path takes precedence over the uploaded file).
