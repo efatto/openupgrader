@@ -2597,11 +2597,20 @@ END
             # a symlinked script to its real directory before reading
             # PYTHONPATH, so an odoo-bin symlinked to the system Odoo (e.g.
             # /opt/odoo in CI) would import that Odoo version and its addons
-            # instead of the migration environment. ``-m odoo`` with the
-            # target source first loads the version the environment belongs
-            # to.
+            # instead of the migration environment. Import the target source
+            # explicitly, and let the runner move the target addons paths
+            # before the site-packages odoo/addons namespace: otherwise a
+            # system web module in site-packages would shadow the target one.
             subprocess_env["PYTHONPATH"] = os.path.join(folder, "repos", "odoo")
-            runner = f"{python_bin} -m odoo"
+            subprocess_env[
+                "OPENUPGRADER_ODOO_ADDONS"
+            ] = f"{addons_path}{extra_addons_path}"
+            runner_script = os.path.join(
+                os.path.dirname(os.path.dirname(__file__)),
+                "data",
+                "odoo_shell_runner.py",
+            )
+            runner = f"{python_bin} {runner_script}"
         else:
             runner = f"{python_bin} {executable}"
         command = (

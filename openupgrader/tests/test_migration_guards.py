@@ -275,8 +275,12 @@ class MigrationGuardTest(SavepointCase):
                     config, "x_migrate"
                 )
         self.assertEqual(cwd, folder)
-        self.assertIn("-m odoo shell", command)
+        self.assertIn("odoo_shell_runner.py shell", command)
         self.assertEqual(env["PYTHONPATH"], os.path.join(folder, "repos", "odoo"))
+        self.assertIn(
+            os.path.join(folder, "repos", "odoo", "addons"),
+            env["OPENUPGRADER_ODOO_ADDONS"],
+        )
 
     def _run_auto_install_modules(
         self, config, modules_by_name, reconnect_fails=False, connect_fails=False
