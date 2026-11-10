@@ -260,6 +260,24 @@ class MigrationGuardTest(SavepointCase):
             with self.assertRaises(UserError):
                 self.migration._get_migration_instance_ports()
 
+    def test_python_commands_use_the_target_odoo_source(self):
+        """The shell must not follow an odoo-bin symlink to the system Odoo."""
+        with tempfile.TemporaryDirectory() as folder:
+            os.makedirs(os.path.join(folder, ".venv", "bin"))
+            os.makedirs(os.path.join(folder, "repos", "odoo"))
+            config = Mock()
+            config.name = "18.0"
+            config.python_version = "3.12.11"
+            migration_class = type(self.migration)
+            with patch.object(migration_class, "check_venv", return_value=folder):
+                self.migration.folder = folder
+                command, cwd, env = self.migration._get_python_command_shell_command(
+                    config, "x_migrate"
+                )
+        self.assertEqual(cwd, folder)
+        self.assertIn("-m odoo shell", command)
+        self.assertEqual(env["PYTHONPATH"], os.path.join(folder, "repos", "odoo"))
+
     def _run_auto_install_modules(
         self, config, modules_by_name, reconnect_fails=False, connect_fails=False
     ):

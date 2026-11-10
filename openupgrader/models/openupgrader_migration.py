@@ -2564,7 +2564,9 @@ END
         version_name = config_id.name
         version_float = float(version_name)
         folder = self.check_venv(version_name)
-        executable = config_id._get_odoo_executable(folder)
+        executable = None
+        if version_float < 14:
+            executable = config_id._get_odoo_executable(folder)
         addons_path = f"{folder}/repos/odoo/addons"
         if version_float < 14:
             addons_path = f"{folder}/odoo/addons"
@@ -2587,9 +2589,23 @@ END
         except (TypeError, ValueError):
             http_port = 8069
         no_http = "--no-http " if version_float >= 8 else ""
+        # ``python`` is stored in PYTHONPATH by _get_env_for_subprocess and
+        # used as the command prefix below.
+        python_bin = subprocess_env["PYTHONPATH"]
+        if version_float >= 14:
+            # Do not execute <folder>/repos/odoo/odoo-bin here: Python follows
+            # a symlinked script to its real directory before reading
+            # PYTHONPATH, so an odoo-bin symlinked to the system Odoo (e.g.
+            # /opt/odoo in CI) would import that Odoo version and its addons
+            # instead of the migration environment. ``-m odoo`` with the
+            # target source first loads the version the environment belongs
+            # to.
+            subprocess_env["PYTHONPATH"] = os.path.join(folder, "repos", "odoo")
+            runner = f"{python_bin} -m odoo"
+        else:
+            runner = f"{python_bin} {executable}"
         command = (
-            f"{subprocess_env['PYTHONPATH']} "
-            f"{executable} shell "
+            f"{runner} shell "
             f"-c {folder}/.odoorc "
             f"--addons-path={addons_path}{extra_addons_path} "
             f"--db_user={self.pg_user} "
