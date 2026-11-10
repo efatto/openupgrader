@@ -15,7 +15,8 @@
   - delete: ""
   - obsolete: ""
   - uninstall_after_migration_to_this_version: ""
-  - uninstall_before_migration_to_next_version: ""
+  - uninstall_before_migration_to_next_version:
+      - openupgrader
   - not_autoinstallable_modules: ""
 "18.0":
   - python_version: "3.12.11"
@@ -40,7 +41,8 @@
   - delete: ""
   - obsolete: ""
   - uninstall_after_migration_to_this_version: ""
-  - uninstall_before_migration_to_next_version: ""
+  - uninstall_before_migration_to_next_version:
+      - openupgrader
   - not_autoinstallable_modules:
       - account_edi_facturx
       - account_edi_ubl
@@ -69,7 +71,8 @@
   - delete: ""
   - obsolete: ""
   - uninstall_after_migration_to_this_version: ""
-  - uninstall_before_migration_to_next_version: ""
+  - uninstall_before_migration_to_next_version:
+      - openupgrader
   - not_autoinstallable_modules:
       - account_edi_facturx
       - account_edi_ubl
@@ -99,7 +102,8 @@
   - obsolete:
       - l10n_it_ricevute_bancarie
   - uninstall_after_migration_to_this_version: ""
-  - uninstall_before_migration_to_next_version: ""
+  - uninstall_before_migration_to_next_version:
+      - openupgrader
   - not_autoinstallable_modules:
       - account_edi
       - account_edi_facturx
@@ -126,7 +130,8 @@
   - delete: ""
   - obsolete: ""
   - uninstall_after_migration_to_this_version: ""
-  - uninstall_before_migration_to_next_version: ""
+  - uninstall_before_migration_to_next_version:
+      - openupgrader
   - not_autoinstallable_modules:
       - account_edi
       - account_edi_facturx
@@ -157,7 +162,8 @@
   - delete: ""
   - obsolete: ""
   - uninstall_after_migration_to_this_version: ""
-  - uninstall_before_migration_to_next_version: ""
+  - uninstall_before_migration_to_next_version:
+      - openupgrader
   - not_autoinstallable_modules:
       - account_edi
       - account_edi_facturx
