@@ -133,6 +133,9 @@ MAIL_PURGE_MAX_BATCHES = 10000
 # _purge_attachment_data).
 ATTACHMENT_PURGE_BATCH_SIZE = 5000
 ATTACHMENT_PURGE_MAX_BATCHES = 10000
+# Tables purged in batches before the uninstallation: the temporary indexes of
+# _purge_fk_indexes cover the foreign keys referencing them.
+PURGE_TABLES = ("mail_activity", "mail_followers", "mail_message", "ir_attachment")
 # Models of mail: Odoo skips their mail data on unlink, purging them would
 # delete the mail data of every model.
 MAIL_MODELS_NOT_PURGED = frozenset(
@@ -3227,8 +3230,8 @@ END
             model_names = [name for name in model_names if name not in invalid_names]
         return model_names
 
-    def _count_rows(self, migrated_db, sql):
-        """Rows matching ``sql``; 0 (no percentage in the log) on failure."""
+    def _psql(self, migrated_db, sql):
+        """Run ``sql`` on the migrated DB and return its output ('' on error)."""
         result = run(
             [
                 f"{self._get_db_connection_variables()} && psql -v ON_ERROR_STOP=1 "
@@ -3239,10 +3242,67 @@ END
             stderr=PIPE,
             universal_newlines=True,
         )
+        if result.returncode:
+            logger.warning(
+                "Unable to run %r on %s: %s",
+                sql,
+                migrated_db,
+                (result.stderr or result.stdout or "").strip(),
+            )
+            return ""
+        return result.stdout or ""
+
+    def _count_rows(self, migrated_db, sql):
+        """Rows matching ``sql``; 0 (no percentage in the log) on failure."""
         try:
-            return int((result.stdout or "").strip().splitlines()[-1])
+            return int(self._psql(migrated_db, sql).strip().splitlines()[-1])
         except (IndexError, ValueError):
             return 0
+
+    def _purge_fk_indexes(self, migrated_db, drop=False):
+        """Index the unindexed foreign keys of the purged tables, or drop them.
+
+        Deleting a row makes PostgreSQL scan every referencing table without
+        an index on its FK column once per deleted row (``ON DELETE SET NULL``
+        and ``CASCADE``), so the batched purge of ``ir_attachment`` takes hours
+        on a big ``account_move`` instead of minutes. The indexes are temporary
+        (``drop=True`` removes them after the purge), so the dumped database is
+        not changed.
+        """
+        tables = ", ".join(f"{_sql_quote(t)}::regclass" for t in PURGE_TABLES)
+        if drop:
+            sql = (
+                "SELECT format('DROP INDEX IF EXISTS %I;', c.relname) "
+                "FROM pg_class c WHERE c.relkind = 'i' "
+                "AND c.relname LIKE 'openupgrader\\_fk\\_%'"
+            )
+        else:
+            sql = (
+                "SELECT format('CREATE INDEX IF NOT EXISTS %I ON %s (%I);', "
+                "left('openupgrader_fk_' || c.conname, 63), "
+                "c.conrelid::regclass, a.attname) FROM pg_constraint c "
+                "JOIN pg_attribute a ON a.attrelid = c.conrelid "
+                "AND a.attnum = c.conkey[1] WHERE c.contype = 'f' "
+                f"AND cardinality(c.conkey) = 1 AND c.confrelid IN ({tables}) "
+                "AND NOT EXISTS (SELECT 1 FROM pg_index i "
+                "WHERE i.indrelid = c.conrelid AND i.indisvalid "
+                "AND i.indisready AND (i.indkey::int2[])[0:0] = c.conkey)"
+            )
+        statements = [
+            line for line in self._psql(migrated_db, sql).splitlines() if line.strip()
+        ]
+        if not statements:
+            return
+        started = time.monotonic()
+        prefix = "" if drop else "SET lock_timeout = '60s'; "
+        for statement in statements:
+            self._psql(migrated_db, prefix + statement)
+        logger.info(
+            "%s %s temporary foreign key index(es) of the purged tables in %ss.",
+            "Dropped" if drop else "Built",
+            len(statements),
+            round(time.monotonic() - started),
+        )
 
     def _log_purge_progress(self, table, model_names, deleted, total, started):
         """Log the percentage and the estimated time left of a batched purge."""
@@ -3282,6 +3342,9 @@ END
         # an operation left running by a previous attempt (typically the very
         # delete being purged) must finish first: wait for it while it is active
         self._wait_active_module_operation(migrated_db)
+        # without indexes on their FK columns, each deleted row scans the
+        # referencing tables: the purge would take hours on a big database
+        self._purge_fk_indexes(migrated_db)
         conn_vars = self._get_db_connection_variables()
         models = ",".join(_sql_quote(name) for name in model_names)
         # (table, count statement, batched delete statement): the count is the
@@ -3391,6 +3454,7 @@ END
         # same order as IrModel.unlink: the mail rows (and their attachment
         # relations) go first, then the attachment rows
         self._purge_attachment_data(model_names)
+        self._purge_fk_indexes(migrated_db, drop=True)
         return deleted_rows
 
     def _purge_attachment_data(self, model_names):
