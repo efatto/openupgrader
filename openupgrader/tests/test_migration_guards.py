@@ -10,6 +10,7 @@ import odoorpc
 from odoo.exceptions import UserError
 from odoo.tests.common import SavepointCase, tagged
 
+from .. import purge as purge_module
 from ..models import openupgrader_migration as migration_module
 from ..models import tools as tools_module
 
@@ -517,21 +518,23 @@ class MigrationGuardTest(SavepointCase):
         )
 
     def test_mail_purge_also_purges_attachments(self):
-        """The big ir_attachment delete is batched before the uninstallation too."""
+        """The whole purge is delegated to the standalone purge module."""
         migration_class = type(self.migration)
         with patch.object(
-            migration_class, "_get_module_model_names", return_value=["old.model"]
+            migration_module.purge,
+            "get_module_model_names",
+            return_value=["old.model"],
         ), patch.object(
             migration_class, "_get_migrated_db_name", return_value="x_migrate"
-        ), patch.object(migration_class, "_wait_active_module_operation"), patch.object(
-            migration_class, "_purge_attachment_data"
-        ) as attachment_mock, patch.object(
-            migration_module,
-            "run",
-            return_value=subprocess.CompletedProcess([], 0, "0\n", ""),
-        ):
+        ), patch.object(
+            migration_class, "_wait_active_module_operation"
+        ) as wait_mock, patch.object(
+            migration_module.purge, "purge_data"
+        ) as purge_mock:
             self.migration._purge_mail_data(["old_module"])
-        attachment_mock.assert_called_once_with(["old.model"])
+        wait_mock.assert_called_once_with("x_migrate")
+        self.assertEqual(purge_mock.call_args[0][:2], ("x_migrate", ["old.model"]))
+        self.assertEqual(purge_mock.call_args[1]["label"], ["old_module"])
 
     def test_attachment_purge_is_batched_and_marks_the_filestore(self):
         """Deleted attachment files go to the filestore GC checklist."""
@@ -540,14 +543,11 @@ class MigrationGuardTest(SavepointCase):
             subprocess.CompletedProcess([], 0, "2|ab/aaa,cd/bbb\n", ""),
             subprocess.CompletedProcess([], 0, "0|\n", ""),
         ]
-        migration_class = type(self.migration)
-        with tempfile.TemporaryDirectory() as folder, patch.object(
-            migration_class, "_get_migrated_db_name", return_value="x_migrate"
-        ), patch.object(migration_module, "run", side_effect=batches) as run_mock:
-            self.migration.folder = folder
-            deleted = self.migration._purge_attachment_data(["fatturapa.attachment"])
-            checklist = os.path.join(
-                folder, "data_dir", "filestore", "x_migrate", "checklist"
+        with tempfile.TemporaryDirectory() as checklist, patch.object(
+            purge_module.subprocess, "run", side_effect=batches
+        ) as run_mock:
+            deleted = purge_module.purge_attachments(
+                "x_migrate", ["fatturapa.attachment"], "", checklist
             )
             self.assertTrue(os.path.isfile(os.path.join(checklist, "ab", "aaa")))
             self.assertTrue(os.path.isfile(os.path.join(checklist, "cd", "bbb")))
@@ -555,9 +555,7 @@ class MigrationGuardTest(SavepointCase):
         command = run_mock.call_args_list[1][0][0][0]
         self.assertIn("DELETE FROM ir_attachment", command)
         self.assertIn("res_model IN ('fatturapa.attachment')", command)
-        self.assertIn(
-            "LIMIT %s" % migration_module.ATTACHMENT_PURGE_BATCH_SIZE, command
-        )
+        self.assertIn("LIMIT %s" % purge_module.ATTACHMENT_PURGE_BATCH_SIZE, command)
 
     # -- uninstallation of the modules left in 'to remove' -------------------
 

@@ -19,6 +19,7 @@ from odoo.exceptions import UserError, ValidationError
 from odoo.tools import config
 from odoo.tools.safe_eval import safe_eval
 
+from .. import purge
 from .openupgrader_config import _get_env_for_subprocess
 from .tools import (
     _get_log_path,
@@ -123,23 +124,6 @@ MIGRATION_INSTANCE_START_TIMEOUT = int(
 # (``OPENUPGRADER_MIGRATED_DB_MAX_WAIT``, seconds).
 MIGRATED_DB_MAX_WAIT = int(
     os.environ.get("OPENUPGRADER_MIGRATED_DB_MAX_WAIT") or 24 * 3600
-)
-
-# Batched purge of the mail data of the modules to uninstall (see
-# _purge_mail_data).
-MAIL_PURGE_BATCH_SIZE = 5000
-MAIL_PURGE_MAX_BATCHES = 10000
-# Batched purge of the ir_attachment rows of the modules to uninstall (see
-# _purge_attachment_data).
-ATTACHMENT_PURGE_BATCH_SIZE = 5000
-ATTACHMENT_PURGE_MAX_BATCHES = 10000
-# Tables purged in batches before the uninstallation: the temporary indexes of
-# _purge_fk_indexes cover the foreign keys referencing them.
-PURGE_TABLES = ("mail_activity", "mail_followers", "mail_message", "ir_attachment")
-# Models of mail: Odoo skips their mail data on unlink, purging them would
-# delete the mail data of every model.
-MAIL_MODELS_NOT_PURGED = frozenset(
-    ("mail.activity", "mail.activity.type", "mail.followers", "mail.message")
 )
 
 
@@ -1171,6 +1155,7 @@ class OpenupgraderMigration(models.Model):
             f"--max-cron-threads=0 "
             f"--limit-time-cpu=99000 "
             f"--limit-time-real=99000 "
+            f"--limit-time-real-cron=99000 "
             f"--limit-memory-soft=4147483648 "
             f"--limit-memory-hard=4679107584 "
             f"--{websocket_server}-port={websocket_port} "
@@ -1336,6 +1321,14 @@ class OpenupgraderMigration(models.Model):
             "migrated" if migrated else "original",
             version_name,
         )
+        if migrated:
+            # never ship the temporary purge indexes in the dump, even when the
+            # purge step was skipped or its cleanup could not run
+            purge.purge_fk_indexes(
+                self._get_migrated_db_name(),
+                self._get_db_connection_variables(),
+                drop=True,
+            )
         destination_path = os.path.join(self.folder, f"database.{version_name}.dump")
         globals_path = os.path.join(self.folder, f"globals.{version_name}.sql")
         conn_vars = self._get_db_connection_variables()
@@ -3168,450 +3161,36 @@ END
         logger.info("Modules uninstalled: %s", sorted(removed_modules))
         return removed_modules
 
-    def _get_module_model_names(self, module_names):
-        """Return the models that Odoo removes with ``module_names``.
-
-        Mirrors ``ir_model.data._module_data_uninstall``: models still
-        referenced by another module are kept by Odoo (and skipped here).
-        """
-        module_names = sorted(
-            name
-            for name in set(module_names or [])
-            if re.fullmatch(r"[a-zA-Z0-9_.\-]+", name or "")
-        )
-        if not module_names:
-            return []
-        in_clause = ",".join(_sql_quote(name) for name in module_names)
-        sql_command = (
-            "SELECT DISTINCT im.model FROM ir_model_data d "
-            "JOIN ir_model im ON im.id = d.res_id "
-            f"WHERE d.model = 'ir.model' AND d.module IN ({in_clause}) "
-            "AND NOT EXISTS ("
-            "SELECT 1 FROM ir_model_data o "
-            "WHERE o.model = 'ir.model' AND o.res_id = d.res_id "
-            f"AND o.module NOT IN ({in_clause}) "
-            "AND o.module <> '__cloc_exclude__')"
-            ";"
-        )
-        conn_vars = self._get_db_connection_variables()
-        result = run(
-            [
-                f"{conn_vars} && psql -d {self._get_migrated_db_name()} -t -A "
-                f'-c "{sql_command}"'
-            ],
-            shell=True,
-            stdout=PIPE,
-            stderr=PIPE,
-            universal_newlines=True,
-        )
-        if result.returncode:
-            logger.error(
-                "Unable to list the models of the modules to uninstall %s: %s",
-                module_names,
-                (result.stderr or result.stdout or "").strip(),
-            )
-            return []
-        model_names = [
-            line.strip() for line in (result.stdout or "").splitlines() if line.strip()
-        ]
-        # the names are embedded in a psql command line: never trust the table
-        invalid_names = [
-            name
-            for name in model_names
-            if not re.fullmatch(r"[a-zA-Z0-9_.]+", name)
-            or name in MAIL_MODELS_NOT_PURGED
-        ]
-        if invalid_names:
-            logger.error(
-                "Not purging the data of the models %s (invalid name or "
-                "model of the mail module itself).",
-                invalid_names,
-            )
-            model_names = [name for name in model_names if name not in invalid_names]
-        return model_names
-
-    def _psql(self, migrated_db, sql):
-        """Run ``sql`` on the migrated DB and return its output ('' on error)."""
-        result = run(
-            [
-                f"{self._get_db_connection_variables()} && psql -v ON_ERROR_STOP=1 "
-                f'-d {migrated_db} -t -A -c "{sql}"'
-            ],
-            shell=True,
-            stdout=PIPE,
-            stderr=PIPE,
-            universal_newlines=True,
-        )
-        if result.returncode:
-            logger.warning(
-                "Unable to run %r on %s: %s",
-                sql,
-                migrated_db,
-                (result.stderr or result.stdout or "").strip(),
-            )
-            return ""
-        return result.stdout or ""
-
-    def _count_rows(self, migrated_db, sql):
-        """Rows matching ``sql``; 0 (no percentage in the log) on failure."""
-        try:
-            return int(self._psql(migrated_db, sql).strip().splitlines()[-1])
-        except (IndexError, ValueError):
-            return 0
-
-    def _purge_fk_indexes(self, migrated_db, drop=False):
-        """Index the unindexed foreign keys of the purged tables, or drop them.
-
-        Deleting a row makes PostgreSQL scan every referencing table without
-        an index on its FK column once per deleted row (``ON DELETE SET NULL``
-        and ``CASCADE``), so the batched purge of ``ir_attachment`` takes hours
-        on a big ``account_move`` instead of minutes. The indexes are temporary
-        (``drop=True`` removes them after the purge), so the dumped database is
-        not changed.
-        """
-        tables = ", ".join(f"{_sql_quote(t)}::regclass" for t in PURGE_TABLES)
-        if drop:
-            sql = (
-                "SELECT format('DROP INDEX IF EXISTS %I;', c.relname) "
-                "FROM pg_class c WHERE c.relkind = 'i' "
-                "AND c.relname LIKE 'openupgrader\\_fk\\_%'"
-            )
-        else:
-            sql = (
-                "SELECT format('CREATE INDEX IF NOT EXISTS %I ON %s (%I);', "
-                "left('openupgrader_fk_' || c.conname, 63), "
-                "c.conrelid::regclass, a.attname) FROM pg_constraint c "
-                "JOIN pg_attribute a ON a.attrelid = c.conrelid "
-                "AND a.attnum = c.conkey[1] WHERE c.contype = 'f' "
-                f"AND cardinality(c.conkey) = 1 AND c.confrelid IN ({tables}) "
-                "AND NOT EXISTS (SELECT 1 FROM pg_index i "
-                "WHERE i.indrelid = c.conrelid AND i.indisvalid "
-                "AND i.indisready AND (i.indkey::int2[])[0:0] = c.conkey)"
-            )
-        statements = [
-            line for line in self._psql(migrated_db, sql).splitlines() if line.strip()
-        ]
-        if not statements:
-            return
-        started = time.monotonic()
-        prefix = "" if drop else "SET lock_timeout = '60s'; "
-        for statement in statements:
-            self._psql(migrated_db, prefix + statement)
-        logger.info(
-            "%s %s temporary foreign key index(es) of the purged tables in %ss.",
-            "Dropped" if drop else "Built",
-            len(statements),
-            round(time.monotonic() - started),
-        )
-
-    def _log_purge_progress(self, table, model_names, deleted, total, started):
-        """Log the percentage and the estimated time left of a batched purge."""
-        elapsed = max(time.monotonic() - started, 1)
-        percent = min(round(100.0 * deleted / total), 100) if total else "?"
-        eta = (
-            round(max(total - deleted, 0) * elapsed / deleted / 60)
-            if total and deleted
-            else "?"
-        )
-        logger.info(
-            "Purged %s/%s %s row(s) for modules %s: %s%% done, ~%sm left.",
-            deleted,
-            total or "?",
-            table,
-            model_names,
-            percent,
-            eta,
-        )
-
     def _purge_mail_data(self, module_names):
         """Delete the mail and attachment data of the removed models early.
 
-        Odoo 18 ``mail``'s ``IrModel.unlink`` deletes every ``mail_message``,
-        ``mail_followers`` and ``mail_activity`` row of the removed models, and
-        every ``ir_attachment`` row, in one unbounded statement inside the
-        uninstall transaction (hours on a production database). Doing it here
-        in committed batches makes the uninstallation fast and keeps the
-        progress.
+        Odoo 18 ``IrModel.unlink`` deletes every ``mail_message``,
+        ``mail_followers``, ``mail_activity`` and ``ir_attachment`` row of the
+        removed models in one unbounded statement inside the uninstall
+        transaction (hours on a production database). The batched deletion
+        lives in ``openupgrader.purge``, which can also be run on its own (see
+        ``python purge.py --help``); here only the models are resolved and the
+        module operation still running on the migrated database is awaited.
 
         :return: the number of mail rows deleted.
         """
-        model_names = self._get_module_model_names(module_names)
+        migrated_db = self._get_migrated_db_name()
+        conn_vars = self._get_db_connection_variables()
+        model_names = purge.get_module_model_names(migrated_db, module_names, conn_vars)
         if not model_names:
             return 0
-        migrated_db = self._get_migrated_db_name()
         # an operation left running by a previous attempt (typically the very
         # delete being purged) must finish first: wait for it while it is active
         self._wait_active_module_operation(migrated_db)
-        # without indexes on their FK columns, each deleted row scans the
-        # referencing tables: the purge would take hours on a big database
-        self._purge_fk_indexes(migrated_db)
-        conn_vars = self._get_db_connection_variables()
-        models = ",".join(_sql_quote(name) for name in model_names)
-        # (table, count statement, batched delete statement): the count is the
-        # estimate the progress log compares the deleted rows with
-        statements = [
-            (
-                "mail_activity",
-                "SELECT count(*) FROM mail_activity WHERE res_model_id IN "
-                f"(SELECT id FROM ir_model WHERE model IN ({models}))",
-                "DELETE FROM mail_activity WHERE id IN ("
-                "SELECT id FROM mail_activity WHERE res_model_id IN "
-                f"(SELECT id FROM ir_model WHERE model IN ({models})) "
-                f"LIMIT {MAIL_PURGE_BATCH_SIZE})",
-            ),
-            (
-                "mail_followers",
-                f"SELECT count(*) FROM mail_followers WHERE res_model IN ({models})",
-                "DELETE FROM mail_followers WHERE id IN ("
-                f"SELECT id FROM mail_followers WHERE res_model IN ({models}) "
-                f"LIMIT {MAIL_PURGE_BATCH_SIZE})",
-            ),
-            (
-                "mail_message",
-                f"SELECT count(*) FROM mail_message WHERE model IN ({models})",
-                "DELETE FROM mail_message WHERE id IN ("
-                f"SELECT id FROM mail_message WHERE model IN ({models}) "
-                f"LIMIT {MAIL_PURGE_BATCH_SIZE})",
-            ),
-        ]
-        logger.info(
-            "Purging the mail data of the models of the modules to uninstall "
-            "%s (%s models, %s rows per commit).",
-            module_names,
-            len(model_names),
-            MAIL_PURGE_BATCH_SIZE,
-        )
-        deleted_rows = 0
-        failed = False
-        for table, count_statement, statement in statements:
-            # an estimate taken once per table: the percentage and the
-            # remaining time assume the rows go away at the average rate
-            total_rows = self._count_rows(migrated_db, count_statement)
-            started = time.monotonic()
-            table_deleted_rows = 0
-            batches = 0
-            while True:
-                batches += 1
-                if batches > MAIL_PURGE_MAX_BATCHES:
-                    logger.error(
-                        "Stopped purging %s for modules %s after %s batches: "
-                        "rows are still being inserted?",
-                        table,
-                        module_names,
-                        batches,
-                    )
-                    failed = True
-                    break
-                sql_command = (
-                    "SET lock_timeout = '60s'; "
-                    f"WITH d AS ({statement} RETURNING 1) SELECT count(*) FROM d;"
-                )
-                result = run(
-                    [
-                        f"{conn_vars} && psql -v ON_ERROR_STOP=1 "
-                        f'-d {migrated_db} -t -A -c "{sql_command}"'
-                    ],
-                    shell=True,
-                    stdout=PIPE,
-                    stderr=PIPE,
-                    universal_newlines=True,
-                )
-                if result.returncode:
-                    logger.error(
-                        "Unable to purge %s for modules %s: %s. The "
-                        "uninstallation will delete the remaining rows in one "
-                        "statement.",
-                        table,
-                        module_names,
-                        (result.stderr or result.stdout or "").strip(),
-                    )
-                    failed = True
-                    break
-                try:
-                    deleted = int((result.stdout or "0").strip().splitlines()[-1])
-                except (IndexError, ValueError):
-                    logger.error(
-                        "Unexpected output purging %s for modules %s: %s",
-                        table,
-                        module_names,
-                        (result.stdout or "").strip(),
-                    )
-                    failed = True
-                    break
-                if not deleted:
-                    break
-                deleted_rows += deleted
-                table_deleted_rows += deleted
-                self._log_purge_progress(
-                    table, module_names, table_deleted_rows, total_rows, started
-                )
-        logger.info(
-            "Mail data purge for modules %s done: %s row(s) deleted%s.",
-            module_names,
-            deleted_rows,
-            " (incomplete, see the previous errors)" if failed else "",
-        )
-        # same order as IrModel.unlink: the mail rows (and their attachment
-        # relations) go first, then the attachment rows
-        self._purge_attachment_data(model_names)
-        self._purge_fk_indexes(migrated_db, drop=True)
-        return deleted_rows
-
-    def _purge_attachment_data(self, model_names):
-        """Delete the ``ir_attachment`` rows of ``model_names`` in advance.
-
-        ``IrModel.unlink`` also runs ``DELETE FROM ir_attachment WHERE
-        res_model in %s`` for the removed models, in the same transaction as
-        the uninstallation. A big e-invoice history makes that statement alone
-        run for hours, so the client RPC timeout (and the cron worker timeout)
-        fires while the server keeps working: the work is then rolled back and
-        the next attempt starts over.
-
-        The rows are deleted here in committed batches instead. Deleting them
-        with SQL bypasses ``ir.attachment._file_delete``, so the
-        ``store_fname`` of each deleted row is added to the migration
-        instance's filestore checklist exactly like ``_mark_for_gc`` does; the
-        garbage collector keeps a file still referenced by an attachment of
-        another model.
-
-        :return: the number of rows deleted.
-        """
-        if not model_names:
-            return 0
-        migrated_db = self._get_migrated_db_name()
-        conn_vars = self._get_db_connection_variables()
-        models = ",".join(_sql_quote(name) for name in model_names)
-        logger.info(
-            "Purging the attachments of the models of the modules to uninstall "
-            "%s (%s models, %s rows per commit).",
-            model_names,
-            len(model_names),
-            ATTACHMENT_PURGE_BATCH_SIZE,
-        )
-        # estimate the total once: the progress of every batch is logged
-        # against it, with the remaining time computed from the average rate
-        total_rows = self._count_rows(
+        return purge.purge_data(
             migrated_db,
-            f"SELECT count(*) FROM ir_attachment WHERE res_model IN ({models})",
-        )
-        started = time.monotonic()
-        deleted_rows = 0
-        failed = False
-        batches = 0
-        while True:
-            batches += 1
-            if batches > ATTACHMENT_PURGE_MAX_BATCHES:
-                logger.error(
-                    "Stopped purging ir_attachment for models %s after %s "
-                    "batches: rows are still being inserted?",
-                    model_names,
-                    batches,
-                )
-                failed = True
-                break
-            sql_command = (
-                "SET lock_timeout = '60s'; "
-                "WITH batch AS ("
-                "SELECT id, store_fname FROM ir_attachment "
-                f"WHERE res_model IN ({models}) "
-                f"LIMIT {ATTACHMENT_PURGE_BATCH_SIZE}), "
-                "deleted AS ("
-                "DELETE FROM ir_attachment a USING batch b "
-                "WHERE a.id = b.id RETURNING b.store_fname) "
-                "SELECT count(*), coalesce(string_agg(store_fname, ','), '') "
-                "FROM deleted;"
-            )
-            result = run(
-                [
-                    f"{conn_vars} && psql -v ON_ERROR_STOP=1 "
-                    f'-d {migrated_db} -t -A -c "{sql_command}"'
-                ],
-                shell=True,
-                stdout=PIPE,
-                stderr=PIPE,
-                universal_newlines=True,
-            )
-            if result.returncode:
-                logger.error(
-                    "Unable to purge ir_attachment for models %s: %s. The "
-                    "uninstallation will delete the remaining rows in one "
-                    "statement.",
-                    model_names,
-                    (result.stderr or result.stdout or "").strip(),
-                )
-                failed = True
-                break
-            output = (result.stdout or "").strip().splitlines()
-            try:
-                deleted, store_fnames = output[-1].split("|", 1)
-                deleted = int(deleted)
-            except (IndexError, ValueError):
-                logger.error(
-                    "Unexpected output purging ir_attachment for models %s: %s",
-                    model_names,
-                    (result.stdout or "").strip(),
-                )
-                failed = True
-                break
-            if not deleted:
-                break
-            deleted_rows += deleted
-            self._mark_attachments_for_gc(
-                [fname for fname in store_fnames.split(",") if fname]
-            )
-            self._log_purge_progress(
-                "ir_attachment", model_names, deleted_rows, total_rows, started
-            )
-        logger.info(
-            "Attachment purge for models %s done: %s row(s) deleted%s.",
             model_names,
-            deleted_rows,
-            " (incomplete, see the previous errors)" if failed else "",
-        )
-        return deleted_rows
-
-    def _mark_attachments_for_gc(self, store_fnames):
-        """Add ``store_fnames`` to the migrated instance filestore checklist.
-
-        Mirrors ``ir.attachment._mark_for_gc``: the real file is removed later
-        by the garbage collector, which also checks that no other attachment
-        still references it. The checklist lives in the data dir that
-        ``start_odoo`` passes to the migration instance.
-        """
-        checklist_dir = os.path.abspath(
+            conn_vars,
             os.path.join(
-                self.folder,
-                "data_dir",
-                "filestore",
-                self._get_migrated_db_name(),
-                "checklist",
-            )
+                self.folder, "data_dir", "filestore", migrated_db, "checklist"
+            ),
+            label=module_names,
         )
-        for store_fname in store_fnames:
-            # same normalization as ir.attachment._mark_for_gc
-            fname = re.sub(r"[.]", "", store_fname).strip("/\\")
-            if not fname:
-                continue
-            full_path = os.path.abspath(os.path.join(checklist_dir, fname))
-            if os.path.commonpath([checklist_dir, full_path]) != checklist_dir:
-                logger.warning(
-                    "Not marking attachment file %s for garbage collection: "
-                    "invalid store name.",
-                    store_fname,
-                )
-                continue
-            try:
-                dirname = os.path.dirname(full_path)
-                if not os.path.isdir(dirname):
-                    os.makedirs(dirname, exist_ok=True)
-                with open(full_path, "ab"):
-                    pass
-            except OSError:
-                logger.warning(
-                    "Unable to mark attachment file %s for garbage collection.",
-                    full_path,
-                    exc_info=True,
-                )
 
     def _uninstall_module(
         self, module, module_obj, cleanup_ids, migrated_db, config_id
