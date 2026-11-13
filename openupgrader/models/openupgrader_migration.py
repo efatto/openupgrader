@@ -3227,6 +3227,42 @@ END
             model_names = [name for name in model_names if name not in invalid_names]
         return model_names
 
+    def _count_rows(self, migrated_db, sql):
+        """Rows matching ``sql``; 0 (no percentage in the log) on failure."""
+        result = run(
+            [
+                f"{self._get_db_connection_variables()} && psql -v ON_ERROR_STOP=1 "
+                f'-d {migrated_db} -t -A -c "{sql}"'
+            ],
+            shell=True,
+            stdout=PIPE,
+            stderr=PIPE,
+            universal_newlines=True,
+        )
+        try:
+            return int((result.stdout or "").strip().splitlines()[-1])
+        except (IndexError, ValueError):
+            return 0
+
+    def _log_purge_progress(self, table, model_names, deleted, total, started):
+        """Log the percentage and the estimated time left of a batched purge."""
+        elapsed = max(time.monotonic() - started, 1)
+        percent = min(round(100.0 * deleted / total), 100) if total else "?"
+        eta = (
+            round(max(total - deleted, 0) * elapsed / deleted / 60)
+            if total and deleted
+            else "?"
+        )
+        logger.info(
+            "Purged %s/%s %s row(s) for modules %s: %s%% done, ~%sm left.",
+            deleted,
+            total or "?",
+            table,
+            model_names,
+            percent,
+            eta,
+        )
+
     def _purge_mail_data(self, module_names):
         """Delete the mail and attachment data of the removed models early.
 
@@ -3248,9 +3284,13 @@ END
         self._wait_active_module_operation(migrated_db)
         conn_vars = self._get_db_connection_variables()
         models = ",".join(_sql_quote(name) for name in model_names)
+        # (table, count statement, batched delete statement): the count is the
+        # estimate the progress log compares the deleted rows with
         statements = [
             (
                 "mail_activity",
+                "SELECT count(*) FROM mail_activity WHERE res_model_id IN "
+                f"(SELECT id FROM ir_model WHERE model IN ({models}))",
                 "DELETE FROM mail_activity WHERE id IN ("
                 "SELECT id FROM mail_activity WHERE res_model_id IN "
                 f"(SELECT id FROM ir_model WHERE model IN ({models})) "
@@ -3258,12 +3298,14 @@ END
             ),
             (
                 "mail_followers",
+                f"SELECT count(*) FROM mail_followers WHERE res_model IN ({models})",
                 "DELETE FROM mail_followers WHERE id IN ("
                 f"SELECT id FROM mail_followers WHERE res_model IN ({models}) "
                 f"LIMIT {MAIL_PURGE_BATCH_SIZE})",
             ),
             (
                 "mail_message",
+                f"SELECT count(*) FROM mail_message WHERE model IN ({models})",
                 "DELETE FROM mail_message WHERE id IN ("
                 f"SELECT id FROM mail_message WHERE model IN ({models}) "
                 f"LIMIT {MAIL_PURGE_BATCH_SIZE})",
@@ -3278,7 +3320,12 @@ END
         )
         deleted_rows = 0
         failed = False
-        for table, statement in statements:
+        for table, count_statement, statement in statements:
+            # an estimate taken once per table: the percentage and the
+            # remaining time assume the rows go away at the average rate
+            total_rows = self._count_rows(migrated_db, count_statement)
+            started = time.monotonic()
+            table_deleted_rows = 0
             batches = 0
             while True:
                 batches += 1
@@ -3331,11 +3378,9 @@ END
                 if not deleted:
                     break
                 deleted_rows += deleted
-                logger.info(
-                    "Purged %s %s row(s) for modules %s.",
-                    deleted,
-                    table,
-                    module_names,
+                table_deleted_rows += deleted
+                self._log_purge_progress(
+                    table, module_names, table_deleted_rows, total_rows, started
                 )
         logger.info(
             "Mail data purge for modules %s done: %s row(s) deleted%s.",
@@ -3379,6 +3424,13 @@ END
             len(model_names),
             ATTACHMENT_PURGE_BATCH_SIZE,
         )
+        # estimate the total once: the progress of every batch is logged
+        # against it, with the remaining time computed from the average rate
+        total_rows = self._count_rows(
+            migrated_db,
+            f"SELECT count(*) FROM ir_attachment WHERE res_model IN ({models})",
+        )
+        started = time.monotonic()
         deleted_rows = 0
         failed = False
         batches = 0
@@ -3443,10 +3495,8 @@ END
             self._mark_attachments_for_gc(
                 [fname for fname in store_fnames.split(",") if fname]
             )
-            logger.info(
-                "Purged %s ir_attachment row(s) for modules %s.",
-                deleted,
-                model_names,
+            self._log_purge_progress(
+                "ir_attachment", model_names, deleted_rows, total_rows, started
             )
         logger.info(
             "Attachment purge for models %s done: %s row(s) deleted%s.",

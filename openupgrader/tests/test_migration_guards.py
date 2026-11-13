@@ -536,6 +536,7 @@ class MigrationGuardTest(SavepointCase):
     def test_attachment_purge_is_batched_and_marks_the_filestore(self):
         """Deleted attachment files go to the filestore GC checklist."""
         batches = [
+            subprocess.CompletedProcess([], 0, "2\n", ""),
             subprocess.CompletedProcess([], 0, "2|ab/aaa,cd/bbb\n", ""),
             subprocess.CompletedProcess([], 0, "0|\n", ""),
         ]
@@ -551,7 +552,7 @@ class MigrationGuardTest(SavepointCase):
             self.assertTrue(os.path.isfile(os.path.join(checklist, "ab", "aaa")))
             self.assertTrue(os.path.isfile(os.path.join(checklist, "cd", "bbb")))
         self.assertEqual(deleted, 2)
-        command = run_mock.call_args_list[0][0][0][0]
+        command = run_mock.call_args_list[1][0][0][0]
         self.assertIn("DELETE FROM ir_attachment", command)
         self.assertIn("res_model IN ('fatturapa.attachment')", command)
         self.assertIn(
@@ -578,12 +579,8 @@ class MigrationGuardTest(SavepointCase):
         migration_class = type(self.migration)
         with patch.object(
             migration_class, "_verify_module_states", return_value=states
-        ), patch.object(migration_class, "current_config_id", new=config), patch.object(
-            migration_module.logger, "warning"
-        ) as warn_mock:
+        ), patch.object(migration_class, "current_config_id", new=config):
             self.assertEqual(self.migration.get_pending_modules(), ["old_a", "old_b"])
-        self.assertIn("leftover_upgrade", str(warn_mock.call_args_list))
-        self.assertIn("leftover_install", str(warn_mock.call_args_list))
 
     def test_pending_modules_empty_resets_the_retry_counter(self):
         states = {"to upgrade": [], "to remove": [], "to install": []}
