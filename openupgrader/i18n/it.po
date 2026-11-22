@@ -315,6 +315,17 @@ msgid "Failed"
 msgstr "Fallito"
 
 #. module: openupgrader
+#: model_terms:ir.ui.view,arch_db:openupgrader.view_openupgrader_migration_form
+msgid "Fix mail templates"
+msgstr "Correggi i template email"
+
+#. module: openupgrader
+#: code:addons/openupgrader/models/openupgrader_migration.py:0
+#, python-format
+msgid "Fixing the mail templates of %(db)s failed (exit code %(code)s), see the log of the migration folder: %(output)s"
+msgstr "Correzione dei template email di %(db)s fallita (exit code %(code)s), vedi il log della cartella di migrazione: %(output)s"
+
+#. module: openupgrader
 #: model:ir.model.fields,field_description:openupgrader.field_openupgrader_migration__folder
 msgid "Folder"
 msgstr "Cartella"
@@ -438,6 +449,21 @@ msgid "Logs"
 msgstr "Log"
 
 #. module: openupgrader
+#: model_terms:ir.ui.view,arch_db:openupgrader.view_openupgrader_migration_form
+msgid "Mail templates"
+msgstr "Template email"
+
+#. module: openupgrader
+#: code:addons/openupgrader/models/openupgrader_migration.py:0
+msgid "Mail templates checked"
+msgstr "Template email verificati"
+
+#. module: openupgrader
+#: model:ir.model.fields,field_description:openupgrader.field_openupgrader_migration__mail_template_fix_log
+msgid "Mail templates fix log"
+msgstr "Log correzione template email"
+
+#. module: openupgrader
 #: model:ir.model.fields,field_description:openupgrader.field_openupgrader_migration__migrate_filestore
 msgid "Migrate Filestore"
 msgstr "Migra il filestore"
@@ -550,6 +576,16 @@ msgstr "Moduli da disinstallare dopo la migrazione"
 #: model:ir.model.fields,field_description:openupgrader.field_openupgrader_migration__next_config_id
 msgid "Next version to be migrated"
 msgstr "Prossima versione da migrare"
+
+#. module: openupgrader
+#: code:addons/openupgrader/models/openupgrader_migration.py:0
+msgid "No migrated version: run the migration before fixing its templates."
+msgstr "Nessuna versione migrata: esegui la migrazione prima di correggere i template."
+
+#. module: openupgrader
+#: code:addons/openupgrader/models/openupgrader_migration.py:0
+msgid "Nothing to convert."
+msgstr "Niente da convertire."
 
 #. module: openupgrader
 #: model:ir.model.fields,field_description:openupgrader.field_openupgrader_config__obsolete_modules
@@ -769,6 +805,11 @@ msgstr "Nome repository remoto"
 #: model:ir.model.fields,field_description:openupgrader.field_remote_repo__remote_url
 msgid "Remote Repo URL"
 msgstr "URL repository remoto"
+
+#. module: openupgrader
+#: model:ir.model.fields,help:openupgrader.field_openupgrader_migration__mail_template_fix_log
+msgid "Result of the last execution of 'Fix mail templates'."
+msgstr "Risultato dell'ultima esecuzione di 'Correggi template email'."
 
 #. module: openupgrader
 #: model_terms:ir.ui.view,arch_db:openupgrader.view_openupgrader_migration_form

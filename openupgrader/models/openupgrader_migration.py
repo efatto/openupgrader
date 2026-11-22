@@ -19,7 +19,7 @@ from odoo.exceptions import UserError, ValidationError
 from odoo.tools import config
 from odoo.tools.safe_eval import safe_eval
 
-from .. import purge
+from .. import mail_template_qweb, purge
 from .openupgrader_config import _get_env_for_subprocess
 from .tools import (
     _get_log_path,
@@ -267,6 +267,11 @@ class OpenupgraderMigration(models.Model):
     migration_warning_log = fields.Text(string="Migration warnings in log")
     migration_error_log = fields.Text(string="Migration errors in log")
     pending_modules = fields.Text(string="Pending modules set as uninstalled")
+    mail_template_fix_log = fields.Text(
+        string="Mail templates fix log",
+        readonly=True,
+        help="Result of the last execution of 'Fix mail templates'.",
+    )
     uninstalled_modules = fields.Text(string="Uninstalled modules")
     uninstallable_modules = fields.Text(string="Uninstallable modules")
     not_autoinstallable_modules = fields.Text(
@@ -2370,6 +2375,96 @@ END
             self.db_name,
             self.current_config_id.name,
         )
+
+    def button_fix_mail_templates(self):
+        """Rewrite the Jinja filters left in the mail templates into QWeb.
+
+        Bodies migrated from 15.0 or less keep Jinja filters/tests such as
+        ``|selectattr('type', 'equalto', 'pet')`` or ``|map(attribute='name')``:
+        since 16.0 they are rendered by QWeb, which resolves those names in its
+        ``values`` namespace, so the template raises at render time
+        (``TypeError: 'NoneType' object is not callable``) instead of being sent.
+
+        The conversion runs with ``odoo shell`` on the migrated database of the
+        target version, so the ``Html`` fields are written by the ORM of the
+        version that renders them (they are translated ``jsonb`` columns). The
+        original bodies are saved under ``<folder>/mail_template_qweb`` before
+        being replaced. Every value is written on its own: the method is
+        idempotent and can be run again after a partial failure.
+        """
+        self.ensure_one()
+        config_id = self.current_config_id or self.to_config_id
+        if not config_id:
+            raise UserError(
+                _("No migrated version: run the migration before fixing its templates.")
+            )
+        migrated_db = self._get_migrated_db_name()
+        self._lock_migrated_db()
+        self._wait_migrated_db_idle(migrated_db)
+        command, folder, subprocess_env = self._get_python_command_shell_command(
+            config_id, migrated_db
+        )
+        script_path = os.path.join(
+            os.path.dirname(os.path.dirname(__file__)), "mail_template_qweb.py"
+        )
+        with open(script_path) as script_file:
+            script = script_file.read()
+        dump_dir = os.path.join(
+            self.folder, "mail_template_qweb", config_id.name, migrated_db
+        )
+        subprocess_env["OPENUPGRADER_MAIL_TEMPLATE_DUMP"] = dump_dir
+        logger.info(
+            "Fixing the QWeb mail templates of %s on version %s",
+            migrated_db,
+            config_id.name,
+        )
+        result = run(
+            [command],
+            shell=True,
+            cwd=folder,
+            env=subprocess_env,
+            # `env` is the shell namespace; the commit is only reached when
+            # the script did not raise, like in python_fixes()
+            input=f"{script}\n\nmain(env)\n\nenv.cr.commit()\n",
+            stdout=PIPE,
+            stderr=PIPE,
+            universal_newlines=True,
+        )
+        output = (result.stdout or "").strip()
+        errors = (result.stderr or "").strip()
+        self.mail_template_fix_log = "\n".join(filter(None, [output, errors]))
+        if output:
+            logger.info("Mail templates fix result:\n%s", output)
+        if errors:
+            logger.info("Mail templates fix output:\n%s", errors)
+        summary = ""
+        for line in output.splitlines():
+            if line.startswith(mail_template_qweb.RESULT_PREFIX + " | summary"):
+                summary = line
+        if result.returncode:
+            raise UserError(
+                _(
+                    "Fixing the mail templates of %(db)s failed (exit code "
+                    "%(code)s), see the log of the migration folder: %(output)s"
+                )
+                % {
+                    "db": migrated_db,
+                    "code": result.returncode,
+                    "output": (errors or output or "-")[-2000:],
+                }
+            )
+        return {
+            "type": "ir.actions.client",
+            "tag": "display_notification",
+            "name": _("Mail templates"),
+            "params": {
+                "title": _("Mail templates checked"),
+                "message": summary or _("Nothing to convert."),
+                "type": "warning" if errors else "success",
+                "sticky": bool(errors),
+                "next": {"type": "ir.actions.client", "tag": "reload"},
+            },
+        }
 
     def button_do_migration(self):
         self._lock_migrated_db()

@@ -245,6 +245,21 @@
                                         string="Generate final migration backup"
                                     />
                                 </group>
+                                <group colspan="2" col="1" string="Mail templates">
+                                    <field name="is_migration_done" invisible="1" />
+                                    <button
+                                        name="button_fix_mail_templates"
+                                        type="object"
+                                        string="Fix mail templates"
+                                        attrs="{'invisible': [('is_migration_done', '=', False)]}"
+                                        help="Rewrite the Jinja filters and tests left in the mail templates of the migrated database: QWeb does not support them and the templates fail at send time. Run it when the migration is over; it is idempotent and the original bodies are saved in the migration folder."
+                                    />
+                                    <field
+                                        name="mail_template_fix_log"
+                                        nolabel="1"
+                                        attrs="{'invisible': [('mail_template_fix_log', '=', False)]}"
+                                    />
+                                </group>
                                 <group
                                     colspan="2"
                                     col="1"

@@ -57,10 +57,15 @@ Standard procedure (UI)
 3. Create one config per version and press ``Create virtualenv`` on each of
    them (or ``Create all envs`` on the migration).
 4. Press ``Auto migration``.
-5. When the state is ``done``, restore the final dump
-   ``database.<target>.dump`` on the target server.  The per-version ``done``
-   state also confirms that the final end-migration dump has been written
-   exactly once.
+5. When the state is ``done``, press ``Fix mail templates`` if the YML
+   recipe did not already convert the mail bodies (see
+   `Mail templates of a migrated database`_): the button is visible as soon
+   as the migrated version is the target one and it rewrites the bodies of the
+   migrated database.  If the final dump was written before the fix, write it
+   again with ``Dump current migrating database``.
+6. Restore the final dump ``database.<target>.dump`` on the target server.  The
+   per-version ``done`` state also confirms that the final end-migration dump
+   has been written exactly once.
 
 The manual alternative, for a single version, is:
 ``Restore`` -> ``Update`` -> ``Prepare migration`` -> ``Migrate``, repeated
@@ -181,6 +186,39 @@ Notes:
   ``config_file_path`` + ``button_reload_config_file`` to reload after an
   edit (the path takes precedence over the uploaded file).
 
+Mail templates of a migrated database
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+From Odoo 16.0 the mail bodies are rendered by QWeb only, and a ``t-*``
+attribute holds a **python** expression.  A body migrated from 15.0 or less
+keeps the Jinja syntax of the old engine -- ``|selectattr('type', 'equalto',
+'pet')``, ``|map(attribute='name')``, ``|join(', ')``, ``|length`` -- and QWeb
+resolves those names in its ``values`` namespace, so the template raises at
+render time (``TypeError: 'NoneType' object is not callable``) instead of
+being sent; a leftover ``${expr}`` is printed verbatim in the email.
+
+``Fix mail templates`` (the ``button_fix_mail_templates()`` method) rewrites
+those expressions with ``odoo shell`` on the migrated database of the target
+version, so the translated ``Html`` fields are written by the ORM of the
+version that renders them.  It only replaces the value of the ``t-*``
+attributes, it saves the original bodies under
+``<folder>/mail_template_qweb/<version>/<db>_migrate/`` (with the
+``index.json`` used by ``/workspace/tools/fix_mail_templates_qweb.py``
+``MODE=restore``), and it is idempotent: run it again after a partial
+failure.  Filters it does not know (``striptags``, ``truncate``, ``format``,
+date filters) are reported in ``mail_template_fix_log`` and left untouched.
+
+The same conversion can be run without the UI, on the migrated database, with
+the python of the target version::
+
+    <target venv>/bin/python <target odoo>/odoo-bin shell -d <db>_migrate \
+        --no-http <<'EOF'
+    exec(open('/path/to/openupgrader/mail_template_qweb.py').read())
+    main(env)
+    env.cr.commit()
+    EOF
+
+
 Making repeated tests fast
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -243,6 +281,8 @@ Handy methods (all callable from ``odoo-bin shell``)
     run one migration step (used by the cron);
 ``mig.button_prepare_for_migration()``
     run the pre-migration SQL fixes, uninstalls and cleanup;
+``mig.button_fix_mail_templates()``
+    convert the Jinja filters left in the mail templates into QWeb;
 ``mig.button_dump_current_database()``
     dump the migrated DB for the current version;
 ``mig.button_restore_last_database()``
