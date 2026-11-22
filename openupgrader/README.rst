@@ -328,8 +328,16 @@ attributes, it saves the original bodies under
 ``<folder>/mail_template_qweb/<version>/<db>_migrate/`` (with the
 ``index.json`` used by ``/workspace/tools/fix_mail_templates_qweb.py``
 ``MODE=restore``), and it is idempotent: run it again after a partial
-failure.  Filters it does not know (``striptags``, ``truncate``, ``format``,
-date filters) are reported in ``mail_template_fix_log`` and left untouched.
+failure.  It also rewrites a leftover ``${expr}`` into ``<t t-out="expr">``
+when the placeholder sits in a text node (the usual case, e.g.
+``Gentile ${object.name},``); a placeholder inside an attribute (``href="/p/${x}"``)
+needs ``t-att-*`` and is reported instead.  ``|safe`` and ``|list`` are
+converted too: the former turns the directive into the deprecated but working
+``t-raw`` (``t-out`` escapes the value), the latter becomes a comprehension
+because ``list()`` is not in the QWeb namespace.  Filters it does not know
+(``striptags``, ``truncate``, ``format``, date filters) are reported in
+``mail_template_fix_log`` together with the offending expression, and left
+untouched.
 
 The same conversion can be run without the UI, on the migrated database, with
 the python of the target version::

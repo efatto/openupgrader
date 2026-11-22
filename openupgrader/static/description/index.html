@@ -8,10 +8,11 @@
 
 /*
 :Author: David Goodger (goodger@python.org)
-:Id: $Id: html4css1.css 8954 2022-01-20 10:10:25Z milde $
+:Id: $Id: html4css1.css 9511 2024-01-13 09:50:07Z milde $
 :Copyright: This stylesheet has been placed in the public domain.
 
 Default cascading style sheet for the HTML output of Docutils.
+Despite the name, some widely supported CSS2 features are used.
 
 See https://docutils.sourceforge.io/docs/howto/html-stylesheets.html for how to
 customize this style sheet.
@@ -274,7 +275,7 @@ pre.literal-block, pre.doctest-block, pre.math, pre.code {
   margin-left: 2em ;
   margin-right: 2em }
 
-pre.code .ln { color: grey; } /* line numbers */
+pre.code .ln { color: gray; } /* line numbers */
 pre.code, code { background-color: #eeeeee }
 pre.code .comment, code .comment { color: #5C6576 }
 pre.code .keyword, code .keyword { color: #3B0D06; font-weight: bold }
@@ -300,7 +301,7 @@ span.option {
 span.pre {
   white-space: pre }
 
-span.problematic {
+span.problematic, pre.problematic {
   color: red }
 
 span.section-subtitle {
@@ -362,7 +363,9 @@ ul.auto-toc {
 <div class="document">
 
 
-<a class="reference external image-reference" href="https://odoo-community.org/get-involved?utm_source=readme"><img alt="Odoo Community Association" src="https://odoo-community.org/readme-banner-image" /></a>
+<a class="reference external image-reference" href="https://odoo-community.org/get-involved?utm_source=readme">
+<img alt="Odoo Community Association" src="https://odoo-community.org/readme-banner-image" />
+</a>
 <div class="section" id="openupgrader">
 <h1>OpenUpgrader</h1>
 <!-- !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -672,8 +675,16 @@ attributes, it saves the original bodies under
 <tt class="docutils literal"><span class="pre">&lt;folder&gt;/mail_template_qweb/&lt;version&gt;/&lt;db&gt;_migrate/</span></tt> (with the
 <tt class="docutils literal">index.json</tt> used by <tt class="docutils literal">/workspace/tools/fix_mail_templates_qweb.py</tt>
 <tt class="docutils literal">MODE=restore</tt>), and it is idempotent: run it again after a partial
-failure.  Filters it does not know (<tt class="docutils literal">striptags</tt>, <tt class="docutils literal">truncate</tt>, <tt class="docutils literal">format</tt>,
-date filters) are reported in <tt class="docutils literal">mail_template_fix_log</tt> and left untouched.</p>
+failure.  It also rewrites a leftover <tt class="docutils literal">${expr}</tt> into <tt class="docutils literal">&lt;t <span class="pre">t-out=&quot;expr&quot;&gt;</span></tt>
+when the placeholder sits in a text node (the usual case, e.g.
+<tt class="docutils literal">Gentile ${object.name},</tt>); a placeholder inside an attribute (<tt class="docutils literal"><span class="pre">href=&quot;/p/${x}&quot;</span></tt>)
+needs <tt class="docutils literal"><span class="pre">t-att-*</span></tt> and is reported instead.  <tt class="docutils literal">|safe</tt> and <tt class="docutils literal">|list</tt> are
+converted too: the former turns the directive into the deprecated but working
+<tt class="docutils literal"><span class="pre">t-raw</span></tt> (<tt class="docutils literal"><span class="pre">t-out</span></tt> escapes the value), the latter becomes a comprehension
+because <tt class="docutils literal">list()</tt> is not in the QWeb namespace.  Filters it does not know
+(<tt class="docutils literal">striptags</tt>, <tt class="docutils literal">truncate</tt>, <tt class="docutils literal">format</tt>, date filters) are reported in
+<tt class="docutils literal">mail_template_fix_log</tt> together with the offending expression, and left
+untouched.</p>
 <p>The same conversion can be run without the UI, on the migrated database, with
 the python of the target version:</p>
 <pre class="literal-block">

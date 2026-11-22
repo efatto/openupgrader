@@ -8,7 +8,8 @@ From Odoo 16.0 the mail bodies are rendered by QWeb only: ``mail.template``
 ``values`` namespace, so the template raises at render time
 (``TypeError: 'NoneType' object is not callable``) instead of being sent.  A
 leftover ``${expr}`` from the same engine is even quieter: it is printed
-verbatim in the email, so it is only reported here.
+verbatim in the email, so it is converted into ``<t t-out="...">`` as well
+(when it sits in a text node, see ``convert_inline_placeholders``).
 
 This module has no Odoo import: ``openupgrader.migration`` feeds its source to
 ``odoo shell`` on the migrated database of the target version, so the bodies
@@ -232,6 +233,12 @@ def apply_filter(base, name, args, kwargs):  # noqa: C901 - one branch per filte
         if reverse:
             return "sorted(%s, %s)" % (wrapped, reverse)
         return "sorted(%s)" % wrapped
+    if name == "list":
+        # ``list()`` is not in the QWeb namespace: a comprehension is
+        return "[_i for _i in %s]" % wrapped
+    if name == "safe":
+        # handled by split_safe(): the caller picks ``t-raw`` or ``t-out``
+        return base.strip()
     if name == "abs":
         return "abs(%s)" % wrapped
     if name == "trim":
@@ -258,14 +265,45 @@ def parse_filter(segment):
     return name, args, kwargs
 
 
+def split_safe(expression):
+    """Split a ``|safe`` off a filter chain.
+
+    Jinja's ``|safe`` marks the value as markup (do not escape it).  QWeb has no
+    filter but directives: ``t-out`` escapes and the deprecated ``t-raw`` does
+    not, so the caller has to know whether the value asked for ``|safe``.
+
+    :return: ``(expression_without_safe, requested_raw)``
+    """
+    segments = split_top(expression, "|")
+    if len(segments) == 1:
+        return expression, False
+    kept = [segments[0]]
+    raw = False
+    for segment in segments[1:]:
+        try:
+            name, _args, _kwargs = parse_filter(segment)
+        except Unsupported:
+            kept.append(segment)
+            continue
+        if name == "safe":
+            raw = True
+            continue
+        kept.append(segment)
+    return "|".join(kept), raw
+
+
 def convert_chain(expression):
     segments = split_top(expression, "|")
     if len(segments) == 1:
         return expression.strip()
     base = segments[0].strip()
     for segment in segments[1:]:
-        name, args, kwargs = parse_filter(segment)
-        base = apply_filter(base, name, args, kwargs)
+        try:
+            name, args, kwargs = parse_filter(segment)
+            base = apply_filter(base, name, args, kwargs)
+        except Unsupported as error:
+            # the message ends up in mail_template_fix_log: keep the expression
+            raise Unsupported("%s (in %r)" % (error, expression.strip())) from None
     return base
 
 
@@ -287,34 +325,112 @@ ATTR_RE = re.compile(
 )
 
 
-def convert_html(value):
-    """Rewrite the ``t-*`` expressions of ``value``.
+def _encode_attr(expression):
+    return (
+        expression.replace("&", "&amp;")
+        .replace("<", "&lt;")
+        .replace(">", "&gt;")
+        .replace('"', "&quot;")
+    )
 
-    :return: ``(new_value, [(old_expression, new_expression), ...])``
-    :raises Unsupported: when one of the expressions uses an unknown filter;
-        the value is then left untouched by the caller.
+
+def convert_inline_placeholders(value):
+    """Rewrite ``${expr}`` (the inline_template syntax) into ``<t t-out/t-raw>``.
+
+    QWeb does not know ``${...}``: it prints the placeholder verbatim in the
+    e-mail.  It can only be replaced by a ``<t>`` element in a text node; inside
+    an attribute the whole attribute would have to become ``t-att-*`` (the
+    expression may be embedded in a literal, e.g. ``href="/p/${x}"``), so that
+    case raises :class:`Unsupported` and the caller leaves the value untouched.
+
+    :return: ``(new_value, [(old_placeholder, new_element), ...])``
     """
+    out = []
+    changes = []
+    index = 0
+    in_tag = False
+    quote = None
+    while index < len(value):
+        char = value[index]
+        if in_tag:
+            if value.startswith("${", index):
+                end = value.find("}", index)
+                raise Unsupported(
+                    "inline placeholder inside an attribute value: %r"
+                    % value[index : end + 1]
+                )
+            out.append(char)
+            if quote:
+                if char == quote:
+                    quote = None
+            elif char in "\"'":
+                quote = char
+            elif char == ">":
+                in_tag = False
+            index += 1
+            continue
+        if char == "<":
+            in_tag = True
+            out.append(char)
+            index += 1
+            continue
+        if value.startswith("${", index):
+            end = value.find("}", index)
+            if end == -1:
+                raise Unsupported("unterminated ${...} placeholder")
+            expression, raw = split_safe(html_lib.unescape(value[index + 2 : end]))
+            element = '<t %s="%s"></t>' % (
+                "t-raw" if raw else "t-out",
+                _encode_attr(convert_expr(expression)),
+            )
+            out.append(element)
+            changes.append(("${%s}" % value[index + 2 : end], element))
+            index = end + 1
+            continue
+        out.append(char)
+        index += 1
+    return "".join(out), changes
+
+
+def _convert_attributes(value):
+    """Rewrite the ``t-*`` expressions of ``value``."""
     changes = []
 
     def replace(match):
-        old = match.group(2)
-        if not SUSPECT.search(old):
+        prefix, old = match.group(1), match.group(2)
+        # an unknown filter is not in SUSPECT but still breaks the rendering
+        if not SUSPECT.search(old) and len(split_top(html_lib.unescape(old), "|")) == 1:
             return match.group(0)
         # attribute values are entity encoded (``&gt;``, ``&amp;``): work on the
         # decoded expression and encode the result the same way
-        new = convert_expr(html_lib.unescape(old))
-        new = (
-            new.replace("&", "&amp;")
-            .replace("<", "&lt;")
-            .replace(">", "&gt;")
-            .replace('"', "&quot;")
-        )
+        expression, raw = split_safe(html_lib.unescape(old))
+        new = _encode_attr(convert_expr(expression))
+        if raw:
+            # |safe only means something for the output directives
+            attribute = prefix.split("=")[0].strip()
+            if attribute in ("t-out", "t-esc"):
+                prefix = prefix.replace(attribute, "t-raw", 1)
         if new == old:
             return match.group(0)
         changes.append((old, new))
-        return match.group(1) + new + match.group(3)
+        return prefix + new + match.group(3)
 
     return ATTR_RE.sub(replace, value), changes
+
+
+def convert_html(value):
+    """Rewrite the ``t-*`` expressions and the ``${...}`` of ``value``.
+
+    :return: ``(new_value, [(old_expression, new_expression), ...])``
+    :raises Unsupported: when an expression uses an unknown filter, or a
+        ``${...}`` sits inside an attribute; the value is then left untouched
+        by the caller.
+    """
+    value, changes = _convert_attributes(value)
+    if not changes and not LEFTOVER.search(value):
+        return value, changes
+    value, placeholder_changes = convert_inline_placeholders(value)
+    return value, changes + placeholder_changes
 
 
 # --------------------------------------------------------------------------- #
@@ -399,13 +515,6 @@ def fix(env, dump_dir=None):
                     language,
                     label(record),
                 )
-                if has_leftover and not has_filter:
-                    stats["leftover"] += 1
-                    lines.append(
-                        RESULT_PREFIX + " | leftover | %s a leftover ${...} must be "
-                        "converted by hand" % key
-                    )
-                    continue
                 try:
                     new_value, changes = convert_html(value)
                 except Unsupported as error:
@@ -413,6 +522,11 @@ def fix(env, dump_dir=None):
                     lines.append(RESULT_PREFIX + " | skipped | %s %s" % (key, error))
                     continue
                 if not changes:
+                    if has_leftover:
+                        stats["leftover"] += 1
+                        lines.append(
+                            RESULT_PREFIX + " | leftover | %s ${...} left as is" % key
+                        )
                     continue
                 file_name = _save_original(
                     dump_dir, model, field, record.id, language, value, label(record)

@@ -77,9 +77,55 @@ class TestMailTemplateQweb(SavepointCase):
         )
         self.assertEqual(len(changes), 1)
 
+    def test_convert_safe_becomes_t_raw(self):
+        new_body, changes = fix_module.convert_html(
+            "<p>${object.website_description|safe}</p>"
+        )
+        self.assertEqual(new_body, '<p><t t-raw="object.website_description"></t></p>')
+        self.assertEqual(len(changes), 1)
+
+    def test_convert_safe_in_t_out_becomes_t_raw(self):
+        new_body, _changes = fix_module.convert_html(
+            '<t t-out="object.website_description|safe"></t>'
+        )
+        self.assertEqual(new_body, '<t t-raw="object.website_description"></t>')
+
+    def test_convert_list_filter(self):
+        new_body, _changes = fix_module.convert_html(
+            '<t t-if="object.child_ids|list|length &gt; 0"></t>'
+        )
+        self.assertEqual(
+            new_body, '<t t-if="len([_i for _i in object.child_ids]) &gt; 0"></t>'
+        )
+
+    def test_unknown_filter_is_reported_with_its_expression(self):
+        with self.assertRaises(fix_module.Unsupported) as error:
+            fix_module.convert_html('<t t-out="object.name|myfilter"></t>')
+        self.assertIn("myfilter", str(error.exception))
+        self.assertIn("object.name|myfilter", str(error.exception))
+
     def test_convert_unknown_filter_is_unsupported(self):
         with self.assertRaises(fix_module.Unsupported):
             fix_module.convert_html('<t t-out="object.name|striptags"></t>')
+
+    def test_convert_inline_placeholder_in_text(self):
+        body = "<p>Gentile ${object.name},</p>"
+        self.assertEqual(
+            fix_module.convert_html(body),
+            (
+                '<p>Gentile <t t-out="object.name"></t>,</p>',
+                [("${object.name}", '<t t-out="object.name"></t>')],
+            ),
+        )
+
+    def test_convert_inline_placeholder_with_filter(self):
+        new_body, changes = fix_module.convert_html("<p>${object.child_ids|length}</p>")
+        self.assertEqual(new_body, '<p><t t-out="len(object.child_ids)"></t></p>')
+        self.assertEqual(len(changes), 1)
+
+    def test_convert_inline_placeholder_in_attribute_is_unsupported(self):
+        with self.assertRaises(fix_module.Unsupported):
+            fix_module.convert_html('<a href="/p/${object.id}">x</a>')
 
     def test_convert_leaves_plain_expressions_untouched(self):
         body = '<t t-out="object.name"></t>'
@@ -110,14 +156,24 @@ class TestMailTemplateQweb(SavepointCase):
         self.assertFalse([line for line in lines if " | %s | " % template.id in line])
         self.assertEqual(template.body_html, CONVERTED_BODY)
 
-    def test_leftover_inline_template_is_only_reported(self):
-        body = "<p>Buongiorno ${object.name},</p>"
-        template = self._template("Leftover inline template", body)
+    def test_leftover_inline_template_is_converted(self):
+        template = self._template(
+            "Leftover inline template", "<p>Buongiorno ${object.name},</p>"
+        )
+        fix_module.fix(self.env, None)
+        self.assertEqual(
+            template.body_html, '<p>Buongiorno <t t-out="object.name"></t>,</p>'
+        )
+
+    def test_leftover_inline_template_in_attribute_is_reported(self):
+        body = '<p><a href="/p/${object.id}">x</a></p>'
+        template = self._template("Leftover in attribute", body)
         _stats, lines = fix_module.fix(self.env, None)
         self.assertEqual(template.body_html, body)
         self.assertTrue(
             any(
-                " | %s | " % template.id in line and "leftover ${...}" in line
+                " | %s | " % template.id in line
+                and "inline placeholder inside an attribute" in line
                 for line in lines
             )
         )
