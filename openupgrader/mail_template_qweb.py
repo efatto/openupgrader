@@ -418,19 +418,58 @@ def _convert_attributes(value):
     return ATTR_RE.sub(replace, value), changes
 
 
+IFELSE = {"t-if", "t-elif", "t-else"}
+
+
+def structure_ok(value):
+    """Check the ``t-elif``/``t-else`` sibling rule QWeb enforces at compile time.
+
+    A ``t-elif``/``t-else`` must be the sibling right after its ``t-if``/``t-elif``
+    (comments are allowed in between).  A body migrated from <= 15.0 can break
+    this, and inserting a ``<t>`` element between the two - which is what
+    converting a ``${...}`` found there does - breaks it as well.  The check is
+    conservative: an unparsable value passes, the ORM will report it.
+    """
+    try:
+        from lxml import html as lxml_html
+    except ImportError:  # pragma: no cover - lxml ships with Odoo
+        return True
+    try:
+        root = lxml_html.fragment_fromstring(value, create_parent="div")
+    except Exception:  # noqa: BLE001 - not our job to validate the markup
+        return True
+    for element in root.iter():
+        if not isinstance(element.tag, str):
+            continue
+        if not ({"t-elif", "t-else"} & set(element.attrib)):
+            continue
+        previous = element.getprevious()
+        while previous is not None and not isinstance(previous.tag, str):
+            previous = previous.getprevious()
+        if previous is None or not (IFELSE & set(previous.attrib)):
+            return False
+    return True
+
+
 def convert_html(value):
     """Rewrite the ``t-*`` expressions and the ``${...}`` of ``value``.
 
     :return: ``(new_value, [(old_expression, new_expression), ...])``
-    :raises Unsupported: when an expression uses an unknown filter, or a
-        ``${...}`` sits inside an attribute; the value is then left untouched
-        by the caller.
+    :raises Unsupported: when an expression uses an unknown filter, when a
+        ``${...}`` sits inside an attribute, or when the result would break the
+        ``t-elif``/``t-else`` sibling rule; the value is then left untouched.
     """
     value, changes = _convert_attributes(value)
     if not changes and not LEFTOVER.search(value):
         return value, changes
     value, placeholder_changes = convert_inline_placeholders(value)
-    return value, changes + placeholder_changes
+    changes = changes + placeholder_changes
+    if changes and not structure_ok(value):
+        raise Unsupported(
+            "the result would have an orphan t-elif/t-else (or the body already "
+            "has one): check it with check_mail_templates.py first"
+        )
+    return value, changes
 
 
 # --------------------------------------------------------------------------- #
@@ -485,7 +524,7 @@ def _save_original(dump_dir, model, field, record_id, language, value, name):
     return file_name
 
 
-def fix(env, dump_dir=None):
+def fix(env, dump_dir=None):  # noqa: C901 - one loop, one branch per outcome
     """Convert the templates of ``env``; return the report lines and counters."""
     # the raw SELECT of read_values() must see the records created or written
     # in the current transaction (``Environment.flush_all`` exists from 15.0 on)
@@ -515,6 +554,11 @@ def fix(env, dump_dir=None):
                     language,
                     label(record),
                 )
+                if not structure_ok(value):
+                    lines.append(
+                        RESULT_PREFIX + " | structure | %s body already has an orphan "
+                        "t-elif/t-else: run check_mail_templates.py on it" % key
+                    )
                 try:
                     new_value, changes = convert_html(value)
                 except Unsupported as error:

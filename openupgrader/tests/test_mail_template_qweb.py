@@ -104,6 +104,23 @@ class TestMailTemplateQweb(SavepointCase):
         self.assertIn("myfilter", str(error.exception))
         self.assertIn("object.name|myfilter", str(error.exception))
 
+    def test_placeholder_between_t_if_and_t_elif_is_unsupported(self):
+        """Inserting the <t> there would orphan the t-elif: refuse the change."""
+        with self.assertRaises(fix_module.Unsupported) as error:
+            fix_module.convert_html(
+                '<div><t t-if="a">A</t>${c}<t t-elif="b">B</t></div>'
+            )
+        self.assertIn("orphan t-elif", str(error.exception))
+
+    def test_orphan_t_elif_body_is_reported(self):
+        body = '<div><t t-if="a">A</t><p>x</p>' '<t t-elif="b">${object.name}</t></div>'
+        template = self._template("Orphan t-elif", body)
+        _stats, lines = fix_module.fix(self.env, None)
+        self.assertEqual(template.body_html, body)
+        self.assertTrue(
+            any(" | structure | " in line and "orphan t-elif" in line for line in lines)
+        )
+
     def test_convert_unknown_filter_is_unsupported(self):
         with self.assertRaises(fix_module.Unsupported):
             fix_module.convert_html('<t t-out="object.name|striptags"></t>')
